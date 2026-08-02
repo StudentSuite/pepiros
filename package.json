@@ -1,0 +1,10 @@
+{
+  "name": "pepiros",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TODO: fill deps from PLAN-V1.md §3.1 (next, react, @xyflow/react, zustand, ai + @ai-sdk/anthropic, drizzle-orm, @supabase/supabase-js, @modelcontextprotocol/sdk, recharts for the new numeric chart)",
+  "scripts": {
+    "dev": "TODO",
+    "seed": "TODO: tsx scripts/seed.ts"
+  }
+}
