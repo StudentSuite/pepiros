@@ -1,0 +1,8 @@
+# CI runs on ubuntu and .editorconfig declares LF; normalize so a Windows
+# checkout does not produce CRLF-vs-LF diffs on every touched file.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.pdf binary
+*.gif binary

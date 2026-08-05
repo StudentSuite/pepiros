@@ -81,7 +81,7 @@ Plus an **entailment overlap floor**: every number/unit/comparator in a claim mu
 
 Multi-span anchors are **required**, not optional — aggregate claims ("three of four trials used open-label dosing") have no single contiguous source sentence. A single-span-only verifier silently degrades into a highlighter.
 
-## 5. Data model (condensed — full column list in `EA/projects/researchsumm/PLAN-V1.md` §5)
+## 5. Data model (condensed — full column list in `docs/PLAN-V1.md` §5)
 
 `workspaces -> papers -> sections -> chunks`, plus `figures`, `numerics`, `references_`. Graph layer: `nodes` (types: `paper`/`pillar`/`leaf`/`thread`/`synthesis`), `edges` (kinds: `contains`/`relates`/`derived_from`/`agrees`/`contradicts`/`extends`/`shares_method`/`cites`), `evidence` (owns `quote_located`/`match_score`/`numeric_ok`). Plus `conversations`/`messages`, `flashcards`/`quizzes`, `jobs`/`job_events`, `share_tokens`, `mcp_tokens`.
 
@@ -114,13 +114,13 @@ Freeze `types/anchor.ts` + `fixtures/workspace.json` together, hour one — ever
 
 ## 9. Schedule
 
-See `EA/projects/researchsumm/PLAN-V1.md` §17 for the full day-by-day table (Aug 10-18) — real capacity ~16-18h against a fuller scope, kept intentionally (Anay's call, Yash covering more hours). Key fixed dates: **Fri Aug 14 checkpoint** — is parse-to-locate-to-verify-to-highlight working end to end? If not, fire the slip order that night. **Mon Aug 17 = ship** (MCP tools, seed 3 papers, plant one misattribution, measure drop rate, rehearse). **Tue Aug 18 = submit.**
+See `docs/PLAN-V1.md` §17 for the full day-by-day table (Aug 10-18) — real capacity ~16-18h against a fuller scope, kept intentionally (Anay's call, Yash covering more hours). Key fixed dates: **Fri Aug 14 checkpoint** — is parse-to-locate-to-verify-to-highlight working end to end? If not, fire the slip order that night. **Mon Aug 17 = ship** (MCP tools, seed 3 papers, plant one misattribution, measure drop rate, rehearse). **Tue Aug 18 = submit.**
 
 **Slip order if time runs out** (compresses first, in this order): export, quiz, flashcards, reading path rail, share link, reverse anchor lookup, arXiv fast path, GROBID, then the generator count down to the 8 that carry the demo. **Never cut:** the anchor spine, the verifier, the highlight, the contradiction diff, the MCP `verify_claim` tool, the Related Papers rail (cheapest new feature, highest visible payoff).
 
 ## 10. Design system (one line — full tokens in PLAN-V1.md §14)
 
-"Lab notebook at night." Dark-first, low-chroma surfaces, paper-white reading surfaces on dark chrome, pillar colour as a structural system (edges/borders/chips all share it), real typographic hierarchy (serif for prose, grotesque for UI, mono for ids). Full CSS token block, motion spec, and voice guide: `EA/projects/researchsumm/PLAN-V1.md` §14.
+"Lab notebook at night." Dark-first, low-chroma surfaces, paper-white reading surfaces on dark chrome, pillar colour as a structural system (edges/borders/chips all share it), real typographic hierarchy (serif for prose, grotesque for UI, mono for ids). Full CSS token block, motion spec, and voice guide: `docs/PLAN-V1.md` §14.
 
 ## 11. Cut list — don't rebuild these, they were killed on purpose
 
@@ -128,4 +128,4 @@ Research Mentor (replaced by the deterministic reading path), SM-2 spaced repeti
 
 ---
 
-**Full detail on anything condensed above** (data model columns, design tokens, demo script, risk table, addon rankings) lives in `EA/projects/researchsumm/PLAN-V1.md` — that file is still canonical, this one is the fast-start version.
+**Full detail on anything condensed above** (data model columns, design tokens, demo script, risk table, addon rankings) lives in `docs/PLAN-V1.md` — that file is still canonical, this one is the fast-start version.

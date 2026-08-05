@@ -64,7 +64,7 @@ export function NodeEditor({
           type="button"
           onClick={() => {
             const html = editor?.getHTML() ?? initialContent;
-            // eslint-disable-next-line no-console
+             
             console.log("save node body (stub, no backend write yet):", html);
             onSave?.(html);
           }}

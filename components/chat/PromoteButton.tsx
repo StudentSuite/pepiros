@@ -19,7 +19,7 @@ export function PromoteButton({ message }: { message: ChatMessage }) {
       type="button"
       disabled={promoted}
       onClick={() => {
-        // eslint-disable-next-line no-console
+         
         console.log("promote (stub, no create_node MCP call yet):", message);
         setPromoted(true);
       }}
