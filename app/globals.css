@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design system: "lab notebook at night" (plan.md §10).
+ * Dark-first, low-chroma surfaces; paper-white reading surfaces sit on dark
+ * chrome; pillar colour is structural (shared by edges/borders/chips), not
+ * decorative. Full token rationale lives in the (missing) PLAN-V1.md §14 --
+ * these are the working defaults until that doc exists.
+ */
+:root {
+  --surface: #14161a;
+  --surface-raised: #1b1e24;
+  --surface-sunken: #0d0e11;
+
+  --paper: #f4f1ea;
+  --paper-muted: #e7e2d6;
+
+  --ink: #e8e6e1;
+  --ink-muted: #a3a29c;
+  --ink-faint: #6b6a66;
+
+  --border: #2a2d33;
+  --border-strong: #3c4048;
+
+  --pillar-1: #7dd3c0;
+  --pillar-2: #e0a95f;
+  --pillar-3: #c586d6;
+  --pillar-4: #6fa8dc;
+  --pillar-5: #e08a8a;
+  --pillar-6: #a3c96f;
+
+  --located: #7dd3c0;
+  --paraphrase: #e0c15f;
+  --unsupported: #e08a8a;
+
+  --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-grotesque: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+/* Reading surfaces (PDF pane, node body copy) stay paper-toned even though
+   chrome is dark -- the reading surface is not the app surface. */
+.surface-reading {
+  background-color: var(--paper);
+  color: #1c1a15;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-grotesque);
+}
+
+::selection {
+  background-color: var(--pillar-4);
+  color: var(--surface-sunken);
+}
+
+.react-flow__attribution {
+  display: none;
+}

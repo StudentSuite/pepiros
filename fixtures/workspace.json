@@ -1,3 +1,167 @@
 {
-  "_todo": "Hour-one fixture per PLAN-V1.md §18: 3 papers, ~30 claims, real hand-extracted rects, 1 contradiction pair, 1 cites link, 1 planted misattribution. Both Anay and Yash code against this, not against each other."
+  "_todo": "Hour-one fixture per plan.md §8 (PLAN-V1.md §18 does not exist in this repo -- this is the working version both lib/ and components/ code against). 3 papers, real-ish chunk text, 1 contradiction pair (n1-p1-key-finding vs n1-p3-key-finding via synth-1), 1 cites link (p3 cites p1), 1 planted misattribution (ev-p2-limits-1, deliberately mismatched quote so lib/grounding/verify.ts recomputes it to `unsupported` and drops the anchor).",
+  "id": "ws-1",
+  "name": "Circadian Rhythm & Cognition",
+  "papers": [
+    {
+      "id": "p1",
+      "workspaceId": "ws-1",
+      "title": "Effects of Morning Bright Light Exposure on Sleep Onset Latency in Shift Workers",
+      "authors": ["A. Okafor", "M. Lindqvist"],
+      "year": 2022,
+      "archetype": "rct",
+      "sourceUrl": "https://arxiv.org/abs/0000.00001",
+      "pdfStoragePath": null
+    },
+    {
+      "id": "p2",
+      "workspaceId": "ws-1",
+      "title": "Circadian Rhythm Disruption and Cognitive Performance: A Meta-Analysis",
+      "authors": ["R. Chen", "S. Patel", "J. Novak"],
+      "year": 2021,
+      "archetype": "meta_analysis",
+      "sourceUrl": "https://arxiv.org/abs/0000.00002",
+      "pdfStoragePath": null
+    },
+    {
+      "id": "p3",
+      "workspaceId": "ws-1",
+      "title": "Sleep Deprivation Effects on Executive Function: An Observational Cohort Study",
+      "authors": ["T. Boateng"],
+      "year": 2023,
+      "archetype": "observational",
+      "sourceUrl": "https://arxiv.org/abs/0000.00003",
+      "pdfStoragePath": null
+    }
+  ],
+  "chunks": [
+    { "id": "c-p1-methods-1", "paperId": "p1", "sectionId": "p1-methods", "kind": "prose", "page": 4,
+      "text": "Participants were randomized 1:1 to receive 30 minutes of 10,000 lux bright light exposure within one hour of waking, or a dim-light placebo, for four consecutive weeks.",
+      "rects": [{ "page": 4, "x0": 72, "y0": 180, "x1": 520, "y1": 214 }] },
+    { "id": "c-p1-results-1", "paperId": "p1", "sectionId": "p1-results", "kind": "prose", "page": 5,
+      "text": "Mean sleep onset latency decreased by 34% (95% CI 21-45), p=0.003, in the bright-light arm relative to placebo.",
+      "rects": [{ "page": 5, "x0": 72, "y0": 300, "x1": 520, "y1": 328 }] },
+    { "id": "c-p1-limits-1", "paperId": "p1", "sectionId": "p1-discussion", "kind": "prose", "page": 8,
+      "text": "A key limitation is that shift schedule was self-reported and could not be independently verified against employer records.",
+      "rects": [{ "page": 8, "x0": 72, "y0": 400, "x1": 520, "y1": 432 }] },
+
+    { "id": "c-p2-methods-1", "paperId": "p2", "sectionId": "p2-methods", "kind": "prose", "page": 3,
+      "text": "We pooled 18 studies (n=4,213) reporting circadian misalignment and at least one standardized measure of executive function.",
+      "rects": [{ "page": 3, "x0": 72, "y0": 150, "x1": 520, "y1": 182 }] },
+    { "id": "c-p2-results-1", "paperId": "p2", "sectionId": "p2-results", "kind": "prose", "page": 6,
+      "text": "Circadian misalignment was associated with a pooled effect size of d=0.41 (95% CI 0.29-0.53) on working memory tasks across the included cohorts.",
+      "rects": [{ "page": 6, "x0": 72, "y0": 220, "x1": 520, "y1": 252 }] },
+    { "id": "c-p2-results-2", "paperId": "p2", "sectionId": "p2-results", "kind": "prose", "page": 6,
+      "text": "Three of four trials using open-label dosing of melatonin reported smaller effect sizes than the double-blind trials in the same pool.",
+      "rects": [
+        { "page": 6, "x0": 72, "y0": 400, "x1": 520, "y1": 414 },
+        { "page": 6, "x0": 72, "y0": 416, "x1": 340, "y1": 430 }
+      ] },
+    { "id": "c-p2-limits-1", "paperId": "p2", "sectionId": "p2-discussion", "kind": "prose", "page": 9,
+      "text": "Heterogeneity across included cohorts (I2=62%) limits the precision of the pooled estimate and should temper causal readings of the effect size.",
+      "rects": [{ "page": 9, "x0": 72, "y0": 260, "x1": 520, "y1": 292 }] },
+
+    { "id": "c-p3-methods-1", "paperId": "p3", "sectionId": "p3-methods", "kind": "prose", "page": 3,
+      "text": "212 hospital residents were followed for six months; sleep was tracked via actigraphy and executive function assessed monthly with the Trail Making Test.",
+      "rects": [{ "page": 3, "x0": 72, "y0": 190, "x1": 520, "y1": 222 }] },
+    { "id": "c-p3-results-1", "paperId": "p3", "sectionId": "p3-results", "kind": "prose", "page": 5,
+      "text": "Residents averaging under 5 hours of sleep showed no significant decline in Trail Making Test scores relative to the well-rested subgroup, p=0.41.",
+      "rects": [{ "page": 5, "x0": 72, "y0": 240, "x1": 520, "y1": 272 }] },
+    { "id": "c-p3-related-1", "paperId": "p3", "sectionId": "p3-intro", "kind": "prose", "page": 2,
+      "text": "This design follows the bright-light intervention protocol established by Okafor and Lindqvist for shift-worker populations.",
+      "rects": [{ "page": 2, "x0": 72, "y0": 300, "x1": 520, "y1": 330 }] }
+  ],
+  "numerics": [
+    { "id": "num-1", "chunkId": "c-p1-results-1", "rawText": "34% (95% CI 21-45)", "value": 34, "unit": "%", "comparator": "=", "role": "effect_size" },
+    { "id": "num-2", "chunkId": "c-p1-results-1", "rawText": "p=0.003", "value": 0.003, "unit": null, "comparator": "=", "role": "p" },
+    { "id": "num-3", "chunkId": "c-p2-results-1", "rawText": "d=0.41 (95% CI 0.29-0.53)", "value": 0.41, "unit": "d", "comparator": "=", "role": "effect_size" },
+    { "id": "num-4", "chunkId": "c-p3-results-1", "rawText": "p=0.41", "value": 0.41, "unit": null, "comparator": "=", "role": "p" }
+  ],
+  "nodes": [
+    { "id": "n-p1", "workspaceId": "ws-1", "type": "paper", "title": "Morning Bright Light & Sleep Onset (Okafor & Lindqvist, 2022)", "bodyMd": "RCT, shift workers, 4-week bright-light intervention.", "pillarIndex": null, "x": 0, "y": 0, "paperId": "p1", "stale": false },
+    { "id": "n-p1-methods", "workspaceId": "ws-1", "type": "pillar", "title": "Methods", "bodyMd": "Randomized, single-blind, 4-week bright-light vs. dim-light placebo.", "pillarIndex": 1, "x": -160, "y": 140, "paperId": "p1", "stale": false },
+    { "id": "n-p1-key-finding", "workspaceId": "ws-1", "type": "pillar", "title": "Key Finding", "bodyMd": "Bright-light exposure meaningfully shortened sleep onset latency.", "pillarIndex": 2, "x": 160, "y": 140, "paperId": "p1", "stale": false },
+    { "id": "n-p1-methods-leaf-1", "workspaceId": "ws-1", "type": "leaf", "title": "Randomization protocol", "bodyMd": "Participants were randomized 1:1 to bright light or dim-light placebo for four weeks. [^e1]", "pillarIndex": 1, "x": -260, "y": 260, "paperId": "p1", "stale": false },
+    { "id": "n-p1-key-finding-leaf-1", "workspaceId": "ws-1", "type": "leaf", "title": "Sleep onset latency drop", "bodyMd": "Sleep onset latency fell 34% (95% CI 21-45, p=0.003) vs. placebo. [^e2]", "pillarIndex": 2, "x": 260, "y": 260, "paperId": "p1", "stale": false },
+
+    { "id": "n-p2", "workspaceId": "ws-1", "type": "paper", "title": "Circadian Disruption & Cognition (Chen et al., 2021)", "bodyMd": "Meta-analysis, 18 studies, n=4,213.", "pillarIndex": null, "x": 600, "y": 0, "paperId": "p2", "stale": false },
+    { "id": "n-p2-methods", "workspaceId": "ws-1", "type": "pillar", "title": "Methods", "bodyMd": "Pooled 18 studies measuring circadian misalignment and executive function.", "pillarIndex": 1, "x": 440, "y": 140, "paperId": "p2", "stale": false },
+    { "id": "n-p2-key-finding", "workspaceId": "ws-1", "type": "pillar", "title": "Key Finding", "bodyMd": "Circadian misalignment has a moderate pooled effect on working memory.", "pillarIndex": 2, "x": 760, "y": 140, "paperId": "p2", "stale": false },
+    { "id": "n-p2-limitations", "workspaceId": "ws-1", "type": "pillar", "title": "Limitations", "bodyMd": "Substantial heterogeneity across pooled cohorts.", "pillarIndex": 5, "x": 600, "y": 220, "paperId": "p2", "stale": false },
+    { "id": "n-p2-methods-leaf-1", "workspaceId": "ws-1", "type": "leaf", "title": "Pooled cohort size", "bodyMd": "18 studies, n=4,213, each reporting circadian misalignment and an executive-function measure. [^e3]", "pillarIndex": 1, "x": 440, "y": 260, "paperId": "p2", "stale": false },
+    { "id": "n-p2-key-finding-leaf-1", "workspaceId": "ws-1", "type": "leaf", "title": "Working memory effect size", "bodyMd": "Pooled effect size d=0.41 (95% CI 0.29-0.53) on working memory. [^e4]", "pillarIndex": 2, "x": 760, "y": 260, "paperId": "p2", "stale": false },
+    { "id": "n-p2-key-finding-leaf-2", "workspaceId": "ws-1", "type": "leaf", "title": "Open-label vs. double-blind split", "bodyMd": "Three of four open-label melatonin trials reported smaller effects than the double-blind trials in the same pool. [^e5]", "pillarIndex": 2, "x": 860, "y": 320, "paperId": "p2", "stale": false },
+    { "id": "n-p2-limitations-leaf-1", "workspaceId": "ws-1", "type": "leaf", "title": "Cohort heterogeneity", "bodyMd": "Cross-cohort heterogeneity was severe enough that no single p-value should be read as precise. [^e6]", "pillarIndex": 5, "x": 600, "y": 340, "paperId": "p2", "stale": false },
+
+    { "id": "n-p3", "workspaceId": "ws-1", "type": "paper", "title": "Sleep Deprivation & Executive Function (Boateng, 2023)", "bodyMd": "Observational cohort, 212 hospital residents, 6 months.", "pillarIndex": null, "x": 1200, "y": 0, "paperId": "p3", "stale": false },
+    { "id": "n-p3-methods", "workspaceId": "ws-1", "type": "pillar", "title": "Methods", "bodyMd": "Actigraphy-tracked sleep, monthly Trail Making Test.", "pillarIndex": 1, "x": 1040, "y": 140, "paperId": "p3", "stale": false },
+    { "id": "n-p3-key-finding", "workspaceId": "ws-1", "type": "pillar", "title": "Key Finding", "bodyMd": "No significant executive-function decline under short sleep, in this cohort.", "pillarIndex": 2, "x": 1360, "y": 140, "paperId": "p3", "stale": false },
+    { "id": "n-p3-methods-leaf-1", "workspaceId": "ws-1", "type": "leaf", "title": "Cohort & tracking method", "bodyMd": "212 hospital residents tracked via actigraphy over six months, monthly Trail Making Test. [^e7]", "pillarIndex": 1, "x": 1040, "y": 260, "paperId": "p3", "stale": false },
+    { "id": "n-p3-key-finding-leaf-1", "workspaceId": "ws-1", "type": "leaf", "title": "Null result under 5h sleep", "bodyMd": "Residents averaging under 5 hours of sleep showed no significant Trail Making Test decline, p=0.41. [^e8]", "pillarIndex": 2, "x": 1360, "y": 260, "paperId": "p3", "stale": false },
+
+    { "id": "n-synth-1", "workspaceId": "ws-1", "type": "synthesis", "title": "Does circadian/sleep disruption impair executive function?", "bodyMd": "P2's pooled effect (d=0.41 on working memory) and P3's null result on the Trail Making Test under 5h sleep point in different directions -- plausibly because P3 measures a single short-duration exposure while P2 pools chronic misalignment. [^e9][^e10]", "pillarIndex": null, "x": 900, "y": 480, "paperId": null, "stale": false },
+    { "id": "n-thread-1", "workspaceId": "ws-1", "type": "thread", "title": "Reading path: does the intervention in P1 generalize?", "bodyMd": "P1's bright-light protocol is explicitly reused as P3's study design precedent, but P3 does not re-test the intervention itself -- only downstream sleep-duration effects. [^e11]", "pillarIndex": null, "x": 900, "y": 600, "paperId": null, "stale": false }
+  ],
+  "edges": [
+    { "id": "e-1", "workspaceId": "ws-1", "kind": "contains", "sourceId": "n-p1", "targetId": "n-p1-methods" },
+    { "id": "e-2", "workspaceId": "ws-1", "kind": "contains", "sourceId": "n-p1", "targetId": "n-p1-key-finding" },
+    { "id": "e-3", "workspaceId": "ws-1", "kind": "contains", "sourceId": "n-p1-methods", "targetId": "n-p1-methods-leaf-1" },
+    { "id": "e-4", "workspaceId": "ws-1", "kind": "contains", "sourceId": "n-p1-key-finding", "targetId": "n-p1-key-finding-leaf-1" },
+
+    { "id": "e-5", "workspaceId": "ws-1", "kind": "contains", "sourceId": "n-p2", "targetId": "n-p2-methods" },
+    { "id": "e-6", "workspaceId": "ws-1", "kind": "contains", "sourceId": "n-p2", "targetId": "n-p2-key-finding" },
+    { "id": "e-7", "workspaceId": "ws-1", "kind": "contains", "sourceId": "n-p2", "targetId": "n-p2-limitations" },
+    { "id": "e-8", "workspaceId": "ws-1", "kind": "contains", "sourceId": "n-p2-methods", "targetId": "n-p2-methods-leaf-1" },
+    { "id": "e-9", "workspaceId": "ws-1", "kind": "contains", "sourceId": "n-p2-key-finding", "targetId": "n-p2-key-finding-leaf-1" },
+    { "id": "e-10", "workspaceId": "ws-1", "kind": "contains", "sourceId": "n-p2-key-finding", "targetId": "n-p2-key-finding-leaf-2" },
+    { "id": "e-11", "workspaceId": "ws-1", "kind": "contains", "sourceId": "n-p2-limitations", "targetId": "n-p2-limitations-leaf-1" },
+
+    { "id": "e-12", "workspaceId": "ws-1", "kind": "contains", "sourceId": "n-p3", "targetId": "n-p3-methods" },
+    { "id": "e-13", "workspaceId": "ws-1", "kind": "contains", "sourceId": "n-p3", "targetId": "n-p3-key-finding" },
+    { "id": "e-14", "workspaceId": "ws-1", "kind": "contains", "sourceId": "n-p3-methods", "targetId": "n-p3-methods-leaf-1" },
+    { "id": "e-15", "workspaceId": "ws-1", "kind": "contains", "sourceId": "n-p3-key-finding", "targetId": "n-p3-key-finding-leaf-1" },
+
+    { "id": "e-16", "workspaceId": "ws-1", "kind": "cites", "sourceId": "n-p3", "targetId": "n-p1" },
+    { "id": "e-17", "workspaceId": "ws-1", "kind": "shares_method", "sourceId": "n-p1-methods", "targetId": "n-p2-methods" },
+
+    { "id": "e-18", "workspaceId": "ws-1", "kind": "derived_from", "sourceId": "n-synth-1", "targetId": "n-p2-key-finding-leaf-1" },
+    { "id": "e-19", "workspaceId": "ws-1", "kind": "derived_from", "sourceId": "n-synth-1", "targetId": "n-p3-key-finding-leaf-1" },
+    { "id": "e-20", "workspaceId": "ws-1", "kind": "contradicts", "sourceId": "n-p2-key-finding-leaf-1", "targetId": "n-p3-key-finding-leaf-1" },
+
+    { "id": "e-21", "workspaceId": "ws-1", "kind": "derived_from", "sourceId": "n-thread-1", "targetId": "n-p1-key-finding-leaf-1" },
+    { "id": "e-22", "workspaceId": "ws-1", "kind": "relates", "sourceId": "n-thread-1", "targetId": "n-p3-methods-leaf-1" }
+  ],
+  "evidence": [
+    { "id": "e1", "nodeId": "n-p1-methods-leaf-1", "refId": "C1", "tier": "quote_located", "matchScore": 1.0, "numericOk": null,
+      "anchor": { "chunkId": "c-p1-methods-1", "quote": "Participants were randomized 1:1 to receive 30 minutes of 10,000 lux bright light exposure within one hour of waking, or a dim-light placebo, for four consecutive weeks.", "spans": [{ "page": 4, "x0": 72, "y0": 180, "x1": 520, "y1": 214 }] } },
+    { "id": "e2", "nodeId": "n-p1-key-finding-leaf-1", "refId": "C2", "tier": "quote_located", "matchScore": 1.0, "numericOk": true,
+      "anchor": { "chunkId": "c-p1-results-1", "quote": "Mean sleep onset latency decreased by 34% (95% CI 21-45), p=0.003, in the bright-light arm relative to placebo.", "spans": [{ "page": 5, "x0": 72, "y0": 300, "x1": 520, "y1": 328 }] } },
+
+    { "id": "e3", "nodeId": "n-p2-methods-leaf-1", "refId": "C4", "tier": "quote_located", "matchScore": 1.0, "numericOk": null,
+      "anchor": { "chunkId": "c-p2-methods-1", "quote": "We pooled 18 studies (n=4,213) reporting circadian misalignment and at least one standardized measure of executive function.", "spans": [{ "page": 3, "x0": 72, "y0": 150, "x1": 520, "y1": 182 }] } },
+    { "id": "e4", "nodeId": "n-p2-key-finding-leaf-1", "refId": "C5", "tier": "quote_located", "matchScore": 1.0, "numericOk": true,
+      "anchor": { "chunkId": "c-p2-results-1", "quote": "Circadian misalignment was associated with a pooled effect size of d=0.41 (95% CI 0.29-0.53) on working memory tasks across the included cohorts.", "spans": [{ "page": 6, "x0": 72, "y0": 220, "x1": 520, "y1": 252 }] } },
+    { "id": "e5", "nodeId": "n-p2-key-finding-leaf-2", "refId": "C6", "tier": "paraphrase", "matchScore": 0.917, "numericOk": null,
+      "anchor": { "chunkId": "c-p2-results-2", "quote": "Three of four open-label melatonin trials reported smaller effects than the double-blind trials in the pool.", "spans": [
+        { "page": 6, "x0": 72, "y0": 400, "x1": 520, "y1": 414 },
+        { "page": 6, "x0": 72, "y0": 416, "x1": 340, "y1": 430 }
+      ] } },
+    { "id": "e6", "nodeId": "n-p2-limitations-leaf-1", "refId": "C7", "tier": "unsupported", "matchScore": 0.512, "numericOk": null,
+      "anchor": null,
+      "_note": "Planted misattribution (plan.md §9): claimed quote below does not actually match c-p2-limits-1's text closely enough to clear the 0.75 paraphrase floor -- verify.ts should drop this anchor and n-p2-limitations-leaf-1's [^e6] should be stripped from bodyMd on re-verification.",
+      "claimedQuoteForTesting": "The pooled estimate is precise and supports a causal effect of circadian disruption on cognition." },
+
+    { "id": "e7", "nodeId": "n-p3-methods-leaf-1", "refId": "C8", "tier": "quote_located", "matchScore": 1.0, "numericOk": null,
+      "anchor": { "chunkId": "c-p3-methods-1", "quote": "212 hospital residents were followed for six months; sleep was tracked via actigraphy and executive function assessed monthly with the Trail Making Test.", "spans": [{ "page": 3, "x0": 72, "y0": 190, "x1": 520, "y1": 222 }] } },
+    { "id": "e8", "nodeId": "n-p3-key-finding-leaf-1", "refId": "C9", "tier": "quote_located", "matchScore": 1.0, "numericOk": true,
+      "anchor": { "chunkId": "c-p3-results-1", "quote": "Residents averaging under 5 hours of sleep showed no significant decline in Trail Making Test scores relative to the well-rested subgroup, p=0.41.", "spans": [{ "page": 5, "x0": 72, "y0": 240, "x1": 520, "y1": 272 }] } },
+
+    { "id": "e9", "nodeId": "n-synth-1", "refId": "C5", "tier": "quote_located", "matchScore": 1.0, "numericOk": true,
+      "anchor": { "chunkId": "c-p2-results-1", "quote": "Circadian misalignment was associated with a pooled effect size of d=0.41 (95% CI 0.29-0.53) on working memory tasks across the included cohorts.", "spans": [{ "page": 6, "x0": 72, "y0": 220, "x1": 520, "y1": 252 }] } },
+    { "id": "e10", "nodeId": "n-synth-1", "refId": "C9", "tier": "quote_located", "matchScore": 1.0, "numericOk": true,
+      "anchor": { "chunkId": "c-p3-results-1", "quote": "Residents averaging under 5 hours of sleep showed no significant decline in Trail Making Test scores relative to the well-rested subgroup, p=0.41.", "spans": [{ "page": 5, "x0": 72, "y0": 240, "x1": 520, "y1": 272 }] } },
+
+    { "id": "e11", "nodeId": "n-thread-1", "refId": "C10", "tier": "quote_located", "matchScore": 1.0, "numericOk": null,
+      "anchor": { "chunkId": "c-p3-related-1", "quote": "This design follows the bright-light intervention protocol established by Okafor and Lindqvist for shift-worker populations.", "spans": [{ "page": 2, "x0": 72, "y0": 300, "x1": 520, "y1": 330 }] } }
+  ]
 }

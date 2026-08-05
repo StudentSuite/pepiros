@@ -1,1 +1,10 @@
-// TODO: read-only share view, one RLS policy against share_tokens. See PLAN-V1.md §12 addon 7.
+import { ShareClient } from "./ShareClient";
+
+export default async function SharePage({
+  params,
+}: {
+  params: Promise<{ shareToken: string }>;
+}) {
+  const { shareToken } = await params;
+  return <ShareClient shareToken={shareToken} />;
+}

@@ -1,1 +1,12 @@
-# TODO: node_modules, .next, .env, *.local, /fixtures/*.pdf (large binaries), python __pycache__
+node_modules
+.next
+out
+*.tsbuildinfo
+.env
+.env.local
+*.local
+.DS_Store
+/fixtures/*.pdf
+__pycache__
+*.pyc
+.venv

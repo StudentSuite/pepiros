@@ -1,1 +1,10 @@
-// TODO: a11y-equivalent nested <ul> view of the whole graph. Also the demo-day fallback UI. See PLAN-V1.md §15.
+import { OutlineClient } from "./OutlineClient";
+
+export default async function OutlinePage({
+  params,
+}: {
+  params: Promise<{ workspaceId: string }>;
+}) {
+  const { workspaceId } = await params;
+  return <OutlineClient workspaceId={workspaceId} />;
+}
