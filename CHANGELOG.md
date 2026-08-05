@@ -4,10 +4,17 @@ All notable changes to this project are documented here. Format follows [Keep a 
 
 ## [Unreleased]
 
-Still stubbed (see the `TODO` comment at the top of each file): PDF ingestion (`scripts/parse.py`, `scripts/ocr_fallback.py`, `app/api/ingest`), the LLM generator fan-out (`lib/agents/*`), the MCP server (`mcp/*`), and most `app/api/*` routes beyond `verify`/`audit`/`graph`. None of these have a live Supabase or Anthropic project behind them yet.
+Still stubbed (see the `TODO` comment at the top of each file): PDF ingestion (`scripts/parse.py`, `scripts/ocr_fallback.py`, `app/api/ingest`), the LLM generator fan-out (`lib/agents/*`), the MCP server (`mcp/*`), graph-mutation endpoints (`app/api/nodes/*`, `/api/compare`), and chat/export/auth. None of these have a live Supabase or Anthropic project behind them yet.
 
 ### Added
 
+- `lib/services/related.ts`: real Semantic Scholar Recommendations API client (free, no key) for the Related Papers rail. Resolves a paper by title search, then fetches recommendations; returns a typed `status` (`ok`/`no_match`/`rate_limited`/`error`) rather than throwing, so a miss or an outage renders an honest empty state instead of silently failing or faking a result.
+- `lib/services/citationExpand.ts`: real OpenAlex API client (free, no key) for citation-graph expansion. Resolves a paper by title search, then walks one hop via `referenced_works` (`cites`) or the `cites:` filter (`cited_by`); same typed-status contract as `related.ts`.
+- `lib/services/externalFetch.ts`: shared fetch helper for both (timeout, typed error, rate-limit classification) so neither service duplicates that plumbing.
+- `GET /api/related` and `GET /api/expand` are now real (previously `501`s); `POST /api/expand` stays `501` since ingesting a selected ghost node needs the (still-stub) ingest pipeline.
+- `RelatedPapersRail` fetches live data client-side and renders `no_match`/`rate_limited`/`error` states distinctly instead of the static illustrative cards it previously always showed.
+- `GraphCanvas` fetches citation expansion for every paper node (both directions) after the base graph loads and renders results as `GhostCitationNode`s at the canvas edge, wired to the real endpoint; "Add to workspace" now calls the real `POST /api/expand` and surfaces its `501` honestly instead of only logging to the console.
+- Vitest coverage for all three new service files, including a live-observed edge case (see Fixed).
 - Vitest suite over the grounding spine (`npm test`), wired into CI. The 0.1.0 notes below described the spine as "tested" when no test runner existed; this is that claim made true.
 - Repository scaffolding: GitHub issue and PR templates, Dependabot, and a CI workflow running typecheck, lint, test, and build on every push and PR.
 - `eslint.config.mjs`. ESLint 9 requires flat config, so `npm run lint` had never been capable of running despite CONTRIBUTING listing it as a merge gate.
@@ -16,6 +23,7 @@ Still stubbed (see the `TODO` comment at the top of each file): PDF ingestion (`
 
 ### Fixed
 
+- `classifyExternalError` only treated HTTP 429 as rate-limited. OpenAlex's anonymous-search tier returns a plain `503` with `Retry-After` when its search cluster is overloaded rather than quota-limiting a specific caller -- observed directly against the live API while building `citationExpand.ts`. Both now classify as `rate_limited`, so the UI gives the same "try again shortly" message either way instead of a generic error.
 - A claim asserting a bound (`p < 0.05`) against a source reporting a value inside it (`p = 0.003`) was demoted to `unsupported`. `numericTokenMatchesRow` compared values for equality and ignored the comparator it had already parsed, so exact quotes failed the entailment floor on the phrasing most common in the target corpus.
 - Citation ids were assigned from array position, so ingesting a paper renumbered every `C{n}` and silently re-pointed already-written `evidence` rows at different text. They now come from a persisted `ordinal` assigned once at ingest.
 - The reverse audit scored every (sentence, chunk) pair with a full Levenshtein pass over whole chunk texts. Imperceptible against the 18KB fixture, minutes against a real corpus. Now pruned with an admissible length-ratio bound, which returns the same best chunk: a 10-sentence audit over 300 realistic chunks went from ~10.3s to ~0.5s.

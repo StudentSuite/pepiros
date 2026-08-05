@@ -30,15 +30,17 @@ export interface PepirosEdgeData extends Record<string, unknown> {
 export type PepirosEdge = Edge<PepirosEdgeData, string>;
 
 /** Ghost citation nodes (plan.md §6.2) aren't GraphNodes -- they represent a paper
- *  found via OpenAlex expansion that isn't in the workspace yet, so they carry a
- *  loose shape instead of a real node id/anchor. */
+ *  found via OpenAlex expansion (lib/services/citationExpand.ts) that isn't in the
+ *  workspace yet, so they carry a loose shape instead of a real node id/anchor. */
 export interface GhostCitationData extends Record<string, unknown> {
   title: string;
   authors: string[];
   year: number | null;
-  /** "cites" = this ghost paper cites something in the workspace; "cited_by" = the
-   *  reverse direction. Purely cosmetic label this pass, no OpenAlex call wired up. */
+  /** "cites" = this ghost paper cites the workspace paper it's attached to;
+   *  "cited_by" = the reverse direction. Drives both the edge direction and the label. */
   direction: "cites" | "cited_by";
+  openalexId: string;
+  url: string;
 }
 
 export type GhostCitationNodeType = Node<GhostCitationData, "ghostCitation">;

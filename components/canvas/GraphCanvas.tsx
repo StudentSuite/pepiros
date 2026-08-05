@@ -13,6 +13,7 @@ import "@xyflow/react/dist/style.css";
 
 import { useWorkspaceStore } from "@/lib/store/workspace";
 import type { GraphNode, Workspace } from "@/types/anchor";
+import type { CitationExpansionResult, CitationDirection } from "@/lib/services/citationExpand";
 import { PaperNode } from "./PaperNode";
 import { PillarNode } from "./PillarNode";
 import { LeafNode } from "./LeafNode";
@@ -21,7 +22,9 @@ import { SynthesisNode } from "./SynthesisNode";
 import { GhostCitationNode } from "./GhostCitationNode";
 import { GraphEdge } from "./GraphEdge";
 import { Controls } from "./Controls";
-import type { PepirosNode, PepirosEdge } from "./types";
+import type { PepirosNode, PepirosEdge, GhostCitationNodeType } from "./types";
+
+type AnyPepirosNode = PepirosNode | GhostCitationNodeType;
 
 const NODE_TYPES = {
   paperNode: PaperNode,
@@ -29,11 +32,76 @@ const NODE_TYPES = {
   leafNode: LeafNode,
   threadNode: ThreadNode,
   synthesisNode: SynthesisNode,
-  // Registered but not spawned from workspace data this pass -- no OpenAlex citation
-  // expansion is wired up yet (plan.md §6.2). The component exists so wiring it up
-  // later is additive, not a rewrite.
   ghostCitation: GhostCitationNode,
 } as const;
+
+const GHOST_DIRECTIONS: CitationDirection[] = ["cites", "cited_by"];
+const GHOST_X_OFFSET = 260;
+const GHOST_Y_STEP = 110;
+const GHOST_Y_START = 160;
+
+/**
+ * One fetch per (paper, direction) against GET /api/expand (lib/services/citationExpand.ts
+ * -> OpenAlex). Runs after the workspace loads and only ever appends to node/edge state --
+ * see the calling effect for why that's safe without a ghost-specific state slice.
+ */
+async function fetchGhostsForPaper(
+  workspaceId: string,
+  paperNode: GraphNode,
+): Promise<{ nodes: GhostCitationNodeType[]; edges: PepirosEdge[] }> {
+  if (!paperNode.paperId) return { nodes: [], edges: [] };
+
+  const results = await Promise.all(
+    GHOST_DIRECTIONS.map(async (direction) => {
+      const res = await fetch(
+        `/api/expand?workspaceId=${encodeURIComponent(workspaceId)}&paperId=${encodeURIComponent(paperNode.paperId!)}&direction=${direction}`,
+      );
+      const result = (await res.json()) as CitationExpansionResult;
+      return { direction, result };
+    }),
+  );
+
+  const nodes: GhostCitationNodeType[] = [];
+  const edges: PepirosEdge[] = [];
+
+  for (const { direction, result } of results) {
+    if (result.status !== "ok") continue;
+    // "cites" nodes read as upstream influence (placed left/above); "cited_by" as
+    // downstream reach (placed right/above) -- both sit above the paper cluster,
+    // at the canvas edge, per plan.md §6.2.
+    const xOffset = direction === "cites" ? -GHOST_X_OFFSET : GHOST_X_OFFSET;
+
+    result.candidates.forEach((candidate, i) => {
+      const ghostId = `ghost-${candidate.openalexId}`;
+      nodes.push({
+        id: ghostId,
+        type: "ghostCitation",
+        position: { x: paperNode.x + xOffset, y: paperNode.y - GHOST_Y_START - i * GHOST_Y_STEP },
+        data: {
+          title: candidate.title,
+          authors: candidate.authors,
+          year: candidate.year,
+          direction,
+          openalexId: candidate.openalexId,
+          url: candidate.url,
+        },
+      });
+      edges.push({
+        id: `${ghostId}-edge`,
+        type: "graphEdge",
+        source: direction === "cites" ? ghostId : paperNode.id,
+        target: direction === "cites" ? paperNode.id : ghostId,
+        data: {
+          edge: { id: `${ghostId}-edge`, workspaceId, kind: "cites", sourceId: "", targetId: "" },
+          sourcePillarIndex: null,
+          targetPillarIndex: null,
+        },
+      });
+    });
+  }
+
+  return { nodes, edges };
+}
 
 const EDGE_TYPES = { graphEdge: GraphEdge } as const;
 
@@ -102,7 +170,7 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
   const loadWorkspace = useWorkspaceStore((s) => s.loadWorkspace);
   const selectNode = useWorkspaceStore((s) => s.selectNode);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState<PepirosNode>([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<AnyPepirosNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<PepirosEdge>([]);
 
   useEffect(() => {
@@ -114,6 +182,31 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
     setNodes(buildNodes(workspace));
     setEdges(buildEdges(workspace));
   }, [workspace, setNodes, setEdges]);
+
+  // Ghost citation expansion (plan.md §6.2): fires once per paper after the base
+  // graph is in place and only appends -- the effect above never re-triggers once
+  // `workspace` has loaded, so it won't clobber these. Errors per-paper are
+  // swallowed (Promise.all inside fetchGhostsForPaper already reduces failures to
+  // status: "error"/"rate_limited", which just yields no candidates for that paper).
+  useEffect(() => {
+    if (!workspace) return;
+    let cancelled = false;
+    const paperNodes = workspace.nodes.filter((n) => n.type === "paper");
+
+    void Promise.all(paperNodes.map((paperNode) => fetchGhostsForPaper(workspaceId, paperNode))).then(
+      (results) => {
+        if (cancelled) return;
+        const newNodes = results.flatMap((r) => r.nodes);
+        const newEdges = results.flatMap((r) => r.edges);
+        if (newNodes.length) setNodes((prev) => [...prev, ...newNodes]);
+        if (newEdges.length) setEdges((prev) => [...prev, ...newEdges]);
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [workspace, workspaceId, setNodes, setEdges]);
 
   const handleNodeClick = useCallback(
     (_event: React.MouseEvent, node: FlowNode) => {

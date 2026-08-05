@@ -1,67 +1,88 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { Panel } from "@/components/ui/Panel";
+import type { RelatedPaper, RelatedPapersResult } from "@/lib/services/related";
 
-interface PlaceholderRelatedPaper {
-  title: string;
-  tldr: string;
-  citationCount: number;
-  url: string;
-}
+type State =
+  | { phase: "loading" }
+  | { phase: "done"; result: RelatedPapersResult };
 
-// Illustrative only -- lib/services/related.ts (Semantic Scholar fetch, plan.md
-// §6.1) is still a stub, so these are static placeholder cards, not live data.
-const PLACEHOLDER_RELATED: PlaceholderRelatedPaper[] = [
-  {
-    title: "Light Therapy for Circadian Realignment in Night-Shift Nurses",
-    tldr: "A smaller RCT replicating a bright-light protocol in a different shift-worker population, similar effect direction.",
-    citationCount: 42,
-    url: "https://www.semanticscholar.org/",
-  },
-  {
-    title: "Sleep Restriction and Working Memory: A Systematic Review",
-    tldr: "Reviews 26 studies on acute sleep restriction and working memory; finds effects concentrated in chronic rather than single-night deprivation.",
-    citationCount: 118,
-    url: "https://www.semanticscholar.org/",
-  },
-  {
-    title: "Actigraphy vs. Polysomnography in Occupational Cohorts",
-    tldr: "Methods comparison relevant to how sleep duration was measured in the observational cohort study in this workspace.",
-    citationCount: 27,
-    url: "https://www.semanticscholar.org/",
-  },
-];
+const STATUS_COPY: Record<Exclude<RelatedPapersResult["status"], "ok">, string> = {
+  no_match: "No related papers found via Semantic Scholar for this source.",
+  rate_limited: "Related papers are rate-limited right now -- try again shortly.",
+  error: "Related papers are unavailable right now.",
+};
 
 /**
- * Right-rail on the default doc-reader view. No Semantic Scholar integration
- * exists yet (lib/services/related.ts is a stub) -- these are static
- * placeholder cards standing in for what a live fetch would populate in
- * <1s, no LLM involved (plan.md §1's pacing).
+ * Right-rail on the default doc-reader view. Fetches GET /api/related, which
+ * calls the real Semantic Scholar Recommendations API (lib/services/related.ts)
+ * -- no fabricated fallback data. The bundled fixture's papers are fictional,
+ * so expect `no_match` there; a real ingested paper is what populates this
+ * for real, in <1s, no LLM (plan.md §1's pacing).
  */
-export function RelatedPapersRail() {
+export function RelatedPapersRail({ workspaceId, paperId }: { workspaceId: string; paperId: string | undefined }) {
+  const [state, setState] = useState<State>({ phase: "loading" });
+
+  useEffect(() => {
+    if (!paperId) return;
+    let cancelled = false;
+    setState({ phase: "loading" });
+
+    fetch(`/api/related?workspaceId=${encodeURIComponent(workspaceId)}&paperId=${encodeURIComponent(paperId)}`)
+      .then((res) => res.json())
+      .then((result: RelatedPapersResult) => {
+        if (!cancelled) setState({ phase: "done", result });
+      })
+      .catch(() => {
+        if (!cancelled) setState({ phase: "done", result: { papers: [], status: "error" } });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [workspaceId, paperId]);
+
   return (
     <div className="flex flex-col gap-2">
       <h3 className="font-sans text-[11px] uppercase tracking-wide text-ink-faint">
         Related papers
       </h3>
-      <ul className="flex flex-col gap-2">
-        {PLACEHOLDER_RELATED.map((paper) => (
-          <li key={paper.title}>
-            <Panel className="p-3">
-              <a
-                href={paper.url}
-                target="_blank"
-                rel="noreferrer"
-                className="font-serif text-sm text-ink hover:underline"
-              >
-                {paper.title}
-              </a>
-              <p className="mt-1 font-sans text-xs text-ink-muted">{paper.tldr}</p>
-              <p className="mt-1.5 font-mono text-[10px] text-ink-faint">
-                {paper.citationCount} citations (illustrative)
-              </p>
-            </Panel>
-          </li>
-        ))}
-      </ul>
+
+      {state.phase === "loading" && (
+        <p className="font-sans text-xs text-ink-faint">Searching Semantic Scholar...</p>
+      )}
+
+      {state.phase === "done" && state.result.status !== "ok" && (
+        <p className="font-sans text-xs text-ink-faint">{STATUS_COPY[state.result.status]}</p>
+      )}
+
+      {state.phase === "done" && state.result.status === "ok" && (
+        <ul className="flex flex-col gap-2">
+          {state.result.papers.map((paper) => (
+            <RelatedPaperCard key={paper.url} paper={paper} />
+          ))}
+        </ul>
+      )}
     </div>
+  );
+}
+
+function RelatedPaperCard({ paper }: { paper: RelatedPaper }) {
+  return (
+    <li>
+      <Panel className="p-3">
+        <a
+          href={paper.url}
+          target="_blank"
+          rel="noreferrer"
+          className="font-serif text-sm text-ink hover:underline"
+        >
+          {paper.title}
+        </a>
+        {paper.tldr && <p className="mt-1 font-sans text-xs text-ink-muted">{paper.tldr}</p>}
+        <p className="mt-1.5 font-mono text-[10px] text-ink-faint">{paper.citationCount} citations</p>
+      </Panel>
+    </li>
   );
 }

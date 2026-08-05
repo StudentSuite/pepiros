@@ -183,7 +183,7 @@ export function ReaderClient({ workspaceId }: { workspaceId: string }) {
         </main>
 
         <aside className="flex flex-col gap-4">
-          <RelatedPapersRail />
+          <RelatedPapersRail workspaceId={workspaceId} paperId={activePaper?.id} />
           <NumericChart />
         </aside>
       </div>
