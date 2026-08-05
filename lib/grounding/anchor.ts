@@ -13,11 +13,17 @@ import type { Anchor, Chunk, Numeric } from "@/types/anchor";
 export type RefIndex = Map<string, { chunk: Chunk; numeric?: Numeric; chunkNumerics: Numeric[] }>;
 
 /**
- * Assigns the stable per-context ids a model is shown -- "C{n}" for prose
- * chunks, "N{n}" for numerics -- in source order, and indexes them for O(1)
- * resolution. Figures ("F{n}") are not built here yet; the `figures` table
- * exists in lib/db/schema.ts but nothing produces figure chunks in this
- * pass.
+ * Indexes the stable per-context ids a model is shown -- "C{n}" for prose
+ * chunks, "N{n}" for numerics -- for O(1) resolution. Figures ("F{n}") are not
+ * built here yet; the `figures` table exists in lib/db/schema.ts but nothing
+ * produces figure chunks in this pass.
+ *
+ * The n comes from the persisted `ordinal` column, never from position in the
+ * array passed in. plan.md §2 chose stable citation ids over embeddings, and
+ * position is not stable: `evidence` rows store the rendered ref, so adding a
+ * paper or reordering a query result would silently re-point every existing
+ * citation at different text. An ordinal is assigned once at ingest and never
+ * reused.
  *
  * Every entry carries `chunkNumerics` -- ALL numerics belonging to the
  * resolved chunk, not just the one row a specific N-ref points at -- because
@@ -34,19 +40,22 @@ export function buildRefIndex(chunks: Chunk[], numerics: Numeric[]): RefIndex {
     numericsByChunkId.set(numeric.chunkId, existing);
   }
 
-  chunks.forEach((chunk, i) => {
-    index.set(`C${i + 1}`, { chunk, chunkNumerics: numericsByChunkId.get(chunk.id) ?? [] });
-  });
+  for (const chunk of chunks) {
+    index.set(`C${chunk.ordinal}`, {
+      chunk,
+      chunkNumerics: numericsByChunkId.get(chunk.id) ?? [],
+    });
+  }
 
-  numerics.forEach((numeric, i) => {
+  for (const numeric of numerics) {
     const chunk = chunkById.get(numeric.chunkId);
-    if (!chunk) return; // hallucinated_ref-shaped data, not our problem to fix here
-    index.set(`N${i + 1}`, {
+    if (!chunk) continue; // hallucinated_ref-shaped data, not our problem to fix here
+    index.set(`N${numeric.ordinal}`, {
       chunk,
       numeric,
       chunkNumerics: numericsByChunkId.get(chunk.id) ?? [],
     });
-  });
+  }
 
   return index;
 }

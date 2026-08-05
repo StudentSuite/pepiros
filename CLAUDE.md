@@ -18,11 +18,13 @@ npm run seed                # scripts/seed.ts -- still a stub
 npm run mcp:stdio           # mcp/stdio.ts -- still a stub
 ```
 
-There is no test runner configured yet (`evals/` is reserved for golden-paper generator evals per plan.md §9, not unit tests). `npm run typecheck` is the correctness bar for now — run it after every change.
+`npm test` is Vitest over `lib/**/*.test.ts`, currently covering the grounding spine. It is a different thing from `evals/`, which is reserved for golden-paper generator evals per plan.md §9 and is still a stub. `npm run typecheck` plus `npm test` is the correctness bar — run both after every change to `lib/`.
 
 ## Current data seam
 
-**No live Supabase or Anthropic project is provisioned.** Everything in `components/*` and `app/(app)/*` reads through `lib/store/workspace.ts`'s `fetchWorkspace()`, which always resolves `fixtures/workspace.json` regardless of the workspace id passed in. That function is the *only* place a real backend read would replace the fixture — don't thread a second data path through components directly.
+**No live Supabase or Anthropic project is provisioned.** Everything reads through `lib/services/workspace.ts`'s `fetchWorkspace()`, which always resolves `fixtures/workspace.json` regardless of the workspace id passed in. That function is the *only* place a real backend read would replace the fixture — don't thread a second data path through components directly.
+
+It lives under `lib/services/` rather than `lib/store/` because server routes must not import the client zustand module to reach it. `lib/store/workspace.ts` re-exports it for client consumers and owns `useWorkspaceStore`; server code imports `lib/services/workspace.ts` directly.
 
 `fixtures/workspace.json` and `types/anchor.ts` are a frozen contract (plan.md §8): both sides of the two-person split code against this shape, not against each other. If you change either, both `lib/*` and `components/*` consumers need to stay in sync — check `grep -rl "types/anchor"` and `grep -rl "workspace.json"` before editing either file.
 

@@ -6,6 +6,23 @@ All notable changes to this project are documented here. Format follows [Keep a 
 
 Still stubbed (see the `TODO` comment at the top of each file): PDF ingestion (`scripts/parse.py`, `scripts/ocr_fallback.py`, `app/api/ingest`), the LLM generator fan-out (`lib/agents/*`), the MCP server (`mcp/*`), and most `app/api/*` routes beyond `verify`/`audit`/`graph`. None of these have a live Supabase or Anthropic project behind them yet.
 
+### Added
+
+- Vitest suite over the grounding spine (`npm test`), wired into CI. The 0.1.0 notes below described the spine as "tested" when no test runner existed; this is that claim made true.
+- Repository scaffolding: GitHub issue and PR templates, Dependabot, and a CI workflow running typecheck, lint, test, and build on every push and PR.
+- `eslint.config.mjs`. ESLint 9 requires flat config, so `npm run lint` had never been capable of running despite CONTRIBUTING listing it as a merge gate.
+- `docs/PLAN-V1.md`, vendored in. Roughly thirty `TODO` comments cite it for the detail they need and it was not reachable from a clone.
+- `chunks.ordinal` and `numerics.ordinal`, plus `.editorconfig`, `.nvmrc`, and an `engines` field.
+
+### Fixed
+
+- A claim asserting a bound (`p < 0.05`) against a source reporting a value inside it (`p = 0.003`) was demoted to `unsupported`. `numericTokenMatchesRow` compared values for equality and ignored the comparator it had already parsed, so exact quotes failed the entailment floor on the phrasing most common in the target corpus.
+- Citation ids were assigned from array position, so ingesting a paper renumbered every `C{n}` and silently re-pointed already-written `evidence` rows at different text. They now come from a persisted `ordinal` assigned once at ingest.
+- The reverse audit scored every (sentence, chunk) pair with a full Levenshtein pass over whole chunk texts. Imperceptible against the 18KB fixture, minutes against a real corpus. Now pruned with an admissible length-ratio bound, which returns the same best chunk: a 10-sentence audit over 300 realistic chunks went from ~10.3s to ~0.5s.
+- `app/api/audit` reached into `lib/grounding/*` directly, breaking the service-layer boundary CLAUDE.md defines. Added `lib/services/audit.ts`.
+- Server routes imported `fetchWorkspace` from the client zustand store, pulling a client-state container and the whole fixture into the server bundle. The read moved to `lib/services/workspace.ts`; `lib/store/workspace.ts` re-exports it for client consumers.
+- `PaperArchetype` in the frozen `types/anchor.ts` contract listed six archetypes; `lib/agents/archetypeClassifier.ts` specified a different nine. Reconciled on the classifier's set, and the fixture's papers remapped (`meta_analysis` to `systematic_review`, `observational` to `cohort_study`).
+
 ## [0.1.0] - 2026-08-05
 
 ### Added

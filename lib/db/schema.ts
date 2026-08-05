@@ -16,15 +16,31 @@ import {
   pgEnum,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
+import type { PaperArchetype } from "@/types/anchor";
 
+/**
+ * Must stay identical to PaperArchetype in types/anchor.ts. These two silently
+ * drifted apart once already, so the guard below fails `npm run typecheck`
+ * rather than letting a classifier output become unassignable at runtime.
+ */
 export const paperArchetype = pgEnum("paper_archetype", [
   "rct",
-  "observational",
-  "meta_analysis",
-  "review",
-  "methods",
-  "theory",
+  "cohort_study",
+  "systematic_review",
+  "method_paper",
+  "ml_model",
+  "case_report",
+  "bioinformatics_pipeline",
+  "preprint_theory",
+  "dataset_paper",
 ]);
+
+type AssertEqual<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never;
+const _archetypeEnumMatchesContract: AssertEqual<
+  (typeof paperArchetype.enumValues)[number],
+  PaperArchetype
+> = true;
+void _archetypeEnumMatchesContract;
 
 export const chunkKind = pgEnum("chunk_kind", [
   "prose",
@@ -107,6 +123,14 @@ export const chunks = pgTable("chunks", {
   kind: chunkKind("kind").notNull().default("prose"),
   page: integer("page").notNull(),
   text: text("text").notNull(),
+  /**
+   * The n in the "C{n}" citation id a model is shown (plan.md §2 keeps stable
+   * citation ids precisely so there is no embedding layer). Assigned once at
+   * ingest, unique within the workspace, and never reused or renumbered:
+   * evidence rows store the rendered ref, so renumbering would silently
+   * re-point already-written citations at different text.
+   */
+  ordinal: integer("ordinal").notNull(),
   /** AnchorRect[] (types/anchor.ts) -- the chunk's search window for anchoring. */
   rects: jsonb("rects").$type<Array<{ page: number; x0: number; y0: number; x1: number; y1: number }>>().notNull(),
 });
@@ -131,6 +155,8 @@ export const numerics = pgTable("numerics", {
   unit: text("unit"),
   comparator: text("comparator"),
   role: text("role").notNull(),
+  /** The n in "N{n}". Same stability contract as chunks.ordinal. */
+  ordinal: integer("ordinal").notNull(),
 });
 
 export const references_ = pgTable("references_", {

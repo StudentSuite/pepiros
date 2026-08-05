@@ -52,6 +52,13 @@ export interface Chunk {
   kind: ChunkKind;
   page: number;
   text: string;
+  /**
+   * The n in the "C{n}" id a model is shown. Persisted at ingest and unique
+   * within the workspace, never derived from array position: evidence rows
+   * store the rendered ref, so renumbering would silently re-point already
+   * written citations at different text.
+   */
+  ordinal: number;
   /** Bounding rects for the whole chunk, used as the anchor search window. */
   rects: AnchorRect[];
 }
@@ -65,6 +72,8 @@ export interface Numeric {
   value: number;
   unit: string | null;
   comparator: NumericComparator | null;
+  /** The n in "N{n}". Same stability contract as Chunk.ordinal. */
+  ordinal: number;
   /** e.g. "p", "ci_low", "ci_high", "effect_size", "n" */
   role: string;
 }
@@ -103,13 +112,22 @@ export interface GraphEdge {
   targetId: string;
 }
 
+/**
+ * Closed set, and the same closed set lib/agents/archetypeClassifier.ts
+ * classifies into. These two drifted apart while the classifier was a stub;
+ * this list is the reconciled one, so a classifier output is assignable here
+ * without a mapping layer.
+ */
 export type PaperArchetype =
   | "rct"
-  | "observational"
-  | "meta_analysis"
-  | "review"
-  | "methods"
-  | "theory";
+  | "cohort_study"
+  | "systematic_review"
+  | "method_paper"
+  | "ml_model"
+  | "case_report"
+  | "bioinformatics_pipeline"
+  | "preprint_theory"
+  | "dataset_paper";
 
 export interface Paper {
   id: string;

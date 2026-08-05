@@ -10,11 +10,11 @@ Upload a paper (or paste an arXiv/PMC/DOI link) and Pepiros extracts its structu
 
 This is an early, actively-changing hackathon build (target ship date: Aug 17, 2026 — see `plan.md` §9 for the schedule). What's real today:
 
-- **The grounding spine** (`lib/grounding/*`) — deterministic fuzzy-match quote verification + numeric entailment floor, no LLM judge. Fully implemented and tested against `fixtures/workspace.json`.
+- **The grounding spine** (`lib/grounding/*`) — deterministic fuzzy-match quote verification + numeric entailment floor, no LLM judge. Implemented, and covered by a `vitest` suite (`npm test`) that runs against both synthetic corpora and `fixtures/workspace.json`.
 - **The full UI** (`components/*`, `app/(app)/*`) — canvas, doc-reader, outline, audit, and learn views, all wired against the same fixture (no live database yet).
 - **`/api/verify`, `/api/audit`, `/api/graph`** — real, working routes over the grounding spine.
 
-What's still a stub (see the `TODO` comment at the top of each file): PDF ingestion (`scripts/parse.py`, `app/api/ingest`), the LLM generator fan-out (`lib/agents/*`), the MCP server (`mcp/*`), and most other `app/api/*` routes. None of these have a live Supabase or Anthropic project behind them yet — `lib/store/workspace.ts`'s `fetchWorkspace()` is the single seam where a real backend replaces the fixture.
+What's still a stub (see the `TODO` comment at the top of each file): PDF ingestion (`scripts/parse.py`, `app/api/ingest`), the LLM generator fan-out (`lib/agents/*`), the MCP server (`mcp/*`), and most other `app/api/*` routes. None of these have a live Supabase or Anthropic project behind them yet — `lib/services/workspace.ts`'s `fetchWorkspace()` is the single seam where a real backend replaces the fixture.
 
 ## Quick start
 
@@ -49,6 +49,8 @@ See [`.env.example`](.env.example) for the full list. Nothing is required to run
 | `npm run build` / `npm start` | Production build / serve |
 | `npm run typecheck` | `tsc --noEmit` across the whole repo |
 | `npm run lint` | ESLint |
+| `npm test` | Vitest, unit suite over `lib/grounding/*` |
+| `npm run test:watch` | Vitest in watch mode |
 | `npm run db:generate` / `db:migrate` / `db:studio` | Drizzle Kit against `DATABASE_URL` |
 | `npm run seed` | Runs `scripts/seed.ts` (still a stub) |
 | `npm run mcp:stdio` | Runs the MCP server over stdio (still a stub) |

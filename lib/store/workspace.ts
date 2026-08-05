@@ -1,18 +1,14 @@
 import { create } from "zustand";
 import type { Workspace } from "@/types/anchor";
-import workspaceFixture from "@/fixtures/workspace.json";
+import { fetchWorkspace } from "@/lib/services/workspace";
 
 /**
- * Single data-access seam for components/ and app/(app)/ pages this pass:
- * everything reads from the frozen fixture (plan.md §8), nothing calls
- * app/api/* or Supabase yet. `fetchWorkspace` is deliberately shaped like
- * the eventual real fetch (`Promise<Workspace>`) so swapping in a real
- * `GET /api/graph/[workspaceId]` call later is a one-function change, not a
- * rewrite of every consumer.
+ * Client-side store for components/ and app/(app)/ pages. The read itself
+ * lives in lib/services/workspace.ts so that server routes can reach it
+ * without importing this zustand module; this file only re-exports it for
+ * client consumers that already import from here.
  */
-export async function fetchWorkspace(_workspaceId: string): Promise<Workspace> {
-  return workspaceFixture as unknown as Workspace;
-}
+export { fetchWorkspace };
 
 interface WorkspaceState {
   workspace: Workspace | null;

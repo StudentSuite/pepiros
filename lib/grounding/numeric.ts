@@ -63,11 +63,42 @@ export function extractNumericTokens(text: string): NumericToken[] {
 }
 
 const VALUE_EPSILON = 1e-6;
+/** "p ~ 0.05" and friends: relative band around the claimed value. */
+const APPROX_TOLERANCE = 0.1;
 
+function unitsCompatible(token: NumericToken, row: Numeric): boolean {
+  if (!token.unit || !row.unit) return true;
+  return token.unit.toLowerCase() === row.unit.toLowerCase();
+}
+
+/**
+ * A claim may assert a bound rather than a value. "p < 0.05" is satisfied by a
+ * numerics row of 0.003, so comparing values for equality would demote an
+ * otherwise exact quote to `unsupported` -- and bounded phrasing is the norm in
+ * the biomedical corpus this runs on. The comparator was already being parsed
+ * out in extractNumericTokens; this is where it earns its keep.
+ *
+ * Direction is claim-relative: the token is what the claim asserts, the row is
+ * what the source actually reports, so `<` asks "is the reported value inside
+ * the bound the claim drew?".
+ */
 export function numericTokenMatchesRow(token: NumericToken, row: Numeric): boolean {
-  if (Math.abs(token.value - row.value) > VALUE_EPSILON) return false;
-  if (token.unit && row.unit && token.unit.toLowerCase() !== row.unit.toLowerCase()) {
-    return false;
+  if (!unitsCompatible(token, row)) return false;
+
+  switch (token.comparator) {
+    case "<":
+      return row.value < token.value + VALUE_EPSILON;
+    case "<=":
+      return row.value <= token.value + VALUE_EPSILON;
+    case ">":
+      return row.value > token.value - VALUE_EPSILON;
+    case ">=":
+      return row.value >= token.value - VALUE_EPSILON;
+    case "~":
+      return Math.abs(token.value - row.value) <= Math.abs(token.value) * APPROX_TOLERANCE;
+    case "=":
+    case null:
+    case undefined:
+      return Math.abs(token.value - row.value) <= VALUE_EPSILON;
   }
-  return true;
 }

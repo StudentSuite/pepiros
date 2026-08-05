@@ -2,8 +2,7 @@
 // lib/grounding/verify.ts's thresholds via lib/grounding/reverseAudit.ts.
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { fetchWorkspace } from "@/lib/store/workspace";
-import { auditText } from "@/lib/grounding/reverseAudit";
+import { auditTextAgainstWorkspace } from "@/lib/services/audit";
 
 const bodySchema = z.object({
   workspaceId: z.string(),
@@ -17,12 +16,5 @@ export async function POST(request: Request) {
   }
 
   const { workspaceId, text } = parsed.data;
-  const workspace = await fetchWorkspace(workspaceId);
-  const sentences = auditText(text, workspace.chunks, workspace.numerics);
-
-  const dropRate = sentences.length
-    ? sentences.filter((s) => s.tier === "unsupported").length / sentences.length
-    : 0;
-
-  return NextResponse.json({ sentences, dropRate });
+  return NextResponse.json(await auditTextAgainstWorkspace(workspaceId, text));
 }

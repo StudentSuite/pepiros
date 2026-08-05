@@ -12,17 +12,18 @@ cp .env.example .env   # only needed if you have a Supabase/Anthropic project; t
 npm run dev
 ```
 
-Node 20+. There's no live database or model provider wired up by default — see [`CLAUDE.md`](CLAUDE.md)'s "current data seam" section for how `lib/store/workspace.ts`'s `fetchWorkspace()` is the one place that changes when a real backend exists.
+Node 20+. There's no live database or model provider wired up by default — see [`CLAUDE.md`](CLAUDE.md)'s "current data seam" section for how `lib/services/workspace.ts`'s `fetchWorkspace()` is the one place that changes when a real backend exists.
 
 ## Before opening a PR
 
 ```bash
 npm run typecheck
 npm run lint
+npm test
 npm run build
 ```
 
-All three should pass. There's no unit test suite yet (`evals/` is reserved for generator eval cases, not unit tests, per plan.md §9) — typecheck + a working `npm run dev` smoke test of whatever you touched is the current bar.
+All four should pass, and CI runs exactly these. `npm test` is Vitest over `lib/**/*.test.ts` and currently covers the grounding spine; it is not the same thing as `evals/`, which is reserved for golden-paper generator eval cases per plan.md §9 and is still a stub. Anything touching `lib/grounding/*` should arrive with a test, since that code is the product. For UI changes, add an `npm run dev` smoke test of whatever you touched.
 
 ## Code conventions
 

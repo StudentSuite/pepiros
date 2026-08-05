@@ -45,8 +45,85 @@ function levenshteinRatio(a: string, b: string): number {
   return 1 - levenshtein(a, b) / maxLen;
 }
 
-function tokenize(text: string): string[] {
+export function tokenize(text: string): string[] {
   return normalize(text).split(" ").filter(Boolean);
+}
+
+/**
+ * A text with its token set already computed. Scoring one sentence against a
+ * whole corpus (lib/grounding/reverseAudit.ts) re-reads the same chunk text
+ * once per sentence, so the tokenization is hoisted out of the inner loop.
+ */
+export interface PreparedText {
+  tokens: Set<string>;
+}
+
+export function prepare(text: string): PreparedText {
+  return { tokens: new Set(tokenize(text)) };
+}
+
+interface Partition {
+  coreLen: number;
+  combinedALen: number;
+  combinedBLen: number;
+  core: string;
+  combinedA: string;
+  combinedB: string;
+}
+
+function partition(a: PreparedText, b: PreparedText): Partition {
+  const intersection: string[] = [];
+  const diffA: string[] = [];
+  for (const token of a.tokens) {
+    (b.tokens.has(token) ? intersection : diffA).push(token);
+  }
+  const diffB: string[] = [];
+  for (const token of b.tokens) {
+    if (!a.tokens.has(token)) diffB.push(token);
+  }
+
+  intersection.sort();
+  diffA.sort();
+  diffB.sort();
+
+  const core = intersection.join(" ");
+  const combinedA = [...intersection, ...diffA].join(" ");
+  const combinedB = [...intersection, ...diffB].join(" ");
+
+  return {
+    core,
+    combinedA,
+    combinedB,
+    coreLen: core.length,
+    combinedALen: combinedA.length,
+    combinedBLen: combinedB.length,
+  };
+}
+
+/** min/max length ratio, which is what levenshteinRatio can never exceed. */
+function lengthCeiling(x: number, y: number): number {
+  const max = Math.max(x, y);
+  if (max === 0) return 1;
+  return Math.min(x, y) / max;
+}
+
+/**
+ * Admissible upper bound on tokenSetRatioPrepared, computed from token-set
+ * sizes alone with no Levenshtein pass.
+ *
+ * Sound because edit distance between two strings is at least their length
+ * difference, so levenshteinRatio(x, y) <= min(|x|,|y|) / max(|x|,|y|). A
+ * corpus sweep can therefore skip the O(n*m) scoring of any candidate whose
+ * bound already falls below the best score found so far, and still return the
+ * exact same argmax as scoring every candidate would have.
+ */
+export function tokenSetRatioUpperBound(a: PreparedText, b: PreparedText): number {
+  const p = partition(a, b);
+  return Math.max(
+    lengthCeiling(p.coreLen, p.combinedALen),
+    lengthCeiling(p.coreLen, p.combinedBLen),
+    lengthCeiling(p.combinedALen, p.combinedBLen),
+  );
 }
 
 /**
@@ -54,23 +131,41 @@ function tokenize(text: string): string[] {
  * the chunk (or the chunk containing extra surrounding prose) since it
  * compares the shared-token core against each side's leftover tokens,
  * independent of token order.
+ *
+ * Returns the exact ratio whenever it can exceed `floor`, and otherwise a
+ * value that is <= floor and therefore cannot win a max. Passing the best
+ * score found so far as the floor lets a corpus sweep skip work without
+ * changing which chunk it picks.
+ *
+ * The two candidates involving `combinedB` are the expensive ones, since a
+ * chunk is 500-800 tokens against a sentence's few dozen. They are also the
+ * two whose length ceilings collapse in exactly that case, so per-candidate
+ * pruning removes most of the cost of a realistic sweep rather than only the
+ * cost of obviously-hopeless chunks.
  */
-export function tokenSetRatio(a: string, b: string): number {
-  const tokensA = new Set(tokenize(a));
-  const tokensB = new Set(tokenize(b));
-
-  const intersection = [...tokensA].filter((t) => tokensB.has(t)).sort();
-  const diffA = [...tokensA].filter((t) => !tokensB.has(t)).sort();
-  const diffB = [...tokensB].filter((t) => !tokensA.has(t)).sort();
-
-  const core = intersection.join(" ");
-  const combinedA = [...intersection, ...diffA].join(" ");
-  const combinedB = [...intersection, ...diffB].join(" ");
+export function tokenSetRatioAtLeast(a: PreparedText, b: PreparedText, floor: number): number {
+  const p = partition(a, b);
 
   const candidates = [
-    levenshteinRatio(core, combinedA),
-    levenshteinRatio(core, combinedB),
-    levenshteinRatio(combinedA, combinedB),
-  ];
-  return Math.max(...candidates);
+    { bound: lengthCeiling(p.coreLen, p.combinedALen), x: p.core, y: p.combinedA },
+    { bound: lengthCeiling(p.coreLen, p.combinedBLen), x: p.core, y: p.combinedB },
+    { bound: lengthCeiling(p.combinedALen, p.combinedBLen), x: p.combinedA, y: p.combinedB },
+  ].sort((m, n) => n.bound - m.bound);
+
+  let best = -1;
+  for (const candidate of candidates) {
+    if (candidate.bound <= Math.max(floor, best)) break;
+    const ratio = levenshteinRatio(candidate.x, candidate.y);
+    if (ratio > best) best = ratio;
+  }
+
+  return best < 0 ? candidates[0]!.bound : best;
+}
+
+export function tokenSetRatioPrepared(a: PreparedText, b: PreparedText): number {
+  return tokenSetRatioAtLeast(a, b, -1);
+}
+
+export function tokenSetRatio(a: string, b: string): number {
+  return tokenSetRatioPrepared(prepare(a), prepare(b));
 }

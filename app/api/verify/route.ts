@@ -7,7 +7,7 @@
 // Supabase read is the only change needed once a project exists; this route and lib/services/verify.ts don't change.
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { fetchWorkspace } from "@/lib/store/workspace";
+import { fetchWorkspace } from "@/lib/services/workspace";
 import { verifyClaimsAgainstCorpus } from "@/lib/services/verify";
 
 const bodySchema = z.object({
