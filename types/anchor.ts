@@ -114,20 +114,24 @@ export interface GraphEdge {
 
 /**
  * Closed set, and the same closed set lib/agents/archetypeClassifier.ts
- * classifies into. These two drifted apart while the classifier was a stub;
- * this list is the reconciled one, so a classifier output is assignable here
- * without a mapping layer.
+ * classifies into. These two drifted apart once already while the classifier
+ * was a stub (reconciled since); exporting the runtime array here, and having
+ * lib/schemas/index.ts build its zod enum from it instead of a second
+ * hand-typed list, is what keeps that from happening again.
  */
-export type PaperArchetype =
-  | "rct"
-  | "cohort_study"
-  | "systematic_review"
-  | "method_paper"
-  | "ml_model"
-  | "case_report"
-  | "bioinformatics_pipeline"
-  | "preprint_theory"
-  | "dataset_paper";
+export const PAPER_ARCHETYPES = [
+  "rct",
+  "cohort_study",
+  "systematic_review",
+  "method_paper",
+  "ml_model",
+  "case_report",
+  "bioinformatics_pipeline",
+  "preprint_theory",
+  "dataset_paper",
+] as const;
+
+export type PaperArchetype = (typeof PAPER_ARCHETYPES)[number];
 
 export interface Paper {
   id: string;

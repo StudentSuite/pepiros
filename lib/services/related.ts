@@ -33,6 +33,17 @@ interface S2RecommendationsResponse {
 }
 
 /**
+ * Semantic Scholar's key is genuinely optional (.env.example) -- unauthenticated
+ * access is enough for a demo -- but attaching it when present moves a caller
+ * out of the shared anonymous rate limit, the same 429/503 class this project
+ * already treats as `rate_limited` (lib/services/externalFetch.ts).
+ */
+function apiKeyHeaders(): Record<string, string> {
+  const key = process.env.SEMANTIC_SCHOLAR_API_KEY;
+  return key ? { "x-api-key": key } : {};
+}
+
+/**
  * Resolves `title` to a Semantic Scholar paper id via title search, then
  * calls the Recommendations API for similar papers. There's no live corpus
  * behind this yet, so a title with no Semantic Scholar match (e.g. every
@@ -44,7 +55,7 @@ export async function fetchRelatedPapers(title: string, limit = 3): Promise<Rela
   let paperId: string | undefined;
   try {
     const searchUrl = `${SEARCH_URL}?query=${encodeURIComponent(title)}&limit=1&fields=title`;
-    const search = await fetchJson<S2SearchResponse>(searchUrl);
+    const search = await fetchJson<S2SearchResponse>(searchUrl, { headers: apiKeyHeaders() });
     paperId = search.data?.[0]?.paperId;
   } catch (err) {
     return { papers: [], status: classifyExternalError(err) };
@@ -54,7 +65,7 @@ export async function fetchRelatedPapers(title: string, limit = 3): Promise<Rela
 
   try {
     const recUrl = `${RECOMMENDATIONS_URL}/${paperId}?fields=title,tldr,citationCount,url&limit=${limit}`;
-    const recommendations = await fetchJson<S2RecommendationsResponse>(recUrl);
+    const recommendations = await fetchJson<S2RecommendationsResponse>(recUrl, { headers: apiKeyHeaders() });
 
     const papers = (recommendations.recommendedPapers ?? []).map(
       (p): RelatedPaper => ({

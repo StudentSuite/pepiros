@@ -37,6 +37,19 @@ function shortId(fullId: string): string {
   return fullId.replace("https://openalex.org/", "");
 }
 
+/**
+ * Appends OpenAlex's "polite pool" identifier when configured (.env.example's
+ * OPENALEX_MAILTO) -- an unauthenticated request without it lands in the
+ * shared anonymous pool, which is the pool observed returning a 503 under
+ * load while building this (lib/services/externalFetch.ts's
+ * classifyExternalError). Not a credential, just an identifier OpenAlex asks
+ * for in exchange for a separate, less contended rate limit.
+ */
+function withMailto(url: string): string {
+  const mailto = process.env.OPENALEX_MAILTO;
+  return mailto ? `${url}&mailto=${encodeURIComponent(mailto)}` : url;
+}
+
 function toCandidate(work: OpenAlexWork): GhostCitationCandidate {
   return {
     openalexId: shortId(work.id),
@@ -64,7 +77,7 @@ export async function fetchCitationExpansion(
   let work: OpenAlexWork | undefined;
   try {
     const searchUrl = `${WORKS_URL}?search=${encodeURIComponent(title)}&per-page=1`;
-    const search = await fetchJson<OpenAlexSearchResponse>(searchUrl);
+    const search = await fetchJson<OpenAlexSearchResponse>(withMailto(searchUrl));
     work = search.results?.[0];
   } catch (err) {
     return { candidates: [], status: classifyExternalError(err) };
@@ -74,7 +87,7 @@ export async function fetchCitationExpansion(
 
   try {
     if (direction === "cited_by") {
-      const url = `${WORKS_URL}?filter=cites:${shortId(work.id)}&per-page=${limit}`;
+      const url = withMailto(`${WORKS_URL}?filter=cites:${shortId(work.id)}&per-page=${limit}`);
       const result = await fetchJson<OpenAlexSearchResponse>(url);
       const candidates = (result.results ?? []).map(toCandidate);
       return { candidates, status: candidates.length ? "ok" : "no_match" };
@@ -83,7 +96,7 @@ export async function fetchCitationExpansion(
     const referencedIds = (work.referenced_works ?? []).slice(0, limit).map(shortId);
     if (referencedIds.length === 0) return { candidates: [], status: "no_match" };
 
-    const url = `${WORKS_URL}?filter=openalex_id:${referencedIds.join("|")}&per-page=${limit}`;
+    const url = withMailto(`${WORKS_URL}?filter=openalex_id:${referencedIds.join("|")}&per-page=${limit}`);
     const result = await fetchJson<OpenAlexSearchResponse>(url);
     const candidates = (result.results ?? []).map(toCandidate);
     return { candidates, status: candidates.length ? "ok" : "no_match" };

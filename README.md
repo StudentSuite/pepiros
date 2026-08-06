@@ -48,11 +48,13 @@ Early build, moving fast. Honest status:
 
 | Area | State |
 | --- | --- |
-| **Grounding spine** (`lib/grounding/*`) | Quote verification, entailment floor, reverse audit, citation-ref resolution. Deterministic, no model calls. Covered by 40 Vitest cases. |
+| **Grounding spine** (`lib/grounding/*`) | Quote verification, entailment floor, reverse audit, citation-ref resolution. Deterministic, no model calls. |
 | **Data model** (`lib/db/schema.ts`) | All 18 tables from `plan.md` §5, in Drizzle. Schema only, no migrations run yet. |
 | **UI** (`components/*`, `app/(app)/*`) | React Flow canvas (5 node types, ghost citation nodes, kind-coloured edges), doc-reader, outline, audit, learn, and share views. Reads the bundled fixture. |
-| **API** | `POST /api/verify`, `POST /api/audit`, `GET /api/graph/[workspaceId]` |
-| **Tooling** | Typecheck, lint, test, and build all gated in CI on every push and PR. |
+| **Citation APIs** (`lib/services/related.ts`, `lib/services/citationExpand.ts`) | Real Semantic Scholar + OpenAlex calls (free, no key) for the related-papers rail and canvas citation expansion. Typed `ok`/`no_match`/`rate_limited`/`error` status, never fabricated fallback data. |
+| **LLM layer** (`lib/agents/*`) | Archetype classifier, archetype-conditioned pillar planner, and 6 of the 21 node generators (`summary`, `methodology`, `statistical_validity`, `stated_limitations`, `weaknesses`, `does_not_establish`), fanned out via `p-queue` with per-node failure isolation. Runs on **Groq**, not Anthropic — see [Configuration](#configuration). Every claimed quote is re-verified through the grounding spine before it becomes a real evidence row. |
+| **API** | `POST /api/verify`, `POST /api/audit`, `GET /api/graph/[workspaceId]`, `GET /api/related`, `GET /api/expand` |
+| **Tooling** | Typecheck, lint, test, and build all gated in CI on every push and PR. 76 Vitest cases, including the LLM layer tested against a hand-rolled mock model (no API key or network call needed). |
 
 ### Not built yet
 
@@ -61,14 +63,13 @@ Each of these is a one-line `TODO` at the top of its file, describing what belon
 | Area | Missing |
 | --- | --- |
 | **Ingest** | `scripts/parse.py` (PyMuPDF), `scripts/seed.ts`, `scripts/ocr_fallback.py`, `lib/services/ingest.ts`, `POST /api/ingest`, `GET /api/jobs/[id]` |
-| **LLM layer** | `lib/schemas/`, `lib/prompts/`, archetype classifier, pillar planner, all 21 generators, the p-queue orchestrator |
+| **Remaining generators** | 15 of the 21 in `docs/PLAN-V1.md` §8 (`contributions`, `background`, `jargon`, `biases`, `novelty`, `reproducibility`, `dataset_notes`, `ethics`, `clinical_relevance`, `future_work`, `equations`, `figures`, `concept_links`, `flashcards`, `quiz`) — mechanical repeats of the pattern in `lib/agents/generators/`, plus figure vision, which needs cropped rasters from the still-stub ingest pipeline |
 | **Graph & synthesis** | `lib/services/nodes.ts`, `lib/services/synthesis.ts`, both `lib/layout/*`, `POST /api/compare`, `PATCH`/`DELETE /api/nodes/[id]` |
-| **Citation APIs** | Semantic Scholar related-papers rail, OpenAlex citation expansion, `/api/related`, `/api/expand` |
 | **MCP** | All 12 tools, `mcp/server.ts`, stdio transport, resources, prompts |
 | **Chat & export** | `POST /api/chat` (streaming, grounded), `/api/chat/promote`, `GET /api/export` |
 | **Measurement** | `evals/`, `scripts/measure-drop-rate.ts` |
 
-**Everything currently reads one fixture.** `lib/services/workspace.ts`'s `fetchWorkspace()` returns `fixtures/workspace.json` regardless of the workspace id passed to it. No Supabase project and no Anthropic key are provisioned, and no PDF has been through this system yet. That single function is the seam where a real backend replaces the fixture.
+**Everything currently reads one fixture.** `lib/services/workspace.ts`'s `fetchWorkspace()` returns `fixtures/workspace.json` regardless of the workspace id passed to it. No Supabase project is provisioned and no PDF has been through this system yet. That single function is the seam where a real backend replaces the fixture. The LLM layer works today, but only if you supply a `GROQ_API_KEY` — nothing calls it yet without one.
 
 ---
 
@@ -110,6 +111,7 @@ Next.js 15 (App Router, TS, React 19)          -> Vercel
   mcp/server.ts     MCP surface for Claude
   lib/services/*    <- BOTH of the above call only this
   lib/grounding/*   deterministic verification, no model calls
+  lib/agents/*      archetype classifier, pillar planner, node generators -> Groq (lib/ai/client.ts)
 
 Supabase          Postgres (no vector column), Storage, Auth, Realtime (job status)
 scripts/parse.py  local PyMuPDF run: sections, chunks, figures, equations, refs, numerics
@@ -126,11 +128,12 @@ Working in this repo with an AI coding agent? Read [`CLAUDE.md`](CLAUDE.md) firs
 
 Nothing below is required to run against the fixture. Copy [`.env.example`](.env.example) to `.env` once a real backend exists.
 
-**Paid, and the only one:**
+**LLM provider — [Groq](https://console.groq.com/keys), not Anthropic. Has a free tier:**
 
 | Variable | For |
 | --- | --- |
-| `ANTHROPIC_API_KEY` | Generators, pillar planner, archetype classifier, chat, figure vision |
+| `GROQ_API_KEY` | Archetype classifier, pillar planner, generators, and (once built) chat + figure vision |
+| `GROQ_MODEL_FAST`, `GROQ_MODEL_STRONG` | Optional. Model ids are env-configurable, not hardcoded, since Groq's hosted lineup changes — see `lib/ai/client.ts` for the current defaults |
 
 **Free account:**
 

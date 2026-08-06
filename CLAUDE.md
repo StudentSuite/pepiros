@@ -18,11 +18,13 @@ npm run seed                # scripts/seed.ts -- still a stub
 npm run mcp:stdio           # mcp/stdio.ts -- still a stub
 ```
 
-`npm test` is Vitest over `lib/**/*.test.ts`, currently covering the grounding spine. It is a different thing from `evals/`, which is reserved for golden-paper generator evals per plan.md §9 and is still a stub. `npm run typecheck` plus `npm test` is the correctness bar. Run both after every change to `lib/`.
+`npm test` is Vitest over `lib/**/*.test.ts`, covering the grounding spine and the LLM agent layer (`lib/agents/*`, mocked at the model level — no API key needed). It is a different thing from `evals/`, which is reserved for golden-paper generator evals per plan.md §9 and is still a stub. `npm run typecheck` plus `npm test` is the correctness bar. Run both after every change to `lib/`.
 
 ## Current data seam
 
-**No live Supabase or Anthropic project is provisioned.** Everything reads through `lib/services/workspace.ts`'s `fetchWorkspace()`, which always resolves `fixtures/workspace.json` regardless of the workspace id passed in. That function is the *only* place a real backend read would replace the fixture. Don't thread a second data path through components directly.
+**No live Supabase project is provisioned.** Everything reads through `lib/services/workspace.ts`'s `fetchWorkspace()`, which always resolves `fixtures/workspace.json` regardless of the workspace id passed in. That function is the *only* place a real backend read would replace the fixture. Don't thread a second data path through components directly.
+
+**This project runs on Groq, not Anthropic.** `lib/ai/client.ts`'s `fastModel()`/`strongModel()` are the only place a model gets resolved (env-configurable ids, not hardcoded — Groq's hosted lineup changes). `lib/agents/*` calls only those two functions, never `createGroq(...)` directly. A real `GROQ_API_KEY` is needed to actually call a model; tests mock the model at the `LanguageModelV2` level (`lib/testing/mockLanguageModel.ts`) so none of `lib/agents/*.test.ts` needs one.
 
 It lives under `lib/services/` rather than `lib/store/` because server routes must not import the client zustand module to reach it. `lib/store/workspace.ts` re-exports it for client consumers and owns `useWorkspaceStore`; server code imports `lib/services/workspace.ts` directly.
 

@@ -21,13 +21,20 @@ export class ExternalApiError extends Error {
   }
 }
 
-export async function fetchJson<T>(url: string, timeoutMs = 6000): Promise<T> {
+export interface FetchJsonOptions {
+  timeoutMs?: number;
+  /** e.g. Semantic Scholar's x-api-key for a caller with SEMANTIC_SCHOLAR_API_KEY set. */
+  headers?: Record<string, string>;
+}
+
+export async function fetchJson<T>(url: string, options: FetchJsonOptions = {}): Promise<T> {
+  const { timeoutMs = 6000, headers } = options;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(url, {
       signal: controller.signal,
-      headers: { Accept: "application/json" },
+      headers: { Accept: "application/json", ...headers },
     });
     if (!res.ok) {
       throw new ExternalApiError(`${url} -> HTTP ${res.status}`, res.status);
