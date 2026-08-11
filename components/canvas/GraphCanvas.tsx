@@ -89,13 +89,18 @@ async function fetchGhostsForPaper(
           url: candidate.url,
         },
       });
+      // Edge id includes paperNode.id, not just ghostId: two different workspace
+      // papers can both cite (or be cited by) the same external work, which
+      // would otherwise collide on one id and silently drop one real edge
+      // (found via a real duplicate-key warning in the browser, not a guess).
+      const edgeId = `${paperNode.id}-${ghostId}-edge`;
       edges.push({
-        id: `${ghostId}-edge`,
+        id: edgeId,
         type: "graphEdge",
         source: direction === "cites" ? ghostId : paperNode.id,
         target: direction === "cites" ? paperNode.id : ghostId,
         data: {
-          edge: { id: `${ghostId}-edge`, workspaceId, kind: "cites", sourceId: "", targetId: "" },
+          edge: { id: edgeId, workspaceId, kind: "cites", sourceId: "", targetId: "" },
           sourcePillarIndex: null,
           targetPillarIndex: null,
           // Always "cites" above, never "contradicts" -- dash-march never applies.
@@ -209,7 +214,18 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
     void Promise.all(paperNodes.map((paperNode) => fetchGhostsForPaper(workspaceId, paperNode))).then(
       (results) => {
         if (cancelled) return;
-        const newNodes = results.flatMap((r) => r.nodes);
+        // The same external paper can turn up for more than one workspace
+        // paper (e.g. both cite a common source) -- dedupe by id so it
+        // renders as one ghost node, not a duplicate-keyed stack. Edges
+        // stay one-per-source-paper (see the edgeId comment above), so
+        // every real citation relationship still gets its own edge into
+        // that single shared node.
+        const seenNodeIds = new Set<string>();
+        const newNodes = results.flatMap((r) => r.nodes).filter((n) => {
+          if (seenNodeIds.has(n.id)) return false;
+          seenNodeIds.add(n.id);
+          return true;
+        });
         const newEdges = results.flatMap((r) => r.edges);
         if (newNodes.length) setNodes((prev) => [...prev, ...newNodes]);
         if (newEdges.length) setEdges((prev) => [...prev, ...newEdges]);
