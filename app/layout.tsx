@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Source_Serif_4, Inter, JetBrains_Mono } from "next/font/google";
+import { Toaster } from "@/components/ui/Toaster";
 import "./globals.css";
 
 const sourceSerif = Source_Serif_4({
@@ -37,7 +38,10 @@ export default function RootLayout({
       lang="en"
       className={`dark ${sourceSerif.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }
