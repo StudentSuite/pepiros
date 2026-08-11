@@ -6,6 +6,8 @@ import { useWorkspaceStore } from "@/lib/store/workspace";
 import type { Evidence } from "@/types/anchor";
 import { RefChip } from "@/components/ui/RefChip";
 import { PillarChip } from "@/components/ui/PillarChip";
+import { Tabs } from "@/components/ui/Tabs";
+import { Button } from "@/components/ui/Button";
 import { EvidenceList } from "./EvidenceList";
 import { NodeEditor } from "./NodeEditor";
 
@@ -109,30 +111,21 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
 
       <h2 className="font-serif text-lg text-ink">{node.title}</h2>
 
-      <div className="flex gap-1 border-b border-border pb-2">
-        {(["content", "evidence"] as const).map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setTab(t)}
-            className={clsx(
-              "rounded px-2 py-1 font-sans text-xs capitalize",
-              tab === t ? "bg-surface-raised text-ink" : "text-ink-muted hover:text-ink",
-            )}
-          >
-            {t} {t === "evidence" && nodeEvidence.length > 0 ? `(${nodeEvidence.length})` : ""}
-          </button>
-        ))}
-        {!readOnly && tab === "content" && (
-          <button
-            type="button"
-            onClick={() => setEditing((e) => !e)}
-            className="ml-auto rounded px-2 py-1 font-sans text-xs text-ink-muted hover:text-ink"
-          >
-            {editing ? "Cancel edit" : "Edit"}
-          </button>
-        )}
-      </div>
+      <Tabs
+        tabs={[
+          { value: "content", label: "content" },
+          { value: "evidence", label: "evidence", badge: nodeEvidence.length || undefined },
+        ]}
+        value={tab}
+        onChange={(v) => setTab(v as Tab)}
+        trailing={
+          !readOnly && tab === "content" ? (
+            <Button variant="ghost" size="sm" onClick={() => setEditing((e) => !e)}>
+              {editing ? "Cancel edit" : "Edit"}
+            </Button>
+          ) : undefined
+        }
+      />
 
       {tab === "content" &&
         (editing ? (
