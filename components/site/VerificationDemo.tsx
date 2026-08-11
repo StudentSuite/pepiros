@@ -151,7 +151,16 @@ export function VerificationDemo() {
             settled ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0",
           )}
         >
-          <EvidenceBadge tier={beat.tier} />
+          {/* EvidenceBadge's label hardcodes text-ink-muted, calibrated for the
+              dark chrome surfaces (components/ui/EvidenceBadge.tsx) -- on this
+              paper-surface panel that's ~2.27:1 against --paper, well under
+              WCAG AA. Override at this call site only, with the same literal
+              dark-ink hex the codebase already uses for paper-surface text
+              (PdfPane.tsx, FlashcardDeck.tsx) -- no Tailwind token exists for
+              it, and the shared component stays untouched. `!` forces the
+              override regardless of generated-CSS class order, since both
+              classes are the same specificity otherwise. */}
+          <EvidenceBadge tier={beat.tier} className="!text-[#1c1a15]" />
         </div>
       </div>
     </div>
