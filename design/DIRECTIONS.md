@@ -34,6 +34,10 @@ Tagline: **"Every claim, one click from its source."** (Grounding-first — the 
 
 Three other axes were sketched before Editorial Paper was picked: a Linear/Bloomberg-Terminal-precision direction (monospace-forward, hairline borders, near-zero motion), an Obsidian-graph-view/lab-instrument direction (phosphor glow, higher-chroma palette), and a Muji/Kinfolk field-notebook direction (deckle edges, sticky-note evidence badges). All three kept the same 3 fixed pillars and differed only in the same axes Editorial Paper differs on (type pairing, icon language, card texture, motion character). Not pursued further once Editorial Paper was confirmed by both Anay and Yash.
 
+## Icons
+
+**Lucide** (`lucide-react`), via the `Icon` wrapper in `components/ui/Icon.tsx` — always that wrapper, never a raw `lucide-react` import in a feature component. Fixed convention: 1.5px stroke, no fill, three sizes (`xs` 14px / `sm` 16px / `md` 20px) tied to the type scale rather than picked ad hoc per usage. Editorial Paper is restrained and non-decorative, so icons stay small, single-color (`currentColor`), and functional — never a colorful icon set, never an icon standing in for a label on its own without an `aria-label`.
+
 ## Prompts
 
 Image-generation prompts for the brand kit and all 8 app surfaces live in `design/prompts/`. The canonical brand-assets prompt is `design/prompts/brand.md`.
