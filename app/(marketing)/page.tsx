@@ -1,13 +1,15 @@
 import Link from "next/link";
+import { Logo } from "@/components/ui/Logo";
 
 // Landing page: one-liner + core loop from plan.md §1. Static, dark "lab
-// notebook at night" styling, one demo entry point into the seeded fixture
-// workspace (ws-1) -- there's no real ingest pipeline wired up this pass.
+// notebook at night" / Editorial Paper styling, one demo entry point into
+// the seeded fixture workspace (ws-1) -- there's no real ingest pipeline
+// wired up this pass. Full grounding-first redesign lands in Stage D.
 export default function MarketingPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center gap-8 px-6 py-24">
       <div className="flex flex-col gap-4">
-        <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">Pepiros</p>
+        <Logo />
         <h1 className="font-serif text-4xl leading-tight text-ink sm:text-5xl">
           Turn a research PDF into a living knowledge graph where every claim is bound to a
           located quote.
