@@ -45,7 +45,7 @@ export function HighlightLayer({
             <div
               key={`${h.id}-${i}`}
               className={clsx(
-                "absolute rounded-sm transition-opacity duration-200",
+                "absolute animate-[highlight-pulse_var(--dur-slow)_var(--ease-out)] rounded-sm",
                 TIER_BG[h.tier],
               )}
               style={{

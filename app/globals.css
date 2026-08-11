@@ -171,11 +171,19 @@ body {
   }
 }
 
+/* The PDF highlight "money shot" (docs/PLAN-V1.md §14.3): fade in over
+   180ms (0-40% of --dur-slow's 450ms), then one opacity pulse .6->1->.85. */
 @keyframes highlight-pulse {
   0% {
     opacity: 0;
   }
   40% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.6;
+  }
+  80% {
     opacity: 1;
   }
   100% {
