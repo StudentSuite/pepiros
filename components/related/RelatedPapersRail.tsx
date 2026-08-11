@@ -1,18 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Panel } from "@/components/ui/Panel";
+import { SkeletonText } from "@/components/ui/Skeleton";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import type { RelatedPaper, RelatedPapersResult } from "@/lib/services/related";
 
 type State =
   | { phase: "loading" }
   | { phase: "done"; result: RelatedPapersResult };
-
-const STATUS_COPY: Record<Exclude<RelatedPapersResult["status"], "ok">, string> = {
-  no_match: "No related papers found via Semantic Scholar for this source.",
-  rate_limited: "Related papers are rate-limited right now -- try again shortly.",
-  error: "Related papers are unavailable right now.",
-};
 
 /**
  * Right-rail on the default doc-reader view. Fetches GET /api/related, which
@@ -20,11 +16,15 @@ const STATUS_COPY: Record<Exclude<RelatedPapersResult["status"], "ok">, string> 
  * -- no fabricated fallback data. The bundled fixture's papers are fictional,
  * so expect `no_match` there; a real ingested paper is what populates this
  * for real, in <1s, no LLM (plan.md §1's pacing).
+ *
+ * This is a genuinely live fetch (unlike most of the fixture-backed app), so
+ * it's where the real error/rate-limit states from docs/PLAN-V1.md §14.5
+ * actually have somewhere to attach -- Retry re-runs the same fetch.
  */
 export function RelatedPapersRail({ workspaceId, paperId }: { workspaceId: string; paperId: string | undefined }) {
   const [state, setState] = useState<State>({ phase: "loading" });
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!paperId) return;
     let cancelled = false;
     setState({ phase: "loading" });
@@ -43,18 +43,32 @@ export function RelatedPapersRail({ workspaceId, paperId }: { workspaceId: strin
     };
   }, [workspaceId, paperId]);
 
+  useEffect(() => load(), [load]);
+
   return (
     <div className="flex flex-col gap-2">
       <h3 className="font-sans text-[11px] uppercase tracking-wide text-ink-faint">
         Related papers
       </h3>
 
-      {state.phase === "loading" && (
-        <p className="font-sans text-xs text-ink-faint">Searching Semantic Scholar...</p>
+      {state.phase === "loading" && <SkeletonText lines={2} />}
+
+      {state.phase === "done" && state.result.status === "no_match" && (
+        <p className="font-sans text-xs text-ink-faint">
+          No related papers found via Semantic Scholar for this source.
+        </p>
       )}
 
-      {state.phase === "done" && state.result.status !== "ok" && (
-        <p className="font-sans text-xs text-ink-faint">{STATUS_COPY[state.result.status]}</p>
+      {state.phase === "done" && state.result.status === "rate_limited" && (
+        <ErrorBanner
+          variant="warn"
+          message="Related papers are rate-limited right now."
+          onRetry={load}
+        />
+      )}
+
+      {state.phase === "done" && state.result.status === "error" && (
+        <ErrorBanner variant="error" message="Related papers are unavailable right now." onRetry={load} />
       )}
 
       {state.phase === "done" && state.result.status === "ok" && (

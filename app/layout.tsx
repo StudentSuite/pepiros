@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Source_Serif_4, Inter, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/Toaster";
+import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import "./globals.css";
 
 const sourceSerif = Source_Serif_4({
@@ -39,6 +40,7 @@ export default function RootLayout({
       className={`dark ${sourceSerif.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body>
+        <OfflineBanner />
         {children}
         <Toaster />
       </body>
