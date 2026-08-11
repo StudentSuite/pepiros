@@ -41,3 +41,9 @@ Three other axes were sketched before Editorial Paper was picked: a Linear/Bloom
 ## Prompts
 
 Image-generation prompts for the brand kit and all 8 app surfaces live in `design/prompts/`. The canonical brand-assets prompt is `design/prompts/brand.md`.
+
+## Real generated assets
+
+`design/prompts/brand.md`'s prompt was run for real (2026-08-11); output lives in `design/brand/` — favicon, app icon, primary + reversed logo lockups, an OG image, and a palette reference sheet, plus the original zip. Favicon and app icon are wired in as `app/icon.png`/`app/apple-icon.png`, replacing the hand-drawn SVG placeholder from Stage A5.
+
+**`design/brand/og-image-1200x630.png` is not wired in.** It's a strong mockup, but its UI mockup includes a "Verified" badge, which contradicts the one non-negotiable rule in `docs/PLAN-V1.md §4` — no claim is ever labelled verified, only "quote located." `app/opengraph-image.tsx`'s code-generated version stays live because it gets that right. Regenerate or hand-edit before swapping it in.
