@@ -17,6 +17,22 @@ export function pillarColor(pillarIndex: number | null): string {
 }
 
 /**
+ * A11y pass, docs/PLAN-V1.md §15: audited all 7 canonical pillar hues as
+ * text on --surface-raised (the flagged risk, previously named against
+ * pillar-2/pillar-6 specifically -- the whole palette changed under Stage
+ * A2, so the actual failing hues shifted too). Dusk measured 3.41:1, Rose
+ * 4.14:1, Teal 4.48:1 -- all below WCAG AA's 4.5:1 for normal text (border/
+ * dot usage is fine, that threshold is 3:1 and every hue clears it). Use
+ * this, not pillarColor(), wherever a pillar hue is the literal text
+ * colour of real content -- borders, dots, and edge strokes keep the exact
+ * canonical hex from the reference board.
+ */
+export function pillarTextColor(pillarIndex: number | null): string {
+  if (!pillarIndex) return "var(--ink-faint)";
+  return `color-mix(in srgb, ${pillarColor(pillarIndex)} 75%, white)`;
+}
+
+/**
  * Pillar colour is a structural system (plan.md §10), not decorative --
  * this chip, node borders, and edge strokes for the same pillar all pull
  * from the same `pillarColor()` so they read as one thread on the canvas.
@@ -26,7 +42,7 @@ export function PillarChip({ pillarIndex, label, className }: { pillarIndex: num
   return (
     <Badge
       className={className}
-      style={{ borderColor: color, color }}
+      style={{ borderColor: color, color: pillarTextColor(pillarIndex) }}
       dotStyle={{ backgroundColor: color }}
     >
       {label}

@@ -2,7 +2,7 @@
 
 import clsx from "clsx";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { pillarColor } from "@/components/ui/PillarChip";
+import { pillarColor, pillarTextColor } from "@/components/ui/PillarChip";
 import type { PepirosNode } from "./types";
 import { stripRefMarkers } from "./InlineRefs";
 
@@ -27,7 +27,10 @@ export function PillarNode({ data }: NodeProps<PepirosNode>) {
       }}
     >
       <Handle type="target" position={Position.Top} style={{ background: color }} />
-      <div className="font-sans text-[11px] font-medium uppercase tracking-wide" style={{ color }}>
+      <div
+        className="font-sans text-[11px] font-medium uppercase tracking-wide"
+        style={{ color: pillarTextColor(node.pillarIndex) }}
+      >
         {node.title}
       </div>
       <p className="mt-1 font-serif text-sm leading-snug text-ink-muted">{stripRefMarkers(node.bodyMd)}</p>

@@ -146,6 +146,18 @@ body {
   display: none;
 }
 
+/* Global focus-visible fallback (docs/PLAN-V1.md §15). Primitives (Button,
+   IconButton, Input, Tabs, ...) already set focus-visible:shadow-glow-accent
+   explicitly; this covers plain <a>/<button> elements elsewhere in the app
+   (nav links, the paper switcher, the node list) so a focus ring doesn't
+   depend on every call site remembering to opt in. */
+a:focus-visible,
+button:focus-visible {
+  outline: none;
+  box-shadow: var(--glow-accent);
+  border-radius: var(--r-sm);
+}
+
 /* Motion vocabulary (docs/PLAN-V1.md §14.3, Editorial Paper: ease-out only,
    never spring). Stage C wires each keyframe to its actual trigger; this is
    the shared foundation other components animate with, via lib/motion.ts. */
