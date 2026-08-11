@@ -122,9 +122,15 @@ See `docs/PLAN-V1.md` §17 for the full day-by-day table (Aug 10-18) — real ca
 
 "Lab notebook at night." Dark-first, low-chroma surfaces, paper-white reading surfaces on dark chrome, pillar colour as a structural system (edges/borders/chips all share it), real typographic hierarchy (serif for prose, grotesque for UI, mono for ids). Full CSS token block, motion spec, and voice guide: `docs/PLAN-V1.md` §14.
 
+**Direction locked 2026-08-10: Editorial Paper** (Are.na × Instapaper/NYT Reader), confirmed by Anay + Yash. Same 3 pillars above, leaned harder on the paper side: warm high-grain paper texture, serif small-caps UI chrome, softened pillar saturation. Canonical palette: Stone `#B8B2A4`, Clay `#C4A78A`, Sage `#7D8A73`, Dusk `#6E6AA7`, Rose `#B46A6A`, Ochre `#D4B26A`, Teal `#5F8D86`. Tagline: "Every claim, one click from its source." Full brief + prompts: `design/DIRECTIONS.md`, `design/prompts/`. Full detail: `docs/PLAN-V1.md` §22.4.
+
 ## 11. Cut list — don't rebuild these, they were killed on purpose
 
 Research Mentor (replaced by the deterministic reading path), SM-2 spaced repetition (flashcards stay, scheduling doesn't), adaptive quiz difficulty, `mindmap`/`notes`/`takeaways`/`strengths` generators (redundant with others), version-history diff UI (the table stays, the viewer doesn't), light theme, minimap, pgvector/embeddings/BM25, elkjs, a deployed FastAPI service, `role="application"` on the canvas (breaks screen readers).
+
+## 12. Platform vision (added 2026-08-10, Aug 17 target)
+
+Pepiros expands from a private single-workspace tool into a public platform: auth/accounts, a public paper library, auto-graph-generation on publish (same engine, triggered like a search engine indexing a page), a discovery feed, per-paper Substack-style discussion, follows/likes, and a curated open-access library (arXiv/PMC-OA/CC only — never a user's own copyrighted upload). Additive to everything above, not a replacement — the grounding spine and Aug 17 demo script are unchanged. Full feature list, licensing, and risk notes: `docs/PLAN-V1.md` §22.
 
 ---
 

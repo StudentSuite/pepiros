@@ -846,7 +846,38 @@ Net: 26 generators to 21, one whole subsystem gone, one deploy target gone, and 
 
 ---
 
+## 22. Platform vision
+
+**Confirmed 2026-08-10, Aug 17 target.** Pepiros expands from a private single-workspace tool into a public platform. This is additive scope on top of §1-21, not a replacement — §2's locked decisions and §16's demo script still govern the Aug 17 grounding-spine/MCP demo itself.
+
+### 22.1 Feature list
+
+1. **Auth & accounts** — sign up/in, profile (Supabase Auth already in the stack)
+2. **Public paper library** — uploaded papers can be published beyond the uploader's private workspace into a shared, discoverable catalog
+3. **Auto-graph-on-upload** — the existing grounding-spine engine (pillars/leaves/anchors) runs automatically on publish, no manual "analyze" step — same engine, new trigger, same as a search engine auto-indexing a submitted page
+4. **Discovery/feed** — browse, search, sort public papers (recent, trending, most-discussed)
+5. **Per-paper discussion** — Substack-style comments/threads on a paper, and on individual claims/nodes
+6. **Follows + likes** — follow authors/papers, like a paper or a specific claim
+7. **Curated open-access library** — Pepiros also lists freely-distributable papers itself (arXiv, PMC open access, CC-licensed), so there's something to browse before anyone uploads
+
+### 22.2 Licensing
+
+**Open-access only.** Only papers Pepiros is legally allowed to list get listed — arXiv/PMC-OA/CC-licensed for the curated library. A user's own copyrighted uploads stay private to their workspace and are never added to the public catalog unless the license permits it.
+
+### 22.3 Timing and risk
+
+Full platform targets **Aug 17**, the same deadline as the grounding-spine/MCP demo — not a post-hackathon phase. This is a large scope addition on top of an already-ambitious build that the 2026-07-30 council pass (§17 header) already flagged as the plan's biggest risk; flagging it again here because it now compounds with that risk, not because the call is wrong. Built via parallel Claude-Code-driven sessions across Anay and Yash, outside the Aug 10 design-system session that produced this section and the Editorial Paper direction (`design/DIRECTIONS.md`, `design/prompts/`).
+
+### 22.4 Design direction
+
+Locked: **Editorial Paper** (Are.na × Instapaper/NYT Reader), confirmed by both Anay and Yash. Keeps the existing §14.1 thesis (dark chrome / paper-white reading surface / pillar-hue graph) and leans the reading-surface pillar harder — warm high-grain paper texture, serif small-caps UI chrome, +25% whitespace, ~20%-softened pillar saturation, unhurried ease-out-only motion. Canonical palette (replaces §14.2's placeholder pillar hex values): Stone `#B8B2A4`, Clay `#C4A78A`, Sage `#7D8A73`, Dusk `#6E6AA7`, Rose `#B46A6A`, Ochre `#D4B26A`, Teal `#5F8D86`. Full brief and image-generation prompts for all 8 app surfaces (including the 5 new platform surfaces above) in `design/DIRECTIONS.md` and `design/prompts/`.
+
+Positioning stays **grounding-first**: the deterministic-verification pitch leads everywhere (landing hero, voice guide), platform ambition is the "where this is going" layer under it, never the headline — it's what the Aug 17 demo script is built on and it's the hardest thing to copy.
+
+---
+
 ## Update log
 
+- **2026-08-10** §22 Platform Vision added: public accounts, paper uploads, auto-graph-on-publish, discovery feed, per-paper discussion, follows/likes, curated open-access library. Targets Aug 17, same deadline as the existing demo. Open-access-only licensing confirmed. Editorial Paper locked as the design direction (Anay + Yash), canonical palette adopted from a reference board, full prompt set in `design/`. Additive to §1-21, nothing existing changed.
 - **2026-07-31** §17 schedule rebuilt and the header capacity line added. School changed to 5 days Mon-Fri 8:00-16:00 on Aug 1, so Tue Aug 11 and Tue Aug 18 (budgeted as free days) are school days. Build window shortened to Aug 10-17, ship Aug 17, submit Aug 18. Real capacity ~16-18 hr against the ~29 hr the original table assumed. **Scope unchanged**: Anay's explicit call, made against a 5-advisor council + peer review that flagged it as the biggest risk in the Aug-Sept plan, with Yash covering roughly half. Mitigations added instead of a scope cut: an explicit **Aug 14 end-to-end spine checkpoint**, stdio-first MCP (OAuth demoted to stretch), the 21 generators added to the slip order, and Aug 20 fixed as a hard reset date back to baseline. Nothing in §1-16 or §18-21 changed. See `decisions/log.md` 2026-07-31 and `context/current-priorities.md`.
 - **2026-07-30** Created. Council pass (5 advisors, 5 peer reviews) plus Anay's scope calls. Locked: full feature set minus §20, `search_for` anchoring, no deployed Python service, no pgvector, no elkjs, Mentor replaced by reading path, 9 addons, MCP layer added. Dates confirmed Aug 7-19, real window Aug 10-19, Yash confirmed Claude Code capable.

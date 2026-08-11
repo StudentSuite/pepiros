@@ -1,0 +1,3 @@
+# Canvas (PillarNode + LeafNode expanded) — Editorial Paper
+
+> A desktop browser mockup of the Pepiros canvas view, Editorial Paper direction (Are.na meets NYT Reader mode). Dark warm-charcoal chrome frames a node graph: one paper node with pillar nodes fanned around it, muted low-saturation pillar-hue borders and edges (teal, amber, green, violet). A warm off-white paper-textured card (#FAF8F4, subtle grain) floats to one side showing serif body text with a quote highlighted in soft amber underline. Small-caps serif node labels. Generous whitespace, calm unhurried layout, soft ambient lighting, natural paper photography feel, 16:9.
