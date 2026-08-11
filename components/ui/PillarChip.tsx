@@ -7,6 +7,7 @@ const PILLAR_COLOR_VAR = [
   "var(--pillar-4)",
   "var(--pillar-5)",
   "var(--pillar-6)",
+  "var(--pillar-7)",
 ] as const;
 
 /** 1-indexed to match GraphNode.pillarIndex; index 0 renders neutral. */
