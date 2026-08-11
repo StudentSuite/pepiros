@@ -53,9 +53,11 @@
   --inference: #b8b2a4; /* stone, model-generated, not verified */
   --ungrounded: #d4b26a; /* ochre, answered without sources */
 
-  --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
-  --font-grotesque: "Inter", "Helvetica Neue", Arial, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  /* --font-serif, --font-grotesque, --font-mono are set by next/font on
+     <html> in app/layout.tsx (real webfonts, not just a named fallback
+     chain) -- do not redeclare them here, that would fight the font loader's
+     own generated fallback stack. Tailwind's fontFamily config still appends
+     Georgia/system-ui/monospace as the last-resort fallback. */
 
   /* Spacing scale. Reading-context components (node body, PDF pane, chat
      message text) step up one size per Editorial Paper's +25% whitespace
