@@ -95,7 +95,7 @@ export default function HowItWorksPage() {
                 <div className="relative h-2 w-full rounded-full bg-black/10">
                   <div
                     aria-hidden="true"
-                    className="absolute inset-y-0 left-0 rounded-l-full bg-ungrounded/50"
+                    className="absolute inset-y-0 left-0 rounded-l-full bg-unsupported/50"
                     style={{ width: "75%" }}
                   />
                   <div
