@@ -28,6 +28,10 @@ export interface PepirosEdgeData extends Record<string, unknown> {
   edge: GraphEdge;
   sourcePillarIndex: number | null;
   targetPillarIndex: number | null;
+  /** Dash-march animates contradiction edges (docs/PLAN-V1.md §9.1), but
+   *  disabled above 4 visible such edges -- resolved once by GraphCanvas
+   *  across the whole workspace, not per edge. */
+  dashMarchEnabled: boolean;
 }
 
 export type PepirosEdge = Edge<PepirosEdgeData, string>;

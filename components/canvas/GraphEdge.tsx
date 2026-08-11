@@ -1,5 +1,6 @@
 "use client";
 
+import clsx from "clsx";
 import { BaseEdge, getBezierPath, type EdgeProps } from "@xyflow/react";
 import { pillarColor } from "@/components/ui/PillarChip";
 import type { EdgeKind } from "@/types/anchor";
@@ -28,6 +29,9 @@ const DASH: Partial<Record<EdgeKind, string>> = {
   relates: "6 4",
   derived_from: "6 4",
   extends: "2 3",
+  // "6 6" matches the .motion-dash-march CSS class exactly (app/globals.css) --
+  // an inline strokeDasharray would otherwise fight the class's own dasharray.
+  contradicts: "6 6",
 };
 
 const TINTABLE = new Set<EdgeKind>(["relates", "derived_from", "extends", "shares_method", "cites"]);
@@ -61,16 +65,20 @@ export function GraphEdge({
 }: EdgeProps<PepirosEdge>) {
   // GraphCanvas always attaches `data` when building edges (see the `edges` map in
   // GraphCanvas.tsx) -- there is no code path that renders a GraphEdge without it.
-  const { edge, sourcePillarIndex, targetPillarIndex } = data!;
+  const { edge, sourcePillarIndex, targetPillarIndex, dashMarchEnabled } = data!;
   const [path] = getBezierPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition });
 
   const samePillar = sourcePillarIndex != null && sourcePillarIndex === targetPillarIndex;
   const color = TINTABLE.has(edge.kind) && samePillar ? pillarColor(sourcePillarIndex) : baseColor(edge.kind);
+  const marching = edge.kind === "contradicts" && dashMarchEnabled;
 
   return (
     <BaseEdge
       path={path}
       markerEnd={markerEnd}
+      // .motion-dash-march also carries the prefers-reduced-motion override
+      // from Stage A6 -- disabling it there doesn't need a second check here.
+      className={clsx(marching && "motion-dash-march")}
       style={{
         stroke: color,
         strokeWidth: strokeWidth(edge.kind),

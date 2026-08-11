@@ -97,6 +97,8 @@ async function fetchGhostsForPaper(
           edge: { id: `${ghostId}-edge`, workspaceId, kind: "cites", sourceId: "", targetId: "" },
           sourcePillarIndex: null,
           targetPillarIndex: null,
+          // Always "cites" above, never "contradicts" -- dash-march never applies.
+          dashMarchEnabled: false,
         },
       });
     });
@@ -155,6 +157,11 @@ function buildNodes(workspace: Workspace): PepirosNode[] {
 
 function buildEdges(workspace: Workspace): PepirosEdge[] {
   const pillarByNodeId = new Map(workspace.nodes.map((n) => [n.id, n.pillarIndex]));
+  // Dash-march is a workspace-wide decision, not a per-edge one (docs/PLAN-V1.md
+  // §9.1: disable above 4 visible contradiction edges) -- counted once here rather
+  // than each GraphEdge instance guessing at how many siblings exist.
+  const contradictsCount = workspace.edges.filter((e) => e.kind === "contradicts").length;
+  const dashMarchEnabled = contradictsCount <= 4;
   return workspace.edges.map((edge) => ({
     id: edge.id,
     type: "graphEdge",
@@ -164,6 +171,7 @@ function buildEdges(workspace: Workspace): PepirosEdge[] {
       edge,
       sourcePillarIndex: pillarByNodeId.get(edge.sourceId) ?? null,
       targetPillarIndex: pillarByNodeId.get(edge.targetId) ?? null,
+      dashMarchEnabled,
     },
   }));
 }
