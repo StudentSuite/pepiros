@@ -24,6 +24,7 @@ import { GraphEdge } from "./GraphEdge";
 import { Controls } from "./Controls";
 import { Drawer } from "@/components/ui/Drawer";
 import { NodeInspector } from "@/components/inspector/NodeInspector";
+import { Skeleton } from "@/components/ui/Skeleton";
 import type { PepirosNode, PepirosEdge, GhostCitationNodeType } from "./types";
 
 type AnyPepirosNode = PepirosNode | GhostCitationNodeType;
@@ -228,9 +229,27 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
   );
 
   if (!workspace) {
+    // Skeleton graph, not a bare spinner (docs/PLAN-V1.md §14.5, §6): a
+    // paper node with ghost pillars pulsing around it, in under 300ms, is
+    // what makes the real fan-out feel fast once it starts.
     return (
-      <div className="flex h-full w-full items-center justify-center font-sans text-sm text-ink-faint">
-        Loading graph…
+      <div className="flex h-full w-full items-center justify-center" role="status" aria-label="Loading graph">
+        <div className="relative h-64 w-64">
+          <Skeleton className="absolute left-1/2 top-1/2 h-16 w-40 -translate-x-1/2 -translate-y-1/2 rounded-md" />
+          {[0, 1, 2].map((i) => {
+            const angle = (i / 3) * 2 * Math.PI - Math.PI / 2;
+            return (
+              <Skeleton
+                key={i}
+                className="absolute h-10 w-24 rounded"
+                style={{
+                  left: `calc(50% + ${Math.cos(angle) * 100}px - 3rem)`,
+                  top: `calc(50% + ${Math.sin(angle) * 100}px - 1.25rem)`,
+                }}
+              />
+            );
+          })}
+        </div>
       </div>
     );
   }

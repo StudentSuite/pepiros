@@ -12,6 +12,7 @@ import { ChatDock } from "@/components/chat/ChatDock";
 import { NodeInspector } from "@/components/inspector/NodeInspector";
 import { ReadingPath } from "@/components/path/ReadingPath";
 import { NumericChart } from "@/components/viz/NumericChart";
+import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
 import type { Highlight } from "@/components/reader/HighlightLayer";
 
 /**
@@ -69,7 +70,20 @@ export function ReaderClient({ workspaceId }: { workspaceId: string }) {
   }, [workspace, selectedNodeId]);
 
   if (!workspace) {
-    return <p className="p-8 font-sans text-sm text-ink-faint">Loading workspace...</p>;
+    // Skeleton shaped like the real layout below, not a bare spinner (§14.5).
+    return (
+      <div className="min-h-screen px-6 py-6" role="status" aria-label="Loading workspace">
+        <Skeleton className="h-8 w-64" />
+        <div className="mt-6 grid gap-6 lg:grid-cols-[200px_1fr_280px]">
+          <Skeleton className="h-40" />
+          <div className="flex flex-col gap-4">
+            <Skeleton className="aspect-[612/792] w-full max-w-xl" />
+            <SkeletonText lines={4} />
+          </div>
+          <Skeleton className="h-64" />
+        </div>
+      </div>
+    );
   }
 
   const activePaper = workspace.papers.find((p) => p.id === activePaperId) ?? workspace.papers[0];
@@ -175,7 +189,15 @@ export function ReaderClient({ workspaceId }: { workspaceId: string }) {
         </aside>
 
         <main className="flex flex-col gap-4">
-          {activeChunk && <PdfPane chunk={activeChunk} highlights={highlights} />}
+          {activeChunk ? (
+            <PdfPane chunk={activeChunk} highlights={highlights} />
+          ) : (
+            // Page-shaped skeleton, not a blank gap, for the moment before a
+            // paper/chunk is selected (docs/PLAN-V1.md §14.5).
+            <div className="mx-auto w-full max-w-xl" role="status" aria-label="Loading page">
+              <Skeleton className="aspect-[612/792] w-full rounded" />
+            </div>
+          )}
           <CoverageOverlay chunks={paperChunks} evidence={workspace.evidence} />
           <div className="rounded border border-border bg-surface-raised p-4">
             <NodeInspector />

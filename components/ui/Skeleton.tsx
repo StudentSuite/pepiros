@@ -1,8 +1,15 @@
 import clsx from "clsx";
+import type { CSSProperties } from "react";
 
 /** Base shimmer block, per docs/PLAN-V1.md §14.5: never a bare spinner. */
-export function Skeleton({ className }: { className?: string }) {
-  return <div className={clsx("motion-shimmer rounded bg-surface-sunken", className)} aria-hidden="true" />;
+export function Skeleton({ className, style }: { className?: string; style?: CSSProperties }) {
+  return (
+    <div
+      className={clsx("motion-shimmer rounded bg-surface-sunken", className)}
+      style={style}
+      aria-hidden="true"
+    />
+  );
 }
 
 /** N shimmer lines at prose width -- Stage C6's node-body loading state. */
