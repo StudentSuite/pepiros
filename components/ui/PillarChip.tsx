@@ -1,4 +1,4 @@
-import clsx from "clsx";
+import { Badge } from "./Badge";
 
 const PILLAR_COLOR_VAR = [
   "var(--pillar-1)",
@@ -24,12 +24,12 @@ export function pillarColor(pillarIndex: number | null): string {
 export function PillarChip({ pillarIndex, label, className }: { pillarIndex: number | null; label: string; className?: string }) {
   const color = pillarColor(pillarIndex);
   return (
-    <span
-      className={clsx("inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-sans", className)}
+    <Badge
+      className={className}
       style={{ borderColor: color, color }}
+      dotStyle={{ backgroundColor: color }}
     >
-      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} aria-hidden="true" />
       {label}
-    </span>
+    </Badge>
   );
 }

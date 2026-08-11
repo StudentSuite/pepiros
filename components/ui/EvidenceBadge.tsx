@@ -1,4 +1,4 @@
-import clsx from "clsx";
+import { Badge } from "./Badge";
 import type { EvidenceTier } from "@/types/anchor";
 
 const LABEL: Record<EvidenceTier, string> = {
@@ -20,14 +20,8 @@ const DOT_CLASS: Record<EvidenceTier, string> = {
  */
 export function EvidenceBadge({ tier, className }: { tier: EvidenceTier; className?: string }) {
   return (
-    <span
-      className={clsx(
-        "inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-xs font-sans text-ink-muted",
-        className,
-      )}
-    >
-      <span className={clsx("h-1.5 w-1.5 rounded-full", DOT_CLASS[tier])} aria-hidden="true" />
+    <Badge className={`text-ink-muted ${className ?? ""}`} dotClassName={DOT_CLASS[tier]}>
       {LABEL[tier]}
-    </span>
+    </Badge>
   );
 }
