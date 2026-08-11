@@ -3,19 +3,23 @@
 @tailwind utilities;
 
 /*
- * Design system: "lab notebook at night" (plan.md §10).
- * Dark-first, low-chroma surfaces; paper-white reading surfaces sit on dark
- * chrome; pillar colour is structural (shared by edges/borders/chips), not
- * decorative. Full token rationale lives in the (missing) PLAN-V1.md §14 --
- * these are the working defaults until that doc exists.
+ * Design system: "lab notebook at night" (docs/PLAN-V1.md §14), Editorial
+ * Paper direction (docs/PLAN-V1.md §22.4, design/DIRECTIONS.md). Dark-first,
+ * low-chroma chrome; paper-white reading surfaces sit on that chrome, leaned
+ * warmer and grainier than the base thesis; pillar colour is structural
+ * (shared by edges/borders/chips), not decorative. Full token rationale:
+ * docs/PLAN-V1.md §14.2 and §22.4.
  */
 :root {
+  /* Surfaces */
   --surface: #14161a;
   --surface-raised: #1b1e24;
   --surface-sunken: #0d0e11;
 
-  --paper: #f4f1ea;
-  --paper-muted: #e7e2d6;
+  /* Reading surface -- warmer + higher-contrast than the base thesis per
+     Editorial Paper (docs/PLAN-V1.md §22.4). Always light, even on dark chrome. */
+  --paper: #f5f1e8;
+  --paper-muted: #ece5d5;
 
   --ink: #e8e6e1;
   --ink-muted: #a3a29c;
@@ -24,20 +28,78 @@
   --border: #2a2d33;
   --border-strong: #3c4048;
 
-  --pillar-1: #7dd3c0;
-  --pillar-2: #e0a95f;
-  --pillar-3: #c586d6;
-  --pillar-4: #6fa8dc;
-  --pillar-5: #e08a8a;
-  --pillar-6: #a3c96f;
+  /* Accent -- interactive/focus/link, distinct from pillar colours */
+  --accent: #6e6aa7;
+  --accent-hover: #8480ba;
+  --accent-sunk: #585480;
+  --accent-wash: #6e6aa71a;
 
-  --located: #7dd3c0;
-  --paraphrase: #e0c15f;
-  --unsupported: #e08a8a;
+  /* Pillar palette -- canonical Editorial Paper set, adopted from Anay's
+     reference board 2026-08-10 (docs/PLAN-V1.md §22.4). Assigned in planner
+     order, cycles past 7. */
+  --pillar-1: #b8b2a4; /* stone */
+  --pillar-2: #c4a78a; /* clay  */
+  --pillar-3: #7d8a73; /* sage  */
+  --pillar-4: #6e6aa7; /* dusk  */
+  --pillar-5: #b46a6a; /* rose  */
+  --pillar-6: #d4b26a; /* ochre */
+  --pillar-7: #5f8d86; /* teal  */
+
+  /* Evidence tiers (docs/PLAN-V1.md §4.4, §9.4) -- two-tier honesty framing,
+     colour is never the only channel (see §15). */
+  --located: #5f8d86; /* teal, quote_located, deterministic */
+  --paraphrase: #c4a78a; /* clay, 0.75-0.92 match */
+  --unsupported: #b46a6a; /* rose, dropped anchor */
+  --inference: #b8b2a4; /* stone, model-generated, not verified */
+  --ungrounded: #d4b26a; /* ochre, answered without sources */
 
   --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
   --font-grotesque: "Inter", "Helvetica Neue", Arial, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Spacing scale. Reading-context components (node body, PDF pane, chat
+     message text) step up one size per Editorial Paper's +25% whitespace
+     rule -- e.g. a chrome gap that's --s-4 becomes --s-5 in a reading
+     context, rather than a parallel token set. */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --r-full: 999px;
+
+  /* Elevation -- borders plus low-alpha shadow, not big blurs */
+  --e-1: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --e-2: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--border);
+  --e-3: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--border-strong);
+  --glow-accent: 0 0 0 3px var(--accent-wash);
+
+  /* Motion. Editorial Paper: durations +40% over the base thesis, ease-out
+     only -- never spring. --ease-spring stays defined for token completeness
+     (other directions used it) but nothing in this build should reference it. */
+  --dur-fast: 170ms;
+  --dur-base: 280ms;
+  --dur-slow: 450ms;
+  --dur-canvas: 590ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-inout: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Layout dimensions */
+  --rail-left: 64px;
+  --panel-papers: 256px;
+  --inspector: clamp(400px, 34vw, 560px);
+  --chat-collapsed: 56px;
+  --chat-open: min(46vh, 420px);
+  --topbar: 52px;
 }
 
 /* Reading surfaces (PDF pane, node body copy) stay paper-toned even though
@@ -45,6 +107,21 @@
 .surface-reading {
   background-color: var(--paper);
   color: #1c1a15;
+}
+
+/* Subtle paper grain for reading surfaces, per Editorial Paper's "visible
+   fiber grain" material rule. Data-URI fractal noise, no image asset. */
+.paper-grain {
+  position: relative;
+}
+.paper-grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 html,
