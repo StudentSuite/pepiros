@@ -237,6 +237,13 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
 
   return (
     <>
+      {/* One-paper hint (docs/PLAN-V1.md §14.5) -- z-10 so it sits above the
+          canvas but never blocks node clicks/drags underneath it. */}
+      {workspace.papers.length === 1 && (
+        <div className="pointer-events-none absolute left-1/2 top-4 z-10 -translate-x-1/2 rounded-full border border-border-strong bg-surface-raised px-3 py-1.5 font-sans text-xs text-ink-muted shadow-e-2">
+          Add a second paper to unlock cross-paper analysis.
+        </div>
+      )}
       <ReactFlow
         nodes={nodes}
         edges={edges}

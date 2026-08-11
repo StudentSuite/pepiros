@@ -1,8 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import clsx from "clsx";
 import { MessageList, type ChatMessage } from "./MessageList";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+
+// docs/PLAN-V1.md §14.5: "4 suggested questions from the paper's real
+// concepts," never generic. Fixture-scoped since there's no live paper
+// analysis to derive these from yet -- swap for a real derivation once
+// that pipeline exists, not for a generic placeholder set.
+const SUGGESTED_QUESTIONS = [
+  "What did the bright-light RCT actually find?",
+  "Does the meta-analysis hold up under its own limitations?",
+  "Where do the two papers disagree?",
+  "What does neither paper establish?",
+];
 
 const SEED_MESSAGES: ChatMessage[] = [
   {
@@ -85,28 +97,39 @@ export function ChatDock() {
         {open && (
           <>
             <div className="max-h-72 overflow-y-auto px-3 py-3">
-              <MessageList messages={messages} />
+              {messages.length === 0 ? (
+                <div className="flex flex-col gap-2">
+                  <p className="font-sans text-xs text-ink-faint">Try asking:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {SUGGESTED_QUESTIONS.map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        onClick={() => setDraft(q)}
+                        className="rounded-full border border-border-strong px-2.5 py-1 text-left font-sans text-xs text-ink-muted transition duration-fast ease-out hover:border-accent hover:text-ink"
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <MessageList messages={messages} />
+              )}
             </div>
             <div className="flex items-center gap-2 border-t border-border px-3 py-2">
-              <input
+              <Input
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleSend();
                 }}
                 placeholder="Ask about this workspace..."
-                className={clsx(
-                  "flex-1 rounded border border-border bg-surface-sunken px-2 py-1.5",
-                  "font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-border-strong",
-                )}
+                className="flex-1"
               />
-              <button
-                type="button"
-                onClick={handleSend}
-                className="rounded bg-pillar-4/20 px-3 py-1.5 font-sans text-sm text-ink hover:bg-pillar-4/30"
-              >
+              <Button variant="primary" size="sm" onClick={handleSend}>
                 Send
-              </button>
+              </Button>
             </div>
           </>
         )}
