@@ -14,13 +14,14 @@ import { InlineRefs, stripRefMarkers } from "./InlineRefs";
  * dimmed but kept, never deleted, so the reader can see what broke.
  */
 export function SynthesisNode({ data }: NodeProps<PepirosNode>) {
-  const { node, evidence, spannedPapers } = data;
+  const { node, evidence, spannedPapers, appearDelayMs } = data;
   return (
     <div
       className={clsx(
-        "w-72 rounded-lg border-4 border-double border-border-strong bg-surface-raised px-4 py-3 transition-opacity",
+        "w-72 animate-[node-appear_var(--dur-base)_var(--ease-out)_backwards] rounded-lg border-4 border-double border-border-strong bg-surface-raised px-4 py-3 transition-opacity",
         node.stale && "opacity-50",
       )}
+      style={{ animationDelay: `${appearDelayMs ?? 0}ms` }}
     >
       <Handle type="target" position={Position.Top} className="!bg-border-strong" />
       <div className="flex items-center justify-between">

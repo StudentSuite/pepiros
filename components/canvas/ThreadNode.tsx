@@ -11,13 +11,14 @@ import { InlineRefs, stripRefMarkers } from "./InlineRefs";
  * tissue rather than structural content, distinct from the solid `contains` tree.
  */
 export function ThreadNode({ data }: NodeProps<PepirosNode>) {
-  const { node, evidence, spannedPapers } = data;
+  const { node, evidence, spannedPapers, appearDelayMs } = data;
   return (
     <div
       className={clsx(
-        "w-64 rounded border-2 border-dashed border-ink-faint bg-surface-raised px-3 py-2.5 transition-opacity",
+        "w-64 animate-[node-appear_var(--dur-base)_var(--ease-out)_backwards] rounded border-2 border-dashed border-ink-faint bg-surface-raised px-3 py-2.5 transition-opacity",
         node.stale && "opacity-50",
       )}
+      style={{ animationDelay: `${appearDelayMs ?? 0}ms` }}
     >
       <Handle type="target" position={Position.Top} className="!bg-ink-faint" />
       <div className="flex items-center gap-1.5 font-sans text-[11px] uppercase tracking-wide text-ink-faint">

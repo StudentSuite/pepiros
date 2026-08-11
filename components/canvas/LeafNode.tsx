@@ -16,7 +16,7 @@ const TIER_RANK: Record<EvidenceTier, number> = { unsupported: 0, paraphrase: 1,
 /** The smallest, most detailed card -- one claim, its snippet, and the evidence that
  * grounds it (plan.md: "leaf = smallest/detail card"). */
 export function LeafNode({ data }: NodeProps<PepirosNode>) {
-  const { node, evidence } = data;
+  const { node, evidence, appearDelayMs } = data;
   const color = pillarColor(node.pillarIndex);
   const refs = resolveInlineRefs(node.bodyMd, evidence);
   const weakest = refs.reduce<EvidenceTier | null>(
@@ -27,10 +27,10 @@ export function LeafNode({ data }: NodeProps<PepirosNode>) {
   return (
     <div
       className={clsx(
-        "w-48 rounded border bg-surface-raised px-2.5 py-2 text-xs transition-opacity",
+        "w-48 animate-[node-appear_var(--dur-base)_var(--ease-out)_backwards] rounded border bg-surface-raised px-2.5 py-2 text-xs transition-opacity",
         node.stale && "opacity-50",
       )}
-      style={{ borderColor: color }}
+      style={{ borderColor: color, animationDelay: `${appearDelayMs ?? 0}ms` }}
     >
       <Handle type="target" position={Position.Top} style={{ background: color }} />
       <div className="font-sans text-[11px] font-medium leading-snug text-ink">{node.title}</div>

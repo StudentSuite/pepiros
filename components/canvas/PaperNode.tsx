@@ -12,13 +12,14 @@ import { stripRefMarkers } from "./InlineRefs";
  * null for `paper` nodes).
  */
 export function PaperNode({ data }: NodeProps<PepirosNode>) {
-  const { node } = data;
+  const { node, appearDelayMs } = data;
   return (
     <div
       className={clsx(
-        "w-64 rounded border-2 border-border-strong bg-surface-raised px-4 py-3 shadow-lg transition-opacity",
+        "w-64 animate-[node-appear_var(--dur-base)_var(--ease-out)_backwards] rounded border-2 border-border-strong bg-surface-raised px-4 py-3 shadow-lg transition-opacity",
         node.stale && "opacity-50",
       )}
+      style={{ animationDelay: `${appearDelayMs ?? 0}ms` }}
     >
       <Handle type="target" position={Position.Top} className="!bg-border-strong" />
       <div className="font-sans text-[11px] uppercase tracking-wide text-ink-faint">Paper</div>

@@ -14,6 +14,9 @@ export interface PepirosNodeData extends Record<string, unknown> {
    *  nodes only -- they have no paperId of their own). Resolved by GraphCanvas from
    *  `derived_from`/`relates` edges so node components don't need the full edge list. */
   spannedPapers?: { id: string; label: string }[];
+  /** node-appear stagger (docs/PLAN-V1.md §14.3: 40ms per sibling), cycled every
+   *  6 so a large graph doesn't cascade for seconds. Resolved by GraphCanvas. */
+  appearDelayMs?: number;
 }
 
 export type PepirosNode = Node<PepirosNodeData, string>;

@@ -140,7 +140,7 @@ function computeSpannedPapers(workspace: Workspace): Map<string, { id: string; l
 
 function buildNodes(workspace: Workspace): PepirosNode[] {
   const spanned = computeSpannedPapers(workspace);
-  return workspace.nodes.map((node) => ({
+  return workspace.nodes.map((node, index) => ({
     id: node.id,
     type: NODE_TYPE_MAP[node.type],
     position: { x: node.x, y: node.y },
@@ -148,6 +148,7 @@ function buildNodes(workspace: Workspace): PepirosNode[] {
       node,
       evidence: workspace.evidence,
       spannedPapers: spanned.get(node.id),
+      appearDelayMs: (index % 6) * 40,
     },
   }));
 }
