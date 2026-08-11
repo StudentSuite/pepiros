@@ -22,6 +22,8 @@ import { SynthesisNode } from "./SynthesisNode";
 import { GhostCitationNode } from "./GhostCitationNode";
 import { GraphEdge } from "./GraphEdge";
 import { Controls } from "./Controls";
+import { Drawer } from "@/components/ui/Drawer";
+import { NodeInspector } from "@/components/inspector/NodeInspector";
 import type { PepirosNode, PepirosEdge, GhostCitationNodeType } from "./types";
 
 type AnyPepirosNode = PepirosNode | GhostCitationNodeType;
@@ -169,6 +171,7 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
   const workspace = useWorkspaceStore((s) => s.workspace);
   const loadWorkspace = useWorkspaceStore((s) => s.loadWorkspace);
   const selectNode = useWorkspaceStore((s) => s.selectNode);
+  const selectedNodeId = useWorkspaceStore((s) => s.selectedNodeId);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<AnyPepirosNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<PepirosEdge>([]);
@@ -224,24 +227,32 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
   }
 
   return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      nodeTypes={NODE_TYPES}
-      edgeTypes={EDGE_TYPES}
-      onNodeClick={handleNodeClick}
-      onPaneClick={() => selectNode(null)}
-      fitView
-      minZoom={0.2}
-      maxZoom={2}
-      className="bg-surface"
-    >
-      {/* No <MiniMap/> -- explicitly cut (plan.md §11). Custom themed Controls only. */}
-      <Background color="var(--border)" gap={24} />
-      <Controls />
-    </ReactFlow>
+    <>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        nodeTypes={NODE_TYPES}
+        edgeTypes={EDGE_TYPES}
+        onNodeClick={handleNodeClick}
+        onPaneClick={() => selectNode(null)}
+        fitView
+        minZoom={0.2}
+        maxZoom={2}
+        className="bg-surface"
+      >
+        {/* No <MiniMap/> -- explicitly cut (plan.md §11). Custom themed Controls only. */}
+        <Background color="var(--border)" gap={24} />
+        <Controls />
+      </ReactFlow>
+      {/* Canvas is full-bleed (unlike the reader's static split-view inspector
+          panel, PLAN-V1.md §9.3), so a selected node needs an overlay, not a
+          pushed column -- the shared Drawer primitive from Stage B. */}
+      <Drawer open={selectedNodeId !== null} onClose={() => selectNode(null)}>
+        <NodeInspector />
+      </Drawer>
+    </>
   );
 }
 
