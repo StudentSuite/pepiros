@@ -2,24 +2,28 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import clsx from "clsx";
+import { ChevronRight } from "lucide-react";
 import { useWorkspaceStore } from "@/lib/store/workspace";
-import { SectionNav } from "@/components/reader/SectionNav";
+import { Sidebar } from "@/components/app/Sidebar";
 import { PdfPane } from "@/components/reader/PdfPane";
 import { CoverageOverlay } from "@/components/reader/CoverageOverlay";
+import { GraphPreviewCard } from "@/components/reader/GraphPreviewCard";
 import { RelatedPapersRail } from "@/components/related/RelatedPapersRail";
 import { ChatDock } from "@/components/chat/ChatDock";
 import { NodeInspector } from "@/components/inspector/NodeInspector";
-import { ReadingPath } from "@/components/path/ReadingPath";
 import { NumericChart } from "@/components/viz/NumericChart";
+import { Icon } from "@/components/ui/Icon";
+import { Panel } from "@/components/ui/Panel";
 import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
 import type { Highlight } from "@/components/reader/HighlightLayer";
 
 /**
- * The default doc-reader landing surface (plan.md §1): summary/title top,
- * paper tabs, section nav + node list left, PDF pane + inspector centre,
- * related-papers rail right, chat docked at the bottom. Canvas is reached
- * only via the explicit "Explore graph" link -- this view never renders it.
+ * The default doc-reader landing surface (docs/PLAN-V1.md §1). Rebuilt
+ * 2026-08-11 on top of a real Library/Pillars sidebar (design/DIRECTIONS.md)
+ * -- a breadcrumb top bar, paper-white reading pane, and a citation-graph
+ * preview + real edge-kind legend replace the old two-line header, pill-tab
+ * switcher, and bare node list. Canvas is reached only via "Explore graph" --
+ * this view never renders the full React Flow canvas itself.
  */
 export function ReaderClient({ workspaceId }: { workspaceId: string }) {
   const workspace = useWorkspaceStore((s) => s.workspace);
@@ -33,6 +37,7 @@ export function ReaderClient({ workspaceId }: { workspaceId: string }) {
 
   const [activePaperId, setActivePaperId] = useState<string | null>(null);
   const [activeChunkId, setActiveChunkId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   const paperChunks = useMemo(
     () =>
@@ -72,15 +77,17 @@ export function ReaderClient({ workspaceId }: { workspaceId: string }) {
   if (!workspace) {
     // Skeleton shaped like the real layout below, not a bare spinner (§14.5).
     return (
-      <div className="min-h-screen px-6 py-6" role="status" aria-label="Loading workspace">
-        <Skeleton className="h-8 w-64" />
-        <div className="mt-6 grid gap-6 lg:grid-cols-[200px_1fr_280px]">
-          <Skeleton className="h-40" />
-          <div className="flex flex-col gap-4">
-            <Skeleton className="aspect-[612/792] w-full max-w-xl" />
-            <SkeletonText lines={4} />
+      <div className="flex min-h-screen" role="status" aria-label="Loading workspace">
+        <Skeleton className="h-screen w-60 shrink-0" />
+        <div className="flex-1 px-6 py-6">
+          <Skeleton className="h-6 w-80" />
+          <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_280px]">
+            <div className="flex flex-col gap-4">
+              <Skeleton className="aspect-[612/792] w-full max-w-xl" />
+              <SkeletonText lines={4} />
+            </div>
+            <Skeleton className="h-64" />
           </div>
-          <Skeleton className="h-64" />
         </div>
       </div>
     );
@@ -96,118 +103,86 @@ export function ReaderClient({ workspaceId }: { workspaceId: string }) {
         .map((e) => ({ id: e.id, spans: e.anchor!.spans, tier: e.tier }))
     : [];
 
+  const pillars = workspace.nodes.filter((n) => n.type === "pillar" && n.paperId === activePaper?.id);
   const leafNodes = workspace.nodes.filter(
     (n) => n.type === "leaf" && n.paperId === activePaper?.id,
   );
 
   return (
-    <div className="min-h-screen pb-32">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
-        <div>
-          <p className="font-mono text-[11px] uppercase tracking-wide text-ink-faint">
-            {workspace.name}
-          </p>
-          <h1 className="font-serif text-xl text-ink">
-            {activePaper ? activePaper.title : workspace.name}
-          </h1>
-        </div>
-        <nav className="flex items-center gap-4 font-sans text-sm">
-          <Link href={`/w/${workspaceId}/outline`} className="text-ink-muted hover:text-ink">
-            Outline
-          </Link>
-          <Link href={`/w/${workspaceId}/audit`} className="text-ink-muted hover:text-ink">
-            Audit
-          </Link>
-          <Link href={`/w/${workspaceId}/learn`} className="text-ink-muted hover:text-ink">
-            Learn
-          </Link>
-          <Link
-            href={`/w/${workspaceId}/canvas`}
-            className="rounded border border-border-strong px-3 py-1.5 text-ink-muted hover:text-ink"
-          >
-            Explore graph
-          </Link>
-        </nav>
-      </header>
+    <div className="flex min-h-screen">
+      <Sidebar
+        papers={workspace.papers}
+        activePaperId={activePaper?.id}
+        onSelectPaper={(paperId) => {
+          setActivePaperId(paperId);
+          const firstChunk = workspace.chunks.find((c) => c.paperId === paperId);
+          setActiveChunkId(firstChunk?.id ?? null);
+        }}
+        pillars={pillars}
+        leafNodes={leafNodes}
+        selectedNodeId={selectedNodeId}
+        onSelectNode={selectNode}
+        query={query}
+        onQueryChange={setQuery}
+        paperChunks={paperChunks}
+        activeSectionId={activeSectionId}
+        onSelectSection={(sectionId) => {
+          const chunk = paperChunks.find((c) => c.sectionId === sectionId);
+          if (chunk) setActiveChunkId(chunk.id);
+        }}
+      />
 
-      <div className="flex flex-wrap gap-2 border-b border-border px-6 py-2">
-        {workspace.papers.map((paper) => (
-          <button
-            key={paper.id}
-            type="button"
-            onClick={() => {
-              setActivePaperId(paper.id);
-              const firstChunk = workspace.chunks.find((c) => c.paperId === paper.id);
-              setActiveChunkId(firstChunk?.id ?? null);
-            }}
-            className={clsx(
-              "rounded px-2.5 py-1 font-sans text-xs",
-              paper.id === activePaper?.id
-                ? "bg-surface-raised text-ink"
-                : "text-ink-muted hover:text-ink",
+      <div className="flex flex-1 flex-col pb-32">
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-3">
+          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 font-sans text-sm">
+            <span className="text-ink-faint">Library</span>
+            <Icon icon={ChevronRight} size="xs" className="text-ink-faint" />
+            <span className="text-ink-faint">{workspace.name}</span>
+            <Icon icon={ChevronRight} size="xs" className="text-ink-faint" />
+            <span className="font-medium text-ink">{activePaper?.title ?? "..."}</span>
+          </nav>
+          <nav className="flex items-center gap-4 font-sans text-xs text-ink-muted">
+            <Link href={`/w/${workspaceId}/outline`} className="hover:text-ink">
+              Outline
+            </Link>
+            <Link href={`/w/${workspaceId}/audit`} className="hover:text-ink">
+              Audit
+            </Link>
+            <Link href={`/w/${workspaceId}/learn`} className="hover:text-ink">
+              Learn
+            </Link>
+            <Link
+              href={`/w/${workspaceId}/canvas`}
+              className="rounded border border-border-strong px-3 py-1.5 hover:text-ink"
+            >
+              Explore graph
+            </Link>
+          </nav>
+        </header>
+
+        <div className="grid gap-6 px-6 py-6 lg:grid-cols-[1fr_280px]">
+          <main className="flex flex-col gap-4">
+            {activeChunk ? (
+              <PdfPane chunk={activeChunk} highlights={highlights} />
+            ) : (
+              // Page-shaped skeleton, not a blank gap, for the moment before a
+              // paper/chunk is selected (docs/PLAN-V1.md §14.5).
+              <div className="mx-auto w-full max-w-xl" role="status" aria-label="Loading page">
+                <Skeleton className="aspect-[612/792] w-full rounded" />
+              </div>
             )}
-          >
-            {paper.title}
-          </button>
-        ))}
-      </div>
+            <CoverageOverlay chunks={paperChunks} evidence={workspace.evidence} />
+            <Panel padded>
+              <NodeInspector />
+            </Panel>
+          </main>
 
-      <div className="grid gap-6 px-6 py-6 lg:grid-cols-[200px_1fr_280px]">
-        <aside className="flex flex-col gap-4">
-          <SectionNav
-            chunks={paperChunks}
-            activeSectionId={activeSectionId}
-            onSelect={(sectionId) => {
-              const chunk = paperChunks.find((c) => c.sectionId === sectionId);
-              if (chunk) setActiveChunkId(chunk.id);
-            }}
-          />
-          <div>
-            <h3 className="mb-1 font-sans text-[11px] uppercase tracking-wide text-ink-faint">
-              Nodes
-            </h3>
-            <ul className="flex flex-col gap-0.5">
-              {leafNodes.map((node) => (
-                <li key={node.id}>
-                  <button
-                    type="button"
-                    onClick={() => selectNode(node.id)}
-                    className={clsx(
-                      "w-full rounded px-2 py-1 text-left font-sans text-xs",
-                      node.id === selectedNodeId
-                        ? "bg-surface-raised text-ink"
-                        : "text-ink-muted hover:text-ink",
-                    )}
-                  >
-                    {node.title}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <ReadingPath />
-        </aside>
-
-        <main className="flex flex-col gap-4">
-          {activeChunk ? (
-            <PdfPane chunk={activeChunk} highlights={highlights} />
-          ) : (
-            // Page-shaped skeleton, not a blank gap, for the moment before a
-            // paper/chunk is selected (docs/PLAN-V1.md §14.5).
-            <div className="mx-auto w-full max-w-xl" role="status" aria-label="Loading page">
-              <Skeleton className="aspect-[612/792] w-full rounded" />
-            </div>
-          )}
-          <CoverageOverlay chunks={paperChunks} evidence={workspace.evidence} />
-          <div className="rounded border border-border bg-surface-raised p-4">
-            <NodeInspector />
-          </div>
-        </main>
-
-        <aside className="flex flex-col gap-4">
-          <RelatedPapersRail workspaceId={workspaceId} paperId={activePaper?.id} />
-          <NumericChart />
-        </aside>
+          <aside className="flex flex-col gap-4">
+            <GraphPreviewCard workspaceId={workspaceId} nodeCount={workspace.nodes.length} />
+            <RelatedPapersRail workspaceId={workspaceId} paperId={activePaper?.id} />
+            <NumericChart />
+          </aside>
+        </div>
       </div>
 
       <ChatDock />
