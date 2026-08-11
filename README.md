@@ -10,7 +10,7 @@
 [![Next.js 15](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg)](tsconfig.json)
 
-[Quick start](#quick-start) · [What works today](#what-works-today) · [Architecture](#architecture) · [Configuration](#configuration) · [Contributing](CONTRIBUTING.md)
+[Quick start](#quick-start) · [What works today](#what-works-today) · [Architecture](#architecture) · [Design system](#design-system) · [Configuration](#configuration) · [Contributing](CONTRIBUTING.md)
 
 </div>
 
@@ -151,6 +151,24 @@ Nothing below is required to run against the fixture. Copy [`.env.example`](.env
 | `OPENALEX_MAILTO`, `CROSSREF_MAILTO` | Courtesy identifiers that move requests into the polite rate-limit pool |
 | `SEMANTIC_SCHOLAR_API_KEY` | Optional. Unauthenticated access is enough unless the related-papers rail starts returning 429 |
 | `MCP_TOKEN_SECRET` | Self-generated, any long random string |
+
+---
+
+## Design system
+
+**Direction: Editorial Paper** (Are.na × Instapaper/NYT Reader), on top of the "lab notebook at night" thesis — dark chrome, a warm paper-white reading surface, pillar colour as a structural system. Full brief and the canonical palette: [`design/DIRECTIONS.md`](design/DIRECTIONS.md). Live token reference: `/dev/tokens`.
+
+| Layer | Where |
+| --- | --- |
+| Tokens (color, spacing, radius, elevation, motion, layout dims) | `app/globals.css`, `tailwind.config.ts` |
+| Fonts (Source Serif 4, Inter, JetBrains Mono via `next/font`) | `app/layout.tsx` |
+| Primitives (Button, Input, Dialog, Drawer, Tooltip, Popover, Tabs, Menu, Toast, Skeleton, ErrorBanner, Badge, Icon, Logo, ...) | `components/ui/` |
+| Icons | Lucide, only through `components/ui/Icon.tsx` — never a raw `lucide-react` import in a feature component |
+| Brand assets (favicon, app icon, OG image) | `app/icon.svg`, `app/apple-icon.tsx`, `app/opengraph-image.tsx` |
+| Image-gen prompts (brand kit + all 8 app surfaces) | `design/prompts/`, zipped at `design/pepiros-editorial-paper-prompts.zip` |
+| Platform-vision scope (accounts, publish, discovery, discussion) | [`docs/PLAN-V1.md`](docs/PLAN-V1.md) §22 |
+
+Two conventions worth knowing before adding a component: pillar hues have two accessors in `components/ui/PillarChip.tsx` — `pillarColor()` for borders/dots/edge strokes (canonical hex, 3:1 threshold), `pillarTextColor()` for anywhere a pillar hue is literal text colour (lightened for WCAG AA's 4.5:1, three of the seven canonical hues fail it unmixed). And motion reaches for `lib/motion.ts`'s named helpers or the keyframes in `globals.css`, never a hand-picked duration — Editorial Paper is ease-out only, never spring.
 
 ---
 
