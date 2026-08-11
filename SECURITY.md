@@ -8,7 +8,7 @@ Pepiros is pre-1.0 and not yet deployed anywhere with live user data. Only the l
 
 Please **do not** open a public GitHub issue for a security vulnerability. Instead, use GitHub's private reporting flow:
 
-**[Report a vulnerability](https://github.com/AnayDhawan/pepiros/security/advisories/new)** (Security tab → "Report a vulnerability").
+**[Report a vulnerability](https://github.com/StudentSuite/pepiros/security/advisories/new)** (Security tab → "Report a vulnerability").
 
 Include what you can:
 
@@ -20,6 +20,6 @@ We'll acknowledge reports as promptly as we can — this is a small, active hack
 
 ## Notes specific to this codebase
 
-- No Supabase project or `GROQ_API_KEY` is provisioned in this repo by default (see `.env.example`) — running it locally against the bundled fixture does not touch any live infrastructure or third-party API.
+- No Supabase project or `FEATHERLESS_API_KEY` is provisioned in this repo by default (see `.env.example`) — running it locally against the bundled fixture does not touch any live infrastructure or third-party API.
 - Once a real backend exists: `SUPABASE_SERVICE_ROLE_KEY` bypasses Row Level Security (see `lib/supabase/server.ts`'s `createSupabaseServiceClient`) and must never be exposed to the client or used in a route that echoes request input back into a query.
 - The MCP layer (`mcp/*`, not yet implemented) is expected to re-verify every claim server-side (`lib/services/verify.ts`) rather than trust a caller-asserted `quote_located` — see `CLAUDE.md` for why this matters for this project specifically.

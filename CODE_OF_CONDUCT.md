@@ -34,7 +34,7 @@ This Code of Conduct applies within all community spaces (issues, pull requests,
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the project maintainers via a private [GitHub Security Advisory](https://github.com/AnayDhawan/pepiros/security/advisories/new) (see [`SECURITY.md`](SECURITY.md)) or by contacting a maintainer directly. All complaints will be reviewed and investigated promptly and fairly.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the project maintainers via a private [GitHub Security Advisory](https://github.com/StudentSuite/pepiros/security/advisories/new) (see [`SECURITY.md`](SECURITY.md)) or by contacting a maintainer directly. All complaints will be reviewed and investigated promptly and fairly.
 
 All maintainers are obligated to respect the privacy and security of the reporter of any incident.
 

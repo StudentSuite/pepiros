@@ -5,10 +5,10 @@ Thanks for looking at this. Pepiros is an early-stage hackathon build (see [`pla
 ## Getting set up
 
 ```bash
-git clone https://github.com/AnayDhawan/pepiros.git
+git clone https://github.com/StudentSuite/pepiros.git
 cd pepiros
 npm install
-cp .env.example .env   # only needed if you have a Supabase project or a Groq API key; the app runs on fixtures/workspace.json without it
+cp .env.example .env   # only needed if you have a Supabase project or a Featherless API key; the app runs on fixtures/workspace.json without it
 npm run dev
 ```
 

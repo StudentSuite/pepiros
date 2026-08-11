@@ -2,8 +2,8 @@ import type { LanguageModelV2, LanguageModelV2CallOptions } from "@ai-sdk/provid
 
 /**
  * Minimal hand-rolled LanguageModelV2 fake for testing generateObject callers
- * (archetypeClassifier, pillarPlanner, generators) without a real Groq API
- * key or network call. `ai/test`'s own MockLanguageModelV2 pulls in `msw`
+ * (archetypeClassifier, pillarPlanner, generators) without a real Featherless
+ * API key or network call. `ai/test`'s own MockLanguageModelV2 pulls in `msw`
  * transitively (@ai-sdk/provider-utils/test imports it eagerly), which is a
  * real dependency to add for one helper class -- this covers the same need
  * with no extra dependency.

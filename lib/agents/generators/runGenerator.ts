@@ -33,13 +33,14 @@ export interface GeneratorConfig {
  * after lib/services/verify.ts re-verifies each claim server-side. See
  * bindEvidenceMarkers below for the substitution.
  */
-const SHARED_SYSTEM_PROMPT = `You are writing one section of a research paper breakdown. You will be given a context block of numbered excerpts, each prefixed with a stable id like "[C7 | Methods | p.4]" or "[N12 | Results | p.5]".
+const SHARED_SYSTEM_PROMPT = `You are writing one section of a research paper breakdown. You will be given a context block of numbered excerpts, each prefixed with a bracketed header like "[C7 | Methods | p.4]" or "[N12 | Results | p.5]".
 
 Rules:
-- Only cite ids that appear in the context block. Never invent an id.
+- A ref is ONLY the bare id at the start of the header -- "C7" or "N12". Never the full header. Do NOT write "C7 | Methods | p.4" as a ref -- write "C7". This matters: refs are matched by exact string against a lookup table that only has the bare ids in it, so anything else fails to resolve, even if it looks like a reasonable citation.
+- Only cite ids that appear in the context block. Never invent one.
 - Every factual claim in body_md must be backed by at least one citation.
 - In body_md, mark each claim with a notional marker "[^n0]", "[^n1]", ... matching that claim's index in the evidence array (zero-based, in the order they first appear in body_md). Do not use any other footnote syntax.
-- evidence[i].refs lists every context-block id that backs marker "[^n{i}]" -- an aggregate claim drawing on multiple excerpts gets multiple refs in one entry, not one entry per ref.
+- evidence[i].refs lists every bare id that backs marker "[^n{i}]" -- an aggregate claim drawing on multiple excerpts gets multiple refs in one entry (e.g. ["C4", "C5"]), not one entry per ref.
 - evidence[i].quote is copied verbatim from the source excerpt(s), not paraphrased -- paraphrasing here defeats the point, since a downstream deterministic verifier re-checks this quote against the source text and demotes anything that doesn't match closely enough.
 - followups are 2-4 short questions a reader might click to go deeper, not restatements of the title.`;
 

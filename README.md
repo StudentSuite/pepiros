@@ -4,7 +4,7 @@
 
 **Turn a research PDF into a knowledge graph where every generated claim stays bound to a located quote, and hand that grounding to Claude as a callable MCP service.**
 
-[![CI](https://github.com/AnayDhawan/pepiros/actions/workflows/ci.yml/badge.svg)](https://github.com/AnayDhawan/pepiros/actions/workflows/ci.yml)
+[![CI](https://github.com/StudentSuite/pepiros/actions/workflows/ci.yml/badge.svg)](https://github.com/StudentSuite/pepiros/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-5FA04E.svg)](.nvmrc)
 [![Next.js 15](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org)
@@ -52,7 +52,7 @@ Early build, moving fast. Honest status:
 | **Data model** (`lib/db/schema.ts`) | All 18 tables from `plan.md` §5, in Drizzle. Schema only, no migrations run yet. |
 | **UI** (`components/*`, `app/(app)/*`) | React Flow canvas (5 node types, ghost citation nodes, kind-coloured edges), doc-reader, outline, audit, learn, and share views. Reads the bundled fixture. |
 | **Citation APIs** (`lib/services/related.ts`, `lib/services/citationExpand.ts`) | Real Semantic Scholar + OpenAlex calls (free, no key) for the related-papers rail and canvas citation expansion. Typed `ok`/`no_match`/`rate_limited`/`error` status, never fabricated fallback data. |
-| **LLM layer** (`lib/agents/*`) | Archetype classifier, archetype-conditioned pillar planner, and 6 of the 21 node generators (`summary`, `methodology`, `statistical_validity`, `stated_limitations`, `weaknesses`, `does_not_establish`), fanned out via `p-queue` with per-node failure isolation. Runs on **Groq**, not Anthropic — see [Configuration](#configuration). Every claimed quote is re-verified through the grounding spine before it becomes a real evidence row. |
+| **LLM layer** (`lib/agents/*`) | Archetype classifier, archetype-conditioned pillar planner, and 6 of the 21 node generators (`summary`, `methodology`, `statistical_validity`, `stated_limitations`, `weaknesses`, `does_not_establish`), fanned out via `p-queue` with per-node failure isolation. Runs on **Groq (primary) + Featherless (fallback)**, not Anthropic — see [Configuration](#configuration). Every claimed quote is re-verified through the grounding spine before it becomes a real evidence row. Verified end to end against both live APIs, not just mocked. |
 | **API** | `POST /api/verify`, `POST /api/audit`, `GET /api/graph/[workspaceId]`, `GET /api/related`, `GET /api/expand` |
 | **Tooling** | Typecheck, lint, test, and build all gated in CI on every push and PR. 76 Vitest cases, including the LLM layer tested against a hand-rolled mock model (no API key or network call needed). |
 
@@ -69,14 +69,14 @@ Each of these is a one-line `TODO` at the top of its file, describing what belon
 | **Chat & export** | `POST /api/chat` (streaming, grounded), `/api/chat/promote`, `GET /api/export` |
 | **Measurement** | `evals/`, `scripts/measure-drop-rate.ts` |
 
-**Everything currently reads one fixture.** `lib/services/workspace.ts`'s `fetchWorkspace()` returns `fixtures/workspace.json` regardless of the workspace id passed to it. No Supabase project is provisioned and no PDF has been through this system yet. That single function is the seam where a real backend replaces the fixture. The LLM layer works today, but only if you supply a `GROQ_API_KEY` — nothing calls it yet without one.
+**Everything currently reads one fixture.** `lib/services/workspace.ts`'s `fetchWorkspace()` returns `fixtures/workspace.json` regardless of the workspace id passed to it. No Supabase project is provisioned and no PDF has been through this system yet. That single function is the seam where a real backend replaces the fixture. The LLM layer works today, but only if you supply at least one of `GROQ_API_KEY` or `FEATHERLESS_API_KEY` — nothing calls it yet without one.
 
 ---
 
 ## Quick start
 
 ```bash
-git clone https://github.com/AnayDhawan/pepiros.git
+git clone https://github.com/StudentSuite/pepiros.git
 cd pepiros
 npm install
 npm run dev
@@ -111,7 +111,7 @@ Next.js 15 (App Router, TS, React 19)          -> Vercel
   mcp/server.ts     MCP surface for Claude
   lib/services/*    <- BOTH of the above call only this
   lib/grounding/*   deterministic verification, no model calls
-  lib/agents/*      archetype classifier, pillar planner, node generators -> Groq (lib/ai/client.ts)
+  lib/agents/*      archetype classifier, pillar planner, node generators -> Groq, falling back to Featherless (lib/ai/client.ts)
 
 Supabase          Postgres (no vector column), Storage, Auth, Realtime (job status)
 scripts/parse.py  local PyMuPDF run: sections, chunks, figures, equations, refs, numerics
@@ -128,12 +128,13 @@ Working in this repo with an AI coding agent? Read [`CLAUDE.md`](CLAUDE.md) firs
 
 Nothing below is required to run against the fixture. Copy [`.env.example`](.env.example) to `.env` once a real backend exists.
 
-**LLM provider — [Groq](https://console.groq.com/keys), not Anthropic. Has a free tier:**
+**LLM provider — [Groq](https://console.groq.com/keys) primary, [Featherless](https://featherless.ai/account/api-keys) fallback, not Anthropic. Either works alone:**
 
 | Variable | For |
 | --- | --- |
-| `GROQ_API_KEY` | Archetype classifier, pillar planner, generators, and (once built) chat + figure vision |
-| `GROQ_MODEL_FAST`, `GROQ_MODEL_STRONG` | Optional. Model ids are env-configurable, not hardcoded, since Groq's hosted lineup changes — see `lib/ai/client.ts` for the current defaults |
+| `GROQ_API_KEY` | Primary. Defaults to `openai/gpt-oss-20b`/`-120b` — the only two Groq models confirmed to support the structured outputs every call here needs; see `lib/ai/client.ts`'s comment before changing either id |
+| `FEATHERLESS_API_KEY` | Fallback — used only when Groq 401/402/403/429s or marks its own error retryable (`lib/ai/fallbackModel.ts`). Featherless is OpenAI-compatible with no first-party AI SDK provider — `lib/ai/client.ts` goes through `@ai-sdk/openai-compatible`. Its $25/mo flat-rate plan is contractually for human-driven use in Featherless's own UI, not the programmatic API traffic this is — the metered Developer plan is the one its terms describe as intended for that |
+| `FEATHERLESS_MODEL_FAST`, `FEATHERLESS_MODEL_STRONG` | Default to two Qwen2.5 models verified live against a real account (meta-llama's repos there are gated behind a HuggingFace org connection and 403 without it) |
 
 **Free account:**
 

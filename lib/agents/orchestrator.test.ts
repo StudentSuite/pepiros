@@ -45,12 +45,15 @@ vi.mock("./generators", async (importOriginal) => {
         title: "Randomization protocol",
         body_md: "Participants were randomized. [^n0] Multiple facts combined. [^n1]",
         evidence: [
-          // Single-ref claim, exact quote -> quote_located.
-          { refs: ["C1"], quote: chunkC1.text },
+          // Single-ref claim, exact quote -> quote_located. Ref given as the full
+          // bracketed header, not the bare id -- reproduces exactly what a real
+          // model returned live while building this (despite the prompt asking
+          // for the bare id), regression-testing orchestrator.ts's normalizeRef.
+          { refs: ["C1 | Methods | p.4"], quote: chunkC1.text },
           // Multi-ref (aggregate) claim: same quote checked against two different
           // chunks independently -- C1 matches (it's verbatim), C2 doesn't, so this
           // becomes two Evidence rows with two different outcomes.
-          { refs: ["C1", "C2"], quote: chunkC1.text },
+          { refs: ["C1 | Methods | p.4", "C2 | Results | p.5"], quote: chunkC1.text },
         ],
         confidence: "high",
         followups: [],

@@ -58,6 +58,18 @@ export interface OrchestratorResult {
  * invariant "every [^eN] marker has a matching evidence row" still holds for
  * every individual marker, not just the claim as a whole.
  */
+/**
+ * A model is instructed (runGenerator.ts's SHARED_SYSTEM_PROMPT) to cite the
+ * bare id ("C7"), not the full context-block header ("C7 | Methods | p.4")
+ * -- but a prompt is a request, not a guarantee, and this exact slip was
+ * observed live while building this. Stripping to the leading token before
+ * verification means a model that ignores the instruction still resolves
+ * correctly instead of silently registering as a hallucinated_ref.
+ */
+function normalizeRef(ref: string): string {
+  return ref.split("|")[0]!.trim();
+}
+
 function verifyGeneratorOutput(
   nodeId: string,
   bodyMd: string,
@@ -67,7 +79,7 @@ function verifyGeneratorOutput(
   idPrefix: string,
 ): { bodyMd: string; evidence: Evidence[] } {
   const flatClaims: ClaimedEvidence[] = claims.flatMap((claim) =>
-    claim.refs.map((refId) => ({ nodeId, refId, quote: claim.quote })),
+    claim.refs.map((refId) => ({ nodeId, refId: normalizeRef(refId), quote: claim.quote })),
   );
 
   const verified = verifyClaimsAgainstCorpus({ chunks, numerics, claims: flatClaims });

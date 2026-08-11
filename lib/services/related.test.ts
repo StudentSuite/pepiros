@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchRelatedPapers } from "./related";
+import { __resetThrottleForTests, fetchRelatedPapers } from "./related";
 
 function jsonResponse(body: unknown, ok = true, status = 200) {
   return { ok, status, json: async () => body } as Response;
@@ -7,6 +7,7 @@ function jsonResponse(body: unknown, ok = true, status = 200) {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  __resetThrottleForTests();
 });
 
 describe("fetchRelatedPapers", () => {
@@ -76,5 +77,32 @@ describe("fetchRelatedPapers", () => {
     const result = await fetchRelatedPapers("Anything");
 
     expect(result).toEqual({ papers: [], status: "error" });
+  });
+
+  // Semantic Scholar's keyed tier documents "1 request per second, cumulative
+  // across all endpoints" -- a single call here makes two requests (search,
+  // then recommendations) with nothing between them, which alone would
+  // violate that without the throttle. Fake timers so this doesn't cost the
+  // suite a real second.
+  it("spaces the search and recommendations calls at least 1 second apart", async () => {
+    vi.useFakeTimers();
+    const callTimes: number[] = [];
+    const fetchMock = vi.fn().mockImplementation(async () => {
+      callTimes.push(Date.now());
+      if (callTimes.length === 1) {
+        return jsonResponse({ data: [{ paperId: "abc123", title: "Match" }] });
+      }
+      return jsonResponse({ recommendedPapers: [] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const promise = fetchRelatedPapers("Some Paper Title");
+    await vi.runAllTimersAsync();
+    await promise;
+
+    expect(callTimes).toHaveLength(2);
+    expect(callTimes[1]! - callTimes[0]!).toBeGreaterThanOrEqual(1000);
+
+    vi.useRealTimers();
   });
 });

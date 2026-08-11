@@ -6,7 +6,7 @@
   "description": "Turns a research PDF into a living knowledge graph where every generated claim is bound to a located quote.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/AnayDhawan/pepiros.git"
+    "url": "https://github.com/StudentSuite/pepiros.git"
   },
   "engines": {
     "node": ">=20"
@@ -33,6 +33,7 @@
     "zustand": "^5.0.2",
     "ai": "^5.0.0",
     "@ai-sdk/groq": "^2.0.47",
+    "@ai-sdk/openai-compatible": "^1.0.47",
     "@modelcontextprotocol/sdk": "^1.0.4",
     "drizzle-orm": "^0.38.2",
     "postgres": "^3.4.5",

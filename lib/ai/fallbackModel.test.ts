@@ -1,0 +1,136 @@
+import { describe, expect, it } from "vitest";
+import { APICallError } from "ai";
+import type { LanguageModelV2, LanguageModelV2CallOptions } from "@ai-sdk/provider";
+import { withFallback } from "./fallbackModel";
+
+function apiError(statusCode: number, isRetryable = false) {
+  return new APICallError({
+    message: "boom",
+    url: "https://example.test",
+    requestBodyValues: {},
+    statusCode,
+    isRetryable,
+  });
+}
+
+function stubModel(provider: string, behavior: () => Promise<{ text: string }> | never): LanguageModelV2 {
+  return {
+    specificationVersion: "v2",
+    provider,
+    modelId: `${provider}-model`,
+    supportedUrls: {},
+    doGenerate: async (_options: LanguageModelV2CallOptions) => {
+      const result = await behavior();
+      return {
+        content: [{ type: "text" as const, text: result.text }],
+        finishReason: "stop" as const,
+        usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 },
+        warnings: [],
+      };
+    },
+    doStream: async () => {
+      throw new Error("not used in these tests");
+    },
+  };
+}
+
+describe("withFallback", () => {
+  it("uses the primary model when it succeeds", async () => {
+    const primary = stubModel("primary", async () => ({ text: "from primary" }));
+    const fallback = stubModel("fallback", async () => ({ text: "from fallback" }));
+    const model = withFallback(primary, fallback);
+
+    const result = await model.doGenerate({} as LanguageModelV2CallOptions);
+    expect(result.content).toEqual([{ type: "text", text: "from primary" }]);
+  });
+
+  it("reroutes to the fallback on a 429 from the primary", async () => {
+    const primary = stubModel("primary", async () => {
+      throw apiError(429);
+    });
+    const fallback = stubModel("fallback", async () => ({ text: "from fallback" }));
+    const model = withFallback(primary, fallback);
+
+    const result = await model.doGenerate({} as LanguageModelV2CallOptions);
+    expect(result.content).toEqual([{ type: "text", text: "from fallback" }]);
+  });
+
+  it("reroutes to the fallback on a 402 (quota/billing) from the primary", async () => {
+    const primary = stubModel("primary", async () => {
+      throw apiError(402);
+    });
+    const fallback = stubModel("fallback", async () => ({ text: "from fallback" }));
+    const model = withFallback(primary, fallback);
+
+    const result = await model.doGenerate({} as LanguageModelV2CallOptions);
+    expect(result.content).toEqual([{ type: "text", text: "from fallback" }]);
+  });
+
+  // Observed live while building this: an invalid/revoked Groq key 401s, not
+  // 429s. A different provider entirely (different account, different key)
+  // doesn't share that problem, so it belongs in the reroute set too.
+  it("reroutes to the fallback on a 401 (invalid/revoked key) from the primary", async () => {
+    const primary = stubModel("primary", async () => {
+      throw apiError(401);
+    });
+    const fallback = stubModel("fallback", async () => ({ text: "from fallback" }));
+    const model = withFallback(primary, fallback);
+
+    const result = await model.doGenerate({} as LanguageModelV2CallOptions);
+    expect(result.content).toEqual([{ type: "text", text: "from fallback" }]);
+  });
+
+  // Observed live against Featherless while picking models: a gated model
+  // (meta-llama's repos, without a HuggingFace org connection) 403s.
+  it("reroutes to the fallback on a 403 (forbidden/gated) from the primary", async () => {
+    const primary = stubModel("primary", async () => {
+      throw apiError(403);
+    });
+    const fallback = stubModel("fallback", async () => ({ text: "from fallback" }));
+    const model = withFallback(primary, fallback);
+
+    const result = await model.doGenerate({} as LanguageModelV2CallOptions);
+    expect(result.content).toEqual([{ type: "text", text: "from fallback" }]);
+  });
+
+  it("reroutes to the fallback when the primary marks its own error retryable", async () => {
+    const primary = stubModel("primary", async () => {
+      throw apiError(503, true);
+    });
+    const fallback = stubModel("fallback", async () => ({ text: "from fallback" }));
+    const model = withFallback(primary, fallback);
+
+    const result = await model.doGenerate({} as LanguageModelV2CallOptions);
+    expect(result.content).toEqual([{ type: "text", text: "from fallback" }]);
+  });
+
+  it("does not reroute on a 400 -- a malformed request would fail identically on the fallback", async () => {
+    const primary = stubModel("primary", async () => {
+      throw apiError(400);
+    });
+    const fallback = stubModel("fallback", async () => ({ text: "from fallback" }));
+    const model = withFallback(primary, fallback);
+
+    await expect(model.doGenerate({} as LanguageModelV2CallOptions)).rejects.toThrow("boom");
+  });
+
+  it("does not reroute on a 404 -- a typo'd model id should fail loudly, not silently degrade", async () => {
+    const primary = stubModel("primary", async () => {
+      throw apiError(404);
+    });
+    const fallback = stubModel("fallback", async () => ({ text: "from fallback" }));
+    const model = withFallback(primary, fallback);
+
+    await expect(model.doGenerate({} as LanguageModelV2CallOptions)).rejects.toThrow("boom");
+  });
+
+  it("does not reroute on a non-APICallError -- e.g. a schema validation failure", async () => {
+    const primary = stubModel("primary", async () => {
+      throw new TypeError("not an API error");
+    });
+    const fallback = stubModel("fallback", async () => ({ text: "from fallback" }));
+    const model = withFallback(primary, fallback);
+
+    await expect(model.doGenerate({} as LanguageModelV2CallOptions)).rejects.toThrow("not an API error");
+  });
+});
