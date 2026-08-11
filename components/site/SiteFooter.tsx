@@ -22,7 +22,12 @@ const PLATFORM_LINKS = [
 // explicitly warns against linking a private repo as if it were public --
 // applying that same reasoning here rather than one rule for the footer and
 // another for /about.
+//
+// About is listed here (not just in SiteHeader's nav) because the nav is
+// `hidden` below the `sm` breakpoint -- without this, /about would be
+// completely unreachable on narrow viewports (review finding, 2026-08-11).
 const CONNECT_LINKS = [
+  { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
   { href: "/legal#license", label: "License" },
 ] as const;
@@ -64,8 +69,11 @@ export function SiteFooter() {
             Uploaded papers stay private to your workspace unless they&apos;re open-access or
             CC-licensed.
           </p>
+          {/* Copyright holders per LICENSE:3 ("Copyright (c) 2026 Anay Dhawan
+              and Yash Kewlani") and README.md's own license footer -- the
+              product name "Pepiros" is not the copyright holder. */}
           <p>
-            &copy; {new Date().getFullYear()} Pepiros &middot; MIT
+            &copy; {new Date().getFullYear()} Anay Dhawan and Yash Kewlani &middot; MIT
           </p>
         </div>
       </div>
