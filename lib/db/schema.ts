@@ -312,11 +312,31 @@ export const shareTokens = pgTable("share_tokens", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * MCP client tokens (docs/PLAN-V1.md §13.4). That section's security rules are
+ * marked non-negotiable, and each column below exists to satisfy one:
+ *
+ * - `tokenHash`, never the raw token ("Store token hashes, never raw tokens").
+ *   A leaked database row must not be a usable credential.
+ * - `id` is a non-secret handle, so a tool call can be logged and rate-limited
+ *   by token identity without the log holding the secret.
+ * - `scope` gates writes: `create_node`/`add_paper` require `write`. An MCP
+ *   client is untrusted input, so read-only is the useful default.
+ * - `workspaceId` is nullable: "optionally pinned to a single workspace".
+ *   Null means the token may reach any workspace its owner can.
+ * - `revokedAt` ("Support revocation") rather than deleting the row, so an
+ *   audit trail of a revoked token's past calls survives the revocation.
+ */
+export const mcpTokenScope = pgEnum("mcp_token_scope", ["read", "write"]);
+
 export const mcpTokens = pgTable("mcp_tokens", {
-  token: text("token").primaryKey(),
-  workspaceId: uuid("workspace_id")
-    .notNull()
-    .references(() => workspaces.id, { onDelete: "cascade" }),
+  id: uuid("id").primaryKey().defaultRandom(),
+  tokenHash: text("token_hash").notNull().unique(),
+  scope: mcpTokenScope("scope").notNull().default("read"),
+  workspaceId: uuid("workspace_id").references(() => workspaces.id, { onDelete: "cascade" }),
+  label: text("label"),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
