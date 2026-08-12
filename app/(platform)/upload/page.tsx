@@ -13,6 +13,10 @@ import { SkeletonGraph } from "@/components/ui/SkeletonGraph";
 
 type EntryMode = "file" | "url";
 
+// Single-workspace build: fetchWorkspace() resolves the fixture regardless of
+// id (CLAUDE.md's current data seam), so there is nothing to select between yet.
+const WORKSPACE_ID = "ws-1";
+
 /**
  * `/upload` -- client component (drag-over state, tab state, file/url state,
  * checkbox gate). Same `.surface-reading paper-grain` card + FormField
@@ -20,9 +24,12 @@ type EntryMode = "file" | "url";
  * entry paths (drop-zone/file-picker, paste-URL) live behind a tab toggle,
  * matching plan.md §1's "Upload a PDF or paste an arXiv/PMC/DOI URL". The
  * license checkbox gates the submit button via the actual `disabled`
- * attribute, not just opacity. Submit never calls fetch, it's a
- * pretend-success `router.push("/workspaces")` (Global Constraints -- no
- * real upload/parse pipeline in this build).
+ * attribute, not just opacity.
+ *
+ * Submit posts to the real POST /api/ingest, which enforces §6's validation
+ * (size, magic bytes, page cap, text layer, duplicate detection) and returns a
+ * job id. Parsing behind that is still a stub, so acceptance means queued, not
+ * analyzed -- but a rejected file now gets rejected, with the reason shown.
  */
 export default function UploadPage() {
   const router = useRouter();
@@ -36,6 +43,7 @@ export default function UploadPage() {
   const [urlError, setUrlError] = useState<string | undefined>();
   const [licenseConfirmed, setLicenseConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const hasEntry = mode === "file" ? file !== null : url.trim().length > 0;
   const canSubmit = licenseConfirmed && hasEntry;
@@ -72,20 +80,63 @@ export default function UploadPage() {
     fileInputRef.current?.click();
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  /**
+   * Posts to the real POST /api/ingest, which enforces the §6 validation rules
+   * (size, magic bytes, page cap, text layer, duplicates). Rejections come
+   * back as a 422 with a specific message, and a duplicate as a 409 -- both
+   * are surfaced here rather than swallowed, since "scanned PDF, no text
+   * layer" is the whole point of checking.
+   *
+   * Parsing itself is still a stub, so a 202 means "accepted and queued", not
+   * "graph built". The job id is where progress will stream from once
+   * scripts/parse.py exists.
+   */
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (mode === "url" && !url.trim()) {
       setUrlError("Paste an arXiv, PMC, or DOI URL.");
       return;
     }
     if (!canSubmit) return;
+
+    setUrlError(undefined);
+    setSubmitError(null);
     setSubmitting(true);
-    // Pretend-success (Global Constraints -- no real upload/parse pipeline):
-    // show the skeleton-graph choreography for a couple seconds so the
-    // pacing beat from plan.md §1 is actually visible before the redirect.
-    redirectTimeoutRef.current = setTimeout(() => {
-      router.push("/workspaces");
-    }, 2200);
+
+    try {
+      const res =
+        mode === "file"
+          ? await (async () => {
+              const form = new FormData();
+              form.append("workspaceId", WORKSPACE_ID);
+              form.append("file", file!);
+              return fetch("/api/ingest", { method: "POST", body: form });
+            })()
+          : await fetch("/api/ingest", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ workspaceId: WORKSPACE_ID, url: url.trim() }),
+            });
+
+      const body = (await res.json().catch(() => null)) as
+        | { detail?: string; duplicate?: { title: string } }
+        | null;
+
+      if (!res.ok) {
+        setSubmitting(false);
+        setSubmitError(body?.detail ?? `Upload failed (${res.status}).`);
+        return;
+      }
+
+      // Hold the skeleton-graph beat briefly so the §1 pacing is visible
+      // rather than flashing past, then move on.
+      redirectTimeoutRef.current = setTimeout(() => {
+        router.push("/workspaces");
+      }, 1200);
+    } catch (err) {
+      setSubmitting(false);
+      setSubmitError(err instanceof Error ? err.message : "Upload failed.");
+    }
   }
 
   if (submitting) {
@@ -203,6 +254,17 @@ export default function UploadPage() {
           <p className="font-sans text-xs text-[#1c1a15]/70">
             Publishing runs the grounding graph automatically, no manual &ldquo;analyze&rdquo; step.
           </p>
+
+          {/* The rejection reason is the useful part -- §6 wants the problem
+              named ("scanned PDF, no text layer"), not a generic failure. */}
+          {submitError && (
+            <p
+              role="alert"
+              className="rounded border border-unsupported/40 bg-unsupported/10 px-3 py-2 font-sans text-sm text-[#1c1a15]"
+            >
+              {submitError}
+            </p>
+          )}
 
           <Button type="submit" variant="primary" className="mt-2 w-full" disabled={!canSubmit}>
             Upload
