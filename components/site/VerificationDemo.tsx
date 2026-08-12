@@ -101,7 +101,7 @@ export function VerificationDemo() {
           component. PNG doesn't tint via currentColor the way the old
           hand-coded SVG did, so opacity does the "near-invisible" work
           instead of a text-color alpha. */}
-      <LogoMark className="pointer-events-none absolute -bottom-10 -right-10 h-56 w-56 opacity-[0.04]" />
+      <LogoMark className="pointer-events-none absolute -bottom-10 -right-10 h-56 w-auto opacity-[0.04]" />
 
       <p className="relative font-mono text-[10px] uppercase tracking-widest text-[#1c1a15]/40">
         Grounding, live
