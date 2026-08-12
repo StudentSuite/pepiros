@@ -1,5 +1,6 @@
 import type { Workspace } from "@/types/anchor";
 import workspaceFixture from "@/fixtures/workspace.json";
+import { computeLayout } from "@/lib/layout";
 
 /**
  * The single data-access seam. Everything that needs a workspace, on either
@@ -11,7 +12,16 @@ import workspaceFixture from "@/fixtures/workspace.json";
  * must not import the client zustand module to reach it: doing so pulls a
  * client-state container, and the whole fixture, into a server bundle.
  * lib/store/workspace.ts re-exports this for client consumers.
+ *
+ * Node x/y are recomputed here by lib/layout rather than taken from the
+ * stored/fixture values (docs/PLAN-V1.md §9.1: "deterministic,
+ * server-computed"). Doing it at the seam rather than in each consumer is
+ * deliberate: the canvas reads through the client store while API and MCP
+ * callers read this directly, so laying out in any one of those would leave
+ * the others on stale hand-authored coordinates. computeLayout is a pure
+ * function of the graph's shape, so every caller gets identical positions.
  */
 export async function fetchWorkspace(_workspaceId: string): Promise<Workspace> {
-  return workspaceFixture as unknown as Workspace;
+  const workspace = workspaceFixture as unknown as Workspace;
+  return { ...workspace, nodes: computeLayout(workspace) };
 }

@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import clsx from "clsx";
-import { BaseEdge, getBezierPath, type EdgeProps } from "@xyflow/react";
+import { BaseEdge, EdgeLabelRenderer, getBezierPath, type EdgeProps } from "@xyflow/react";
 import { pillarColor } from "@/components/ui/PillarChip";
 import type { EdgeKind } from "@/types/anchor";
 import type { PepirosEdge } from "./types";
@@ -53,6 +54,18 @@ function strokeWidth(kind: EdgeKind): number {
   return kind === "agrees" || kind === "contradicts" ? 2 : 1.25;
 }
 
+/** Edge kinds render as machine-ish slugs; a hover label should read as English. */
+const KIND_LABEL: Record<EdgeKind, string> = {
+  contains: "contains",
+  relates: "relates to",
+  derived_from: "derived from",
+  agrees: "agrees with",
+  contradicts: "contradicts",
+  extends: "extends",
+  shares_method: "shares method",
+  cites: "cites",
+};
+
 export function GraphEdge({
   sourceX,
   sourceY,
@@ -62,28 +75,68 @@ export function GraphEdge({
   targetPosition,
   data,
   markerEnd,
+  interactionWidth,
 }: EdgeProps<PepirosEdge>) {
   // GraphCanvas always attaches `data` when building edges (see the `edges` map in
   // GraphCanvas.tsx) -- there is no code path that renders a GraphEdge without it.
   const { edge, sourcePillarIndex, targetPillarIndex, dashMarchEnabled } = data!;
-  const [path] = getBezierPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition });
+  const [path, labelX, labelY] = getBezierPath({
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+  });
+  const [hovered, setHovered] = useState(false);
 
   const samePillar = sourcePillarIndex != null && sourcePillarIndex === targetPillarIndex;
   const color = TINTABLE.has(edge.kind) && samePillar ? pillarColor(sourcePillarIndex) : baseColor(edge.kind);
   const marching = edge.kind === "contradicts" && dashMarchEnabled;
 
   return (
-    <BaseEdge
-      path={path}
-      markerEnd={markerEnd}
-      // .motion-dash-march also carries the prefers-reduced-motion override
-      // from Stage A6 -- disabling it there doesn't need a second check here.
-      className={clsx(marching && "motion-dash-march")}
-      style={{
-        stroke: color,
-        strokeWidth: strokeWidth(edge.kind),
-        strokeDasharray: DASH[edge.kind],
-      }}
-    />
+    <>
+      <BaseEdge
+        path={path}
+        markerEnd={markerEnd}
+        // .motion-dash-march also carries the prefers-reduced-motion override
+        // from Stage A6 -- disabling it there doesn't need a second check here.
+        className={clsx(marching && "motion-dash-march")}
+        style={{
+          stroke: color,
+          // Hover thickens (docs/PLAN-V1.md §9.1). Widening the stroke rather
+          // than changing color keeps the kind's own semantic color intact --
+          // a contradiction stays red while hovered.
+          strokeWidth: strokeWidth(edge.kind) + (hovered ? 1 : 0),
+          strokeDasharray: DASH[edge.kind],
+          transition: "stroke-width var(--dur-fast) var(--ease-out)",
+        }}
+      />
+      {/* A bezier path is ~1px of hit target, which is unhittable in practice.
+          This invisible wider path is what actually catches the pointer; React
+          Flow passes its own default width in via interactionWidth. */}
+      <path
+        d={path}
+        fill="none"
+        strokeOpacity={0}
+        strokeWidth={interactionWidth ?? 20}
+        className="react-flow__edge-interaction"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      />
+      {hovered && (
+        <EdgeLabelRenderer>
+          <div
+            // Borrowed styling rather than the Tooltip/Popover primitives: both
+            // anchor to a wrapping trigger element, and an SVG path has no
+            // wrapper at its midpoint to anchor to.
+            className="pointer-events-none absolute rounded border border-border-strong bg-surface-sunken px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-ink-muted shadow-e-2"
+            style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
+          >
+            {KIND_LABEL[edge.kind]}
+          </div>
+        </EdgeLabelRenderer>
+      )}
+    </>
   );
 }

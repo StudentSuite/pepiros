@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -12,6 +12,7 @@ import {
 import "@xyflow/react/dist/style.css";
 
 import { useWorkspaceStore } from "@/lib/store/workspace";
+import { allPillarIds, hiddenLeafIds, leavesByPillar, visibleEdges } from "@/lib/graph/visibility";
 import type { GraphNode, Workspace } from "@/types/anchor";
 import type { CitationExpansionResult, CitationDirection } from "@/lib/services/citationExpand";
 import { PaperNode } from "./PaperNode";
@@ -146,29 +147,64 @@ function computeSpannedPapers(workspace: Workspace): Map<string, { id: string; l
   return spanned;
 }
 
-function buildNodes(workspace: Workspace): PepirosNode[] {
-  const spanned = computeSpannedPapers(workspace);
-  return workspace.nodes.map((node, index) => ({
-    id: node.id,
-    type: NODE_TYPE_MAP[node.type],
-    position: { x: node.x, y: node.y },
-    data: {
-      node,
-      evidence: workspace.evidence,
-      spannedPapers: spanned.get(node.id),
-      appearDelayMs: (index % 6) * 40,
-    },
-  }));
+interface BuildOptions {
+  collapsedPillarIds: Set<string>;
+  onToggleCollapse: (pillarId: string) => void;
+  ghostPaperIds: Set<string>;
+  loadingPaperIds: Set<string>;
+  onToggleGhosts: (paperNodeId: string) => void;
 }
 
-function buildEdges(workspace: Workspace): PepirosEdge[] {
+function buildNodes(workspace: Workspace, options: BuildOptions): PepirosNode[] {
+  const spanned = computeSpannedPapers(workspace);
+  const pillarLeaves = leavesByPillar(workspace);
+  const hidden = hiddenLeafIds(workspace, options.collapsedPillarIds);
+
+  return workspace.nodes
+    .filter((node) => !hidden.has(node.id))
+    .map((node, index) => ({
+      id: node.id,
+      type: NODE_TYPE_MAP[node.type],
+      position: { x: node.x, y: node.y },
+      data: {
+        node,
+        evidence: workspace.evidence,
+        spannedPapers: spanned.get(node.id),
+        appearDelayMs: (index % 6) * 40,
+        ...(node.type === "pillar"
+          ? {
+              leafCount: (pillarLeaves.get(node.id) ?? []).length,
+              collapsed: options.collapsedPillarIds.has(node.id),
+              onToggleCollapse: () => options.onToggleCollapse(node.id),
+            }
+          : {}),
+        ...(node.type === "paper" && node.paperId
+          ? {
+              ghostsShown: options.ghostPaperIds.has(node.id),
+              ghostsLoading: options.loadingPaperIds.has(node.id),
+              onToggleGhosts: () => options.onToggleGhosts(node.id),
+            }
+          : {}),
+      },
+    }));
+}
+
+/**
+ * Edges are filtered to those with both endpoints visible. That one rule does
+ * all the edge decluttering: 15 of the fixture's 22 edges are `contains`
+ * scaffolding, so collapsing a pillar removes its tree edges for free, with no
+ * edge-specific collapse logic -- and it will do the same for ghost-citation
+ * edges whenever their ghost nodes aren't shown.
+ */
+function buildEdges(workspace: Workspace, visibleNodeIds: Set<string>): PepirosEdge[] {
   const pillarByNodeId = new Map(workspace.nodes.map((n) => [n.id, n.pillarIndex]));
+  const visible = visibleEdges(workspace, visibleNodeIds);
   // Dash-march is a workspace-wide decision, not a per-edge one (docs/PLAN-V1.md
   // §9.1: disable above 4 visible contradiction edges) -- counted once here rather
-  // than each GraphEdge instance guessing at how many siblings exist.
-  const contradictsCount = workspace.edges.filter((e) => e.kind === "contradicts").length;
-  const dashMarchEnabled = contradictsCount <= 4;
-  return workspace.edges.map((edge) => ({
+  // than each GraphEdge instance guessing at how many siblings exist. Counted over
+  // *visible* edges, since that is what the spec's threshold is about.
+  const dashMarchEnabled = visible.filter((e) => e.kind === "contradicts").length <= 4;
+  return visible.map((edge) => ({
     id: edge.id,
     type: "graphEdge",
     source: edge.sourceId,
@@ -191,51 +227,121 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
   const [nodes, setNodes, onNodesChange] = useNodesState<AnyPepirosNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<PepirosEdge>([]);
 
+  // All pillars start collapsed: the first thing a reader should see is the
+  // shape of the argument, not every leaf's body at once (docs/PLAN-V1.md
+  // §9.1's PillarNode state table). On the bundled 3-paper fixture this is the
+  // difference between 20 nodes and 12.
+  const [collapsedPillarIds, setCollapsedPillarIds] = useState<Set<string>>(new Set());
+  // Ghost citations, keyed by the paper node that asked for them, so hiding one
+  // paper's citations leaves another paper's alone.
+  const [ghostsByPaper, setGhostsByPaper] = useState<
+    Map<string, { nodes: GhostCitationNodeType[]; edges: PepirosEdge[] }>
+  >(new Map());
+  const [loadingPaperIds, setLoadingPaperIds] = useState<Set<string>>(new Set());
+
   useEffect(() => {
     if (!workspace) void loadWorkspace(workspaceId);
   }, [workspace, workspaceId, loadWorkspace]);
 
+  // Seed the collapsed set once per workspace, then leave it to the user.
   useEffect(() => {
     if (!workspace) return;
-    setNodes(buildNodes(workspace));
-    setEdges(buildEdges(workspace));
-  }, [workspace, setNodes, setEdges]);
+    setCollapsedPillarIds(allPillarIds(workspace));
+    setGhostsByPaper(new Map());
+  }, [workspace]);
 
-  // Ghost citation expansion (plan.md §6.2): fires once per paper after the base
-  // graph is in place and only appends -- the effect above never re-triggers once
-  // `workspace` has loaded, so it won't clobber these. Errors per-paper are
-  // swallowed (Promise.all inside fetchGhostsForPaper already reduces failures to
-  // status: "error"/"rate_limited", which just yields no candidates for that paper).
-  useEffect(() => {
-    if (!workspace) return;
-    let cancelled = false;
-    const paperNodes = workspace.nodes.filter((n) => n.type === "paper");
+  const handleToggleCollapse = useCallback((pillarId: string) => {
+    setCollapsedPillarIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(pillarId)) next.delete(pillarId);
+      else next.add(pillarId);
+      return next;
+    });
+  }, []);
 
-    void Promise.all(paperNodes.map((paperNode) => fetchGhostsForPaper(workspaceId, paperNode))).then(
-      (results) => {
-        if (cancelled) return;
-        // The same external paper can turn up for more than one workspace
-        // paper (e.g. both cite a common source) -- dedupe by id so it
-        // renders as one ghost node, not a duplicate-keyed stack. Edges
-        // stay one-per-source-paper (see the edgeId comment above), so
-        // every real citation relationship still gets its own edge into
-        // that single shared node.
-        const seenNodeIds = new Set<string>();
-        const newNodes = results.flatMap((r) => r.nodes).filter((n) => {
-          if (seenNodeIds.has(n.id)) return false;
-          seenNodeIds.add(n.id);
-          return true;
+  /**
+   * Citation expansion is user-triggered, not automatic (docs/PLAN-V1.md §6.2).
+   * It used to fire for every paper on load, which meant ghost nodes always
+   * cluttered the graph even though the only thing to do with one needs an
+   * ingest pipeline that doesn't exist yet.
+   */
+  const handleToggleGhosts = useCallback(
+    (paperNodeId: string) => {
+      const paperNode = workspace?.nodes.find((n) => n.id === paperNodeId);
+      if (!paperNode) return;
+
+      let alreadyShown = false;
+      setGhostsByPaper((prev) => {
+        if (!prev.has(paperNodeId)) return prev;
+        alreadyShown = true;
+        const next = new Map(prev);
+        next.delete(paperNodeId);
+        return next;
+      });
+      if (alreadyShown) return;
+
+      setLoadingPaperIds((prev) => new Set(prev).add(paperNodeId));
+      void fetchGhostsForPaper(workspaceId, paperNode)
+        .then((result) => {
+          setGhostsByPaper((prev) => new Map(prev).set(paperNodeId, result));
+        })
+        .finally(() => {
+          setLoadingPaperIds((prev) => {
+            const next = new Set(prev);
+            next.delete(paperNodeId);
+            return next;
+          });
         });
-        const newEdges = results.flatMap((r) => r.edges);
-        if (newNodes.length) setNodes((prev) => [...prev, ...newNodes]);
-        if (newEdges.length) setEdges((prev) => [...prev, ...newEdges]);
-      },
-    );
+    },
+    [workspace, workspaceId],
+  );
 
-    return () => {
-      cancelled = true;
-    };
-  }, [workspace, workspaceId, setNodes, setEdges]);
+  useEffect(() => {
+    if (!workspace) return;
+
+    const baseNodes = buildNodes(workspace, {
+      collapsedPillarIds,
+      onToggleCollapse: handleToggleCollapse,
+      ghostPaperIds: new Set(ghostsByPaper.keys()),
+      loadingPaperIds,
+      onToggleGhosts: handleToggleGhosts,
+    });
+
+    // The same external paper can turn up for more than one workspace paper
+    // (e.g. both cite a common source) -- dedupe by id so it renders as one
+    // ghost node, not a duplicate-keyed stack. Edges stay one-per-source-paper
+    // (see the edgeId comment in fetchGhostsForPaper), so every real citation
+    // relationship still gets its own edge into that single shared node.
+    const seenGhostIds = new Set<string>();
+    const ghostNodes = [...ghostsByPaper.values()]
+      .flatMap((g) => g.nodes)
+      .filter((n) => {
+        if (seenGhostIds.has(n.id)) return false;
+        seenGhostIds.add(n.id);
+        return true;
+      });
+    const ghostEdges = [...ghostsByPaper.values()].flatMap((g) => g.edges);
+
+    const visibleIds = new Set<string>([
+      ...baseNodes.map((n) => n.id),
+      ...ghostNodes.map((n) => n.id),
+    ]);
+
+    setNodes([...baseNodes, ...ghostNodes]);
+    setEdges([
+      ...buildEdges(workspace, visibleIds),
+      ...ghostEdges.filter((e) => visibleIds.has(e.source) && visibleIds.has(e.target)),
+    ]);
+  }, [
+    workspace,
+    collapsedPillarIds,
+    ghostsByPaper,
+    loadingPaperIds,
+    handleToggleCollapse,
+    handleToggleGhosts,
+    setNodes,
+    setEdges,
+  ]);
 
   const handleNodeClick = useCallback(
     (_event: React.MouseEvent, node: FlowNode) => {

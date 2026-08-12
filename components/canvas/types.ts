@@ -17,6 +17,19 @@ export interface PepirosNodeData extends Record<string, unknown> {
   /** node-appear stagger (docs/PLAN-V1.md §14.3: 40ms per sibling), cycled every
    *  6 so a large graph doesn't cascade for seconds. Resolved by GraphCanvas. */
   appearDelayMs?: number;
+  /** Pillar nodes only: how many leaves this pillar contains, and whether they're
+   *  currently hidden. Resolved by GraphCanvas from `contains` edges so the node
+   *  can show a child-count pill without walking the edge list itself. */
+  leafCount?: number;
+  collapsed?: boolean;
+  /** Pillar nodes only: toggles this pillar's leaves. Absent means non-interactive. */
+  onToggleCollapse?: () => void;
+  /** Paper nodes only: on-demand OpenAlex citation expansion (docs/PLAN-V1.md §6.2).
+   *  Gated behind this rather than auto-fired, so ghost nodes -- whose one action
+   *  needs an ingest pipeline that doesn't exist -- never clutter the graph unasked. */
+  ghostsShown?: boolean;
+  ghostsLoading?: boolean;
+  onToggleGhosts?: () => void;
 }
 
 export type PepirosNode = Node<PepirosNodeData, string>;
