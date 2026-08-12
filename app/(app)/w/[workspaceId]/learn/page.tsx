@@ -18,7 +18,7 @@ export default async function LearnPage({
     <div className="min-h-dvh bg-surface px-6 py-8 text-ink">
       <div className="mx-auto flex max-w-3xl flex-col gap-8">
         <div className="flex items-center justify-between">
-          <h1 className="font-sans text-lg text-ink">Learn</h1>
+          <h1 className="font-serif text-2xl text-ink">Learn</h1>
           <Link
             href={`/w/${workspaceId}`}
             className="font-sans text-xs text-ink-muted hover:text-ink"
@@ -28,12 +28,12 @@ export default async function LearnPage({
         </div>
 
         <section className="flex flex-col gap-3">
-          <h2 className="font-sans text-xs uppercase tracking-wide text-ink-faint">Flashcards</h2>
+          <h2 className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">Flashcards</h2>
           <FlashcardDeck />
         </section>
 
         <section className="flex flex-col gap-3 border-t border-border pt-8">
-          <h2 className="font-sans text-xs uppercase tracking-wide text-ink-faint">Quiz</h2>
+          <h2 className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">Quiz</h2>
           <QuizRunner />
         </section>
       </div>

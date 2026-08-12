@@ -70,7 +70,7 @@ export function FlashcardDeck() {
           }
         }}
         className={clsx(
-          "surface-reading flex min-h-[160px] w-full max-w-md items-center justify-center rounded p-6 text-center shadow-lg",
+          "surface-reading paper-grain flex min-h-[160px] w-full max-w-md items-center justify-center rounded p-6 text-center shadow-lg",
         )}
       >
         <p className={clsx("font-serif text-base leading-snug text-[#1c1a15]", flipped && "italic")}>

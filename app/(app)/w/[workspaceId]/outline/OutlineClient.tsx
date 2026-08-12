@@ -106,7 +106,7 @@ export function OutlineClient({ workspaceId }: { workspaceId: string }) {
 
       {looseNodes.length > 0 && (
         <div className="mt-8 border-t border-border pt-6">
-          <h2 className="mb-3 font-sans text-xs uppercase tracking-wide text-ink-faint">
+          <h2 className="mb-3 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
             Cross-paper nodes
           </h2>
           <ul className="flex flex-col gap-2">
