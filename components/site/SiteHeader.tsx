@@ -9,7 +9,7 @@ import { mockSession, type MockUser } from "@/lib/mock/session";
 
 const NAV_LINKS = [
   { href: "/how-it-works", label: "How it works" },
-  { href: "/mcp", label: "For Claude" },
+  { href: "/mcp", label: "For agents" },
   { href: "/discover", label: "Discover" },
   { href: "/about", label: "About" },
 ] as const;

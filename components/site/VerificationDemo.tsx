@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import clsx from "clsx";
 import { RefChip } from "@/components/ui/RefChip";
 import { EvidenceBadge } from "@/components/ui/EvidenceBadge";
+import { LogoMark } from "@/components/ui/Logo";
 import type { EvidenceTier } from "@/types/anchor";
 
 interface DemoBeat {
@@ -90,11 +91,23 @@ export function VerificationDemo() {
   const settled = phase >= 4 && !exiting;
 
   return (
-    <div className="surface-reading paper-grain rounded-lg p-s-6" aria-hidden="true">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <div
+      className="surface-reading paper-grain relative overflow-hidden rounded-xl p-s-6 shadow-e-3 sm:p-s-8"
+      aria-hidden="true"
+    >
+      {/* Brand watermark -- the same LogoMark used in the header, oversized
+          and near-invisible, purely for presence. Real asset (inline brand
+          SVG), not decoration invented for this component. */}
+      <LogoMark className="pointer-events-none absolute -bottom-10 -right-10 h-56 w-56 text-[#1c1a15]/[0.04]" />
+
+      <p className="relative font-mono text-[10px] uppercase tracking-widest text-[#1c1a15]/40">
+        Grounding, live
+      </p>
+
+      <div className="relative mt-4 flex flex-wrap items-start justify-between gap-4">
         <p
           className={clsx(
-            "font-serif text-lg leading-snug text-[#1c1a15] transition-all duration-slow ease-out",
+            "font-serif text-xl leading-snug text-[#1c1a15] transition-all duration-slow ease-out sm:text-2xl",
             claimIn ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0",
           )}
         >
@@ -110,19 +123,22 @@ export function VerificationDemo() {
         </span>
       </div>
 
-      {/* Beam: an SVG path whose stroke-dashoffset animates from the full
-          path length to 0, the same dash-based drawing technique as the
-          canvas's dash-march edges (app/globals.css), applied as a one-shot
-          CSS transition here rather than an added looping @keyframes. */}
-      <div className="flex justify-end pr-2">
-        <svg viewBox="0 0 4 32" width={4} height={32} aria-hidden="true">
+      {/* Beam: a wide curved SVG path whose stroke-dashoffset animates from
+          the full path length to 0, the same dash-based drawing technique as
+          the canvas's dash-march edges (app/globals.css), applied as a
+          one-shot CSS transition rather than an added looping @keyframes.
+          Curved and full-width now that the panel is wide, not the original
+          4px straight drop -- reads as a beam connecting claim to source,
+          not a divider line. */}
+      <div className="relative -my-2 h-12 w-full" aria-hidden="true">
+        <svg viewBox="0 0 400 48" width="100%" height={48} preserveAspectRatio="none">
           <path
-            d="M2 0 L2 32"
+            d="M370 4 C 260 4, 220 44, 30 44"
             fill="none"
             stroke="var(--ink-faint)"
             strokeWidth={2}
-            strokeDasharray={32}
-            strokeDashoffset={beamDrawn ? 0 : 32}
+            strokeDasharray={480}
+            strokeDashoffset={beamDrawn ? 0 : 480}
             className="transition-[stroke-dashoffset] duration-slow ease-out"
           />
         </svg>
@@ -130,7 +146,7 @@ export function VerificationDemo() {
 
       <div
         className={clsx(
-          "rounded border border-black/10 bg-paper-muted p-s-4 transition-all duration-slow ease-out",
+          "relative rounded-lg border border-black/10 bg-paper-muted p-s-5 transition-all duration-slow ease-out sm:p-s-6",
           beamDrawn ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0",
         )}
       >
@@ -139,7 +155,7 @@ export function VerificationDemo() {
         </p>
         <p
           className={clsx(
-            "mt-1 font-serif text-sm leading-relaxed text-[#1c1a15] transition-colors duration-base ease-out",
+            "mt-2 font-serif text-base leading-relaxed text-[#1c1a15] transition-colors duration-base ease-out sm:text-lg",
             settled && ["underline underline-offset-4 decoration-2", UNDERLINE_CLASS[beat.tier]],
           )}
         >
@@ -147,7 +163,7 @@ export function VerificationDemo() {
         </p>
         <div
           className={clsx(
-            "mt-2 transition-all duration-base ease-out",
+            "mt-3 transition-all duration-base ease-out",
             settled ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0",
           )}
         >

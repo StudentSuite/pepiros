@@ -56,7 +56,7 @@ function CanvasFanOutPreview() {
 
 // Landing page, full replace (frontend v1 plan, Task 3). Grounding-first per
 // the positioning rule (plan.md §10, docs/PLAN-V1.md §22.4): the
-// deterministic-verification pitch is the entire hero and the "For Claude"
+// deterministic-verification pitch is the entire hero and the "For agents"
 // band, platform ambition is a calmer, visibly smaller section below the
 // fold. Editorial Paper direction (design/DIRECTIONS.md). Nine sections,
 // header/footer excluded (those come from app/(marketing)/layout.tsx):
@@ -67,9 +67,24 @@ export default function MarketingPage() {
   return (
     <main className="flex flex-col">
       {/* Hero. Not wrapped in Reveal -- it's the first thing on screen, there's
-          nothing to scroll-trigger. */}
-      <section className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-6 pb-20 pt-20 sm:pt-28">
-        <div className="flex flex-col gap-5">
+          nothing to scroll-trigger. Widened to max-w-5xl so the showpiece
+          below the text has room to be the "one majestic moment" the design
+          plan calls for; the copy column stays narrow (max-w-2xl) for
+          readability inside that wider section. */}
+      <section className="relative mx-auto flex w-full max-w-5xl flex-col gap-12 overflow-hidden px-6 pb-24 pt-20 sm:pt-28">
+        {/* Ambient background: soft pillar-colored glow + the real brand
+            wordmark, both faint, both purely decorative. No new asset --
+            LogoMark is the same inline SVG used everywhere else. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-24 right-0 h-[32rem] w-[32rem] rounded-full bg-pillar-4/10 blur-3xl"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-40 -left-24 h-[28rem] w-[28rem] rounded-full bg-pillar-7/10 blur-3xl"
+        />
+
+        <div className="relative flex max-w-2xl flex-col gap-5">
           <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">
             Research reading &amp; citation graph
           </p>
@@ -199,14 +214,14 @@ export default function MarketingPage() {
         </section>
       </Reveal>
 
-      {/* For Claude band. Deliberately NOT wrapped in Reveal -- always
+      {/* For agents band. Deliberately NOT wrapped in Reveal -- always
           visible, per the design plan, not scroll-triggered. Full-bleed
           teal (pillar-7) tint, reduced opacity, no scroll gate on the MCP
           pitch. Mini-transcript mirrors the real demo beat, plan.md §7. */}
       <section className="relative border-t border-border">
         <div className="absolute inset-0 bg-pillar-7/10" aria-hidden="true" />
         <div className="relative mx-auto flex w-full max-w-3xl flex-col gap-6 px-6 py-16 sm:py-20">
-          <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">For Claude</p>
+          <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">For agents</p>
           <h2 className="max-w-xl font-serif text-3xl leading-tight text-ink sm:text-4xl">
             Turn Claude into a fact-checker with a source.
           </h2>

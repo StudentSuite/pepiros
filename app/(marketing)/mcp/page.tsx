@@ -112,7 +112,7 @@ const DEMO_STEPS: ReadonlyArray<{ title: string; body: string; tool?: string }> 
 ];
 
 /**
- * `/mcp` -- the "For Claude" pitch, unpacked. Hero -> the 12-tool grid ->
+ * `/mcp` -- the "For agents" pitch, unpacked. Hero -> the 12-tool grid ->
  * the demo-beat storyboard -> install line -> transport note -> CTA back to
  * the demo workspace. Header/footer come from app/(marketing)/layout.tsx.
  */
@@ -121,7 +121,7 @@ export default function McpPage() {
     <main className="flex flex-col">
       {/* Hero. Not wrapped in Reveal -- first thing on screen. */}
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-6 pb-16 pt-20 sm:pt-28">
-        <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">For Claude</p>
+        <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">For agents</p>
         <h1 className="font-serif text-4xl leading-tight text-ink sm:text-5xl">
           Turn Claude into a fact-checker with a source.
         </h1>
