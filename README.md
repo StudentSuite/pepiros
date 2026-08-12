@@ -10,7 +10,7 @@
 [![Next.js 15](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg)](tsconfig.json)
 
-[Quick start](#quick-start) · [What works today](#what-works-today) · [Architecture](#architecture) · [Design system](#design-system) · [Configuration](#configuration) · [Contributing](CONTRIBUTING.md)
+[Quick start](#quick-start) · [What works today](#what-works-today) · [Architecture](#architecture) · [MCP](#using-the-mcp-server) · [Design system](#design-system) · [Configuration](#configuration) · [Contributing](CONTRIBUTING.md)
 
 </div>
 
@@ -53,8 +53,12 @@ Early build, moving fast. Honest status:
 | **UI** (`components/*`, `app/(app)/*`) | React Flow canvas (5 node types, ghost citation nodes, kind-coloured edges), doc-reader, outline, audit, learn, and share views. Reads the bundled fixture. |
 | **Citation APIs** (`lib/services/related.ts`, `lib/services/citationExpand.ts`) | Real Semantic Scholar + OpenAlex calls (free, no key) for the related-papers rail and canvas citation expansion. Typed `ok`/`no_match`/`rate_limited`/`error` status, never fabricated fallback data. |
 | **LLM layer** (`lib/agents/*`) | Archetype classifier, archetype-conditioned pillar planner, and 6 of the 21 node generators (`summary`, `methodology`, `statistical_validity`, `stated_limitations`, `weaknesses`, `does_not_establish`), fanned out via `p-queue` with per-node failure isolation. Runs on **Groq (primary) + Featherless (fallback)**, not Anthropic — see [Configuration](#configuration). Every claimed quote is re-verified through the grounding spine before it becomes a real evidence row. Verified end to end against both live APIs, not just mocked. |
-| **API** | `POST /api/verify`, `POST /api/audit`, `GET /api/graph/[workspaceId]`, `GET /api/related`, `GET /api/expand` |
-| **Tooling** | Typecheck, lint, test, and build all gated in CI on every push and PR. 76 Vitest cases, including the LLM layer tested against a hand-rolled mock model (no API key or network call needed). |
+| **MCP server** (`mcp/*`) | 8 tools (`search_paper`, `verify_claim`, `get_outline`, `get_node`, `create_node`, `find_contradictions`, `paper_facts`, `list_papers`), 3 resource templates for `@`-mentioning a workspace/paper/node, and the 4 `docs/PLAN-V1.md` §13.3 prompts, over stdio. `create_node` re-verifies submitted evidence server-side, so a client cannot assert `quote_located`. Verified over the real protocol with the SDK's own client. |
+| **Grounded chat** (`lib/services/chat.ts`, `POST /api/chat`) | Query rewrite → route classifier → stable-id context block → answer → citation re-verification. Refusal path with an explicit "answer without sources" opt-in; ungrounded answers render visually distinct. Verified against the live Groq API. |
+| **Canvas layout** (`lib/layout/*`) | Deterministic server-computed positions: radial for one paper, layered columns for several. Verified to produce no overlapping cards at 1, 2, or 3 papers. Pillars open collapsed, and edges render only when both endpoints do. |
+| **Upload validation** (`lib/services/upload.ts`, `POST /api/ingest`) | Size (50MB), magic bytes, page cap (120), text-layer check, duplicate detection (DOI then fuzzy title), and arXiv/PMC/DOI URL resolution. `GET /api/jobs/[id]` streams the 9-stage progress list over SSE. Validation is enforced; parsing behind it is still a stub, so `202` means queued, not analyzed. |
+| **API** | `POST /api/verify`, `POST /api/audit`, `POST /api/chat`, `POST /api/ingest`, `GET /api/jobs/[id]`, `GET /api/graph/[workspaceId]`, `GET /api/related`, `GET /api/expand` |
+| **Tooling** | Typecheck, lint, test, and build all gated in CI on every push and PR. 218 Vitest cases across 22 files, including the LLM and chat layers tested against a hand-rolled mock model (no API key or network call needed). |
 
 ### Not built yet
 
@@ -62,14 +66,14 @@ Each of these is a one-line `TODO` at the top of its file, describing what belon
 
 | Area | Missing |
 | --- | --- |
-| **Ingest** | `scripts/parse.py` (PyMuPDF), `scripts/seed.ts`, `scripts/ocr_fallback.py`, `lib/services/ingest.ts`, `POST /api/ingest`, `GET /api/jobs/[id]` |
-| **Remaining generators** | 15 of the 21 in `docs/PLAN-V1.md` §8 (`contributions`, `background`, `jargon`, `biases`, `novelty`, `reproducibility`, `dataset_notes`, `ethics`, `clinical_relevance`, `future_work`, `equations`, `figures`, `concept_links`, `flashcards`, `quiz`) — mechanical repeats of the pattern in `lib/agents/generators/`, plus figure vision, which needs cropped rasters from the still-stub ingest pipeline |
-| **Graph & synthesis** | `lib/services/nodes.ts`, `lib/services/synthesis.ts`, both `lib/layout/*`, `POST /api/compare`, `PATCH`/`DELETE /api/nodes/[id]` |
-| **MCP** | All 12 tools, `mcp/server.ts`, stdio transport, resources, prompts |
-| **Chat & export** | `POST /api/chat` (streaming, grounded), `/api/chat/promote`, `GET /api/export` |
+| **PDF parsing** | `scripts/parse.py` (PyMuPDF), `scripts/ocr_fallback.py`, `scripts/seed.ts`, `lib/services/ingest.ts`. Upload *validation* is real; nothing yet turns an accepted PDF into chunks and anchors. Needs PyMuPDF installed and one open-access test PDF in the repo. |
+| **Remaining generators** | 15 of the 21 in `docs/PLAN-V1.md` §8 (`contributions`, `background`, `jargon`, `biases`, `novelty`, `reproducibility`, `dataset_notes`, `ethics`, `clinical_relevance`, `future_work`, `equations`, `figures`, `concept_links`, `flashcards`, `quiz`) — mechanical repeats of the pattern in `lib/agents/generators/`, plus figure vision, which needs cropped rasters from the parse pipeline |
+| **Synthesis** | `lib/services/synthesis.ts`, `POST /api/compare`, `PATCH`/`DELETE /api/nodes/[id]`. `find_contradictions` reads existing `contradicts` edges; nothing writes new ones. |
+| **MCP, remaining** | `add_paper`/`get_job` (need the parse pipeline), `list_workspaces`/`create_workspace` (need real multi-workspace persistence), and the remote streamable-HTTP + OAuth transport. `docs/PLAN-V1.md` §13.4 says verify connector requirements against Anthropic's current docs before building that. |
+| **Export & promote** | `GET /api/export`, `POST /api/chat/promote` (message → `ThreadNode`; reuses `create_node`) |
 | **Measurement** | `evals/`, `scripts/measure-drop-rate.ts` |
 
-**Everything currently reads one fixture.** `lib/services/workspace.ts`'s `fetchWorkspace()` returns `fixtures/workspace.json` regardless of the workspace id passed to it. No Supabase project is provisioned and no PDF has been through this system yet. That single function is the seam where a real backend replaces the fixture. The LLM layer works today, but only if you supply at least one of `GROQ_API_KEY` or `FEATHERLESS_API_KEY` — nothing calls it yet without one.
+**Everything still reads one fixture.** `lib/services/workspace.ts`'s `fetchWorkspace()` returns `fixtures/workspace.json` regardless of the workspace id passed to it, and no PDF has been through this system yet. That single function is the seam where a real backend replaces the fixture. Chat and the generators need at least one of `GROQ_API_KEY` or `FEATHERLESS_API_KEY`; everything else runs without a key.
 
 ---
 
@@ -98,8 +102,8 @@ Requires Node 20 or newer.
 | `npm run lint` | ESLint |
 | `npm test` / `npm run test:watch` | Vitest over `lib/**/*.test.ts` |
 | `npm run db:generate` / `db:migrate` / `db:studio` | Drizzle Kit against `DATABASE_URL` |
-| `npm run seed` | `scripts/seed.ts` (stub) |
-| `npm run mcp:stdio` | MCP server over stdio (stub) |
+| `npm run seed` | `scripts/seed.ts` (still a stub) |
+| `npm run mcp:stdio` | MCP server over stdio — see [Using the MCP server](#using-the-mcp-server) |
 
 ---
 
@@ -108,19 +112,43 @@ Requires Node 20 or newer.
 ```text
 Next.js 15 (App Router, TS, React 19)          -> Vercel
   app/api/*         HTTP surface for the UI
-  mcp/server.ts     MCP surface for Claude
+  mcp/server.ts     MCP surface for Claude (stdio today, remote HTTP later)
   lib/services/*    <- BOTH of the above call only this
   lib/grounding/*   deterministic verification, no model calls
   lib/agents/*      archetype classifier, pillar planner, node generators -> Groq, falling back to Featherless (lib/ai/client.ts)
+  lib/layout/*      deterministic server-computed node positions (radial | layered)
+  lib/chat/*        citation-marker parsing, shared by the chat server and client
 
 Supabase          Postgres (no vector column), Storage, Auth, Realtime (job status)
 scripts/parse.py  local PyMuPDF run: sections, chunks, figures, equations, refs, numerics
 scripts/ocr_fallback.py   local PaddleOCR-VL, for scanned or table-heavy pages
 ```
 
-Three things that look like omissions and are not. There are **no embeddings and no vector column**: a paper is 8-20k tokens, so the whole thing goes in context behind a prompt cache, addressed by stable citation ids. There is **no deployed Python service**: PyMuPDF and PaddleOCR run as local scripts, so there is no second deploy target. There is **no auto-layout engine**: node positions are computed server-side and deterministically. See [`plan.md`](plan.md) §2 and §11 before proposing any of them.
+Three things that look like omissions and are not. There are **no embeddings and no vector column**: a paper is 8-20k tokens, so the whole thing goes in context behind a prompt cache, addressed by stable citation ids — `search_paper` scores keyword coverage rather than cosine distance. There is **no deployed Python service**: PyMuPDF and PaddleOCR run as local scripts, so there is no second deploy target. There is **no force-directed layout**: positions come from `lib/layout/*` as a pure function of the graph's shape, so the same graph always lands identically. See [`plan.md`](plan.md) §2 and §11 before proposing any of them.
 
 Working in this repo with an AI coding agent? Read [`CLAUDE.md`](CLAUDE.md) first.
+
+---
+
+## Using the MCP server
+
+Point Claude Code (or Desktop) at the stdio server to call the grounding layer from a conversation:
+
+```json
+{
+  "mcpServers": {
+    "pepiros": {
+      "command": "npx",
+      "args": ["tsx", "mcp/stdio.ts"],
+      "cwd": "/absolute/path/to/pepiros"
+    }
+  }
+}
+```
+
+Then the `docs/PLAN-V1.md` §13.5 beat works for real: ask Claude to summarize the fixture's RCT, then **"now verify every claim you just made."** It calls `verify_claim` on its own sentences and reports back which ones the source actually supports.
+
+Worth knowing what the tiers mean, because the distinction is the product: **quote located** means the quote was found in the source. It does *not* mean the claim follows from the quote. Nothing here judges entailment — that is deliberately left to the reader, and there is no tool that will do it for you.
 
 ---
 

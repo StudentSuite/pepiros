@@ -23,7 +23,12 @@ npm test
 npm run build
 ```
 
-All four should pass, and CI runs exactly these. `npm test` is Vitest over `lib/**/*.test.ts` and currently covers the grounding spine; it is not the same thing as `evals/`, which is reserved for golden-paper generator eval cases per plan.md §9 and is still a stub. Anything touching `lib/grounding/*` should arrive with a test, since that code is the product. For UI changes, add an `npm run dev` smoke test of whatever you touched.
+All four should pass, and CI runs exactly these. `npm test` is Vitest over `lib/**/*.test.ts` (218 cases: the grounding spine, layout, graph visibility, citation parsing, the service layer, and the LLM/chat agents against a mock model); it is not the same thing as `evals/`, which is reserved for golden-paper generator eval cases per plan.md §9 and is still a stub. Anything touching `lib/grounding/*` should arrive with a test, since that code is the product.
+
+Two habits this repo has earned the hard way:
+
+- **Verify against the real thing, not just the types.** A typechecking change can still be wrong. Bugs found only by running it include a model citing with fullwidth `【C2】` instead of `[C2]` (which made grounded answers report themselves as ungrounded), a Groq model that 400s on every structured-output call, and duplicate React keys that silently dropped a real graph edge. For UI, click through with `npm run dev`; for anything touching a model or an external API, make one real call.
+- **Put pure logic in `lib/`.** Vitest only collects `lib/**`, so logic buried in a component is logic that will not be tested.
 
 ## Code conventions
 

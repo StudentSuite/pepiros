@@ -553,6 +553,8 @@ No `ask` tool. Exposing `search_paper` plus `verify_claim` and letting Claude re
 Resources: `researchsumm://workspace/{id}/outline`, `researchsumm://paper/{id}`, `researchsumm://node/{id}`, so a user can `@`-mention a paper or node.
 Prompts: `brief-me-on-this-paper`, `audit-this-summary`, `where-do-these-disagree`, `what-does-this-not-establish`.
 
+> **Naming, as built:** this section predates the rename to Pepiros. The implemented scheme is `pepiros://workspace/{id}/outline`, `pepiros://paper/{id}`, `pepiros://node/{id}`, and the stdio wrapper in §13.4 is `pepiros-mcp` — the package, repo, and every other identifier say pepiros, so this doc is the stale one, not the code. Prompt names are as listed above and were implemented unchanged.
+
 ### 13.4 Transport and auth
 
 Ship in this order:
