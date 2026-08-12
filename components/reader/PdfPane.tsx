@@ -22,7 +22,7 @@ export function PdfPane({
   return (
     <div className="flex flex-col items-center gap-2">
       <div
-        className="surface-reading relative w-full max-w-xl overflow-hidden rounded shadow-lg"
+        className="surface-reading paper-grain relative w-full max-w-xl overflow-hidden rounded shadow-lg"
         style={{ aspectRatio: `${PAGE_WIDTH} / ${PAGE_HEIGHT}` }}
       >
         <div className="absolute right-3 top-2 font-mono text-[11px] text-[#1c1a15]/50">
