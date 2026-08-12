@@ -47,7 +47,7 @@ export function RelatedPapersRail({ workspaceId, paperId }: { workspaceId: strin
 
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="font-sans text-[11px] uppercase tracking-wide text-ink-faint">
+      <h3 className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
         Related papers
       </h3>
 

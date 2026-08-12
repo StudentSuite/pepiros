@@ -66,7 +66,7 @@ export function ShareClient({ shareToken }: { shareToken: string }) {
       </div>
 
       <header className="border-b border-border px-6 py-4">
-        <p className="font-mono text-[11px] uppercase tracking-wide text-ink-faint">
+        <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
           {workspace.name}
         </p>
         <h1 className="font-serif text-xl text-ink">{firstPaper.title}</h1>

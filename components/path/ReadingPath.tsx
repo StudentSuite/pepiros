@@ -56,7 +56,7 @@ export function ReadingPath() {
     <div className="rounded border border-border bg-surface-raised p-3">
       <div className="mb-2 flex items-start justify-between gap-2">
         <div>
-          <p className="font-sans text-[11px] uppercase tracking-wide text-ink-faint">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
             Reading path
           </p>
           <p className="font-serif text-sm text-ink">{thread.title}</p>

@@ -5,6 +5,11 @@ import { Panel as FlowPanel, useReactFlow } from "@xyflow/react";
 const buttonClass =
   "flex h-7 w-7 items-center justify-center rounded font-sans text-sm leading-none text-ink-muted hover:bg-surface-sunken hover:text-ink";
 
+// React Flow's fitView takes a raw ms number, not a CSS class, so this can't
+// read `duration-canvas` directly -- kept numerically equal to --dur-canvas
+// (590ms, app/globals.css) instead of an arbitrary raw value.
+const FIT_VIEW_DURATION_MS = 590;
+
 /**
  * A themed replacement for React Flow's default `<Controls/>` -- same zoomIn/
  * zoomOut/fitView calls, but styled to match `surface-raised`/`border` instead of
@@ -25,7 +30,7 @@ export function Controls() {
         </button>
         <button
           type="button"
-          onClick={() => fitView({ duration: 200 })}
+          onClick={() => fitView({ duration: FIT_VIEW_DURATION_MS })}
           aria-label="Fit view"
           className={buttonClass}
         >

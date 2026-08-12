@@ -21,7 +21,7 @@ function Stat({
 }) {
   return (
     <div className="rounded border border-border bg-surface-raised p-3">
-      <p className="font-sans text-[11px] uppercase tracking-wide text-ink-faint">{label}</p>
+      <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">{label}</p>
       <p className={clsx("mt-1 font-serif text-2xl", accentClassName ?? "text-ink")}>{value}</p>
     </div>
   );

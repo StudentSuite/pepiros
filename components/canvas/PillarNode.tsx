@@ -28,7 +28,7 @@ export function PillarNode({ data }: NodeProps<PepirosNode>) {
     >
       <Handle type="target" position={Position.Top} style={{ background: color }} />
       <div
-        className="font-sans text-[11px] font-medium uppercase tracking-wide"
+        className="font-mono text-[10px] font-medium uppercase tracking-widest"
         style={{ color: pillarTextColor(node.pillarIndex) }}
       >
         {node.title}
