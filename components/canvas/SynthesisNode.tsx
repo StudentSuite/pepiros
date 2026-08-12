@@ -25,7 +25,7 @@ export function SynthesisNode({ data }: NodeProps<PepirosNode>) {
     >
       <Handle type="target" position={Position.Top} className="!bg-border-strong" />
       <div className="flex items-center justify-between">
-        <div className="font-sans text-[11px] uppercase tracking-wide text-ink-muted">Synthesis</div>
+        <div className="font-mono text-[10px] uppercase tracking-widest text-ink-muted">Synthesis</div>
         {spannedPapers && spannedPapers.length > 0 && (
           <div className="flex -space-x-1.5">
             {spannedPapers.map((p) => (

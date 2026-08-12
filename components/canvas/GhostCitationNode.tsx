@@ -33,7 +33,7 @@ export function GhostCitationNode({ data }: NodeProps<GhostCitationNodeType>) {
   return (
     <div className="w-56 rounded border border-dashed border-ink-faint bg-surface-sunken px-3 py-2 opacity-60">
       <Handle type="target" position={Position.Top} className="!bg-ink-faint" />
-      <div className="font-sans text-[10px] uppercase tracking-wide text-ink-faint">
+      <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
         {direction === "cites" ? "cites this workspace" : "cited by this workspace"}
       </div>
       <a

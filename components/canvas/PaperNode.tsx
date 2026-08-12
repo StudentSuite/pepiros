@@ -22,7 +22,7 @@ export function PaperNode({ data }: NodeProps<PepirosNode>) {
       style={{ animationDelay: `${appearDelayMs ?? 0}ms` }}
     >
       <Handle type="target" position={Position.Top} className="!bg-border-strong" />
-      <div className="font-sans text-[11px] uppercase tracking-wide text-ink-faint">Paper</div>
+      <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">Paper</div>
       <div className="mt-1 font-sans text-base font-semibold leading-snug text-ink">{node.title}</div>
       <p className="mt-1.5 font-serif text-sm leading-snug text-ink-muted">{stripRefMarkers(node.bodyMd)}</p>
       {node.stale && (
