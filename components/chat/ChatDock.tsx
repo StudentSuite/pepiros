@@ -4,6 +4,9 @@ import { useState } from "react";
 import { MessageList, type ChatMessage } from "./MessageList";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { useWorkspaceStore } from "@/lib/store/workspace";
+import { toCitationSegments } from "@/lib/chat/citations";
 
 // docs/PLAN-V1.md §14.5: "4 suggested questions from the paper's real
 // concepts," never generic. Fixture-scoped since there's no live paper
@@ -16,56 +19,95 @@ const SUGGESTED_QUESTIONS = [
   "What does neither paper establish?",
 ];
 
-const SEED_MESSAGES: ChatMessage[] = [
-  {
-    id: "m1",
-    role: "user",
-    segments: [
-      {
-        kind: "text",
-        text: "What did the bright-light RCT find, and does anything in the meta-analysis not hold up?",
-      },
-    ],
-  },
-  {
-    id: "m2",
-    role: "assistant",
-    segments: [
-      { kind: "text", text: "The bright-light RCT found sleep onset latency fell 34% vs. placebo " },
-      { kind: "citation", refId: "C2" },
-      { kind: "text", text: ". Separately, the meta-analysis reports a moderate pooled effect on working memory " },
-      { kind: "citation", refId: "C5" },
-      {
-        kind: "text",
-        text: ", though one claimed limitation about the pooled estimate being precise didn't hold up on re-verification ",
-      },
-      { kind: "citation", refId: "C7" },
-      { kind: "text", text: " -- that evidence came back unsupported, not quote located." },
-    ],
-  },
-];
-
 type Scope = "all" | "paper" | "node";
 
+interface ChatApiResponse {
+  answer: string;
+  citations: Array<{ refId: string; tier: string }>;
+  ungrounded: boolean;
+  refused: boolean;
+}
+
 /**
- * Bottom-docked chat shell. This is a UI-only stub: messages are seeded
- * locally, "sending" just appends a user message (no LLM call -- wiring to
- * app/api/chat is someone else's job and that route doesn't exist yet).
+ * Bottom-docked chat, wired to POST /api/chat (docs/PLAN-V1.md §9.4). The
+ * answer's citations are verified server-side before they get here, so an
+ * ungrounded answer is marked as such rather than rendered as if it were
+ * sourced -- §9.4 requires ungrounded output be visually distinct.
  */
 export function ChatDock() {
+  const workspace = useWorkspaceStore((s) => s.workspace);
   const [open, setOpen] = useState(true);
-  const [messages, setMessages] = useState<ChatMessage[]>(SEED_MESSAGES);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [scope, setScope] = useState<Scope>("all");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [allowUngrounded, setAllowUngrounded] = useState(false);
+  const [lastRefusedQuestion, setLastRefusedQuestion] = useState<string | null>(null);
+
+  async function ask(question: string, options: { allowUngrounded?: boolean } = {}) {
+    setPending(true);
+    setError(null);
+
+    // History is the prior turns only -- the question being asked is passed
+    // separately, since the server rewrites it against this history.
+    const history = messages.map((m) => ({
+      role: m.role,
+      content: m.segments.map((s) => (s.kind === "text" ? s.text : `[${s.refId}]`)).join(""),
+    }));
+
+    setMessages((prev) => [
+      ...prev,
+      { id: `u${prev.length}`, role: "user", segments: [{ kind: "text", text: question }] },
+    ]);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workspaceId: workspace?.id ?? "ws-1",
+          question,
+          history,
+          scope,
+          paperId: scope !== "all" ? workspace?.papers[0]?.id : undefined,
+          allowUngrounded: options.allowUngrounded ?? allowUngrounded,
+        }),
+      });
+
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string; detail?: string } | null;
+        setError(
+          body?.error === "model_not_configured"
+            ? "No model key configured. Set GROQ_API_KEY (or FEATHERLESS_API_KEY) in .env to enable chat."
+            : (body?.detail ?? `Chat failed (${res.status}).`),
+        );
+        return;
+      }
+
+      const data = (await res.json()) as ChatApiResponse;
+      setLastRefusedQuestion(data.refused ? question : null);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `a${prev.length}`,
+          role: "assistant",
+          segments: toCitationSegments(data.answer),
+          ungrounded: data.ungrounded,
+        },
+      ]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Chat request failed.");
+    } finally {
+      setPending(false);
+    }
+  }
 
   function handleSend() {
     const text = draft.trim();
-    if (!text) return;
-    setMessages((prev) => [
-      ...prev,
-      { id: `m${prev.length + 1}`, role: "user", segments: [{ kind: "text", text }] },
-    ]);
+    if (!text || pending) return;
     setDraft("");
+    void ask(text);
   }
 
   return (
@@ -105,8 +147,9 @@ export function ChatDock() {
                       <button
                         key={q}
                         type="button"
-                        onClick={() => setDraft(q)}
-                        className="rounded-full border border-border-strong px-2.5 py-1 text-left font-sans text-xs text-ink-muted transition duration-fast ease-out hover:border-accent hover:text-ink"
+                        onClick={() => void ask(q)}
+                        disabled={pending}
+                        className="rounded-full border border-border-strong px-2.5 py-1 text-left font-sans text-xs text-ink-muted transition duration-fast ease-out hover:border-accent hover:text-ink disabled:opacity-50"
                       >
                         {q}
                       </button>
@@ -115,6 +158,35 @@ export function ChatDock() {
                 </div>
               ) : (
                 <MessageList messages={messages} />
+              )}
+
+              {pending && (
+                <p className="mt-3 font-sans text-xs text-ink-faint" role="status">
+                  Reading the papers…
+                </p>
+              )}
+
+              {error && (
+                <div className="mt-3">
+                  <ErrorBanner message={error} onRetry={() => setError(null)} />
+                </div>
+              )}
+
+              {/* §9.4: below the relevance floor, offer an explicit
+                  "answer without sources" rather than silently confabulating. */}
+              {lastRefusedQuestion && !pending && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const question = lastRefusedQuestion;
+                    setLastRefusedQuestion(null);
+                    setAllowUngrounded(true);
+                    void ask(question, { allowUngrounded: true });
+                  }}
+                  className="mt-3 rounded border border-border-strong px-2 py-1 font-sans text-xs text-ink-muted hover:text-ink"
+                >
+                  Answer without sources
+                </button>
               )}
             </div>
             <div className="flex items-center gap-2 border-t border-border px-3 py-2">
@@ -125,10 +197,11 @@ export function ChatDock() {
                   if (e.key === "Enter") handleSend();
                 }}
                 placeholder="Ask about this workspace..."
+                disabled={pending}
                 className="flex-1"
               />
-              <Button variant="primary" size="sm" onClick={handleSend}>
-                Send
+              <Button variant="primary" size="sm" onClick={handleSend} disabled={pending}>
+                {pending ? "Asking…" : "Send"}
               </Button>
             </div>
           </>
