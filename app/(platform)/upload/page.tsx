@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { FileText, Link as LinkIcon, UploadCloud } from "lucide-react";
@@ -27,6 +27,7 @@ type EntryMode = "file" | "url";
 export default function UploadPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const redirectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [mode, setMode] = useState<EntryMode>("file");
   const [file, setFile] = useState<File | null>(null);
@@ -38,6 +39,18 @@ export default function UploadPage() {
 
   const hasEntry = mode === "file" ? file !== null : url.trim().length > 0;
   const canSubmit = licenseConfirmed && hasEntry;
+
+  // `SiteHeader` stays rendered and clickable during the SkeletonGraph
+  // display, so a user can navigate away mid-redirect-wait. Without this
+  // cleanup, the orphaned timeout still fires after unmount and silently
+  // yanks the user (now elsewhere in the app) to /workspaces.
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current !== null) {
+        clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, []);
 
   function handleDragOver(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
@@ -70,7 +83,7 @@ export default function UploadPage() {
     // Pretend-success (Global Constraints -- no real upload/parse pipeline):
     // show the skeleton-graph choreography for a couple seconds so the
     // pacing beat from plan.md §1 is actually visible before the redirect.
-    setTimeout(() => {
+    redirectTimeoutRef.current = setTimeout(() => {
       router.push("/workspaces");
     }, 2200);
   }
@@ -118,19 +131,9 @@ export default function UploadPage() {
           </button>
         </div>
 
-        {/* FormField's label/hint/error text hardcodes text-ink-muted /
-            text-ink-faint / text-unsupported, calibrated for dark chrome, not
-            this .surface-reading card -- all three fail or sit at the edge of
-            WCAG AA here. FormField itself is off-limits (Global Constraints:
-            reuse as-is), so the override targets the generated classes by
-            descendant selector instead: #4a4740 for label/hint (~8.2:1) and
-            #7a3535 for error (~7.8:1), both against --paper #f5f1e8. Same
-            pattern as /login and /signup (Task 7). */}
-        <form
-          onSubmit={handleSubmit}
-          noValidate
-          className="mt-4 flex flex-col gap-4 [&_.text-ink-muted]:!text-[#4a4740] [&_.text-ink-faint]:!text-[#4a4740] [&_.text-unsupported]:!text-[#7a3535]"
-        >
+        {/* FormField's label/hint/error contrast on this paper card is handled
+            by the scoped `.surface-reading` cascade rule in app/globals.css. */}
+        <form onSubmit={handleSubmit} noValidate className="mt-4 flex flex-col gap-4">
           {mode === "file" ? (
             <div>
               <div

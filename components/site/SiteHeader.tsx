@@ -74,15 +74,19 @@ export function SiteHeader({
         <div className="flex items-center gap-3">
           {session ? (
             <div className="flex items-center gap-2">
-              <span
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-border-strong bg-surface-raised font-mono text-xs text-ink"
-                aria-hidden="true"
+              <Link
+                href="/settings"
+                aria-label="Account settings"
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-border-strong bg-surface-raised font-mono text-xs text-ink transition-colors duration-fast ease-out hover:border-accent"
               >
                 {session.user.avatarInitials}
-              </span>
-              <span className="hidden font-sans text-sm text-ink sm:inline">
+              </Link>
+              <Link
+                href={`/u/${session.user.username}`}
+                className="hidden font-sans text-sm text-ink transition-colors duration-fast ease-out hover:text-accent sm:inline"
+              >
                 {session.user.name}
-              </span>
+              </Link>
             </div>
           ) : (
             <>

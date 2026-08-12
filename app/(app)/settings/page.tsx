@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
 import { Panel } from "@/components/ui/Panel";
 import { FormField } from "@/components/ui/FormField";
@@ -93,7 +94,9 @@ export default function SettingsPage() {
   return (
     <main className="min-h-screen bg-surface px-6 pb-24 pt-10 sm:px-10">
       <div className="mx-auto max-w-3xl">
-        <Logo />
+        <Link href="/" aria-label="Pepiros home">
+          <Logo />
+        </Link>
 
         <div className="mt-10">
           <h1 className="font-serif text-2xl text-ink">Settings</h1>

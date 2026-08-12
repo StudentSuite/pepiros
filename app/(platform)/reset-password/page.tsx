@@ -63,18 +63,9 @@ export default function ResetPasswordPage() {
               Enter your email and we&apos;ll send you a link to reset it.
             </p>
 
-            {/* FormField's label/error text hardcodes text-ink-muted/text-unsupported,
-                calibrated for dark chrome, not this .surface-reading card -- both
-                fail WCAG AA here (label ~2.27:1, error ~3.57:1 against --paper).
-                FormField itself is off-limits (Global Constraints: reuse as-is),
-                so the override targets the generated classes by descendant
-                selector instead: #4a4740 for the label (~8.2:1) and #7a3535 for
-                the error (~7.8:1), both against --paper #f5f1e8. */}
-            <form
-              onSubmit={handleSubmit}
-              noValidate
-              className="mt-6 flex flex-col gap-4 [&_.text-ink-muted]:!text-[#4a4740] [&_.text-unsupported]:!text-[#7a3535]"
-            >
+            {/* FormField's label/error contrast on this paper card is handled by
+                the scoped `.surface-reading` cascade rule in app/globals.css. */}
+            <form onSubmit={handleSubmit} noValidate className="mt-6 flex flex-col gap-4">
               <FormField label="Email" required error={error}>
                 <Input
                   type="email"

@@ -111,6 +111,26 @@
   color: #1c1a15;
 }
 
+/* FormField's label/hint/error text hardcodes text-ink-muted / text-ink-faint /
+   text-unsupported, calibrated for dark chrome. Rendered inside a
+   `.surface-reading` paper panel those fail or sit at the edge of WCAG AA
+   (label/hint ~2.27:1, error ~3.57:1 against --paper). FormField itself is
+   off-limits (Global Constraints: reuse as-is), so the fix is a single scoped
+   cascade rule here rather than a per-page Tailwind descendant-variant
+   override -- previously this was copy-pasted into 5 different pages
+   (login, signup, reset-password, upload, welcome) and had already drifted
+   into 3 slightly different class strings. Scoped under `.surface-reading` so
+   it never touches `text-ink-muted` / `text-ink-faint` / `text-unsupported`
+   on the dark chrome surfaces elsewhere in the app. #4a4740 (~8.2:1) and
+   #7a3535 (~7.8:1) are both measured against --paper #f5f1e8. */
+.surface-reading .text-ink-muted,
+.surface-reading .text-ink-faint {
+  color: #4a4740;
+}
+.surface-reading .text-unsupported {
+  color: #7a3535;
+}
+
 /* Subtle paper grain for reading surfaces, per Editorial Paper's "visible
    fiber grain" material rule. Real generated brand asset (design/brand/
    paper-grain.png, run from design/prompts/brand.md), copied to

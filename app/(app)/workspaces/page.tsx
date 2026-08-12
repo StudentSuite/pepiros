@@ -18,7 +18,9 @@ export default function WorkspacesPage() {
   return (
     <main className="min-h-screen bg-surface px-6 pb-24 pt-10 sm:px-10">
       <div className="mx-auto max-w-5xl">
-        <Logo />
+        <Link href="/" aria-label="Pepiros home">
+          <Logo />
+        </Link>
 
         <div className="mt-10 flex items-end justify-between gap-4">
           <div>

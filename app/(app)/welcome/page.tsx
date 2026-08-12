@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
 import { Input } from "@/components/ui/Input";
 import { FormField } from "@/components/ui/FormField";
@@ -28,7 +29,9 @@ export default function WelcomePage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-surface px-6 py-16">
       <div className="surface-reading paper-grain w-full max-w-md rounded-lg p-s-6">
-        <Logo variant="paper" />
+        <Link href="/" aria-label="Pepiros home">
+          <Logo variant="paper" />
+        </Link>
 
         <p className="mt-6 font-mono text-[10px] uppercase tracking-widest text-[#1c1a15]/60">
           Step {step} of {TOTAL_STEPS}
@@ -46,7 +49,9 @@ export default function WelcomePage() {
           ))}
         </div>
 
-        <div className="mt-6 [&_.text-ink-muted]:!text-[#4a4740] [&_.text-ink-faint]:!text-[#4a4740]">
+        {/* FormField's label/hint contrast on this paper card is handled by
+            the scoped `.surface-reading` cascade rule in app/globals.css. */}
+        <div className="mt-6">
           {step === 1 && (
             <div className="flex flex-col gap-4">
               <h1 className="font-serif text-2xl text-[#1c1a15]">Welcome to Pepiros</h1>
