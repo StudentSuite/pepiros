@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { Tabs, type TabItem } from "@/components/ui/Tabs";
 import { Badge } from "@/components/ui/Badge";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { KeyRound } from "lucide-react";
 import { useToastStore } from "@/lib/store/toast";
 import { mockProfile, mockMcpTokens, type MockMcpToken } from "@/lib/mock/settings";
 
@@ -133,7 +135,11 @@ export default function SettingsPage() {
               )}
 
               {tokens.length === 0 ? (
-                <p className="font-sans text-sm text-ink-muted">No tokens yet.</p>
+                <EmptyState
+                  icon={KeyRound}
+                  title="No MCP tokens yet."
+                  description="Generate one below to connect Claude to this account."
+                />
               ) : (
                 <ul className="flex flex-col divide-y divide-border">
                   {tokens.map((token) => (

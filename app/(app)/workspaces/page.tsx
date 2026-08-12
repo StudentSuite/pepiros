@@ -4,7 +4,7 @@ import { mockWorkspaces } from "@/lib/mock/workspaces";
 import { Logo } from "@/components/ui/Logo";
 import { Panel } from "@/components/ui/Panel";
 import { Icon } from "@/components/ui/Icon";
-import { buttonClassName } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 /**
  * `/workspaces` -- authenticated-only, `app/(app)/` has no shared layout
@@ -30,15 +30,12 @@ export default function WorkspacesPage() {
         </div>
 
         {workspaces.length === 0 ? (
-          <div className="mt-16 flex flex-col items-center gap-4 text-center">
-            <p className="font-sans text-sm text-ink-muted">
-              No workspaces yet. Upload a paper to start your first one.
-            </p>
-            <Link href="/upload" className={buttonClassName("primary")}>
-              <Icon icon={Plus} size="xs" className="mr-1.5" />
-              New workspace
-            </Link>
-          </div>
+          <EmptyState
+            icon={Plus}
+            title="No workspaces yet."
+            description="Upload a paper to start your first one."
+            action={{ label: "New workspace", href: "/upload" }}
+          />
         ) : (
           <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {workspaces.map((workspace) => (

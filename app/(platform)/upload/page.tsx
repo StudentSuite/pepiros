@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/Input";
 import { FormField } from "@/components/ui/FormField";
 import { Button, buttonClassName } from "@/components/ui/Button";
 import { Logo } from "@/components/ui/Logo";
+import { SkeletonGraph } from "@/components/ui/SkeletonGraph";
 
 type EntryMode = "file" | "url";
 
@@ -33,6 +34,7 @@ export default function UploadPage() {
   const [url, setUrl] = useState("");
   const [urlError, setUrlError] = useState<string | undefined>();
   const [licenseConfirmed, setLicenseConfirmed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const hasEntry = mode === "file" ? file !== null : url.trim().length > 0;
   const canSubmit = licenseConfirmed && hasEntry;
@@ -64,7 +66,23 @@ export default function UploadPage() {
       return;
     }
     if (!canSubmit) return;
-    router.push("/workspaces");
+    setSubmitting(true);
+    // Pretend-success (Global Constraints -- no real upload/parse pipeline):
+    // show the skeleton-graph choreography for a couple seconds so the
+    // pacing beat from plan.md §1 is actually visible before the redirect.
+    setTimeout(() => {
+      router.push("/workspaces");
+    }, 2200);
+  }
+
+  if (submitting) {
+    return (
+      <main className="flex justify-center px-6 pb-24 pt-20 sm:pt-28">
+        <div className="w-full max-w-lg rounded-lg border border-border bg-surface-raised p-s-6">
+          <SkeletonGraph />
+        </div>
+      </main>
+    );
   }
 
   return (

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Tabs, type TabItem } from "@/components/ui/Tabs";
 import { Reveal } from "@/components/ui/Reveal";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { PaperCard } from "@/components/site/PaperCard";
 import { mockPapers, topicLabelForPillar } from "@/lib/mock/discover";
 
@@ -100,12 +101,11 @@ export default function DiscoverPage() {
             </div>
 
             {filtered.length === 0 ? (
-              // Task 13 lands a shared EmptyState component; a plain inline
-              // message is fine until then (matches Task 9's workspaces
-              // zero-state note in the plan).
-              <p className="py-16 text-center font-sans text-sm text-ink-faint">
-                No papers match &ldquo;{query}&rdquo;. Try a different search.
-              </p>
+              <EmptyState
+                icon={Search}
+                title={`No papers match "${query}".`}
+                description="Try a different search."
+              />
             ) : (
               <>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
