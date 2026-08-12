@@ -72,9 +72,9 @@ export default function MarketingPage() {
           plan calls for; the copy column stays narrow (max-w-2xl) for
           readability inside that wider section. */}
       <section className="relative mx-auto flex w-full max-w-5xl flex-col gap-12 overflow-hidden px-6 pb-24 pt-20 sm:pt-28">
-        {/* Ambient background: soft pillar-colored glow + the real brand
-            wordmark, both faint, both purely decorative. No new asset --
-            LogoMark is the same inline SVG used everywhere else. */}
+        {/* Ambient background: soft pillar-colored glow, purely decorative
+            (VerificationDemo below adds its own faint LogoMark watermark,
+            the real design/brand/glyph-mark.png asset, not a new one). */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -top-24 right-0 h-[32rem] w-[32rem] rounded-full bg-pillar-4/10 blur-3xl"

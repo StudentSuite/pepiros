@@ -1,34 +1,34 @@
 import clsx from "clsx";
+import Image from "next/image";
+import glyphMark from "@/design/brand/glyph-mark.png";
+import logoLockupPrimary from "@/design/brand/logo-lockup-primary.png";
+import logoLockupReversed from "@/design/brand/logo-lockup-reversed.png";
 
 /**
- * Editorial Paper wordmark + glyph (open book + quill), the same line-art
- * mark used in app/icon.svg, app/apple-icon.tsx, and app/opengraph-image.tsx
- * -- keep those four in sync if the glyph ever changes.
+ * Icon-only mark, from the real generated brand asset
+ * (design/brand/glyph-mark.png, run from design/prompts/brand.md) -- not a
+ * hand-coded SVG approximation. Square source (800x800), so height and
+ * width should stay equal at any call site.
  */
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={clsx("h-5 w-5", className)}
+    <Image
+      src={glyphMark}
+      alt=""
       aria-hidden="true"
-    >
-      <path d="M2 5.5c2.8-1 6.2-1 9 .5v13c-2.8-1.5-6.2-1.5-9-.5V5.5Z" />
-      <path d="M22 5.5c-2.8-1-6.2-1-9 .5v13c2.8-1.5 6.2-1.5 9-.5V5.5Z" />
-      <path d="M13.5 8.5 21 2" />
-      <path d="M19.4 2.3 21 2l-.3 1.6" />
-    </svg>
+      className={clsx("h-5 w-5 object-contain", className)}
+    />
   );
 }
 
 /**
- * Full wordmark lockup. `variant="chrome"` (default) is light ink for the
- * app's dark chrome; `variant="paper"` is dark ink for when the logo sits
- * on a paper reading surface instead.
+ * Full wordmark lockup, from the real generated brand assets
+ * (design/brand/logo-lockup-{primary,reversed}.png). `variant="chrome"`
+ * (default) is the reversed (light-ink) lockup for the app's dark chrome;
+ * `variant="paper"` is the primary (dark-ink) lockup for when the logo sits
+ * on a paper reading surface instead. Both source images are 2400x800 (3:1)
+ * with a transparent background, so they composite cleanly over either
+ * surface -- height-constrained, width follows via `w-auto`.
  */
 export function Logo({
   tagline = false,
@@ -39,25 +39,20 @@ export function Logo({
   variant?: "chrome" | "paper";
   className?: string;
 }) {
+  const lockup = variant === "chrome" ? logoLockupReversed : logoLockupPrimary;
   return (
-    <div
-      className={clsx(
-        "flex items-center gap-2",
-        variant === "chrome" ? "text-ink" : "text-[#1c1a15]",
-        className,
-      )}
-    >
-      <LogoMark />
-      <div className="flex flex-col leading-none">
-        <span className="font-serif text-sm font-semibold uppercase tracking-[0.2em]">
-          Pepiros
+    <div className={clsx("flex flex-col", className)}>
+      <Image src={lockup} alt="Pepiros" priority className="h-5 w-auto object-contain" />
+      {tagline && (
+        <span
+          className={clsx(
+            "mt-1.5 font-mono text-[10px] uppercase tracking-widest",
+            variant === "chrome" ? "text-ink-faint" : "text-[#1c1a15]/60",
+          )}
+        >
+          Every claim, one click from its source
         </span>
-        {tagline && (
-          <span className="mt-1 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-            Every claim, one click from its source
-          </span>
-        )}
-      </div>
+      )}
     </div>
   );
 }
