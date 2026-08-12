@@ -93,20 +93,20 @@ const TOOL_GROUPS: ReadonlyArray<{ title: string; tools: McpTool[] }> = [
 const DEMO_STEPS: ReadonlyArray<{ title: string; body: string; tool?: string }> = [
   {
     title: "Ask, no Pepiros tab open",
-    body: '"Summarize this RCT’s primary outcome." Claude answers from its own reading, nothing looked up yet.',
+    body: '"Summarize this RCT’s primary outcome." The agent answers from its own reading, nothing looked up yet.',
   },
   {
     title: "Verify every claim",
-    body: '"Now verify every claim you just made." Claude calls this on each of its own sentences.',
+    body: '"Now verify every claim you just made." The agent calls this on each of its own sentences.',
     tool: "verify_claim",
   },
   {
     title: "One comes back unsupported",
-    body: "Two claims return quote_located with page numbers. One returns unsupported, and Claude says so out loud, mid-answer.",
+    body: "Two claims return quote_located with page numbers. One returns unsupported, and the agent says so out loud, mid-answer.",
   },
   {
     title: "The audit gets written into the graph",
-    body: "Claude calls this to write the audited result in. The returned link opens the canvas with the new node already anchored and highlighted in the PDF.",
+    body: "The agent calls this to write the audited result in. The returned link opens the canvas with the new node already anchored and highlighted in the PDF.",
     tool: "create_node",
   },
 ];
@@ -123,11 +123,12 @@ export default function McpPage() {
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-6 pb-16 pt-20 sm:pt-28">
         <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">For agents</p>
         <h1 className="font-serif text-4xl leading-tight text-ink sm:text-5xl">
-          Turn Claude into a fact-checker with a source.
+          Turn your coding agent into a fact-checker with a source.
         </h1>
         <p className="max-w-xl font-sans text-base leading-relaxed text-ink-muted">
-          Twelve tools over MCP. Claude can search a paper, verify its own claims against the
-          source, and write the audited result back into the graph, live, mid-conversation.
+          Twelve tools over MCP. Works with Codex, Claude, and Cursor today: the agent can search
+          a paper, verify its own claims against the source, and write the audited result back
+          into the graph, live, mid-conversation.
         </p>
       </section>
 
@@ -175,7 +176,7 @@ export default function McpPage() {
               The demo beat
             </p>
             <h2 className="mt-2 font-serif text-2xl text-ink">
-              Self-auditing, inside a Claude conversation
+              Self-auditing, inside an agent conversation
             </h2>
 
             <ol className="mt-8 flex flex-col gap-6">
@@ -220,8 +221,8 @@ export default function McpPage() {
               </pre>
             </div>
             <p className="mt-4 max-w-xl font-sans text-sm leading-relaxed text-ink-muted">
-              Ships stdio-first for Claude Code and Desktop. Remote HTTP with OAuth, for claude.ai
-              Connectors, is the stretch goal.
+              Ships stdio-first, works with Codex, Claude, and Cursor today. Remote HTTP with
+              OAuth, for hosted connectors, is the stretch goal.
             </p>
           </div>
         </section>

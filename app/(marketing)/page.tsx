@@ -93,8 +93,8 @@ export default function MarketingPage() {
           </h1>
           <p className="max-w-xl font-sans text-base leading-relaxed text-ink-muted">
             Every generated claim stays bound to the exact quoted sentence it came from, checked
-            deterministically, not just asserted, and the same grounding is callable from any
-            Claude conversation.
+            deterministically, not just asserted, and the same grounding is callable from Codex,
+            Claude, or Cursor.
           </p>
           <div className="flex flex-wrap items-center gap-3 pt-1">
             <Link href="/workspaces" className={buttonClassName("primary")}>
@@ -223,19 +223,20 @@ export default function MarketingPage() {
         <div className="relative mx-auto flex w-full max-w-3xl flex-col gap-6 px-6 py-16 sm:py-20">
           <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">For agents</p>
           <h2 className="max-w-xl font-serif text-3xl leading-tight text-ink sm:text-4xl">
-            Turn Claude into a fact-checker with a source.
+            Turn your coding agent into a fact-checker with a source.
           </h2>
           <p className="max-w-xl font-sans text-sm leading-relaxed text-ink-muted">
-            Connect over MCP and Claude can check its own claims against the source, live,
-            mid-conversation, before it ever asserts them to you.
+            Connect over MCP and your agent can check its own claims against the source, live,
+            mid-conversation, before it ever asserts them to you. Works with Codex, Claude, and
+            Cursor today.
           </p>
 
           <div className="mt-2 max-w-lg rounded-lg border border-border-strong bg-surface-raised/90 p-s-5">
             <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-              Inside a Claude conversation
+              Inside an agent conversation
             </p>
             <p className="font-mono text-xs leading-relaxed text-ink-muted sm:text-sm">
-              <span className="text-ink-faint">Claude: </span>
+              <span className="text-ink-faint">Agent: </span>
               &ldquo;This effect eliminates the need for melatonin supplementation entirely.&rdquo;
             </p>
             <p className="mt-3 flex flex-wrap items-center gap-2 font-mono text-xs text-ink-faint sm:text-sm">
@@ -244,7 +245,7 @@ export default function MarketingPage() {
             </p>
             <p className="mt-3 flex flex-wrap items-center gap-2 font-mono text-xs sm:text-sm">
               <EvidenceBadge tier="unsupported" />
-              <span className="text-ink-muted">Claude says so, out loud, mid-answer.</span>
+              <span className="text-ink-muted">The agent says so, out loud, mid-answer.</span>
             </p>
           </div>
 
