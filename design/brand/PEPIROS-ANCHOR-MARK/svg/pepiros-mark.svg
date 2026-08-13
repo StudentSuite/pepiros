@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
-<mask id="quoteMask"><rect width="240" height="240" fill="white"></rect>
-<rect x="98" y="56" width="16" height="44" rx="8" fill="black" transform="rotate(-18 106 78)"></rect>
-<rect x="126" y="56" width="16" height="44" rx="8" fill="black" transform="rotate(18 134 78)"></rect>
-</mask>
-<path d="M120,20 C81.4,20 50,51.4 50,90 C50,142.5 120,220 120,220 C120,220 190,142.5 190,90 C190,51.4 158.6,20 120,20 Z" fill="#0b0c0e" mask="url(#quoteMask)"></path>
-</svg>
