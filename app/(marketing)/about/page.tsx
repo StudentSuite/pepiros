@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { buttonClassName } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
+import { EvidenceBadge } from "@/components/ui/EvidenceBadge";
+import { RefChip } from "@/components/ui/RefChip";
 
 export const metadata: Metadata = {
   title: "About",
@@ -9,95 +11,127 @@ export const metadata: Metadata = {
     "Pepiros is built by Anay Dhawan and Yash Kewlani -- a grounding engine for research reading, built as an MCP server so any AI agent can verify its own claims against a source.",
 };
 
-// Hackathon origin -- plan.md's own header line ("Hackathon: Aug 7-19,
-// 2026. Real build window: Aug 10-17, ship Aug 17, submit Aug 18. Team:
-// Anay + Yash, both driving Claude Code."), plus the copyright holders'
-// full names from LICENSE ("Copyright (c) 2026 Anay Dhawan and Yash
+// Team credit -- LICENSE ("Copyright (c) 2026 Anay Dhawan and Yash
 // Kewlani") and CONTRIBUTING.md's "Maintained by Anay Dhawan". No
-// biographical detail invented beyond those three sources.
+// biographical detail invented beyond those two sources.
 const TEAM = "Anay Dhawan and Yash Kewlani";
 
 /**
- * `/about` -- hackathon origin, why grounding is the whole point, and a
- * placeholder in place of a GitHub link. The repo is private through
- * submission (this task's brief + the surrounding project context both say
- * so), so a real github.com/... URL here would just point at something a
- * visitor can't reach -- a disabled-looking text note stands in instead.
- * Header banner -> origin -> why grounding -> repo status. Header/footer
- * come from app/(marketing)/layout.tsx.
+ * `/about` -- what Pepiros does, why grounding is the whole point, and org
+ * credit. No build-origin narrative here (2026-08-13 direction: this page
+ * covers product + org, not how/when it was built). A placeholder stands
+ * in for a GitHub link: the repo is private through submission (project
+ * context), so a real github.com/StudentSuite/pepiros URL here would just
+ * point at something a visitor can't reach. The org link below points at
+ * the StudentSuite org root instead, which doesn't leak the private repo.
+ * Header banner -> what it does -> org -> repo status. Header/footer come
+ * from app/(marketing)/layout.tsx.
  */
 export default function AboutPage() {
   return (
     <main className="flex flex-col">
-      {/* Banner header. Not wrapped in Reveal -- first thing on screen. */}
+      {/* Banner header. Not wrapped in Reveal -- first thing on screen.
+          Headline is this page's own <meta> description, promoted to H1.
+          Body paragraph bumped to text-base/text-ink (matches the home
+          hero's own anchor paragraph) so one paragraph per page reads as
+          the deliberate lead-in, rest of the page stays text-sm. */}
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-3 px-6 pb-14 pt-20 sm:pt-28">
-        <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">About</p>
+        <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">
+          About
+        </p>
         <h1 className="font-serif text-3xl leading-tight text-ink sm:text-4xl">
-          Two people, one hackathon.
+          A grounding engine for research reading.
         </h1>
-        <p className="max-w-xl font-sans text-sm leading-relaxed text-ink-muted">
-          Pepiros started as a hackathon build, and it still is one.
+        <p className="max-w-xl font-sans text-base leading-relaxed text-ink-muted">
+          Every AI-surfaced claim stays bound to the exact quoted sentence it
+          came from, checked deterministically instead of just asserted, and
+          callable mid-conversation from Codex, Claude, or Cursor over MCP.
         </p>
       </section>
-
-      {/* Origin -- plan.md's header line, verbatim dates and team. */}
-      <Reveal>
-        <section className="border-t border-border">
-          <div className="mx-auto w-full max-w-3xl px-6 py-14">
-            <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">
-              Where this came from
-            </p>
-            <h2 className="mt-2 font-serif text-2xl text-ink">Built Aug 7&ndash;19, 2026</h2>
-            <p className="mt-4 max-w-xl font-sans text-sm leading-relaxed text-ink-muted">
-              Pepiros was built for a hackathon running Aug 7&ndash;19, 2026, with the real build
-              window Aug 10&ndash;17: ship Aug 17, submit Aug 18. It&apos;s a two-person team,{" "}
-              {TEAM}, both building with Claude Code the whole way through.
-            </p>
-          </div>
-        </section>
-      </Reveal>
 
       {/* Why grounding -- plan.md §4's honest-framing paragraph, in the
           project's own voice here rather than reused verbatim from the home
           page / how-it-works, same substance: a fuzzy match proves
-          quotation, not entailment. */}
+          quotation, not entailment. Badge + ref chip render for real below
+          the paragraph now (review finding, 2026-08-13: this section used
+          to describe "the badge" without ever showing one) -- same C7
+          illustrative example the home page and the "For agents" band
+          already use, not a new one. */}
       <Reveal>
-        <section className="border-t border-border bg-surface-sunken/40">
+        <section className="border-t border-border">
           <div className="mx-auto w-full max-w-3xl px-6 py-14">
             <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">
               Why grounding
             </p>
-            <h2 className="mt-2 font-serif text-2xl text-ink">Why this exists at all</h2>
+            <h2 className="mt-2 font-serif text-2xl text-ink">
+              Why this exists at all
+            </h2>
             <p className="mt-4 max-w-xl font-sans text-sm leading-relaxed text-ink-muted">
-              A fuzzy-matched quote proves quotation, not entailment. A model can attach a real
-              Methods sentence to a wrong conclusion and still score a perfect match. That&apos;s
-              why the badge always reads quote located and never verified, and why claim and
-              quote render side by side so a reader adjudicates it themselves instead of taking a
-              model&apos;s word for it.
+              A fuzzy-matched quote proves quotation, not entailment. A model
+              can attach a real Methods sentence to a wrong conclusion and still
+              score a perfect match. That&apos;s why the badge always reads
+              quote located and never verified, and why claim and quote render
+              side by side so a reader adjudicates it themselves instead of
+              taking a model&apos;s word for it.
             </p>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <EvidenceBadge tier="quote_located" />
+              <RefChip refId="C7" />
+              <span className="font-sans text-xs text-ink-faint">
+                what that badge looks like, on a real claim
+              </span>
+            </div>
           </div>
         </section>
       </Reveal>
 
-      {/* Repo status -- no GitHub link. Disabled-looking text note instead
-          of a real link, so it can't 404 or imply the repo is public
-          already. */}
+      {/* Org -- package.json's repository field + CHANGELOG's "Repo
+          transferred to the StudentSuite org" entry. Links the org root,
+          not the repo, for the same private-repo reasoning as the repo
+          status section below. */}
       <Reveal>
-        <section className="border-t border-border">
-          <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center gap-3 px-6 py-16">
-            <span
-              className={buttonClassName(
-                "secondary",
-                "sm",
-                "pointer-events-none cursor-default select-none opacity-40",
-              )}
-              aria-disabled="true"
-            >
-              GitHub: coming at public launch
-            </span>
-            <Link href="/how-it-works" className={buttonClassName("primary", "sm")}>
-              See how verification works
-            </Link>
+        <section className="border-t border-border bg-surface-sunken/40">
+          <div className="mx-auto w-full max-w-3xl px-6 py-14">
+            <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">
+              Org
+            </p>
+            <h2 className="mt-2 font-serif text-2xl text-ink">
+              Part of StudentSuite
+            </h2>
+            <p className="mt-4 max-w-xl font-sans text-sm leading-relaxed text-ink-muted">
+              Pepiros is built and maintained by {TEAM}, under the{" "}
+              <a
+                href="https://github.com/StudentSuite"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-ink underline decoration-border-strong underline-offset-2 hover:decoration-ink"
+              >
+                StudentSuite
+              </a>{" "}
+              org.
+            </p>
+
+            {/* Repo status folded into the same section as Org, not its own
+                border-t block (review finding, 2026-08-13: two short,
+                unrelated-looking sections back to back each reserving a
+                full py-14/py-16 read as a large dead gap once actually
+                rendered -- these two are both "where to find this" content
+                anyway). No GitHub link: plain muted text instead of a
+                button-shaped disabled pill (opacity-40 button next to the
+                primary CTA read as equally weighted / broken-looking
+                rather than clearly secondary), and it can't 404 or imply
+                the repo is public already. Primary CTA leads. */}
+            <div className="mt-8 flex flex-wrap items-center gap-4">
+              <Link
+                href="/how-it-works"
+                className={buttonClassName("primary", "sm")}
+              >
+                See how verification works
+              </Link>
+              <span className="font-sans text-xs text-ink-faint">
+                GitHub: coming at public launch
+              </span>
+            </div>
           </div>
         </section>
       </Reveal>
