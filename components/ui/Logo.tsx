@@ -1,27 +1,23 @@
 import clsx from "clsx";
 import Image from "next/image";
-import glyphMarkDark from "@/design/brand/ui/glyph-mark.png";
-import glyphMarkReversed from "@/design/brand/ui/glyph-mark-reversed.png";
-import wordmarkDark from "@/design/brand/ui/wordmark-only-dark.png";
-import wordmarkReversed from "@/design/brand/ui/wordmark-only-reversed.png";
+import glyphMarkDark from "@/design/brand/PEPIROS-BRAND/glyph/monochrome/pepiros-glyph-mono-black.svg";
+import glyphMarkReversed from "@/design/brand/PEPIROS-BRAND/glyph/monochrome/pepiros-glyph-mono-white.svg";
+import wordmarkDark from "@/design/brand/PEPIROS-BRAND/logos/wordmark/pepiros-wordmark-only.svg";
+import wordmarkReversed from "@/design/brand/PEPIROS-BRAND/logos/wordmark/pepiros-wordmark-only-reversed.svg";
 
 /**
- * Icon-only mark. Source content is design/brand/glyph-mark.png (run from
- * design/prompts/brand.md), but that canonical export sits on an 800x800
- * canvas with the visible glyph occupying only a small centered region
- * (safe-area padding meant for print/template use, not UI icon scale) --
- * at any small render size the mark all but disappears. design/brand/ui/
- * holds a tight crop of the same pixels (~6% padding around the actual
- * ink, nothing redrawn or replaced). The true glyph is ~1.2:1 (wider than
- * tall, not square) -- w-auto follows the real aspect rather than forcing
- * a square box.
+ * Icon-only mark, from the regenerated brand kit (2026-08-13, replacing the
+ * original glyph -- the old one didn't read as its intended "book + quill"
+ * even at 1024px and collapsed to an illegible blob at favicon size). SVG
+ * source, so unlike the old PNG export there's no per-size crop to maintain:
+ * it scales cleanly at any render height. `variant="paper"` (default) is
+ * the dark-ink mark for a light/paper surface; `variant="chrome"` is the
+ * white mono variant for the app's dark chrome.
  *
- * The export only shipped the glyph in dark ink -- unlike the wordmark,
- * which came as a matched dark/reversed pair. `variant="paper"` (default)
- * uses that dark-ink original as-is; `variant="chrome"` uses
- * glyph-mark-reversed.png, generated once from the same source alpha mask
- * recolored to the wordmark's exact reversed ink tone (#f5f1e8-ish, not a
- * flat invert) so the icon and wordmark match on dark chrome.
+ * `pepiros-wordmark-only-reversed.svg` (chrome ink) doesn't exist in the
+ * kit -- only a single dark-ink wordmark shipped -- so it's generated here
+ * as a straight fill-color swap to `--ink` (#e8e6e1, the app's actual
+ * chrome-ink token), not an approximation.
  */
 export function LogoMark({
   variant = "paper",
@@ -35,23 +31,20 @@ export function LogoMark({
       src={variant === "chrome" ? glyphMarkReversed : glyphMarkDark}
       alt=""
       aria-hidden="true"
-      className={clsx("h-5 w-auto object-contain", className)}
+      className={clsx("h-6 w-auto object-contain", className)}
     />
   );
 }
 
 /**
- * Full wordmark lockup: the cropped glyph mark beside a cropped
- * wordmark-only asset, composed here rather than using the canonical
- * design/brand/logo-lockup-{primary,reversed}.png exports directly --
- * those bake the tagline into the same canvas as the glyph and wordmark,
- * so it can't be shown/hidden independently and would either duplicate or
- * fight the `tagline` prop below. wordmark-only-{dark,reversed}.png has
- * no tagline baked in, same crop-in-design/brand/ui/ story as LogoMark
- * (canonical exports are 1600x400 with the word occupying a small
- * centered ~500x73 region). `variant="chrome"` (default) is light ink for
- * the app's dark chrome; `variant="paper"` is dark ink for a paper
- * reading surface -- both the glyph and the wordmark switch together.
+ * Full wordmark lockup: the glyph mark beside the wordmark-only asset,
+ * composed here rather than using the canonical logo lockup exports
+ * directly -- those bake the tagline into the same canvas as the glyph and
+ * wordmark, so it can't be shown/hidden independently and would either
+ * duplicate or fight the `tagline` prop below. `variant="chrome"` (default)
+ * is light ink for the app's dark chrome; `variant="paper"` is dark ink for
+ * a paper reading surface -- both the glyph and the wordmark switch
+ * together.
  */
 export function Logo({
   tagline = false,

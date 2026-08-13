@@ -32,9 +32,10 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   title: TITLE,
   description: DESCRIPTION,
-  // app/opengraph-image.tsx and app/icon.svg / app/apple-icon.tsx are picked
-  // up automatically by Next's file convention -- title/description/type
-  // here fill in the rest of the og:*/twitter:* tags around that image.
+  // app/opengraph-image.png, app/twitter-image.png, app/icon.png, and
+  // app/apple-icon.png are picked up automatically by Next's file convention
+  // -- title/description/type here fill in the rest of the og:*/twitter:*
+  // tags around those images.
   openGraph: {
     title: TITLE,
     description: DESCRIPTION,
