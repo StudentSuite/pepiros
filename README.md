@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="app/opengraph-image.png" alt="Pepiros: Be the source." width="640" />
+
 # Pepiros
 
 **Turn a research PDF into a knowledge graph where every generated claim stays bound to a located quote, and hand that grounding to Claude as a callable MCP service.**
@@ -52,7 +54,7 @@ Early build, moving fast. Honest status:
 | **Data model** (`lib/db/schema.ts`) | All 18 tables from `plan.md` §5, in Drizzle. Schema only, no migrations run yet. |
 | **UI** (`components/*`, `app/(app)/*`) | React Flow canvas (5 node types, ghost citation nodes, kind-coloured edges), doc-reader, outline, audit, learn, and share views. Reads the bundled fixture. |
 | **Citation APIs** (`lib/services/related.ts`, `lib/services/citationExpand.ts`) | Real Semantic Scholar + OpenAlex calls (free, no key) for the related-papers rail and canvas citation expansion. Typed `ok`/`no_match`/`rate_limited`/`error` status, never fabricated fallback data. |
-| **LLM layer** (`lib/agents/*`) | Archetype classifier, archetype-conditioned pillar planner, and 6 of the 21 node generators (`summary`, `methodology`, `statistical_validity`, `stated_limitations`, `weaknesses`, `does_not_establish`), fanned out via `p-queue` with per-node failure isolation. Runs on **Groq (primary) + Featherless (fallback)**, not Anthropic — see [Configuration](#configuration). Every claimed quote is re-verified through the grounding spine before it becomes a real evidence row. Verified end to end against both live APIs, not just mocked. |
+| **LLM layer** (`lib/agents/*`) | Archetype classifier, archetype-conditioned pillar planner, and 6 of the 21 node generators (`summary`, `methodology`, `statistical_validity`, `stated_limitations`, `weaknesses`, `does_not_establish`), fanned out via `p-queue` with per-node failure isolation. Runs on **Groq (primary) + Featherless (fallback)**, not Anthropic: see [Configuration](#configuration). Every claimed quote is re-verified through the grounding spine before it becomes a real evidence row. Verified end to end against both live APIs, not just mocked. |
 | **MCP server** (`mcp/*`) | 8 tools (`search_paper`, `verify_claim`, `get_outline`, `get_node`, `create_node`, `find_contradictions`, `paper_facts`, `list_papers`), 3 resource templates for `@`-mentioning a workspace/paper/node, and the 4 `docs/PLAN-V1.md` §13.3 prompts, over stdio. `create_node` re-verifies submitted evidence server-side, so a client cannot assert `quote_located`. Verified over the real protocol with the SDK's own client. |
 | **Grounded chat** (`lib/services/chat.ts`, `POST /api/chat`) | Query rewrite → route classifier → stable-id context block → answer → citation re-verification. Refusal path with an explicit "answer without sources" opt-in; ungrounded answers render visually distinct. Verified against the live Groq API. |
 | **Canvas layout** (`lib/layout/*`) | Deterministic server-computed positions: radial for one paper, layered columns for several. Verified to produce no overlapping cards at 1, 2, or 3 papers. Pillars open collapsed, and edges render only when both endpoints do. |
@@ -67,7 +69,7 @@ Each of these is a one-line `TODO` at the top of its file, describing what belon
 | Area | Missing |
 | --- | --- |
 | **PDF parsing** | `scripts/parse.py` (PyMuPDF), `scripts/ocr_fallback.py`, `scripts/seed.ts`, `lib/services/ingest.ts`. Upload *validation* is real; nothing yet turns an accepted PDF into chunks and anchors. Needs PyMuPDF installed and one open-access test PDF in the repo. |
-| **Remaining generators** | 15 of the 21 in `docs/PLAN-V1.md` §8 (`contributions`, `background`, `jargon`, `biases`, `novelty`, `reproducibility`, `dataset_notes`, `ethics`, `clinical_relevance`, `future_work`, `equations`, `figures`, `concept_links`, `flashcards`, `quiz`) — mechanical repeats of the pattern in `lib/agents/generators/`, plus figure vision, which needs cropped rasters from the parse pipeline |
+| **Remaining generators** | 15 of the 21 in `docs/PLAN-V1.md` §8 (`contributions`, `background`, `jargon`, `biases`, `novelty`, `reproducibility`, `dataset_notes`, `ethics`, `clinical_relevance`, `future_work`, `equations`, `figures`, `concept_links`, `flashcards`, `quiz`), mechanical repeats of the pattern in `lib/agents/generators/`, plus figure vision, which needs cropped rasters from the parse pipeline |
 | **Synthesis** | `lib/services/synthesis.ts`, `POST /api/compare`, `PATCH`/`DELETE /api/nodes/[id]`. `find_contradictions` reads existing `contradicts` edges; nothing writes new ones. |
 | **MCP, remaining** | `add_paper`/`get_job` (need the parse pipeline), `list_workspaces`/`create_workspace` (need real multi-workspace persistence), and the remote streamable-HTTP + OAuth transport. `docs/PLAN-V1.md` §13.4 says verify connector requirements against Anthropic's current docs before building that. |
 | **Export & promote** | `GET /api/export`, `POST /api/chat/promote` (message → `ThreadNode`; reuses `create_node`) |
@@ -103,7 +105,7 @@ Requires Node 20 or newer.
 | `npm test` / `npm run test:watch` | Vitest over `lib/**/*.test.ts` |
 | `npm run db:generate` / `db:migrate` / `db:studio` | Drizzle Kit against `DATABASE_URL` |
 | `npm run seed` | `scripts/seed.ts` (still a stub) |
-| `npm run mcp:stdio` | MCP server over stdio — see [Using the MCP server](#using-the-mcp-server) |
+| `npm run mcp:stdio` | MCP server over stdio, see [Using the MCP server](#using-the-mcp-server) |
 
 ---
 
@@ -124,7 +126,7 @@ scripts/parse.py  local PyMuPDF run: sections, chunks, figures, equations, refs,
 scripts/ocr_fallback.py   local PaddleOCR-VL, for scanned or table-heavy pages
 ```
 
-Three things that look like omissions and are not. There are **no embeddings and no vector column**: a paper is 8-20k tokens, so the whole thing goes in context behind a prompt cache, addressed by stable citation ids — `search_paper` scores keyword coverage rather than cosine distance. There is **no deployed Python service**: PyMuPDF and PaddleOCR run as local scripts, so there is no second deploy target. There is **no force-directed layout**: positions come from `lib/layout/*` as a pure function of the graph's shape, so the same graph always lands identically. See [`plan.md`](plan.md) §2 and §11 before proposing any of them.
+Three things that look like omissions and are not. There are **no embeddings and no vector column**: a paper is 8-20k tokens, so the whole thing goes in context behind a prompt cache, addressed by stable citation ids (`search_paper` scores keyword coverage rather than cosine distance). There is **no deployed Python service**: PyMuPDF and PaddleOCR run as local scripts, so there is no second deploy target. There is **no force-directed layout**: positions come from `lib/layout/*` as a pure function of the graph's shape, so the same graph always lands identically. See [`plan.md`](plan.md) §2 and §11 before proposing any of them.
 
 Working in this repo with an AI coding agent? Read [`CLAUDE.md`](CLAUDE.md) first.
 
@@ -148,7 +150,7 @@ Point Claude Code (or Desktop) at the stdio server to call the grounding layer f
 
 Then the `docs/PLAN-V1.md` §13.5 beat works for real: ask Claude to summarize the fixture's RCT, then **"now verify every claim you just made."** It calls `verify_claim` on its own sentences and reports back which ones the source actually supports.
 
-Worth knowing what the tiers mean, because the distinction is the product: **quote located** means the quote was found in the source. It does *not* mean the claim follows from the quote. Nothing here judges entailment — that is deliberately left to the reader, and there is no tool that will do it for you.
+Worth knowing what the tiers mean, because the distinction is the product: **quote located** means the quote was found in the source. It does *not* mean the claim follows from the quote. Nothing here judges entailment: that is deliberately left to the reader, and there is no tool that will do it for you.
 
 ---
 
@@ -156,12 +158,12 @@ Worth knowing what the tiers mean, because the distinction is the product: **quo
 
 Nothing below is required to run against the fixture. Copy [`.env.example`](.env.example) to `.env` once a real backend exists.
 
-**LLM provider — [Groq](https://console.groq.com/keys) primary, [Featherless](https://featherless.ai/account/api-keys) fallback, not Anthropic. Either works alone:**
+**LLM provider: [Groq](https://console.groq.com/keys) primary, [Featherless](https://featherless.ai/account/api-keys) fallback, not Anthropic. Either works alone:**
 
 | Variable | For |
 | --- | --- |
-| `GROQ_API_KEY` | Primary. Defaults to `openai/gpt-oss-20b`/`-120b` — the only two Groq models confirmed to support the structured outputs every call here needs; see `lib/ai/client.ts`'s comment before changing either id |
-| `FEATHERLESS_API_KEY` | Fallback — used only when Groq 401/402/403/429s or marks its own error retryable (`lib/ai/fallbackModel.ts`). Featherless is OpenAI-compatible with no first-party AI SDK provider — `lib/ai/client.ts` goes through `@ai-sdk/openai-compatible`. Its $25/mo flat-rate plan is contractually for human-driven use in Featherless's own UI, not the programmatic API traffic this is — the metered Developer plan is the one its terms describe as intended for that |
+| `GROQ_API_KEY` | Primary. Defaults to `openai/gpt-oss-20b`/`-120b`, the only two Groq models confirmed to support the structured outputs every call here needs; see `lib/ai/client.ts`'s comment before changing either id |
+| `FEATHERLESS_API_KEY` | Fallback, used only when Groq 401/402/403/429s or marks its own error retryable (`lib/ai/fallbackModel.ts`). Featherless is OpenAI-compatible with no first-party AI SDK provider: `lib/ai/client.ts` goes through `@ai-sdk/openai-compatible`. Its $25/mo flat-rate plan is contractually for human-driven use in Featherless's own UI, not the programmatic API traffic this is; the metered Developer plan is the one its terms describe as intended for that |
 | `FEATHERLESS_MODEL_FAST`, `FEATHERLESS_MODEL_STRONG` | Default to two Qwen2.5 models verified live against a real account (meta-llama's repos there are gated behind a HuggingFace org connection and 403 without it) |
 
 **Free account:**
@@ -184,19 +186,19 @@ Nothing below is required to run against the fixture. Copy [`.env.example`](.env
 
 ## Design system
 
-**Direction: Editorial Paper** (Are.na × Instapaper/NYT Reader), on top of the "lab notebook at night" thesis — dark chrome, a warm paper-white reading surface, pillar colour as a structural system. Full brief and the canonical palette: [`design/DIRECTIONS.md`](design/DIRECTIONS.md). Live token reference: `/dev/tokens`.
+**Direction: Editorial Paper** (Are.na × Instapaper/NYT Reader), on top of the "lab notebook at night" thesis: dark chrome, a warm paper-white reading surface, pillar colour as a structural system. Full brief and the canonical palette: [`design/DIRECTIONS.md`](design/DIRECTIONS.md). Live token reference: `/dev/tokens`.
 
 | Layer | Where |
 | --- | --- |
 | Tokens (color, spacing, radius, elevation, motion, layout dims) | `app/globals.css`, `tailwind.config.ts` |
 | Fonts (Source Serif 4, Inter, JetBrains Mono via `next/font`) | `app/layout.tsx` |
 | Primitives (Button, Input, Dialog, Drawer, Tooltip, Popover, Tabs, Menu, Toast, Skeleton, ErrorBanner, Badge, Icon, Logo, ...) | `components/ui/` |
-| Icons | Lucide, only through `components/ui/Icon.tsx` — never a raw `lucide-react` import in a feature component |
-| Brand assets (favicon, app icon, OG image) | `app/icon.svg`, `app/apple-icon.tsx`, `app/opengraph-image.tsx` |
+| Icons | Lucide, only through `components/ui/Icon.tsx` (never a raw `lucide-react` import in a feature component) |
+| Brand assets (favicon, app icon, OG image) | `app/favicon.ico`, `app/icon.png`, `app/apple-icon.png`, `app/opengraph-image.png`, `app/twitter-image.png` |
 | Image-gen prompts (brand kit + all 8 app surfaces) | `design/prompts/`, zipped at `design/pepiros-editorial-paper-prompts.zip` |
 | Platform-vision scope (accounts, publish, discovery, discussion) | [`docs/PLAN-V1.md`](docs/PLAN-V1.md) §22 |
 
-Two conventions worth knowing before adding a component: pillar hues have two accessors in `components/ui/PillarChip.tsx` — `pillarColor()` for borders/dots/edge strokes (canonical hex, 3:1 threshold), `pillarTextColor()` for anywhere a pillar hue is literal text colour (lightened for WCAG AA's 4.5:1, three of the seven canonical hues fail it unmixed). And motion reaches for `lib/motion.ts`'s named helpers or the keyframes in `globals.css`, never a hand-picked duration — Editorial Paper is ease-out only, never spring.
+Two conventions worth knowing before adding a component: pillar hues have two accessors in `components/ui/PillarChip.tsx`, `pillarColor()` for borders/dots/edge strokes (canonical hex, 3:1 threshold) and `pillarTextColor()` for anywhere a pillar hue is literal text colour (lightened for WCAG AA's 4.5:1, three of the seven canonical hues fail it unmixed). And motion reaches for `lib/motion.ts`'s named helpers or the keyframes in `globals.css`, never a hand-picked duration: Editorial Paper is ease-out only, never spring.
 
 ---
 
@@ -215,4 +217,4 @@ Two conventions worth knowing before adding a component: pillar hues have two ac
 
 ## License
 
-[MIT](LICENSE) © Anay Dhawan
+[MIT](LICENSE) © Anay Dhawan and Yash Kewlani

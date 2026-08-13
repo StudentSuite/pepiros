@@ -41,7 +41,7 @@ Two habits this repo has earned the hard way:
 
 ## Ownership
 
-Maintained by **Anay Dhawan**.
+Maintained by **Anay Dhawan** and **Yash Kewlani**.
 
 `types/anchor.ts` and `fixtures/workspace.json` are a frozen contract: both `lib/*` and `components/*` code against that shape rather than against each other, so a change to either needs every consumer checked in the same PR. Run `grep -rl "types/anchor"` and `grep -rl "workspace.json"` before touching them, and call it out in the PR description.
 
