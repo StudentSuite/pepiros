@@ -8,9 +8,9 @@
   working name for what is now Pepiros. plan.md is the fast-start version of this
   document and is the one to read first; this is the long-form reference behind it.
 
-  BEFORE THIS REPOSITORY GOES PUBLIC, this file must be scrubbed or removed. It carries
-  §17's day-by-day schedule, per-person capacity figures, and hackathon strategy that
-  are not meant to be published.
+  Scrubbed 2026-08-13 before the repo went public: §17's day-by-day personal schedule
+  and per-person capacity figures were removed. Section numbers are preserved so
+  existing "PLAN-V1.md §N" references in code comments still resolve.
 -->
 
 # ResearchSumm: v1 Plan
@@ -20,7 +20,7 @@
 **Hackathon:** Aug 7-19, 2026. **Team:** Anay + Yash (both driving Claude Code).
 **Real build window:** 🔴 **Aug 10-17** (shortened 2026-07-31; UCIP owns Aug 7-9: prototype Aug 8, event Aug 8-9).
 **Ship-ready target:** **Aug 17**, submit Aug 18.
-**⚠️ Capacity warning (2026-07-31):** school went to 5 days Mon-Fri 8:00-16:00, so Tue Aug 11 and Tue Aug 18 are **school days, not free days** as §17 originally assumed. Anay's real capacity in this window is ~16-18 hr against a ~29 hr plan. Full scope kept by Anay's explicit call, with Yash covering roughly half. **See §17 for the rebuilt schedule and the Aug 14 checkpoint.**
+**⚠️ Capacity note:** Anay's available hours in this window are reduced from the original estimate. Full scope kept by Anay's explicit call, with Yash covering roughly half. **See §17 for the rebuilt schedule and the Aug 14 checkpoint.**
 **Code lives at:** `C:\Users\lenovo\researchsumm\` (never inside EA, per EA folder rule).
 **Created:** 2026-07-30, after a 5-advisor council pass + peer review + Anay's own scope calls.
 
@@ -752,33 +752,25 @@ Cut from the demo entirely: flashcards, quizzes, reading path, export, settings.
 
 ## 17. Schedule, Aug 10-18
 
-> 🔴 **REBUILT 2026-07-31. Read this before the table.**
->
-> The original version of this section budgeted **~29 hours** of Anay's half across "free days Tue 11, Sat 15, Sun 16, Tue 18." **Tue Aug 11 and Tue Aug 18 are no longer free.** School changed on Aug 1 from 4 days (Tuesday holiday) 8:00-15:00 to **5 days Mon-Fri 8:00-16:00**. Anay also shortened the window: ship Aug 17, submit Aug 18.
->
-> **Real capacity for Anay in this window is roughly 16-18 hours, not 29.** The remaining fixed load inside it: school Mon-Fri 8:00-16:00, math tuition Tue 11 + Thu 13 16:30-17:30, physics Wed 12 18:30-19:30, gym Tue/Thu/Sat, SAT tuition Sat 15 + Sun 16 10:00-12:00, alternate-Saturday math Aug 15, and sleep 7.5 hr which is non-negotiable.
->
-> **Scope decision (Anay's call, 2026-07-31, made against council advice):** keep full scope, with Yash covering roughly half. A 5-advisor council plus peer review flagged this as the single biggest risk in the Aug-Sept plan. It is recorded here as a stated assumption rather than silently absorbed, and the mitigation is the **Aug 14 checkpoint** plus the slip order below. See `decisions/log.md` 2026-07-31.
->
-> IOAI is **zero** for this whole window (its 3 hr/wk weekend budget is lent to this sprint and repaid Aug 22-23), so this sprint no longer has to route around an IOAI block. IBDP morning retrieval and SAT tuition **do** stand and are not negotiable.
+> Both contributors worked around fixed personal commitments outside this project during the build window (school/other obligations); those specifics aren't relevant outside the team and are omitted here. **Scope decision:** kept full scope rather than cutting, with the risk mitigated by the **Aug 14 checkpoint** below plus the slip order. See `decisions/log.md` for the underlying reasoning.
 
 | Day | Anay (`lib/` `scripts/` `mcp/`) | Yash (`components/` `app/`) |
 |---|---|---|
-| **Mon Aug 10** (school) | Freeze `types/anchor.ts` + `fixtures/workspace.json` together, hour one. Supabase schema, RLS, `search_for` spike (must render one rect on one page before anything else) | Tokens, `/dev/tokens`, app shell, papers panel, topbar |
-| **Tue Aug 11** (school, math + gym: **shortest day of the sprint**) | Parser: blocks, columns, sections. Figures, equations, references, numeric ledger slide to Wed if needed | Canvas, all 5 node types, full state matrix, deterministic layout |
-| **Wed Aug 12** (school, physics 18:30) | **Extract `lib/services/`**, ingest pipeline, job events, SSE. Parser tail from Tue | Inspector, evidence cards, citation chips, popovers |
-| **Thu Aug 13** (school, math + gym: **short day**) | Archetype classifier, pillar planner, first 8 generators | Reader, highlight layer, section nav, split view |
-| **Fri Aug 14** (school) 🔴 | Verifier, entailment floor, multi-span anchors, metrics view. **CHECKPOINT: is parse to locate to verify to highlight working end to end? If no, fire the slip order tonight.** | Chat dock, streaming chips, promote-to-node animation |
-| **Sat Aug 15** (SAT tuition 10-12, gym, alt-Sat math) | Remaining generators, fan-out, prompt caching, failure isolation | Coverage overlay, reverse anchor lookup, outline view |
-| **Sun Aug 16** (SAT tuition 10-12) | Claim table, synthesis nodes, contradiction pass, `cites` edges. **Check MCP spec against current docs** | Contradiction diff panel, learn UI, reading path rail |
-| **Mon Aug 17** (school) 🔴 **SHIP** | MCP tools (12), resources, prompts, stdio wrapper. Seed 3 papers, plant the misattribution, measure drop rate on 10 real PDFs. Rehearse | Reverse audit view, share link, export, empty and error states. A11y audit, deck, recording |
-| **Tue Aug 18** (school) | Submit. Record the demo. **Sprint ends here.** | Submit. |
+| **Mon Aug 10** | Freeze `types/anchor.ts` + `fixtures/workspace.json` together, hour one. Supabase schema, RLS, `search_for` spike (must render one rect on one page before anything else) | Tokens, `/dev/tokens`, app shell, papers panel, topbar |
+| **Tue Aug 11** | Parser: blocks, columns, sections. Figures, equations, references, numeric ledger slide to Wed if needed | Canvas, all 5 node types, full state matrix, deterministic layout |
+| **Wed Aug 12** | **Extract `lib/services/`**, ingest pipeline, job events, SSE. Parser tail from Tue | Inspector, evidence cards, citation chips, popovers |
+| **Thu Aug 13** | Archetype classifier, pillar planner, first 8 generators | Reader, highlight layer, section nav, split view |
+| **Fri Aug 14** 🔴 | Verifier, entailment floor, multi-span anchors, metrics view. **CHECKPOINT: is parse to locate to verify to highlight working end to end? If no, fire the slip order tonight.** | Chat dock, streaming chips, promote-to-node animation |
+| **Sat Aug 15** | Remaining generators, fan-out, prompt caching, failure isolation | Coverage overlay, reverse anchor lookup, outline view |
+| **Sun Aug 16** | Claim table, synthesis nodes, contradiction pass, `cites` edges. **Check MCP spec against current docs** | Contradiction diff panel, learn UI, reading path rail |
+| **Mon Aug 17** 🔴 **SHIP** | MCP tools (12), resources, prompts, stdio wrapper. Seed 3 papers, plant the misattribution, measure drop rate on 10 real PDFs. Rehearse | Reverse audit view, share link, export, empty and error states. A11y audit, deck, recording |
+| **Tue Aug 18** | Submit. Record the demo. **Sprint ends here.** | Submit. |
 
 **If OAuth slips:** ship stdio only and demo through Claude Code instead of claude.ai. Same beat, one fewer setup step. Given the compressed window, **assume stdio-only from the start** and treat OAuth as the stretch, not the plan. Decide by Aug 16.
 
 **Slip order** (what compresses first, in this order): export, quiz, flashcards, reading path rail, share link, reverse anchor lookup, then the 21 generators down to the 8 that carry the demo. Never: the anchor spine, the verifier, the highlight, the contradiction diff, the MCP `verify_claim` tool.
 
-**What "borrowing from sleep" costs, so it is not an option on the table:** the DP1 First Formative Assessment is Sep 21-30 and the SAT is Nov 7. Both are downstream of the recovery this sprint does or does not get. Aug 20 is a hard reset date back to baseline regardless of where the code is.
+**Aug 20 is a hard reset date** back to baseline project pace regardless of where the code is at that point.
 
 ---
 
@@ -804,8 +796,7 @@ Both drive Claude Code, so the constraint is merge surface, not typing speed.
 | MCP OAuth slips | stdio fallback, demo in Claude Code. |
 | Live connector add fails on stage | Pre-added connector on a second account. |
 | Fan-out token bill | Prompt-cache the paper block, cache every node, regeneration opt-in, hard caps. |
-| 🔴 **Window shrank ~40% but scope did not** (2026-07-31) | The one risk that materialised before the sprint even started. School went to 5 days, deleting both "free" Tuesdays. Anay kept full scope knowingly. Mitigation is entirely in §17: the Aug 14 end-to-end checkpoint, the slip order, stdio-first MCP, and Aug 20 as a hard reset. If the checkpoint fails and the slip order is not fired, this is the failure mode that eats the DP1 assessment prep downstream. |
-| IBDP or SAT squeezed | Neither yields. SAT tuition (Sat/Sun 10:00-12:00) and the IBDP morning retrieval block are fixed through the sprint. IOAI is already at zero for this window, so there is nothing left to borrow except sleep, and sleep is non-negotiable. The lever is scope, per the §17 slip order. |
+| 🔴 **Window shrank but scope did not** | The one risk that materialised before the sprint even started -- available hours dropped after the schedule was first set. Kept full scope knowingly. Mitigation is entirely in §17: the Aug 14 end-to-end checkpoint, the slip order, stdio-first MCP, and Aug 20 as a hard reset. If the checkpoint fails and the slip order is not fired, this is the failure mode that eats recovery time downstream. |
 | Judge says "this is NotebookLM" | Reverse audit (addon 1) plus the MCP self-verification beat. Answer prepared, not improvised. |
 
 ---
@@ -881,5 +872,5 @@ Positioning stays **grounding-first**: the deterministic-verification pitch lead
 ## Update log
 
 - **2026-08-10** §22 Platform Vision added: public accounts, paper uploads, auto-graph-on-publish, discovery feed, per-paper discussion, follows/likes, curated open-access library. Targets Aug 17, same deadline as the existing demo. Open-access-only licensing confirmed. Editorial Paper locked as the design direction (Anay + Yash), canonical palette adopted from a reference board, full prompt set in `design/`. Additive to §1-21, nothing existing changed.
-- **2026-07-31** §17 schedule rebuilt and the header capacity line added. School changed to 5 days Mon-Fri 8:00-16:00 on Aug 1, so Tue Aug 11 and Tue Aug 18 (budgeted as free days) are school days. Build window shortened to Aug 10-17, ship Aug 17, submit Aug 18. Real capacity ~16-18 hr against the ~29 hr the original table assumed. **Scope unchanged**: Anay's explicit call, made against a 5-advisor council + peer review that flagged it as the biggest risk in the Aug-Sept plan, with Yash covering roughly half. Mitigations added instead of a scope cut: an explicit **Aug 14 end-to-end spine checkpoint**, stdio-first MCP (OAuth demoted to stretch), the 21 generators added to the slip order, and Aug 20 fixed as a hard reset date back to baseline. Nothing in §1-16 or §18-21 changed. See `decisions/log.md` 2026-07-31 and `context/current-priorities.md`.
+- **2026-07-31** §17 schedule rebuilt: available build hours dropped from what the original table assumed, and the window shortened to Aug 10-17, ship Aug 17, submit Aug 18. **Scope unchanged**, with Yash covering roughly half. Mitigations added instead of a scope cut: an explicit **Aug 14 end-to-end spine checkpoint**, stdio-first MCP (OAuth demoted to stretch), the 21 generators added to the slip order, and Aug 20 fixed as a hard reset date back to baseline. Nothing in §1-16 or §18-21 changed. See `decisions/log.md` 2026-07-31.
 - **2026-07-30** Created. Council pass (5 advisors, 5 peer reviews) plus Anay's scope calls. Locked: full feature set minus §20, `search_for` anchoring, no deployed Python service, no pgvector, no elkjs, Mentor replaced by reading path, 9 addons, MCP layer added. Dates confirmed Aug 7-19, real window Aug 10-19, Yash confirmed Claude Code capable.
