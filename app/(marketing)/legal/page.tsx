@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { buttonClassName } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
+
+export const metadata: Metadata = {
+  title: "Legal",
+  description: "Pepiros license and legal information.",
+};
 
 // Verbatim contents of the repo-root LICENSE file. Reproduced exactly, not
 // paraphrased, so "state that plainly" means the reader sees the real text

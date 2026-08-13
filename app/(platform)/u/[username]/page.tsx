@@ -1,7 +1,21 @@
+import type { Metadata } from "next";
 import { PaperCard } from "@/components/site/PaperCard";
 import { Reveal } from "@/components/ui/Reveal";
 import { getMockProfile, type MockProfile } from "@/lib/mock/profile";
 import { mockPapers, getMockPaperBySlug, type MockPaper } from "@/lib/mock/discover";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}): Promise<Metadata> {
+  const { username } = await params;
+  const profile = getMockProfile(username);
+  return {
+    title: profile.displayName,
+    description: profile.bio || `${profile.displayName} on Pepiros.`,
+  };
+}
 
 // Light "recent activity" list -- 2-3 mock lines (Task 7 brief). Built from
 // the profile's own `papers` plus one other paper from the catalog she

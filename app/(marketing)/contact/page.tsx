@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import { Reveal } from "@/components/ui/Reveal";
+
+export const metadata: Metadata = {
+  title: "Contact",
+  description: "Get in touch with the Pepiros team.",
+};
 
 /**
  * `/contact` -- deliberately small: a heading, one paragraph, and a

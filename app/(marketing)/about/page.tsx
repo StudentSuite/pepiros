@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { buttonClassName } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
+
+export const metadata: Metadata = {
+  title: "About",
+  description:
+    "Pepiros is built by Anay Dhawan and Yash Kewlani -- a grounding engine for research reading, built as an MCP server so any AI agent can verify its own claims against a source.",
+};
 
 // Hackathon origin -- plan.md's own header line ("Hackathon: Aug 7-19,
 // 2026. Real build window: Aug 10-17, ship Aug 17, submit Aug 18. Team:

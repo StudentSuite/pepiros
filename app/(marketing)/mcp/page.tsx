@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { buttonClassName } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { EvidenceBadge } from "@/components/ui/EvidenceBadge";
 import { Reveal } from "@/components/ui/Reveal";
+
+export const metadata: Metadata = {
+  title: "MCP Server",
+  description:
+    "Connect Pepiros to Claude, Codex, or Cursor over MCP. Call verify_claim to fact-check an agent's own output against a source, live, mid-conversation.",
+};
 
 interface McpTool {
   name: string;

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { buttonClassName } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -5,6 +6,12 @@ import { EvidenceBadge } from "@/components/ui/EvidenceBadge";
 import { RefChip } from "@/components/ui/RefChip";
 import { Reveal } from "@/components/ui/Reveal";
 import { PacingStrip } from "@/components/site/PacingStrip";
+
+export const metadata: Metadata = {
+  title: "How It Works",
+  description:
+    "Deterministic verification, not a model's opinion of itself. Every claim is checked against the exact source sentence with a fuzzy-match score.",
+};
 
 // Worked example -- the same C7 circadian-light claim/quote already
 // established by VerificationDemo and the home page's grounding trust band

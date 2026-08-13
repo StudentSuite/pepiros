@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MessageCircle } from "lucide-react";
@@ -74,6 +75,23 @@ function buildSummary(paper: MockPaper): string {
  * still handles it). Only the follow/like controls are a client boundary,
  * see PaperEngagement.tsx. Header/footer come from app/(platform)/layout.tsx.
  */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const paper = getMockPaperBySlug(slug);
+  if (!paper) {
+    return { title: "Paper not found" };
+  }
+  const byline = `${paper.authors.join(", ")}${paper.venue ? ` -- ${paper.venue}` : ""}`;
+  return {
+    title: paper.title,
+    description: `${byline}. Read with every claim traced to its source quote on Pepiros.`,
+  };
+}
+
 export default async function PaperDetailPage({
   params,
 }: {
