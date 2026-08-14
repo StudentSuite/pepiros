@@ -2,8 +2,6 @@
 
 <img src="app/opengraph-image.png" alt="Pepiros: Be the source." width="640" />
 
-# Pepiros
-
 **Turn a research PDF into a knowledge graph where every generated claim stays bound to a located quote, and hand that grounding to Claude as a callable MCP service.**
 
 [![CI](https://github.com/StudentSuite/pepiros/actions/workflows/ci.yml/badge.svg)](https://github.com/StudentSuite/pepiros/actions/workflows/ci.yml)
