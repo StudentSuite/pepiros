@@ -9,6 +9,8 @@ out
 *.local
 .DS_Store
 /fixtures/*.pdf
+/evals/golden-papers/*.pdf
+/evals/results/
 __pycache__
 *.pyc
 .venv
