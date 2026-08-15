@@ -208,6 +208,18 @@ export function ReaderClient({ workspaceId }: { workspaceId: string }) {
             >
               {sharing ? "Sharing…" : "Share"}
             </button>
+            <a
+              href={`/api/export?workspaceId=${encodeURIComponent(workspaceId)}&format=md`}
+              className="rounded-full border border-border px-s-3 py-1 transition-colors duration-fast ease-out hover:border-border-strong hover:text-ink"
+            >
+              Export .md
+            </a>
+            <a
+              href={`/api/export?workspaceId=${encodeURIComponent(workspaceId)}&format=bibtex`}
+              className="rounded-full border border-border px-s-3 py-1 transition-colors duration-fast ease-out hover:border-border-strong hover:text-ink"
+            >
+              Export .bib
+            </a>
           </nav>
         </header>
 
