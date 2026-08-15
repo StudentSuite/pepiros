@@ -6,6 +6,7 @@ import { Reveal } from "@/components/ui/Reveal";
 import { buttonClassName } from "@/components/ui/Button";
 import { ReadingColumn } from "@/components/reading/Article";
 import { ReaderMock, AgentMock } from "@/components/mockups/ReaderMock";
+import { LIVE_TOOLS } from "@/lib/mcp/registry";
 
 /**
  * Landing page.
@@ -26,28 +27,51 @@ function Section({
   title,
   children,
   media,
+  layout = "stack",
+  revealVariant,
 }: {
   kicker?: string;
   title: string;
   children: React.ReactNode;
   media?: React.ReactNode;
+  /** "side-by-side" puts text and media in a two-column grid on larger
+   *  screens instead of stacking media below -- a deliberate break from the
+   *  repeating stack, used once (the mechanism section) rather than as a
+   *  second copy-pasted template. */
+  layout?: "stack" | "side-by-side";
+  revealVariant?: "lift" | "slide";
 }) {
+  const text = (
+    <>
+      {kicker && (
+        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+          {kicker}
+        </p>
+      )}
+      <h2 className="mt-s-3 max-w-2xl font-serif text-[1.75rem] font-semibold leading-snug tracking-[-0.01em] text-ink sm:text-[2.1rem]">
+        {title}
+      </h2>
+      <div className="mt-s-4 max-w-2xl font-sans text-[1.0625rem] leading-[1.75] text-ink-muted [&>*+*]:mt-s-4">
+        {children}
+      </div>
+    </>
+  );
+
   return (
-    <Reveal>
+    <Reveal variant={revealVariant}>
       <section className="border-t border-border py-s-8">
         <ReadingColumn wide>
-          {kicker && (
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
-              {kicker}
-            </p>
+          {layout === "side-by-side" && media ? (
+            <div className="grid gap-s-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-center">
+              <div>{text}</div>
+              <div>{media}</div>
+            </div>
+          ) : (
+            <>
+              {text}
+              {media && <div className="mt-s-6">{media}</div>}
+            </>
           )}
-          <h2 className="mt-s-3 max-w-2xl font-serif text-[1.75rem] leading-snug tracking-[-0.01em] text-ink sm:text-[2.1rem]">
-            {title}
-          </h2>
-          <div className="mt-s-4 max-w-2xl font-sans text-[1.0625rem] leading-[1.75] text-ink-muted [&>*+*]:mt-s-4">
-            {children}
-          </div>
-          {media && <div className="mt-s-6">{media}</div>}
         </ReadingColumn>
       </section>
     </Reveal>
@@ -99,6 +123,8 @@ export default function MarketingPage() {
         kicker="The mechanism"
         title="Checked against the source, not asked of a model twice."
         media={<VerificationDemo />}
+        layout="side-by-side"
+        revealVariant="slide"
       >
         <p>
           Each claim is matched against the exact sentence it cites, and scored.
@@ -158,7 +184,7 @@ export default function MarketingPage() {
             href="/mcp"
             className="text-accent-text underline underline-offset-2"
           >
-            See the eight tools
+            See the {LIVE_TOOLS.length} tools
           </Link>
           .
         </p>

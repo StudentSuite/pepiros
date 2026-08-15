@@ -28,7 +28,7 @@ export function PreviewCard({
   return (
     <Link
       href={href}
-      className="group flex flex-col gap-s-3 rounded-lg border border-border bg-surface-raised p-s-4 transition-colors duration-base ease-out hover:border-accent"
+      className="group flex flex-col gap-s-3 rounded-lg border border-border bg-surface-raised p-s-4 shadow-e-1 transition duration-base ease-out hover:border-accent hover:shadow-e-2"
     >
       <div className="overflow-hidden rounded border border-border bg-surface-sunken">
         <div className="aspect-[16/10] w-full transition-transform duration-base ease-out group-hover:scale-[1.03]">

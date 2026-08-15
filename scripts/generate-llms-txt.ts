@@ -4,15 +4,15 @@
 // `npm run generate:llms` after changing the tool registry.
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { LIVE_TOOL_NAMES, PLANNED_TOOL_NAMES } from "@/lib/mcp/registry";
+import { LIVE_TOOL_NAMES, PLANNED_TOOL_NAMES, numberWord as lowercaseNumberWord } from "@/lib/mcp/registry";
 
 const LLMS_TXT_PATH = path.join(process.cwd(), "public", "llms.txt");
 const LINE_PREFIX = "- Connect over MCP (see [/mcp](/mcp)).";
 
-const NUMBER_WORDS = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
-
+/** Sentence case for this file's copy ("Twelve tools..."); the registry's own helper is lowercase. */
 function numberWord(n: number): string {
-  return NUMBER_WORDS[n] ?? String(n);
+  const word = lowercaseNumberWord(n);
+  return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
 function joinBacktickList(names: string[]): string {

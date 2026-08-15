@@ -14,12 +14,28 @@ import clsx from "clsx";
  * via `!important`) still applies here without Reveal needing its own
  * reduced-motion branch.
  */
+/** "lift" (default) fades and lifts up 12px. "slide" fades in from the side --
+ *  an occasional break from every section entering the same way (design
+ *  issue: vary at least one section's entrance). */
+type RevealVariant = "lift" | "slide";
+
+const HIDDEN: Record<RevealVariant, string> = {
+  lift: "translate-y-3 opacity-0",
+  slide: "translate-x-4 opacity-0",
+};
+const VISIBLE: Record<RevealVariant, string> = {
+  lift: "translate-y-0 opacity-100",
+  slide: "translate-x-0 opacity-100",
+};
+
 export function Reveal({
   children,
   className,
+  variant = "lift",
 }: {
   children: React.ReactNode;
   className?: string;
+  variant?: RevealVariant;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -47,7 +63,7 @@ export function Reveal({
       ref={ref}
       className={clsx(
         "transition-all duration-slow ease-out",
-        visible ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
+        visible ? VISIBLE[variant] : HIDDEN[variant],
         className,
       )}
     >

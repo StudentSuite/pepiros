@@ -14,7 +14,11 @@ export function Panel({
 }: { padded?: boolean } & HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={clsx("rounded border border-border bg-surface-raised", padded && "p-4", className)}
+      className={clsx(
+        "rounded border border-border bg-surface-raised shadow-e-1 transition-shadow duration-base ease-out hover:shadow-e-2",
+        padded && "p-4",
+        className,
+      )}
       {...props}
     />
   );

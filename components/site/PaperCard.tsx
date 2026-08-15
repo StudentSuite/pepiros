@@ -2,7 +2,7 @@ import Link from "next/link";
 import { MessageCircle, Heart } from "lucide-react";
 import { Icon } from "@/components/ui/Icon";
 import { Badge } from "@/components/ui/Badge";
-import { PillarChip } from "@/components/ui/PillarChip";
+import { PillarChip, pillarColor } from "@/components/ui/PillarChip";
 import { topicLabelForPillar, formatMockDate, type MockPaper } from "@/lib/mock/discover";
 
 /**
@@ -13,10 +13,15 @@ import { topicLabelForPillar, formatMockDate, type MockPaper } from "@/lib/mock/
  * just moved so both pages import one definition.
  */
 export function PaperCard({ paper }: { paper: MockPaper }) {
+  // Same color-mix tint components/canvas/PillarNode.tsx uses on graph nodes
+  // -- a card's pillar hue was previously legible only as a 2-6px chip dot.
+  const tint = pillarColor(paper.pillarIndex);
+
   return (
     <Link
       href={`/paper/${paper.slug}`}
-      className="group flex flex-col gap-s-3 rounded-lg border border-border bg-surface-raised p-s-4 transition-colors duration-base ease-out hover:border-accent"
+      className="group flex flex-col gap-s-3 rounded-lg border border-border p-s-4 shadow-e-1 transition duration-base ease-out hover:border-accent hover:shadow-e-2"
+      style={{ backgroundColor: `color-mix(in srgb, ${tint} 6%, var(--surface-raised))` }}
     >
       <div className="flex items-start justify-between gap-2">
         <PillarChip pillarIndex={paper.pillarIndex} label={topicLabelForPillar(paper.pillarIndex)} />

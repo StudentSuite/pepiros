@@ -119,6 +119,13 @@ export const PLANNED_TOOLS = TOOL_REGISTRY.filter((t) => t.status === "planned")
 export const LIVE_TOOL_NAMES = LIVE_TOOLS.map((t) => t.name);
 export const PLANNED_TOOL_NAMES = PLANNED_TOOLS.map((t) => t.name);
 
+const NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
+
+/** Spells out small counts ("twelve tools") instead of a bare digit, for copy. */
+export function numberWord(n: number): string {
+  return NUMBER_WORDS[n] ?? String(n);
+}
+
 export function toolDescription(name: string): string {
   const spec = TOOL_REGISTRY.find((t) => t.name === name);
   if (!spec) throw new Error(`No registry entry for tool "${name}" -- add it to lib/mcp/registry.ts first.`);
