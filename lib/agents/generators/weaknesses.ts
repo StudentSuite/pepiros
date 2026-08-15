@@ -7,8 +7,8 @@ import type { GeneratorConfig } from "./runGenerator";
  * it. "Prompt enforced" isn't trusted on its own here any more than an LLM's
  * self-reported `quote_located` is elsewhere in this project -- see
  * runGenerator.ts's `findBannedPhrases`, which callers should run against
- * this generator's `body_md` as a deterministic backstop. `biases.ts` isn't
- * implemented yet, but should import this same list when it is.
+ * this generator's `body_md` as a deterministic backstop. `biases.ts`
+ * imports this same list.
  */
 export const BANNED_GENERIC_CRITIQUE_PHRASES = [
   "further research is needed",
