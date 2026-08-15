@@ -79,7 +79,7 @@ export function ChatDock() {
         const body = (await res.json().catch(() => null)) as { error?: string; detail?: string } | null;
         setError(
           body?.error === "model_not_configured"
-            ? "No model key configured. Set GROQ_API_KEY (or FEATHERLESS_API_KEY) in .env to enable chat."
+            ? "Chat is unavailable on this deployment. Everything else, including verification, still works."
             : (body?.detail ?? `Chat failed (${res.status}).`),
         );
         return;
@@ -112,7 +112,7 @@ export function ChatDock() {
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-4">
-      <div className="pointer-events-auto w-full max-w-2xl rounded border border-border bg-surface-raised shadow-2xl">
+      <div className="glass pointer-events-auto w-full max-w-2xl rounded-lg">
         <div className="flex items-center justify-between border-b border-border px-3 py-2">
           <div className="flex items-center gap-2">
             <span className="font-sans text-sm font-medium text-ink">Ask</span>

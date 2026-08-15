@@ -50,7 +50,7 @@ export function Sidebar({
   const filteredNodes = q ? leafNodes.filter((n) => n.title.toLowerCase().includes(q)) : leafNodes;
 
   return (
-    <aside className="flex w-60 shrink-0 flex-col gap-6 border-r border-border bg-surface-raised px-4 py-5">
+    <aside className="flex w-60 shrink-0 flex-col gap-6 border-r border-[var(--glass-edge)] bg-[var(--glass-bg)] px-4 py-5 backdrop-blur-[var(--glass-blur)] backdrop-saturate-150">
       <Logo />
 
       <div className="relative">
