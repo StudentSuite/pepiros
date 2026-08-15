@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { useWorkspaceStore } from "@/lib/store/workspace";
+import { useToastStore } from "@/lib/store/toast";
 import { Sidebar } from "@/components/app/Sidebar";
 import { PdfPane } from "@/components/reader/PdfPane";
 import { CoverageOverlay } from "@/components/reader/CoverageOverlay";
@@ -35,9 +36,30 @@ export function ReaderClient({ workspaceId }: { workspaceId: string }) {
     loadWorkspace(workspaceId);
   }, [workspaceId, loadWorkspace]);
 
+  const pushToast = useToastStore((s) => s.push);
   const [activePaperId, setActivePaperId] = useState<string | null>(null);
   const [activeChunkId, setActiveChunkId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [sharing, setSharing] = useState(false);
+
+  async function shareWorkspace() {
+    setSharing(true);
+    try {
+      const res = await fetch("/api/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workspaceId }),
+      });
+      if (!res.ok) throw new Error(`Share failed (${res.status}).`);
+      const { url } = (await res.json()) as { url: string };
+      await navigator.clipboard.writeText(url);
+      pushToast("Read-only share link copied to clipboard.", "success");
+    } catch (err) {
+      pushToast(err instanceof Error ? err.message : "Could not create a share link.", "error");
+    } finally {
+      setSharing(false);
+    }
+  }
 
   const paperChunks = useMemo(
     () =>
@@ -178,6 +200,14 @@ export function ReaderClient({ workspaceId }: { workspaceId: string }) {
             >
               Explore graph
             </Link>
+            <button
+              type="button"
+              onClick={() => void shareWorkspace()}
+              disabled={sharing}
+              className="rounded-full border border-border px-s-3 py-1 transition-colors duration-fast ease-out hover:border-border-strong hover:text-ink disabled:opacity-50"
+            >
+              {sharing ? "Sharing…" : "Share"}
+            </button>
           </nav>
         </header>
 

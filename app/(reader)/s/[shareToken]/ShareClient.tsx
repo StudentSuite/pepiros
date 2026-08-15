@@ -9,22 +9,22 @@ import { NodeInspector } from "@/components/inspector/NodeInspector";
 import type { Highlight } from "@/components/reader/HighlightLayer";
 
 /**
- * Read-only variant of the reader view for a share link. There's no real
- * share_tokens table/RLS policy wired up yet (lib/services doesn't resolve
- * shareToken -> workspaceId), so this always loads the fixture's only
- * workspace ("ws-1") regardless of the token -- a real implementation would
- * look up the token first and 404/expire appropriately. No ChatDock, no
- * NodeEditor access (NodeInspector is mounted with readOnly).
+ * Read-only variant of the reader view for a share link. The token is
+ * resolved server-side in page.tsx against lib/services/share.ts before this
+ * ever mounts (an unknown token renders an "invalid or expired" state
+ * instead), so this loads whichever workspace the token actually maps to,
+ * not a hardcoded fixture id. No ChatDock, no NodeEditor access
+ * (NodeInspector is mounted with readOnly).
  */
-export function ShareClient({ shareToken }: { shareToken: string }) {
+export function ShareClient({ shareToken, workspaceId }: { shareToken: string; workspaceId: string }) {
   const workspace = useWorkspaceStore((s) => s.workspace);
   const loadWorkspace = useWorkspaceStore((s) => s.loadWorkspace);
   const selectedNodeId = useWorkspaceStore((s) => s.selectedNodeId);
   const selectNode = useWorkspaceStore((s) => s.selectNode);
 
   useEffect(() => {
-    loadWorkspace("ws-1");
-  }, [loadWorkspace]);
+    loadWorkspace(workspaceId);
+  }, [workspaceId, loadWorkspace]);
 
   const [activeChunkId, setActiveChunkId] = useState<string | null>(null);
 
