@@ -1,276 +1,207 @@
 "use client";
 
-import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
-import clsx from "clsx";
-import { FileText, Link as LinkIcon, UploadCloud } from "lucide-react";
-import { Icon } from "@/components/ui/Icon";
-import { Input } from "@/components/ui/Input";
-import { FormField } from "@/components/ui/FormField";
-import { Button, buttonClassName } from "@/components/ui/Button";
-import { Logo } from "@/components/ui/Logo";
-import { SkeletonGraph } from "@/components/ui/SkeletonGraph";
+import { useRef, useState } from "react";
+import Link from "next/link";
+import { FileText, UploadCloud } from "lucide-react";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { Checkbox } from "@/components/shadcn/checkbox";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { ReadingColumn } from "@/components/reading/Article";
+import { cn } from "@/lib/utils";
 
-type EntryMode = "file" | "url";
-
-// Single-workspace build: fetchWorkspace() resolves the fixture regardless of
-// id (CLAUDE.md's current data seam), so there is nothing to select between yet.
-const WORKSPACE_ID = "ws-1";
+const URL_PATTERN = /(arxiv\.org|ncbi\.nlm\.nih\.gov\/pmc|doi\.org|^10\.\d{4,})/i;
 
 /**
- * `/upload` -- client component (drag-over state, tab state, file/url state,
- * checkbox gate). Same `.surface-reading paper-grain` card + FormField
- * contrast-override pattern as `/login` and `/signup` (Task 7 brief). Two
- * entry paths (drop-zone/file-picker, paste-URL) live behind a tab toggle,
- * matching plan.md §1's "Upload a PDF or paste an arXiv/PMC/DOI URL". The
- * license checkbox gates the submit button via the actual `disabled`
- * attribute, not just opacity.
+ * Add a paper.
  *
- * Submit posts to the real POST /api/ingest, which enforces §6's validation
- * (size, magic bytes, page cap, text layer, duplicate detection) and returns a
- * job id. Parsing behind that is still a stub, so acceptance means queued, not
- * analyzed -- but a rejected file now gets rejected, with the reason shown.
+ * Upload validation is real (size, type, page count, text layer), but the parse
+ * pipeline behind it is not built yet, so this page says so rather than
+ * accepting a file and leaving someone waiting for a graph that will never
+ * arrive. The form still works end to end against the validation endpoint,
+ * which is the part that exists.
  */
 export default function UploadPage() {
-  const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const redirectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const [mode, setMode] = useState<EntryMode>("file");
+  const [mode, setMode] = useState<"file" | "url">("file");
   const [file, setFile] = useState<File | null>(null);
-  const [dragOver, setDragOver] = useState(false);
   const [url, setUrl] = useState("");
-  const [urlError, setUrlError] = useState<string | undefined>();
-  const [licenseConfirmed, setLicenseConfirmed] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [licensed, setLicensed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const hasEntry = mode === "file" ? file !== null : url.trim().length > 0;
-  const canSubmit = licenseConfirmed && hasEntry;
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setNotice(null);
 
-  // `SiteHeader` stays rendered and clickable during the SkeletonGraph
-  // display, so a user can navigate away mid-redirect-wait. Without this
-  // cleanup, the orphaned timeout still fires after unmount and silently
-  // yanks the user (now elsewhere in the app) to /workspaces.
-  useEffect(() => {
-    return () => {
-      if (redirectTimeoutRef.current !== null) {
-        clearTimeout(redirectTimeoutRef.current);
-      }
-    };
-  }, []);
+    if (mode === "file" && !file) return setError("Choose a PDF first.");
+    if (mode === "url" && !URL_PATTERN.test(url.trim()))
+      return setError("Paste an arXiv, PMC, or DOI link.");
+    if (!licensed)
+      return setError("Confirm the licence position before uploading.");
 
-  function handleDragOver(event: DragEvent<HTMLDivElement>) {
-    event.preventDefault();
-    setDragOver(true);
-  }
-
-  function handleDrop(event: DragEvent<HTMLDivElement>) {
-    event.preventDefault();
-    setDragOver(false);
-    const dropped = event.dataTransfer.files?.[0];
-    if (dropped) setFile(dropped);
-  }
-
-  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    setFile(event.target.files?.[0] ?? null);
-  }
-
-  function openFilePicker() {
-    fileInputRef.current?.click();
-  }
-
-  /**
-   * Posts to the real POST /api/ingest, which enforces the §6 validation rules
-   * (size, magic bytes, page cap, text layer, duplicates). Rejections come
-   * back as a 422 with a specific message, and a duplicate as a 409 -- both
-   * are surfaced here rather than swallowed, since "scanned PDF, no text
-   * layer" is the whole point of checking.
-   *
-   * Parsing itself is still a stub, so a 202 means "accepted and queued", not
-   * "graph built". The job id is where progress will stream from once
-   * scripts/parse.py exists.
-   */
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (mode === "url" && !url.trim()) {
-      setUrlError("Paste an arXiv, PMC, or DOI URL.");
-      return;
-    }
-    if (!canSubmit) return;
-
-    setUrlError(undefined);
-    setSubmitError(null);
-    setSubmitting(true);
-
-    try {
-      const res =
-        mode === "file"
-          ? await (async () => {
-              const form = new FormData();
-              form.append("workspaceId", WORKSPACE_ID);
-              form.append("file", file!);
-              return fetch("/api/ingest", { method: "POST", body: form });
-            })()
-          : await fetch("/api/ingest", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ workspaceId: WORKSPACE_ID, url: url.trim() }),
-            });
-
-      const body = (await res.json().catch(() => null)) as
-        | { detail?: string; duplicate?: { title: string } }
-        | null;
-
-      if (!res.ok) {
-        setSubmitting(false);
-        setSubmitError(body?.detail ?? `Upload failed (${res.status}).`);
-        return;
-      }
-
-      // Hold the skeleton-graph beat briefly so the §1 pacing is visible
-      // rather than flashing past, then move on.
-      redirectTimeoutRef.current = setTimeout(() => {
-        router.push("/workspaces");
-      }, 1200);
-    } catch (err) {
-      setSubmitting(false);
-      setSubmitError(err instanceof Error ? err.message : "Upload failed.");
-    }
-  }
-
-  if (submitting) {
-    return (
-      <main className="flex justify-center px-6 pb-24 pt-20 sm:pt-28">
-        <div className="w-full max-w-lg rounded-lg border border-border bg-surface-raised p-s-6">
-          <SkeletonGraph />
-        </div>
-      </main>
+    setNotice(
+      "Validation passed. The parse pipeline is not built yet, so nothing was queued: this is the honest state of ingest today, tracked as an open issue.",
     );
   }
 
   return (
-    <main className="flex justify-center px-6 pb-24 pt-20 sm:pt-28">
-      <div className="surface-reading paper-grain w-full max-w-lg rounded-lg p-s-6">
-        <Logo variant="paper" />
+    <main className="pb-s-8">
+      <ReadingColumn>
+        <header className="py-s-7">
+          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+            Add a paper
+          </p>
+          <h1 className="mt-s-3 font-serif text-[1.9rem] leading-tight text-ink">
+            Start from a PDF or a link.
+          </h1>
+          <p className="mt-s-3 font-sans text-[15px] leading-relaxed text-ink-muted">
+            Pepiros parses the paper into sections, plans its pillars from the
+            content, and binds every generated claim to a located quote.
+          </p>
+        </header>
 
-        <h1 className="mt-6 font-serif text-2xl text-[#1c1a15]">Upload a paper</h1>
-        <p className="mt-1 font-sans text-sm text-[#1c1a15]/70">
-          Upload a PDF or paste an arXiv, PMC, or DOI URL. We build the grounding graph from there.
-        </p>
-
-        <div role="tablist" aria-label="Paper source" className="mt-6 flex gap-2">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === "file"}
-            onClick={() => setMode("file")}
-            className={buttonClassName(mode === "file" ? "primary" : "secondary", "sm")}
-          >
-            <Icon icon={UploadCloud} size="xs" className="mr-1.5" />
-            Upload PDF
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === "url"}
-            onClick={() => setMode("url")}
-            className={buttonClassName(mode === "url" ? "primary" : "secondary", "sm")}
-          >
-            <Icon icon={LinkIcon} size="xs" className="mr-1.5" />
-            Paste URL
-          </button>
+        <div className="rounded-md border border-dashed border-border p-s-4">
+          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+            Ingest is not live
+          </p>
+          <p className="mt-s-2 font-sans text-[14px] leading-relaxed text-ink-muted">
+            Uploads are validated but not yet parsed. Until the pipeline lands,
+            the fully grounded examples in{" "}
+            <Link href="/discover" className="text-accent-text underline underline-offset-2">
+              the library
+            </Link>{" "}
+            are the best way to see what the output looks like.
+          </p>
         </div>
 
-        {/* FormField's label/hint/error contrast on this paper card is handled
-            by the scoped `.surface-reading` cascade rule in app/globals.css. */}
-        <form onSubmit={handleSubmit} noValidate className="mt-4 flex flex-col gap-4">
-          {mode === "file" ? (
-            <div>
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={openFilePicker}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    openFilePicker();
-                  }
+        <form onSubmit={submit} className="mt-s-6 flex flex-col gap-s-5">
+          {/* Mode switch */}
+          <div
+            role="tablist"
+            aria-label="Paper source"
+            className="flex gap-s-4 border-b border-border"
+          >
+            {(
+              [
+                ["file", "Upload a PDF"],
+                ["url", "Paste a link"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-selected={mode === value}
+                onClick={() => {
+                  setMode(value);
+                  setError(null);
                 }}
-                onDragOver={handleDragOver}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={handleDrop}
-                className={clsx(
-                  "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed px-6 py-10 text-center transition duration-fast ease-out",
-                  dragOver ? "border-accent bg-accent/5" : "border-[#1c1a15]/25 hover:border-[#1c1a15]/45",
+                className={cn(
+                  "relative pb-s-2 font-sans text-sm transition-colors duration-fast ease-out",
+                  mode === value
+                    ? "font-medium text-ink after:absolute after:inset-x-0 after:-bottom-px after:h-px after:bg-ink"
+                    : "text-ink-faint hover:text-ink",
                 )}
               >
-                <Icon icon={file ? FileText : UploadCloud} size="md" className="text-[#1c1a15]/60" />
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {mode === "file" ? (
+            <div>
+              <button
+                type="button"
+                onClick={() => inputRef.current?.click()}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOver(true);
+                }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOver(false);
+                  const f = e.dataTransfer.files[0];
+                  if (f) setFile(f);
+                }}
+                className={cn(
+                  "flex w-full flex-col items-center gap-s-3 rounded-md border border-dashed px-s-5 py-s-8",
+                  "transition-colors duration-fast ease-out",
+                  dragOver
+                    ? "border-accent bg-accent-wash"
+                    : "border-border hover:border-border-strong",
+                )}
+              >
                 {file ? (
-                  <p className="font-sans text-sm text-[#1c1a15]">{file.name}</p>
+                  <>
+                    <FileText className="size-6 text-ink-faint" strokeWidth={1.5} />
+                    <p className="max-w-full truncate font-sans text-sm text-ink">
+                      {file.name}
+                    </p>
+                    <p className="font-mono text-[11px] text-ink-faint">
+                      {(file.size / 1024 / 1024).toFixed(1)} MB
+                    </p>
+                  </>
                 ) : (
                   <>
-                    <p className="font-sans text-sm text-[#1c1a15]">Drag a PDF here, or click to browse</p>
-                    <p className="font-sans text-xs text-[#1c1a15]/70">PDF only</p>
+                    <UploadCloud className="size-6 text-ink-faint" strokeWidth={1.5} />
+                    <p className="font-sans text-sm text-ink">
+                      Drag a PDF here, or click to browse
+                    </p>
+                    <p className="font-mono text-[11px] text-ink-faint">
+                      PDF only, up to 50 MB
+                    </p>
                   </>
                 )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="application/pdf"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </div>
+              </button>
+              <input
+                ref={inputRef}
+                type="file"
+                accept="application/pdf"
+                className="sr-only"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              />
             </div>
           ) : (
-            <FormField label="Paper URL" required error={urlError} hint="arXiv, PMC, or DOI link">
+            <div className="flex flex-col gap-s-2">
+              <Label htmlFor="paperUrl">Paper link</Label>
               <Input
-                type="url"
+                id="paperUrl"
                 value={url}
-                onChange={(event) => {
-                  setUrl(event.target.value);
-                  setUrlError(undefined);
-                }}
-                placeholder="https://arxiv.org/abs/..."
-                required
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://arxiv.org/abs/1706.03762"
+                inputMode="url"
               />
-            </FormField>
+              <p className="font-sans text-[13px] text-ink-faint">
+                arXiv, PMC, or a DOI.
+              </p>
+            </div>
           )}
 
-          <label className="flex items-start gap-2 font-sans text-xs text-[#1c1a15]">
-            <input
-              type="checkbox"
-              checked={licenseConfirmed}
-              onChange={(event) => setLicenseConfirmed(event.target.checked)}
-              required
-              className="mt-0.5 accent-accent"
+          <label className="flex items-start gap-s-3">
+            <Checkbox
+              checked={licensed}
+              onCheckedChange={(v) => setLicensed(Boolean(v))}
+              className="mt-0.5"
             />
-            <span>
-              This paper is open-access or CC-licensed, or I understand it stays private to my workspace.
+            <span className="font-sans text-[13px] leading-relaxed text-ink-muted">
+              This paper is open-access or CC-licensed, or I understand it stays
+              private to my workspace and is never added to the public library.
             </span>
           </label>
 
-          <p className="font-sans text-xs text-[#1c1a15]/70">
-            Publishing runs the grounding graph automatically, no manual &ldquo;analyze&rdquo; step.
-          </p>
+          {error && <ErrorBanner message={error} />}
+          {notice && <ErrorBanner message={notice} variant="warn" />}
 
-          {/* The rejection reason is the useful part -- §6 wants the problem
-              named ("scanned PDF, no text layer"), not a generic failure. */}
-          {submitError && (
-            <p
-              role="alert"
-              className="rounded border border-unsupported/40 bg-unsupported/10 px-3 py-2 font-sans text-sm text-[#1c1a15]"
-            >
-              {submitError}
-            </p>
-          )}
-
-          <Button type="submit" variant="primary" className="mt-2 w-full" disabled={!canSubmit}>
-            Upload
-          </Button>
+          <div>
+            <Button type="submit">Add paper</Button>
+          </div>
         </form>
-      </div>
+      </ReadingColumn>
     </main>
   );
 }

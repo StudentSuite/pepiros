@@ -91,12 +91,13 @@ export default function McpPage() {
               <ul className="mt-s-3 flex flex-col">
                 {group.items.map((t) => (
                   <li key={t.name} className="border-b border-border py-s-3 last:border-b-0">
-                    <div className="flex flex-wrap items-baseline gap-x-s-2">
-                      <code className="font-mono text-sm text-ink">{t.name}</code>
-                      <code className="min-w-0 break-all font-mono text-[11px] text-ink-faint">
-                        ({t.args})
-                      </code>
-                    </div>
+                    {/* Stacked, not inline. Some signatures run to 60
+                        characters and an unbreakable inline pair pushed the
+                        page past the viewport at 320 and 390px. */}
+                    <code className="block font-mono text-sm text-ink">{t.name}</code>
+                    <code className="mt-0.5 block break-words font-mono text-[11px] leading-relaxed text-ink-faint">
+                      ({t.args})
+                    </code>
                     <p className="mt-1 font-sans text-[14px] leading-relaxed text-ink-muted">
                       {t.desc}
                     </p>
@@ -113,7 +114,10 @@ export default function McpPage() {
           </p>
           <p className="mt-s-2 font-sans text-[14px] leading-relaxed text-ink-muted">
             {PLANNED.map((p) => (
-              <code key={p} className="mr-2 font-mono text-[13px] text-ink">
+              <code
+                key={p}
+                className="mr-2 inline-block break-words font-mono text-[13px] text-ink"
+              >
                 {p}
               </code>
             ))}
