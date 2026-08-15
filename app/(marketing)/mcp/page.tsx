@@ -117,9 +117,13 @@ export default function McpPage() {
             <code className="font-mono text-[13px] text-ink">npm run mcp:stdio</code>
           </pre>
           <p>
-            It is not published to npm yet, so there is no{" "}
-            <code>npx</code> one-liner. Remote HTTP with OAuth, for hosted
-            connectors, is the next step rather than a shipped feature.
+            <code>package.json</code> now has a real <code>bin</code> entry (
+            <code>pepiros-mcp</code>) and a <code>build:mcp</code> script that
+            bundles the tool layer to a single standalone file with esbuild --
+            <code>npx pepiros-mcp</code> will work once the package is
+            published. It is not published yet, so that one-liner is not live
+            today. Remote HTTP with OAuth, for hosted connectors, is the next
+            step after that rather than a shipped feature.
           </p>
           <p>
             Tokens are managed in{" "}
