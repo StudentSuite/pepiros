@@ -7,53 +7,53 @@ const config: Config = {
   	extend: {
   		colors: {
   			surface: {
-  				DEFAULT: 'var(--surface)',
-  				raised: 'var(--surface-raised)',
-  				sunken: 'var(--surface-sunken)'
+  				DEFAULT: 'rgb(var(--surface-rgb) / <alpha-value>)',
+  				raised: 'rgb(var(--surface-raised-rgb) / <alpha-value>)',
+  				sunken: 'rgb(var(--surface-sunken-rgb) / <alpha-value>)'
   			},
   			paper: {
-  				DEFAULT: 'var(--paper)',
-  				muted: 'var(--paper-muted)'
+  				DEFAULT: 'rgb(var(--paper-rgb) / <alpha-value>)',
+  				muted: 'rgb(var(--paper-muted-rgb) / <alpha-value>)'
   			},
   			ink: {
-  				DEFAULT: 'var(--ink)',
-  				muted: 'var(--ink-muted)',
-  				faint: 'var(--ink-faint)'
+  				DEFAULT: 'rgb(var(--ink-rgb) / <alpha-value>)',
+  				muted: 'rgb(var(--ink-muted-rgb) / <alpha-value>)',
+  				faint: 'rgb(var(--ink-faint-rgb) / <alpha-value>)'
   			},
   			border: {
-  				DEFAULT: 'var(--border)',
-  				strong: 'var(--border-strong)'
+  				DEFAULT: 'rgb(var(--border-rgb) / <alpha-value>)',
+  				strong: 'rgb(var(--border-strong-rgb) / <alpha-value>)'
   			},
   			accent: {
-  				DEFAULT: 'var(--accent)',
-  				text: 'var(--accent-text)',
-  				hover: 'var(--accent-hover)',
-  				sunk: 'var(--accent-sunk)',
+  				DEFAULT: 'rgb(var(--accent-rgb) / <alpha-value>)',
+  				text: 'rgb(var(--accent-text-rgb) / <alpha-value>)',
+  				hover: 'rgb(var(--accent-hover-rgb) / <alpha-value>)',
+  				sunk: 'rgb(var(--accent-sunk-rgb) / <alpha-value>)',
   				wash: 'var(--accent-wash)'
   			},
   			pillar: {
-  				'1': 'var(--pillar-1)',
-  				'2': 'var(--pillar-2)',
-  				'3': 'var(--pillar-3)',
-  				'4': 'var(--pillar-4)',
-  				'5': 'var(--pillar-5)',
-  				'6': 'var(--pillar-6)',
-  				'7': 'var(--pillar-7)'
+  				'1': 'rgb(var(--pillar-1-rgb) / <alpha-value>)',
+  				'2': 'rgb(var(--pillar-2-rgb) / <alpha-value>)',
+  				'3': 'rgb(var(--pillar-3-rgb) / <alpha-value>)',
+  				'4': 'rgb(var(--pillar-4-rgb) / <alpha-value>)',
+  				'5': 'rgb(var(--pillar-5-rgb) / <alpha-value>)',
+  				'6': 'rgb(var(--pillar-6-rgb) / <alpha-value>)',
+  				'7': 'rgb(var(--pillar-7-rgb) / <alpha-value>)'
   			},
   			'pillar-text': {
-  				'1': 'var(--pillar-1-text)',
-  				'2': 'var(--pillar-2-text)',
-  				'3': 'var(--pillar-3-text)',
-  				'4': 'var(--pillar-4-text)',
-  				'5': 'var(--pillar-5-text)',
-  				'6': 'var(--pillar-6-text)',
-  				'7': 'var(--pillar-7-text)'
+  				'1': 'rgb(var(--pillar-1-text-rgb) / <alpha-value>)',
+  				'2': 'rgb(var(--pillar-2-text-rgb) / <alpha-value>)',
+  				'3': 'rgb(var(--pillar-3-text-rgb) / <alpha-value>)',
+  				'4': 'rgb(var(--pillar-4-text-rgb) / <alpha-value>)',
+  				'5': 'rgb(var(--pillar-5-text-rgb) / <alpha-value>)',
+  				'6': 'rgb(var(--pillar-6-text-rgb) / <alpha-value>)',
+  				'7': 'rgb(var(--pillar-7-text-rgb) / <alpha-value>)'
   			},
-  			located: 'var(--located)',
-  			paraphrase: 'var(--paraphrase)',
-  			unsupported: 'var(--unsupported)',
-  			inference: 'var(--inference)',
-  			ungrounded: 'var(--ungrounded)',
+  			located: 'rgb(var(--located-rgb) / <alpha-value>)',
+  			paraphrase: 'rgb(var(--paraphrase-rgb) / <alpha-value>)',
+  			unsupported: 'rgb(var(--unsupported-rgb) / <alpha-value>)',
+  			inference: 'rgb(var(--inference-rgb) / <alpha-value>)',
+  			ungrounded: 'rgb(var(--ungrounded-rgb) / <alpha-value>)',
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

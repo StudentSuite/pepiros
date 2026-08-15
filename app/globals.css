@@ -186,6 +186,51 @@
   --input: 39 28% 82%;
   --ring: 244 26% 54%;
   --radius: 10px;
+
+  /* ---- alpha-capable channel companions -------------------------------
+     Tailwind v3 cannot apply an opacity modifier to a colour whose value is
+     a bare `var(--x)` hex: `bg-pillar-5/35` compiles to nothing and the
+     element silently renders transparent. 82 such usages existed across 32
+     files, all quietly dead.
+
+     These hold the same colours as R G B channel triplets so the config can
+     map them through `rgb(var(--x-rgb) / <alpha-value>)`. The hex vars above
+     are kept because CSS and inline styles reference them directly (recharts
+     series, SVG strokes, the hero gradients), and those need a real colour
+     value rather than channels. Keep the two in sync when changing a token. */
+  --surface-rgb: 247 243 234;
+  --surface-raised-rgb: 253 251 246;
+  --surface-sunken-rgb: 239 233 220;
+  --paper-rgb: 253 251 246;
+  --paper-muted-rgb: 242 236 223;
+  --ink-rgb: 28 26 21;
+  --ink-muted-rgb: 85 80 74;
+  --ink-faint-rgb: 125 119 106;
+  --border-rgb: 222 213 196;
+  --border-strong-rgb: 198 186 163;
+  --accent-rgb: 110 106 167;
+  --accent-text-rgb: 85 81 140;
+  --accent-hover-rgb: 92 88 154;
+  --accent-sunk-rgb: 70 66 117;
+  --pillar-1-rgb: 184 178 164;
+  --pillar-2-rgb: 196 167 138;
+  --pillar-3-rgb: 125 138 115;
+  --pillar-4-rgb: 110 106 167;
+  --pillar-5-rgb: 180 106 106;
+  --pillar-6-rgb: 212 178 106;
+  --pillar-7-rgb: 95 141 134;
+  --pillar-1-text-rgb: 107 101 90;
+  --pillar-2-text-rgb: 138 107 71;
+  --pillar-3-text-rgb: 78 90 69;
+  --pillar-4-text-rgb: 85 81 140;
+  --pillar-5-text-rgb: 138 65 65;
+  --pillar-6-text-rgb: 138 107 34;
+  --pillar-7-text-rgb: 59 95 89;
+  --located-rgb: var(--pillar-7-text-rgb);
+  --paraphrase-rgb: var(--pillar-2-text-rgb);
+  --unsupported-rgb: var(--pillar-5-text-rgb);
+  --inference-rgb: var(--pillar-1-text-rgb);
+  --ungrounded-rgb: var(--pillar-6-text-rgb);
 }
 
 /*
@@ -258,6 +303,51 @@
   --destructive-foreground: 42 22% 91%;
   --input: 220 10% 18%;
   --ring: 244 26% 54%;
+
+  /* ---- alpha-capable channel companions -------------------------------
+     Tailwind v3 cannot apply an opacity modifier to a colour whose value is
+     a bare `var(--x)` hex: `bg-pillar-5/35` compiles to nothing and the
+     element silently renders transparent. 82 such usages existed across 32
+     files, all quietly dead.
+
+     These hold the same colours as R G B channel triplets so the config can
+     map them through `rgb(var(--x-rgb) / <alpha-value>)`. The hex vars above
+     are kept because CSS and inline styles reference them directly (recharts
+     series, SVG strokes, the hero gradients), and those need a real colour
+     value rather than channels. Keep the two in sync when changing a token. */
+  --surface-rgb: 22 24 27;
+  --surface-raised-rgb: 30 33 38;
+  --surface-sunken-rgb: 11 12 14;
+  --paper-rgb: 27 24 21;
+  --paper-muted-rgb: 36 31 26;
+  --ink-rgb: 237 234 227;
+  --ink-muted-rgb: 168 162 150;
+  --ink-faint-rgb: 117 111 99;
+  --border-rgb: 42 45 51;
+  --border-strong-rgb: 60 64 72;
+  --accent-rgb: 110 106 167;
+  --accent-text-rgb: 155 151 212;
+  --accent-hover-rgb: 132 128 186;
+  --accent-sunk-rgb: 88 84 128;
+  --pillar-1-rgb: 184 178 164;
+  --pillar-2-rgb: 196 167 138;
+  --pillar-3-rgb: 125 138 115;
+  --pillar-4-rgb: 110 106 167;
+  --pillar-5-rgb: 180 106 106;
+  --pillar-6-rgb: 212 178 106;
+  --pillar-7-rgb: 95 141 134;
+  --pillar-1-text-rgb: 184 178 164;
+  --pillar-2-text-rgb: 196 167 138;
+  --pillar-3-text-rgb: 125 138 115;
+  --pillar-4-text-rgb: 110 106 167;
+  --pillar-5-text-rgb: 180 106 106;
+  --pillar-6-text-rgb: 212 178 106;
+  --pillar-7-text-rgb: 95 141 134;
+  --located-rgb: var(--pillar-7-text-rgb);
+  --paraphrase-rgb: var(--pillar-2-text-rgb);
+  --unsupported-rgb: var(--pillar-5-text-rgb);
+  --inference-rgb: var(--pillar-1-text-rgb);
+  --ungrounded-rgb: var(--pillar-6-text-rgb);
 }
 
 /*
