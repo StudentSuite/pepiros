@@ -26,6 +26,7 @@ afterEach(() => {
 });
 
 import { runSynthesis } from "./synthesis";
+import { getIngestedWorkspace } from "./ingestStore";
 
 const workspace = workspaceFixture as unknown as Workspace;
 const p1Chunk = workspace.chunks.find((c) => c.paperId === "p1")!;
@@ -70,6 +71,20 @@ describe("runSynthesis", () => {
 
     expect(result.synthesisNodesWritten).toHaveLength(1);
     expect(result.synthesisNodesWritten[0]).toMatchObject({ type: "synthesis", title: "Contradictions" });
+
+    // Regression check: each side's leaf node body must carry the *real*
+    // evidence marker ("[^<evidenceId>]"), not the notional "[^n0]" createNode's
+    // input contract uses -- otherwise InlineRefs/stripRefMarkers (which only
+    // recognize "[^eN]"-shaped ids) never render a citation chip and the
+    // literal text "[^n0]" leaks into the UI.
+    const contradictsEdge = contradictsEdges[0]!;
+    const merged = getIngestedWorkspace("ws-1")!;
+    const sideNodeA = merged.nodes.find((n) => n.id === contradictsEdge.sourceId)!;
+    const sideNodeB = merged.nodes.find((n) => n.id === contradictsEdge.targetId)!;
+    expect(sideNodeA.bodyMd).not.toContain("[^n0]");
+    expect(sideNodeB.bodyMd).not.toContain("[^n0]");
+    expect(sideNodeA.bodyMd).toMatch(/\[\^[\w-]+\]/);
+    expect(sideNodeB.bodyMd).toMatch(/\[\^[\w-]+\]/);
   });
 
   it("rejects a pair when one side's quote does not verify against its own paper (two-sided evidence invariant)", async () => {

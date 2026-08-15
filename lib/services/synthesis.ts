@@ -138,12 +138,20 @@ export async function runSynthesis(workspaceId: string): Promise<SynthesisResult
         continue;
       }
 
+      // sideA/sideB's bodyMd (submitted to createNode above) used the notional
+      // "[^n0]" marker createNode's contract expects; the node actually
+      // persisted here needs the *real* marker, matching sideA.evidence[0]'s
+      // own id -- exactly the substitution PromoteButton.tsx does client-side
+      // for the same reason. Without it, InlineRefs/stripRefMarkers (which
+      // only ever recognize the real "[^eN]"-shaped marker) would leave the
+      // literal text "[^n0]" visible and never render a citation chip, even
+      // though real, verified evidence exists right behind it.
       const nodeA: GraphNode = {
         id: sideA.nodeId,
         workspaceId,
         type: "leaf",
         title: `${paperA.title}: ${object.relation} position`,
-        bodyMd: `${object.summaryA} [^n0]`,
+        bodyMd: `${object.summaryA} [^${sideA.evidence[0]!.id}]`,
         pillarIndex: null,
         x: 0,
         y: 0,
@@ -155,7 +163,7 @@ export async function runSynthesis(workspaceId: string): Promise<SynthesisResult
         workspaceId,
         type: "leaf",
         title: `${paperB.title}: ${object.relation} position`,
-        bodyMd: `${object.summaryB} [^n0]`,
+        bodyMd: `${object.summaryB} [^${sideB.evidence[0]!.id}]`,
         pillarIndex: null,
         x: 0,
         y: 0,
