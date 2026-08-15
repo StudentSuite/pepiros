@@ -9,19 +9,40 @@ import type {
   ResearchField,
 } from "./types";
 import { RANGE_DAYS } from "./types";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  createSupabaseServerClient,
+  createSupabaseServiceClient,
+} from "@/lib/supabase/server";
 
 /**
- * Postgres-backed implementation, against supabase/migrations/0001_platform.sql.
+ * Postgres-backed implementation, against supabase/migrations/0001_platform.sql
+ * and the guest seed in 0002_guest_seed.sql.
  *
- * STATUS: written but not exercised. The Supabase project does not exist yet, so
- * this path has never run against a live database. It is here so that creating
- * the project and applying the migration is the only remaining step, rather
- * than a rewrite. Treat the queries as reviewed-but-unverified.
+ * WHY OWNER-SCOPED READS USE THE SERVICE CLIENT.
  *
- * Nothing is constructed at module load; the client is created per call inside
- * each function, so importing this file has no side effects and requires no env
- * vars until a method is actually invoked.
+ * Sessions here are a custom HMAC-signed cookie (lib/auth/session.ts), not a
+ * Supabase JWT. Supabase Auth is used only to check the password. That means
+ * `auth.uid()` is NULL on every query made with the anon client, so the
+ * owner-scoped RLS policies match nothing:
+ *
+ *   - `post_metrics_read_own` returns zero rows, and the analytics dashboard
+ *     renders empty
+ *   - `posts_read_published` hides the caller's own drafts and archived posts,
+ *     so those status tabs are always empty
+ *
+ * So reads belonging to the signed-in user go through the service client, which
+ * bypasses RLS. THE EXPLICIT author_id FILTER IS THEREFORE LOAD-BEARING, not a
+ * redundant belt-and-braces check: it is the only thing scoping these queries to
+ * one account. Every such query takes its authorId from the verified session,
+ * never from client input. Do not add a method here that accepts an id straight
+ * off the wire and hands it to the service client.
+ *
+ * Genuinely public reads (a profile by username) stay on the anon client, where
+ * RLS still applies.
+ *
+ * Nothing is constructed at module load; clients are created per call, so
+ * importing this file has no side effects and requires no env vars until a
+ * method is actually invoked.
  */
 
 const asProfile = (row: {
@@ -69,7 +90,8 @@ export const supabaseAdapter: DataAdapter = {
   },
 
   async getProfile(id) {
-    const sb = await createSupabaseServerClient();
+    // service client: see the header note on auth.uid() being null here
+    const sb = createSupabaseServiceClient();
     const { data } = await sb.from("profiles").select("*").eq("id", id).maybeSingle();
     return data ? asProfile(data) : null;
   },
@@ -85,7 +107,7 @@ export const supabaseAdapter: DataAdapter = {
   },
 
   async getOnboarding(profileId) {
-    const sb = await createSupabaseServerClient();
+    const sb = createSupabaseServiceClient();
     const { data } = await sb
       .from("onboarding_responses")
       .select("*")
@@ -107,7 +129,7 @@ export const supabaseAdapter: DataAdapter = {
   },
 
   async saveOnboarding(response) {
-    const sb = await createSupabaseServerClient();
+    const sb = createSupabaseServiceClient();
     await sb.from("onboarding_responses").upsert({
       profile_id: response.profileId,
       country: response.country,
@@ -124,7 +146,7 @@ export const supabaseAdapter: DataAdapter = {
   },
 
   async listPosts(authorId) {
-    const sb = await createSupabaseServerClient();
+    const sb = createSupabaseServiceClient();
     const { data } = await sb
       .from("posts")
       .select("*")
@@ -152,14 +174,14 @@ export const supabaseAdapter: DataAdapter = {
   },
 
   async deletePost(authorId, postId) {
-    const sb = await createSupabaseServerClient();
+    const sb = createSupabaseServiceClient();
     // author_id is also enforced by RLS; restating it here means a policy
     // regression cannot silently widen this into a delete-anything call.
     await sb.from("posts").delete().eq("id", postId).eq("author_id", authorId);
   },
 
   async listComments(authorId) {
-    const sb = await createSupabaseServerClient();
+    const sb = createSupabaseServiceClient();
     const { data } = await sb
       .from("comments")
       .select("*, posts!inner(author_id), profiles!inner(username, display_name, avatar_initials)")
@@ -182,7 +204,7 @@ export const supabaseAdapter: DataAdapter = {
   },
 
   async getReach(authorId, range: RangeKey) {
-    const sb = await createSupabaseServerClient();
+    const sb = createSupabaseServiceClient();
     const days = RANGE_DAYS[range];
 
     const posts = await this.listPosts(authorId);
