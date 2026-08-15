@@ -1,49 +1,36 @@
 "use client";
 
 import { useState } from "react";
-import clsx from "clsx";
-import { Heart, UserPlus, UserCheck } from "lucide-react";
-import { Icon } from "@/components/ui/Icon";
-import { buttonClassName } from "@/components/ui/Button";
+import { Heart } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 /**
- * Follow + like controls for `/paper/[slug]`. Colocated with page.tsx rather
- * than the page itself being "use client": notFound() is Server-Component-
- * only (Next's own JSDoc on the function -- Server Components, Route
- * Handlers, Server Actions, not Client Components), so the page stays a
- * Server Component and only this small interactive sliver is a client
- * boundary. State is local `useState` only, no persistence beyond the page
- * session (Task 6 brief).
+ * Like control for a paper.
+ *
+ * Optimistic and local: there is no likes endpoint yet, so it changes only what
+ * the reader can see. Deliberately not wired to a fake success toast, which
+ * would imply a write that did not happen.
  */
-export function PaperEngagement({ initialLikeCount }: { initialLikeCount: number }) {
-  const [following, setFollowing] = useState(false);
+export function PaperEngagement({ initialScore }: { initialScore: number }) {
   const [liked, setLiked] = useState(false);
-  const likeCount = initialLikeCount + (liked ? 1 : 0);
+  const count = initialScore + (liked ? 1 : 0);
 
   return (
-    <div className="flex items-center gap-2">
-      <button
-        type="button"
-        aria-pressed={following}
-        onClick={() => {
-          setFollowing((value) => !value);
-        }}
-        className={buttonClassName(following ? "secondary" : "primary", "sm")}
-      >
-        <Icon icon={following ? UserCheck : UserPlus} size="xs" className="mr-1.5" />
-        {following ? "Following" : "Follow"}
-      </button>
-      <button
-        type="button"
-        aria-pressed={liked}
-        onClick={() => {
-          setLiked((value) => !value);
-        }}
-        className={clsx(buttonClassName("ghost", "sm"), liked && "text-accent")}
-      >
-        <Icon icon={Heart} size="xs" className={clsx("mr-1.5", liked && "fill-current")} />
-        {likeCount}
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={() => setLiked((v) => !v)}
+      aria-pressed={liked}
+      aria-label={liked ? "Remove like" : "Like this paper"}
+      className={cn(
+        "flex items-center gap-1.5 rounded-full border px-s-3 py-1.5",
+        "font-mono text-[11px] tabular-nums transition-colors duration-fast ease-out",
+        liked
+          ? "border-pillar-5/50 bg-pillar-5/10 text-pillar-text-5"
+          : "border-border text-ink-faint hover:border-border-strong hover:text-ink",
+      )}
+    >
+      <Heart className={cn("size-3.5", liked && "fill-current")} strokeWidth={1.5} />
+      {count.toLocaleString()}
+    </button>
   );
 }

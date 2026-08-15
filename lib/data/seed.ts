@@ -279,6 +279,33 @@ export function seedCatalogStats(paperId: string, year: number): CatalogStats {
   };
 }
 
+/**
+ * Discussion on a public paper page.
+ *
+ * Keyed off the paper id so a given paper always shows the same thread, which
+ * matters because these render server-side and again on the client.
+ */
+export function seedPaperComments(paperId: string): Comment[] {
+  const r = rng(`paper-comments:${paperId}`);
+  const n = intBetween(r, 2, 5);
+  const out: Comment[] = [];
+  for (let i = 0; i < n; i++) {
+    const who = pick(r, COMMENTERS);
+    out.push({
+      id: `pc-${paperId}-${i}`,
+      postId: paperId,
+      authorName: who.name,
+      authorUsername: who.username,
+      authorInitials: who.initials,
+      body: pick(r, COMMENT_BODIES),
+      createdAt: daysAgo(intBetween(r, 1, 60)),
+      claimRef: r() > 0.5 ? `C${intBetween(r, 1, 9)}` : null,
+      read: true,
+    });
+  }
+  return out.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+}
+
 // ---------------------------------------------------------------------------
 // Reach summary
 // ---------------------------------------------------------------------------

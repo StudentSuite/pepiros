@@ -1,49 +1,61 @@
 import type { Metadata } from "next";
-import { Reveal } from "@/components/ui/Reveal";
+import Link from "next/link";
+import {
+  ArticleBody,
+  ArticleHeader,
+  ReadingColumn,
+} from "@/components/reading/Article";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "Get in touch with the Pepiros team.",
+  description: "How to reach the people building Pepiros.",
 };
 
-/**
- * `/contact` -- deliberately small: a heading, one paragraph, and a
- * placeholder line instead of a `mailto:` link. No contact address is
- * referenced anywhere in the repo (README.md, SECURITY.md, CONTRIBUTING.md,
- * CODE_OF_CONDUCT.md, package.json all checked), so this follows the
- * brief's fallback literally rather than inventing one. Header/footer come
- * from app/(marketing)/layout.tsx.
- */
 export default function ContactPage() {
   return (
-    <main className="flex flex-col">
-      {/* Banner header. Not wrapped in Reveal -- first thing on screen. */}
-      <section className="mx-auto flex w-full max-w-3xl flex-col gap-3 px-6 pb-14 pt-20 sm:pt-28">
-        <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">Contact</p>
-        <h1 className="font-serif text-3xl leading-tight text-ink sm:text-4xl">
-          There&apos;s no inbox yet.
-        </h1>
-        <p className="max-w-xl font-sans text-sm leading-relaxed text-ink-muted">
-          Pepiros is a two-person hackathon build, Anay Dhawan and Yash Kewlani, not a support
-          desk. There&apos;s no dedicated contact address set up yet, so this page carries a
-          placeholder rather than one made up on the spot.
-        </p>
-      </section>
+    <main className="pb-s-8">
+      <ReadingColumn>
+        <ArticleHeader
+          kicker="Contact"
+          title="There is no support desk."
+          dek="Two people build this. Here is where each kind of message actually goes."
+        />
 
-      {/* Placeholder, plain text, deliberately not a mailto: link. */}
-      <Reveal>
-        <section className="border-t border-border">
-          <div className="mx-auto w-full max-w-3xl px-6 py-16">
-            <p className="font-mono text-sm text-ink-faint opacity-60" aria-disabled="true">
-              Contact: coming soon
-            </p>
-            <p className="mt-6 max-w-xl font-sans text-sm leading-relaxed text-ink-muted">
-              For a bug, open a GitHub issue once the repository is public. For a security report,
-              see the private disclosure flow described in SECURITY.md.
-            </p>
-          </div>
-        </section>
-      </Reveal>
+        <ArticleBody>
+          <p>
+            Pepiros is built by Anay Dhawan and Yash Kewlani. There is no
+            dedicated inbox yet, and inventing one would be worse than saying so.
+          </p>
+
+          <h2>A bug, or a feature request</h2>
+          <p>
+            Open an issue on{" "}
+            <a
+              href="https://github.com/StudentSuite/pepiros/issues"
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              the repository
+            </a>
+            . That is where the work is tracked, so it is the one route that
+            will not get lost.
+          </p>
+
+          <h2>A security problem</h2>
+          <p>
+            Please do not open a public issue. The disclosure process is on the{" "}
+            <Link href="/security">security page</Link>, which explains what to
+            include and what to expect back.
+          </p>
+
+          <h2>Anything else</h2>
+          <p>
+            Discussions on the repository are open, and are read. Response times
+            are honest rather than fast: this is a side project, built around
+            other commitments.
+          </p>
+        </ArticleBody>
+      </ReadingColumn>
     </main>
   );
 }

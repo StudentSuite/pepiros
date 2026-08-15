@@ -1,34 +1,26 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import {
-  ArrowBigUp,
-  ExternalLink,
-  MessageSquare,
-  Search,
-  Users,
-  X,
-} from "lucide-react";
+import { Search, X } from "lucide-react";
 import { Input } from "@/components/shadcn/input";
 import { Button } from "@/components/shadcn/button";
-import { Badge } from "@/components/shadcn/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/shadcn/tabs";
+import { Dot, FeedItem } from "@/components/reading/Article";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { RESEARCH_FIELDS } from "@/lib/data/types";
+import { articleFor } from "@/lib/data/paperContent";
 import type { CatalogPaper } from "@/lib/data/papers";
 import type { CatalogStats } from "@/lib/data/seed";
 import { cn } from "@/lib/utils";
 
-type SortKey = "trending" | "new" | "discussed";
+type SortKey = "latest" | "top" | "discussed";
 
 const SORTS: { value: SortKey; label: string }[] = [
-  { value: "trending", label: "Trending" },
-  { value: "new", label: "New" },
-  { value: "discussed", label: "Most discussed" },
+  { value: "latest", label: "Latest" },
+  { value: "top", label: "Top" },
+  { value: "discussed", label: "Discussed" },
 ];
 
-const PAGE = 8;
+const PAGE = 10;
 
 const compact = (n: number) =>
   n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : String(n);
@@ -37,36 +29,46 @@ const ago = (days: number) =>
   days === 0
     ? "today"
     : days === 1
-      ? "1 day ago"
+      ? "yesterday"
       : days < 30
-        ? `${days} days ago`
-        : days < 60
-          ? "1 month ago"
-          : `${Math.round(days / 30)} months ago`;
+        ? `${days}d ago`
+        : days < 365
+          ? `${Math.round(days / 30)}mo ago`
+          : `${Math.round(days / 365)}y ago`;
 
-export type FeedItem = CatalogPaper & { stats: CatalogStats };
+export type FeedEntry = CatalogPaper & { stats: CatalogStats };
 
 /**
- * The public library feed.
+ * The public library, as a publication feed.
  *
- * Shaped like a link aggregator rather than a card grid, because the unit here
- * is "a paper someone posted" and the useful comparison is vertical: score,
- * title, who posted it, how much discussion. A grid of equal-weight cards
- * hides exactly the ranking signal this view exists to show.
+ * Title-led rows separated by hairlines, in one reading measure. The previous
+ * link-aggregator treatment put a score rail and a badge cluster before the
+ * title, which meant the first thing read on every row was a number rather than
+ * what the paper is. Here the title leads, the standfirst explains, and the
+ * metadata sits underneath in one muted line.
  *
- * Score is engagement on Pepiros, not a citation count. It is labelled that way
- * so it cannot be mistaken for a bibliometric.
+ * Filters live above the feed rather than in a right rail, so the column stays
+ * centred and the page reads as a publication rather than a dashboard.
  */
-export function FeedClient({ items }: { items: FeedItem[] }) {
-  const [sort, setSort] = useState<SortKey>("trending");
+export function FeedClient({ items }: { items: FeedEntry[] }) {
+  const [sort, setSort] = useState<SortKey>("latest");
   const [query, setQuery] = useState("");
-  const [fields, setFields] = useState<Set<string>>(new Set());
+  const [field, setField] = useState<string | null>(null);
   const [visible, setVisible] = useState(PAGE);
+
+  const fieldsInUse = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const p of items) counts.set(p.field, (counts.get(p.field) ?? 0) + 1);
+    return RESEARCH_FIELDS.filter((f) => counts.has(f)).map((f) => ({
+      field: f,
+      count: counts.get(f) ?? 0,
+    }));
+  }, [items]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const list = items.filter((p) => {
-      if (fields.size > 0 && !fields.has(p.field)) return false;
+      if (field && p.field !== field) return false;
       if (!q) return true;
       return (
         p.title.toLowerCase().includes(q) ||
@@ -75,233 +77,160 @@ export function FeedClient({ items }: { items: FeedItem[] }) {
         p.field.toLowerCase().includes(q)
       );
     });
-
     return [...list].sort((a, b) => {
-      if (sort === "new") return a.stats.postedDaysAgo - b.stats.postedDaysAgo;
+      if (sort === "top") return b.stats.score - a.stats.score;
       if (sort === "discussed") return b.stats.comments - a.stats.comments;
-      return b.stats.score - a.stats.score;
+      return a.stats.postedDaysAgo - b.stats.postedDaysAgo;
     });
-  }, [items, query, fields, sort]);
+  }, [items, query, field, sort]);
 
   const shown = filtered.slice(0, visible);
 
-  function toggleField(f: string) {
-    setFields((prev) => {
-      const next = new Set(prev);
-      if (next.has(f)) next.delete(f);
-      else next.add(f);
-      return next;
-    });
-    setVisible(PAGE);
-  }
-
   return (
-    <div className="flex flex-col gap-s-5 lg:flex-row">
-      {/* Feed */}
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-s-3">
-          <Tabs
-            value={sort}
-            onValueChange={(v) => {
-              setSort(v as SortKey);
-              setVisible(PAGE);
-            }}
-          >
-            <TabsList className="h-9">
-              {SORTS.map((s) => (
-                <TabsTrigger key={s.value} value={s.value} className="text-xs">
-                  {s.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-
-          <div className="relative min-w-[220px] flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-faint" />
-            <Input
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
+    <div>
+      {/* Controls */}
+      <div className="flex flex-wrap items-center gap-s-4 border-b border-border pb-s-4">
+        <div className="flex items-center gap-s-4">
+          {SORTS.map((s) => (
+            <button
+              key={s.value}
+              type="button"
+              onClick={() => {
+                setSort(s.value);
                 setVisible(PAGE);
               }}
-              placeholder="Search title, author, venue, field"
-              aria-label="Search the library"
-              className="h-9 pl-9"
-            />
-          </div>
+              className={cn(
+                "relative pb-1 font-sans text-sm transition-colors duration-fast ease-out",
+                sort === s.value
+                  ? "font-medium text-ink after:absolute after:inset-x-0 after:-bottom-[17px] after:h-px after:bg-ink"
+                  : "text-ink-faint hover:text-ink",
+              )}
+            >
+              {s.label}
+            </button>
+          ))}
         </div>
 
-        {fields.size > 0 && (
-          <div className="mt-s-3 flex flex-wrap items-center gap-s-2">
-            {[...fields].map((f) => (
-              <button
-                key={f}
-                type="button"
-                onClick={() => toggleField(f)}
-                className="flex items-center gap-1 rounded-full border border-accent bg-accent-wash px-s-3 py-1 font-sans text-xs text-accent-text"
-              >
-                {f}
-                <X className="size-3" />
-              </button>
-            ))}
+        <div className="relative ml-auto min-w-0 flex-1 basis-[220px]">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-ink-faint" />
+          <Input
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setVisible(PAGE);
+            }}
+            placeholder="Search papers"
+            aria-label="Search the library"
+            className="h-9 pl-9 text-sm"
+          />
+        </div>
+      </div>
+
+      {/* Field chips */}
+      <div className="flex flex-wrap items-center gap-s-2 py-s-4">
+        {fieldsInUse.map(({ field: f, count }) => {
+          const active = field === f;
+          return (
             <button
+              key={f}
               type="button"
-              onClick={() => setFields(new Set())}
-              className="font-sans text-xs text-ink-faint underline underline-offset-2"
+              onClick={() => {
+                setField(active ? null : f);
+                setVisible(PAGE);
+              }}
+              className={cn(
+                "rounded-full border px-s-3 py-1 font-sans text-[13px] transition-colors duration-fast ease-out",
+                active
+                  ? "border-ink bg-ink text-surface"
+                  : "border-border text-ink-faint hover:border-border-strong hover:text-ink",
+              )}
             >
-              Clear all
+              {f}
+              <span className="ml-1.5 font-mono text-[10px] opacity-60">{count}</span>
             </button>
-          </div>
-        )}
-
-        {shown.length === 0 ? (
-          <div className="mt-s-5 rounded-md border border-border bg-card">
-            <EmptyState
-              icon={Search}
-              title={`Nothing matches ${query ? `"${query}"` : "those filters"}.`}
-              description="Try a broader search, or clear the field filters."
-            />
-          </div>
-        ) : (
-          <ul className="mt-s-4 overflow-hidden rounded-md border border-border bg-card">
-            {shown.map((p, i) => (
-              <li
-                key={p.id}
-                className={cn(
-                  "flex gap-s-4 p-s-4 transition-colors duration-fast ease-out hover:bg-subtle/60",
-                  i > 0 && "border-t border-border",
-                )}
-              >
-                {/* Score rail */}
-                <div className="flex w-10 shrink-0 flex-col items-center pt-0.5">
-                  <ArrowBigUp className="size-4 text-ink-faint" strokeWidth={1.5} />
-                  <span className="font-mono text-xs text-ink">
-                    {compact(p.stats.score)}
-                  </span>
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-s-2">
-                    <button
-                      type="button"
-                      onClick={() => toggleField(p.field)}
-                      className="rounded-full border border-border px-s-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-ink-muted transition-colors duration-fast ease-out hover:border-accent hover:text-accent-text"
-                    >
-                      {p.field}
-                    </button>
-                    {p.openAccess && (
-                      <Badge
-                        variant="outline"
-                        className="border-pillar-7/40 font-mono text-[10px] text-pillar-text-7"
-                      >
-                        Open access
-                      </Badge>
-                    )}
-                    <span className="font-mono text-[11px] text-ink-faint">
-                      posted by{" "}
-                      <Link
-                        href={`/u/${p.stats.postedBy}`}
-                        className="hover:text-accent-text"
-                      >
-                        @{p.stats.postedBy}
-                      </Link>{" "}
-                      {ago(p.stats.postedDaysAgo)}
-                    </span>
-                  </div>
-
-                  <h2 className="mt-s-2">
-                    <Link
-                      href={`/paper/${p.slug}`}
-                      className="font-serif text-base leading-snug text-ink hover:text-accent-text"
-                    >
-                      {p.title}
-                    </Link>
-                  </h2>
-
-                  <p className="mt-s-1 truncate font-mono text-[11px] text-ink-faint">
-                    {p.authors.slice(0, 3).join(", ")}
-                    {p.authors.length > 3 ? " et al." : ""} · {p.venue} · {p.year}
-                  </p>
-
-                  <div className="mt-s-3 flex flex-wrap items-center gap-s-4 font-mono text-[11px] text-ink-faint">
-                    <Link
-                      href={`/paper/${p.slug}`}
-                      className="flex items-center gap-1 hover:text-ink"
-                    >
-                      <MessageSquare className="size-3.5" />
-                      {p.stats.comments} comments
-                    </Link>
-                    <span className="flex items-center gap-1">
-                      <Users className="size-3.5" />
-                      {compact(p.stats.readers)} readers
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="size-1.5 rounded-full bg-pillar-7" />
-                      {Math.round(p.stats.groundingCoverage * 100)}% grounded
-                    </span>
-                    <a
-                      href={p.sourceUrl}
-                      target="_blank"
-                      rel="noreferrer noopener"
-                      className="flex items-center gap-1 hover:text-ink"
-                    >
-                      <ExternalLink className="size-3.5" />
-                      Source
-                    </a>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {visible < filtered.length && (
-          <div className="mt-s-4 flex justify-center">
-            <Button variant="outline" onClick={() => setVisible((v) => v + PAGE)}>
-              Load more
-            </Button>
-          </div>
-        )}
-
-        {shown.length > 0 && visible >= filtered.length && (
-          <p className="mt-s-4 text-center font-mono text-[11px] text-ink-faint">
-            That is every paper in the library.
-          </p>
+          );
+        })}
+        {field && (
+          <button
+            type="button"
+            onClick={() => setField(null)}
+            className="flex items-center gap-1 font-sans text-[13px] text-ink-faint underline underline-offset-2"
+          >
+            <X className="size-3" />
+            Clear
+          </button>
         )}
       </div>
 
-      {/* Field rail */}
-      <aside className="w-full shrink-0 lg:w-56">
-        <div className="rounded-md border border-border bg-card p-s-4 lg:sticky lg:top-[calc(var(--topbar)+1rem)]">
-          <p className="font-mono text-[11px] uppercase tracking-widest text-ink-faint">
-            Fields
-          </p>
-          <ul className="mt-s-3 flex flex-wrap gap-s-2 lg:flex-col lg:gap-s-1">
-            {RESEARCH_FIELDS.map((f) => {
-              const active = fields.has(f);
-              const count = items.filter((p) => p.field === f).length;
-              if (count === 0) return null;
-              return (
-                <li key={f}>
-                  <button
-                    type="button"
-                    onClick={() => toggleField(f)}
-                    className={cn(
-                      "flex w-full items-center justify-between gap-s-2 rounded-md px-s-2 py-1 text-left font-sans text-xs transition-colors duration-fast ease-out",
-                      active
-                        ? "bg-accent-wash text-accent-text"
-                        : "text-ink-muted hover:bg-subtle hover:text-ink",
+      {shown.length === 0 ? (
+        <EmptyState
+          icon={Search}
+          title={`Nothing matches ${query ? `"${query}"` : "that filter"}.`}
+          description="Try a broader search, or clear the field filter."
+        />
+      ) : (
+        <div className="border-t border-border pt-s-6">
+          {shown.map((p) => {
+            const article = articleFor(p);
+            return (
+              <FeedItem
+                key={p.id}
+                href={`/paper/${p.slug}`}
+                title={p.title}
+                dek={article.dek}
+                tags={
+                  <>
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-ink-faint">
+                      {p.field}
+                    </span>
+                    {p.openAccess && (
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-pillar-text-7">
+                        Open access
+                      </span>
                     )}
-                  >
-                    <span>{f}</span>
-                    <span className="font-mono text-[10px] text-ink-faint">{count}</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+                  </>
+                }
+                meta={
+                  <>
+                    <span>@{p.stats.postedBy}</span>
+                    <Dot />
+                    <span>{ago(p.stats.postedDaysAgo)}</span>
+                    <Dot />
+                    <span>{article.readingMinutes} min</span>
+                    <Dot />
+                    <span>{Math.round(p.stats.groundingCoverage * 100)}% grounded</span>
+                    <Dot />
+                    <span>{p.stats.comments} comments</span>
+                  </>
+                }
+                aside={
+                  <div className="w-24 text-right">
+                    <p className="font-mono text-lg tabular-nums text-ink">
+                      {compact(p.stats.score)}
+                    </p>
+                    <p className="font-mono text-[10px] uppercase tracking-wider text-ink-faint">
+                      readers
+                    </p>
+                  </div>
+                }
+              />
+            );
+          })}
         </div>
-      </aside>
+      )}
+
+      {visible < filtered.length && (
+        <div className="flex justify-center pt-s-6">
+          <Button variant="outline" onClick={() => setVisible((v) => v + PAGE)}>
+            Load more
+          </Button>
+        </div>
+      )}
+      {shown.length > 0 && visible >= filtered.length && (
+        <p className="pt-s-6 text-center font-sans text-[13px] text-ink-faint">
+          That is every paper in the library.
+        </p>
+      )}
     </div>
   );
 }

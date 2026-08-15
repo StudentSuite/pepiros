@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { buttonClassName } from "@/components/ui/Button";
-import { Reveal } from "@/components/ui/Reveal";
+import {
+  ArticleBody,
+  ArticleHeader,
+  ArticleRule,
+  ReadingColumn,
+} from "@/components/reading/Article";
 
 export const metadata: Metadata = {
   title: "Legal",
-  description: "Pepiros license and legal information.",
+  description: "Pepiros licence, data sources, and what this project does not claim to be.",
 };
 
-// Verbatim contents of the repo-root LICENSE file. Reproduced exactly, not
-// paraphrased, so "state that plainly" means the reader sees the real text
-// rather than a summary of it.
+// Verbatim contents of the repo-root LICENSE file. Reproduced exactly rather
+// than paraphrased, so "state it plainly" means showing the real text.
 const LICENSE_TEXT = `MIT License
 
 Copyright (c) 2026 Anay Dhawan and Yash Kewlani
@@ -33,99 +36,69 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.`;
 
-/**
- * `/legal` -- three anchored sections SiteFooter already links into
- * (`/legal#license` from the Connect column). `scroll-mt-topbar` on each
- * `<section>` keeps the sticky header (h-topbar) from covering the heading
- * on an anchor jump. Header/footer come from app/(marketing)/layout.tsx.
- */
 export default function LegalPage() {
   return (
-    <main className="flex flex-col">
-      {/* Banner header. Not wrapped in Reveal -- first thing on screen. */}
-      <section className="mx-auto flex w-full max-w-3xl flex-col gap-3 px-6 pb-14 pt-20 sm:pt-28">
-        <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">Legal</p>
-        <h1 className="font-serif text-3xl leading-tight text-ink sm:text-4xl">Legal</h1>
-        <p className="max-w-xl font-sans text-sm leading-relaxed text-ink-muted">
-          License, what data goes where, and what this project doesn&apos;t claim to be.
-        </p>
-      </section>
+    <main className="pb-s-8">
+      <ReadingColumn>
+        <ArticleHeader
+          kicker="Legal"
+          title="Licence, sources, and limits."
+          dek="What you may do with the code, where the papers come from, and what a badge does not mean."
+        />
 
-      {/* License -- LICENSE file at repo root, MIT, reproduced verbatim. */}
-      <Reveal>
-        <section id="license" className="scroll-mt-topbar border-t border-border">
-          <div className="mx-auto w-full max-w-3xl px-6 py-14">
-            <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">License</p>
-            <h2 className="mt-2 font-serif text-2xl text-ink">MIT</h2>
-            <p className="mt-4 max-w-xl font-sans text-sm leading-relaxed text-ink-muted">
-              Pepiros is MIT licensed, stated plainly: do nearly anything with the code, keep the
-              copyright notice, no warranty is offered. Full text below.
+        <ArticleBody>
+          <section id="license" className="scroll-mt-topbar">
+            <h2>MIT licence</h2>
+            <p>
+              Do nearly anything with the code, keep the copyright notice, and
+              accept that no warranty is offered. The full text:
             </p>
-            <div className="surface-reading paper-grain mt-6 rounded-lg p-s-6">
-              <pre className="overflow-x-auto whitespace-pre-wrap font-mono text-xs leading-relaxed text-[#1c1a15]">
-                <code>{LICENSE_TEXT}</code>
-              </pre>
-            </div>
-          </div>
-        </section>
-      </Reveal>
+          </section>
+        </ArticleBody>
 
-      {/* Data sources -- docs/PLAN-V1.md §22.2, open-access-only rule. */}
-      <Reveal>
-        <section id="data-sources" className="scroll-mt-topbar border-t border-border bg-surface-sunken/40">
-          <div className="mx-auto w-full max-w-3xl px-6 py-14">
-            <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">
-              Data sources
-            </p>
-            <h2 className="mt-2 font-serif text-2xl text-ink">Open-access only</h2>
-            <p className="mt-4 max-w-xl font-sans text-sm leading-relaxed text-ink-muted">
-              Only papers Pepiros is legally allowed to list ever show up in the public,
-              curated library: arXiv, PMC open access, and other CC-licensed work. Anything you
-              upload yourself stays private to your own workspace and is never added to the
-              public catalog unless its license explicitly permits it.
-            </p>
-          </div>
-        </section>
-      </Reveal>
+        <pre className="mt-s-4 overflow-x-auto rounded-md border border-border bg-surface-sunken/60 p-s-4">
+          <code className="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-ink-muted">
+            {LICENSE_TEXT}
+          </code>
+        </pre>
 
-      {/* Disclaimers -- research-prototype / hackathon-origin note, no
-          medical/legal/clinical advice implied. The clinician persona
-          (docs/PLAN-V1.md §1.5) is the concrete reason this section exists,
-          not boilerplate for its own sake. */}
-      <Reveal>
-        <section id="disclaimers" className="scroll-mt-topbar border-t border-border">
-          <div className="mx-auto w-full max-w-3xl px-6 py-14">
-            <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">
-              Disclaimers
-            </p>
-            <h2 className="mt-2 font-serif text-2xl text-ink">
-              A research prototype, not a professional opinion
-            </h2>
-            <p className="mt-4 max-w-xl font-sans text-sm leading-relaxed text-ink-muted">
-              Pepiros is a hackathon-origin research prototype (built Aug 7&ndash;19, 2026), not a
-              certified or clinically validated tool. A quote located badge means the cited
-              sentence exists at the stated page in the source PDF, checked deterministically. It
-              is not a claim that the underlying research is correct, complete, or current.
-            </p>
-            <p className="mt-4 max-w-xl font-sans text-sm leading-relaxed text-ink-muted">
-              Nothing generated here, summaries, pillar notes, or chat answers, is medical, legal,
-              or clinical advice. Verify against the primary source and consult a qualified
-              professional before acting on anything you read here.
-            </p>
-          </div>
-        </section>
-      </Reveal>
+        <ArticleRule />
 
-      {/* CTA row. */}
-      <Reveal>
-        <section className="border-t border-border">
-          <div className="mx-auto flex w-full max-w-3xl items-center px-6 py-16">
-            <Link href="/contact" className={buttonClassName("secondary")}>
-              Questions? Get in touch
-            </Link>
-          </div>
-        </section>
-      </Reveal>
+        <ArticleBody>
+          <section id="data" className="scroll-mt-topbar">
+            <h2>Where the papers come from</h2>
+            <p>
+              The public library lists open-access work: arXiv, PMC, and
+              CC-licensed journals. Only bibliographic metadata is stored, never
+              article text, and every entry links out to the publisher.
+            </p>
+            <p>
+              Anything you upload yourself stays private to your own workspace.
+              It is never added to the public library unless its licence
+              explicitly permits it.
+            </p>
+          </section>
+
+          <section id="disclaimers" className="scroll-mt-topbar">
+            <h2>What a badge does not mean</h2>
+            <p>
+              Pepiros is a research prototype, not a certified or clinically
+              validated tool. A <strong>quote located</strong> badge means the
+              cited sentence exists at the stated page in the source, checked
+              deterministically. It is not a claim that the research is correct,
+              complete, or current, and it is never a claim that the sentence
+              supports the conclusion drawn from it. That distinction is the
+              whole design, and it is explained on{" "}
+              <Link href="/how-it-works">how it works</Link>.
+            </p>
+            <p>
+              Nothing generated here is medical, legal, or clinical advice.
+              Verify against the primary source, and consult a qualified
+              professional before acting on anything you read.
+            </p>
+          </section>
+        </ArticleBody>
+      </ReadingColumn>
     </main>
   );
 }
