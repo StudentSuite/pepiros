@@ -158,7 +158,7 @@ export function PostsTable({
           </TabsList>
         </Tabs>
 
-        <div className="relative min-w-[200px] flex-1">
+        <div className="relative min-w-0 flex-1 basis-[200px]">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-ink-faint" />
           <Input
             value={query}

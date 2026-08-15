@@ -59,9 +59,9 @@ export function SiteHeader({
         offline ? "top-7" : "top-0",
       )}
     >
-      <div className="mx-auto flex h-topbar max-w-6xl items-center justify-between gap-6 px-6">
+      <div className="mx-auto flex h-topbar max-w-6xl items-center justify-between gap-3 px-4 sm:gap-6 sm:px-6">
         <Link href="/" aria-label="Pepiros home">
-          <Logo />
+          <Logo collapseWordmark />
         </Link>
 
         <nav className="hidden items-center gap-6 sm:flex">
@@ -76,7 +76,7 @@ export function SiteHeader({
           ))}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <ThemeToggle />
           {session ? (
             <div className="flex items-center gap-2">

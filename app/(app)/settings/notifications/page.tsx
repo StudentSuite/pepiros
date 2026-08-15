@@ -1,16 +1,20 @@
 import type { Metadata } from "next";
-import { SettingsSection } from "@/components/settings/SettingsSection";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth/session";
+import { isDemoAccount } from "@/lib/data/demo";
 import { NotificationPrefs } from "@/components/settings/NotificationPrefs";
+import { DemoNotice } from "@/components/settings/DemoNotice";
 
 export const metadata: Metadata = { title: "Notification settings" };
 
-export default function NotificationsPage() {
+export default async function NotificationsPage() {
+  const profile = await getSession();
+  if (!profile) redirect("/login");
+
   return (
-    <SettingsSection
-      title="Notifications"
-      description="What Pepiros tells you about, and what it stays quiet on."
-    >
+    <div>
+      {isDemoAccount(profile) && <DemoNotice />}
       <NotificationPrefs />
-    </SettingsSection>
+    </div>
   );
 }

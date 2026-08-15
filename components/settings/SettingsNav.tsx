@@ -2,27 +2,37 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, KeyRound, Plug, TriangleAlert, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const SECTIONS = [
-  { href: "/settings/profile", label: "Profile", icon: User },
-  { href: "/settings/security", label: "Security", icon: KeyRound },
-  { href: "/settings/mcp-tokens", label: "MCP tokens", icon: Plug },
-  { href: "/settings/notifications", label: "Notifications", icon: Bell },
-  { href: "/settings/danger", label: "Danger zone", icon: TriangleAlert },
+  { href: "/settings/profile", label: "Profile" },
+  { href: "/settings/security", label: "Security" },
+  { href: "/settings/mcp-tokens", label: "MCP tokens" },
+  { href: "/settings/notifications", label: "Notifications" },
 ] as const;
 
-/** Section nav for the settings shell. Horizontal on mobile, a rail above md. */
-export function SettingsNav() {
+const DANGER = { href: "/settings/danger", label: "Danger zone" } as const;
+
+/**
+ * Section nav.
+ *
+ * Text-only, no icons and no filled pills. The icon-per-row version competed
+ * with the page content for attention on what is a secondary navigation
+ * surface; an active marker plus weight is enough to say where you are.
+ *
+ * Scrolls horizontally below md, where a vertical rail would eat a third of a
+ * phone screen.
+ */
+export function SettingsNav({ showDanger = true }: { showDanger?: boolean }) {
   const pathname = usePathname();
+  const items = showDanger ? [...SECTIONS, DANGER] : SECTIONS;
 
   return (
     <nav
       aria-label="Settings sections"
-      className="flex shrink-0 gap-s-1 overflow-x-auto md:w-48 md:flex-col md:overflow-visible"
+      className="-mx-6 flex shrink-0 gap-s-1 overflow-x-auto px-6 pb-s-2 md:mx-0 md:w-44 md:flex-col md:overflow-visible md:px-0 md:pb-0"
     >
-      {SECTIONS.map((s) => {
+      {items.map((s) => {
         const active = pathname === s.href;
         return (
           <Link
@@ -30,15 +40,13 @@ export function SettingsNav() {
             href={s.href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex shrink-0 items-center gap-s-2 rounded-md px-s-3 py-s-2 font-sans text-sm transition-colors duration-fast ease-out",
+              "relative shrink-0 whitespace-nowrap rounded-md px-s-3 py-s-2 font-sans text-sm transition-colors duration-fast ease-out",
               active
-                ? "bg-accent-wash text-accent-text"
-                : "text-ink-muted hover:bg-subtle hover:text-ink",
-              // the destructive section reads as destructive even when idle
-              s.href === "/settings/danger" && !active && "text-pillar-text-5",
+                ? "font-medium text-ink md:bg-subtle"
+                : "text-ink-faint hover:text-ink",
+              s.href === DANGER.href && !active && "text-pillar-text-5/80",
             )}
           >
-            <s.icon className="size-4" strokeWidth={1.5} />
             {s.label}
           </Link>
         );

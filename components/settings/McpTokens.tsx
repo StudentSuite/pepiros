@@ -156,7 +156,7 @@ export function McpTokens({ initial }: { initial: MockMcpToken[] }) {
       )}
 
       <form onSubmit={create} className="flex flex-wrap items-end gap-s-3">
-        <div className="min-w-[200px] flex-1">
+        <div className="min-w-0 flex-1 basis-[200px]">
           <Label htmlFor="tokenLabel">New token label</Label>
           <Input
             id="tokenLabel"

@@ -102,11 +102,18 @@ export function Logo({
   tagline = false,
   variant = "auto",
   size = "sm",
+  /**
+   * Drop to the glyph alone below `sm`. The wordmark's brand tracking makes it
+   * ~90px wide even at nav size, which is enough to push a narrow header past
+   * the viewport once the auth buttons and theme toggle are alongside it.
+   */
+  collapseWordmark = false,
   className,
 }: {
   tagline?: boolean;
   variant?: LogoVariant;
   size?: LogoSize;
+  collapseWordmark?: boolean;
   className?: string;
 }) {
   return (
@@ -116,6 +123,7 @@ export function Logo({
         <span
           className={clsx(
             "font-serif uppercase leading-none",
+            collapseWordmark && "hidden sm:inline",
             // kit spec: letter-spacing 18 at font-size 62
             "tracking-[0.29em]",
             WORDMARK_SIZE[size],

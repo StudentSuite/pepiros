@@ -32,7 +32,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <SidebarProvider>
       <AppSidebar profile={profile} unreadComments={unread} />
-      <SidebarInset>
+      {/* min-w-0 is load-bearing. A flex item defaults to min-width:auto, so
+          without it this refuses to shrink below its content's intrinsic width.
+          Once the sidebar claims 256px at the md breakpoint, wide content (the
+          posts table, the token form) pushed the document past the viewport and
+          produced a horizontal page scrollbar. */}
+      <SidebarInset className="min-w-0">
         {/* Top bar is reserved for page-level actions; each page renders its
             own into the slot below the divider. This bar carries only the
             things that belong to the shell. */}
@@ -43,7 +48,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <ThemeToggle />
         </header>
 
-        <main className="flex-1">{children}</main>
+        <main className="min-w-0 flex-1">{children}</main>
       </SidebarInset>
 
       {/* Sonner, scoped to the signed-in shell. The pre-existing

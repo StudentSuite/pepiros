@@ -1,17 +1,30 @@
 import type { Metadata } from "next";
-import { SettingsSection } from "@/components/settings/SettingsSection";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth/session";
+import { isDemoAccount } from "@/lib/data/demo";
 import { McpTokens } from "@/components/settings/McpTokens";
+import { DemoNotice } from "@/components/settings/DemoNotice";
 import { mockMcpTokens } from "@/lib/mock/settings";
 
 export const metadata: Metadata = { title: "MCP tokens" };
 
-export default function McpTokensPage() {
+export default async function McpTokensPage() {
+  const profile = await getSession();
+  if (!profile) redirect("/login");
+
   return (
-    <SettingsSection
-      title="MCP tokens"
-      description="Connect Claude, Codex, or Cursor so an agent can check its own claims against a source."
-    >
+    <div>
+      {isDemoAccount(profile) && <DemoNotice />}
+
+      <header className="pb-s-5">
+        <h2 className="font-serif text-lg text-ink">MCP tokens</h2>
+        <p className="mt-1 max-w-prose font-sans text-[13px] leading-relaxed text-ink-faint">
+          Connect Claude, Codex, or Cursor so an agent can check its own claims
+          against a source, mid-conversation.
+        </p>
+      </header>
+
       <McpTokens initial={mockMcpTokens} />
-    </SettingsSection>
+    </div>
   );
 }

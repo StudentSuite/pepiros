@@ -1,42 +1,50 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
-import { SettingsSection } from "@/components/settings/SettingsSection";
+import { isDemoAccount } from "@/lib/data/demo";
+import { SettingsRow } from "@/components/settings/SettingsRow";
 import { SignOutButton } from "@/components/settings/SignOutButton";
+import { DemoNotice } from "@/components/settings/DemoNotice";
 
 export const metadata: Metadata = { title: "Security settings" };
 
 export default async function SecurityPage() {
   const profile = await getSession();
   if (!profile) redirect("/login");
+  const demo = isDemoAccount(profile);
 
   return (
-    <div className="flex flex-col gap-s-4">
-      <SettingsSection
-        title="Sessions"
-        description="Pepiros signs you in with a single HTTP-only cookie, valid for seven days."
+    <div>
+      {demo && <DemoNotice />}
+
+      <SettingsRow
+        label="Signed in as"
+        description="Sessions use a single HTTP-only cookie and last seven days."
       >
-        <div className="rounded-md border border-border p-s-4">
-          <p className="font-sans text-sm text-ink">This device</p>
-          <p className="mt-s-1 font-mono text-[11px] text-ink-faint">
-            Signed in as @{profile.username}
-          </p>
-        </div>
-        <div className="mt-s-4">
+        <p className="truncate font-mono text-sm text-ink-muted">
+          @{profile.username}
+        </p>
+      </SettingsRow>
+
+      <SettingsRow
+        label="Password"
+        description={
+          demo
+            ? "The demo account uses a published password on purpose, so anyone can look around without signing up."
+            : "Password changes arrive with the rest of Supabase Auth."
+        }
+      >
+        <p className="font-sans text-sm text-ink-faint">Not available yet</p>
+      </SettingsRow>
+
+      <SettingsRow
+        label="Sign out"
+        description="Ends this session on this device."
+      >
+        <div className="flex sm:justify-end">
           <SignOutButton />
         </div>
-      </SettingsSection>
-
-      <SettingsSection
-        title="Password"
-        description="Password changes are not available on the demo account."
-      >
-        <p className="font-sans text-sm text-ink-muted">
-          The guest account uses a published password on purpose, so anyone can
-          look around without signing up. Real accounts get password management
-          when Supabase Auth is wired in.
-        </p>
-      </SettingsSection>
+      </SettingsRow>
     </div>
   );
 }
