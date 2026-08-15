@@ -1,15 +1,22 @@
 import { create } from "zustand";
 import type { Evidence, GraphNode, Workspace } from "@/types/anchor";
-import { fetchWorkspace } from "@/lib/services/workspace";
 
 /**
- * Client-side store for components/ and app/(app)/ pages. The read itself
- * lives in lib/services/workspace.ts so that server routes can reach it
- * without importing this zustand module; this file only re-exports it for
- * client consumers that already import from here.
+ * Client-side store for components/ and app/(app)/ pages.
+ *
+ * loadWorkspace() fetches GET /api/workspace/[workspaceId] rather than
+ * calling lib/services/workspace.ts's fetchWorkspace() directly the way
+ * this file used to. That direct call only ever worked because
+ * fetchWorkspace() used to just read the static fixture -- safe to run in
+ * the browser. Now that it also has to check lib/services/ingestStore.ts
+ * for a real ingested workspace, calling it from client code breaks the
+ * production build outright (that module's `import "server-only"` isn't
+ * satisfiable in a client bundle) and, worked around, would still silently
+ * never see a real ingested workspace anyway: that store is server-process
+ * memory, unreachable from a browser bundle. Routing through the API route
+ * means the client gets the same seam every server-side reader already
+ * uses.
  */
-export { fetchWorkspace };
-
 interface WorkspaceState {
   workspace: Workspace | null;
   selectedNodeId: string | null;
@@ -29,7 +36,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   workspace: null,
   selectedNodeId: null,
   loadWorkspace: async (workspaceId) => {
-    const workspace = await fetchWorkspace(workspaceId);
+    const res = await fetch(`/api/workspace/${encodeURIComponent(workspaceId)}`);
+    if (!res.ok) throw new Error(`Could not load workspace ${workspaceId} (${res.status}).`);
+    const workspace = (await res.json()) as Workspace;
     set({ workspace });
   },
   selectNode: (nodeId) => set({ selectedNodeId: nodeId }),
