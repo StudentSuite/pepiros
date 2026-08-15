@@ -92,29 +92,24 @@ export function VerificationDemo() {
 
   return (
     <div
-      className="surface-reading paper-grain relative overflow-hidden rounded-xl p-s-6 shadow-e-3 sm:p-s-8"
+      className="paper-grain relative overflow-hidden rounded-xl border border-border bg-paper p-s-6 text-ink shadow-e-3 sm:p-s-8"
       aria-hidden="true"
     >
-      {/* Brand watermark -- the same LogoMark used in the header, oversized
-          and near-invisible, purely for presence. Real generated brand asset
-          (design/PEPIROS-BRAND/glyph/monochrome/), not decoration invented for
-          this component. Fixed fill color, not currentColor, so opacity does
-          the "near-invisible" work instead of a text-color alpha.
-          `variant="paper"` is pinned because this card is a paper reading
-          surface in BOTH themes, so the mark must stay dark ink either way. */}
+      {/* Brand watermark: the header's LogoMark, oversized and near-invisible.
+          Left on the default `auto` variant so it follows the theme along with
+          the card, which now flips rather than staying parchment in dark. */}
       <LogoMark
-        variant="paper"
         className="pointer-events-none absolute -bottom-10 -right-10 h-56 w-auto opacity-[0.04]"
       />
 
-      <p className="relative font-mono text-[10px] uppercase tracking-widest text-[#1c1a15]/40">
+      <p className="relative font-mono text-[10px] uppercase tracking-widest text-ink-faint">
         Grounding, live
       </p>
 
       <div className="relative mt-4 flex flex-wrap items-start justify-between gap-4">
         <p
           className={clsx(
-            "font-serif text-xl leading-snug text-[#1c1a15] transition-all duration-slow ease-out sm:text-2xl",
+            "font-serif text-xl leading-snug text-ink transition-all duration-slow ease-out sm:text-2xl",
             claimIn ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0",
           )}
         >
@@ -153,16 +148,16 @@ export function VerificationDemo() {
 
       <div
         className={clsx(
-          "relative rounded-lg border border-black/10 bg-paper-muted p-s-5 transition-all duration-slow ease-out sm:p-s-6",
+          "relative rounded-lg border border-border bg-paper-muted p-s-5 transition-all duration-slow ease-out sm:p-s-6",
           beamDrawn ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0",
         )}
       >
-        <p className="font-mono text-[10px] uppercase tracking-widest text-[#1c1a15]/50">
+        <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
           Source excerpt
         </p>
         <p
           className={clsx(
-            "mt-2 font-serif text-base leading-relaxed text-[#1c1a15] transition-colors duration-base ease-out sm:text-lg",
+            "mt-2 font-serif text-base leading-relaxed text-ink transition-colors duration-base ease-out sm:text-lg",
             settled && ["underline underline-offset-4 decoration-2", UNDERLINE_CLASS[beat.tier]],
           )}
         >
@@ -174,16 +169,11 @@ export function VerificationDemo() {
             settled ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0",
           )}
         >
-          {/* EvidenceBadge's label hardcodes text-ink-muted, calibrated for the
-              dark chrome surfaces (components/ui/EvidenceBadge.tsx) -- on this
-              paper-surface panel that's ~2.27:1 against --paper, well under
-              WCAG AA. Override at this call site only, with the same literal
-              dark-ink hex the codebase already uses for paper-surface text
-              (PdfPane.tsx, FlashcardDeck.tsx) -- no Tailwind token exists for
-              it, and the shared component stays untouched. `!` forces the
-              override regardless of generated-CSS class order, since both
-              classes are the same specificity otherwise. */}
-          <EvidenceBadge tier={beat.tier} className="!text-[#1c1a15]" />
+          {/* EvidenceBadge sets text-ink-muted, which is a touch light against
+              --paper. Bumped to full --ink here only; `!` is needed because the
+              two classes are otherwise the same specificity. Both tokens flip
+              with the theme, so this holds in dark as well. */}
+          <EvidenceBadge tier={beat.tier} className="!text-ink" />
         </div>
       </div>
     </div>

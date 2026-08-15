@@ -380,11 +380,24 @@
   --grain-opacity: 0.09;
 
   /* Locally restate the ink ramp for this always-light pane, so descendants
-     using text-ink-muted / text-ink-faint stay readable regardless of theme. */
+     using text-ink-muted / text-ink-faint stay readable regardless of theme.
+     BOTH forms must be pinned. Tailwind's colour utilities resolve through the
+     -rgb companions, so pinning only the hex vars leaves `text-ink` reading the
+     THEME's ink and rendering near-white on this cream pane in dark mode.
+     Likewise --paper-muted, which nested panels use for their own background
+     and which would otherwise go dark inside a light card. */
   --ink: #1c1a15;
   --ink-muted: #4a4740;
   --ink-faint: #6b675e;
   --unsupported: #7a3535;
+
+  --ink-rgb: 28 26 21;
+  --ink-muted-rgb: 74 71 64;
+  --ink-faint-rgb: 107 103 94;
+  --unsupported-rgb: 122 53 53;
+  --paper-rgb: 245 241 232;
+  --paper-muted-rgb: 236 229 213;
+  --border-rgb: 222 213 196;
 }
 
 /* Subtle paper grain for reading surfaces, per Editorial Paper's "visible
