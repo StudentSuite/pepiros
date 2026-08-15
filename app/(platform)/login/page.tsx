@@ -9,6 +9,7 @@ import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { Card } from "@/components/shadcn/card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
 /**
  * Sign in.
@@ -20,6 +21,17 @@ import { ErrorBanner } from "@/components/ui/ErrorBanner";
  * The demo credentials are shown on the page on purpose: this is how a judge or
  * a first-time visitor gets into a populated account without creating one.
  */
+/**
+ * Reasons /auth/callback can bounce back here. Mapped to plain sentences: a
+ * raw provider code in the UI tells a reader nothing they can act on.
+ */
+const OAUTH_ERRORS: Record<string, string> = {
+  cancelled: "Google sign-in was cancelled.",
+  google_failed: "Google sign-in did not complete. Try again.",
+  google_unavailable:
+    "Google sign-in is not configured for this deployment. Use a username and password instead.",
+};
+
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
@@ -27,8 +39,14 @@ function LoginForm() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+
+  // A failed Google round-trip arrives as a query param, not as component
+  // state, so it has to be read here rather than set by a handler.
+  const oauthError = OAUTH_ERRORS[params.get("error") ?? ""] ?? null;
+  const error = formError ?? oauthError;
+  const setError = setFormError;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -80,7 +98,19 @@ function LoginForm() {
           </div>
         )}
 
-        <form onSubmit={submit} className="mt-s-5 flex flex-col gap-s-4">
+        {/* Google first: it is the path that needs no remembered credential,
+            so it belongs above the form rather than as a fallback under it. */}
+        <GoogleSignInButton next={next} className="mt-s-5" />
+
+        <div className="my-s-4 flex items-center gap-s-3">
+          <span className="h-px flex-1 bg-border" />
+          <span className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+            or
+          </span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
+
+        <form onSubmit={submit} className="flex flex-col gap-s-4">
           <div className="flex flex-col gap-s-2">
             <Label htmlFor="username">Username</Label>
             <Input

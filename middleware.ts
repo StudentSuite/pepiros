@@ -10,6 +10,16 @@ import { parseSession, SESSION_COOKIE } from "@/lib/auth/session";
  *
  * Signature verification only -- no database round trip -- so this stays cheap
  * enough to run on every matched request.
+ *
+ * WHAT IS DELIBERATELY NOT HERE. `/w` (the reader and canvas) and `/upload`
+ * are open to guests. Sign-in buys persistence, not access: a reader can
+ * bring a paper and get an answer without an account, and finds out what an
+ * account is for by having used the thing first. Guest surfaces say plainly
+ * that the work is not saved (components/auth/GuestBanner.tsx) -- that
+ * warning is what makes open access honest rather than a trap.
+ *
+ * The account-shaped routes below stay protected, because they are
+ * meaningless without an identity: there is no guest inbox or guest billing.
  */
 const PROTECTED = [
   "/home",
@@ -20,8 +30,6 @@ const PROTECTED = [
   "/settings",
   "/onboarding",
   "/welcome",
-  "/upload",
-  "/w",
 ];
 
 export async function middleware(req: NextRequest) {
@@ -52,7 +60,5 @@ export const config = {
     "/settings/:path*",
     "/onboarding/:path*",
     "/welcome/:path*",
-    "/upload/:path*",
-    "/w/:path*",
   ],
 };

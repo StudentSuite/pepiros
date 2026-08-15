@@ -28,6 +28,14 @@ const eslintConfig = [
       ],
     },
   },
+  {
+    // CommonJS by file extension, and Tailwind's plugin array is loaded by a
+    // tool that reads this file with require(). `import` is not an option in
+    // either place, so the rule was failing CI over code that could not be
+    // written any other way.
+    files: ["**/*.cjs", "tailwind.config.ts"],
+    rules: { "@typescript-eslint/no-require-imports": "off" },
+  },
 ];
 
 export default eslintConfig;

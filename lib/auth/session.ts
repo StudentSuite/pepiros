@@ -83,6 +83,53 @@ export async function serializeSession(profileId: string): Promise<string> {
   return `${payload}.${await sign(payload)}`;
 }
 
+/** Marks a subject as an inline (federated) profile rather than an adapter id. */
+const INLINE_PREFIX = "g~";
+
+/**
+ * Session for a federated sign-in (Google), carrying the profile inline
+ * rather than as an id to look up.
+ *
+ * WHY INLINE. A password session stores an id because the adapter owns that
+ * account. A Google account has no row in the seed adapter, so an id-only
+ * cookie would authenticate to a profile that cannot be resolved, and
+ * `getSession()` would return null for a user who just signed in
+ * successfully. Carrying the profile in the cookie means Google sign-in
+ * behaves the same whether the seed generator or Supabase is behind the app.
+ *
+ * This is safe precisely because the payload is HMAC-signed: a client can
+ * read its own profile (it is theirs, and httpOnly keeps it out of JS
+ * anyway) but cannot alter a single field without invalidating the
+ * signature. Nothing secret goes in here -- name, email, avatar letters.
+ */
+export async function serializeInlineSession(profile: Profile): Promise<string> {
+  const encoded = toBase64UrlString(JSON.stringify(profile));
+  const payload = `${INLINE_PREFIX}${encoded}.${Date.now()}`;
+  return `${payload}.${await sign(payload)}`;
+}
+
+function toBase64UrlString(s: string): string {
+  const bytes = new TextEncoder().encode(s);
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function decodeInlineProfile(subject: string): Profile | null {
+  try {
+    const json = new TextDecoder().decode(fromBase64Url(subject.slice(INLINE_PREFIX.length)));
+    const parsed = JSON.parse(json) as Profile;
+    // A signed cookie cannot have been tampered with, but it can be stale --
+    // written by an older build with a different Profile shape. Treat a
+    // missing required field as "no session" rather than handing downstream
+    // code a half-built object.
+    if (!parsed?.id || !parsed?.username) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 export async function parseSession(token: string | undefined): Promise<string | null> {
   if (!token) return null;
   const parts = token.split(".");
@@ -110,7 +157,8 @@ export async function parseSession(token: string | undefined): Promise<string | 
 /** Current signed-in profile, or null. Server components and route handlers. */
 export async function getSession(): Promise<Profile | null> {
   const store = await cookies();
-  const profileId = await parseSession(store.get(COOKIE)?.value);
-  if (!profileId) return null;
-  return getAdapter().getProfile(profileId);
+  const subject = await parseSession(store.get(COOKIE)?.value);
+  if (!subject) return null;
+  if (subject.startsWith(INLINE_PREFIX)) return decodeInlineProfile(subject);
+  return getAdapter().getProfile(subject);
 }
