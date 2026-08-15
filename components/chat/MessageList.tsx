@@ -4,6 +4,12 @@ import { PromoteButton } from "./PromoteButton";
 
 export type ChatSegment = { kind: "text"; text: string } | { kind: "citation"; refId: string };
 
+export interface ChatMessageCitation {
+  refId: string;
+  tier: string;
+  quote: string | null;
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
@@ -11,6 +17,11 @@ export interface ChatMessage {
   /** Answer carried no supported citation. Rendered distinctly per §9.4 --
    *  ungrounded output must never be visually interchangeable with grounded. */
   ungrounded?: boolean;
+  /** Re-verified citations behind this answer, carried for Promote to node
+   *  (create_node needs the actual quote, not just the ref id). */
+  citations?: ChatMessageCitation[];
+  /** The question this answer responds to, used as the promoted node's title. */
+  question?: string;
 }
 
 /** Renders the message array, user vs. assistant styling. */

@@ -1,29 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { MessageList, type ChatMessage } from "./MessageList";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useWorkspaceStore } from "@/lib/store/workspace";
 import { toCitationSegments } from "@/lib/chat/citations";
-
-// docs/PLAN-V1.md §14.5: "4 suggested questions from the paper's real
-// concepts," never generic. Fixture-scoped since there's no live paper
-// analysis to derive these from yet -- swap for a real derivation once
-// that pipeline exists, not for a generic placeholder set.
-const SUGGESTED_QUESTIONS = [
-  "What did the bright-light RCT actually find?",
-  "Does the meta-analysis hold up under its own limitations?",
-  "Where do the two papers disagree?",
-  "What does neither paper establish?",
-];
+import { deriveSuggestedQuestions } from "@/lib/chat/suggestions";
 
 type Scope = "all" | "paper" | "node";
 
 interface ChatApiResponse {
   answer: string;
-  citations: Array<{ refId: string; tier: string }>;
+  citations: Array<{ refId: string; tier: string; quote: string | null; matchScore: number; page: number | null }>;
   ungrounded: boolean;
   refused: boolean;
 }
@@ -44,6 +34,7 @@ export function ChatDock() {
   const [error, setError] = useState<string | null>(null);
   const [allowUngrounded, setAllowUngrounded] = useState(false);
   const [lastRefusedQuestion, setLastRefusedQuestion] = useState<string | null>(null);
+  const suggestedQuestions = useMemo(() => deriveSuggestedQuestions(workspace), [workspace]);
 
   async function ask(question: string, options: { allowUngrounded?: boolean } = {}) {
     setPending(true);
@@ -94,6 +85,8 @@ export function ChatDock() {
           role: "assistant",
           segments: toCitationSegments(data.answer),
           ungrounded: data.ungrounded,
+          citations: data.citations,
+          question,
         },
       ]);
     } catch (err) {
@@ -143,7 +136,7 @@ export function ChatDock() {
                 <div className="flex flex-col gap-2">
                   <p className="font-sans text-xs text-ink-faint">Try asking:</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {SUGGESTED_QUESTIONS.map((q) => (
+                    {suggestedQuestions.map((q) => (
                       <button
                         key={q}
                         type="button"
