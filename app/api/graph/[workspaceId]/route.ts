@@ -4,8 +4,9 @@
 // this route does not lay out anything itself -- doing so would recompute what
 // the seam already did.
 //
-// No live DB yet, so fetchWorkspace resolves the fixture regardless of
-// workspaceId (same seam noted in app/api/verify/route.ts).
+// fetchWorkspace resolves a workspaceId that real ingest has actually built
+// (lib/services/ingest.ts) or falls back to the fixture otherwise -- see that
+// function's own doc comment.
 import { NextResponse } from "next/server";
 import { fetchWorkspace } from "@/lib/services/workspace";
 

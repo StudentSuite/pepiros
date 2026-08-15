@@ -1,6 +1,7 @@
 import type { Workspace } from "@/types/anchor";
 import workspaceFixture from "@/fixtures/workspace.json";
 import { computeLayout } from "@/lib/layout";
+import { getIngestedWorkspace } from "./ingestStore";
 
 /**
  * The single data-access seam. Everything that needs a workspace, on either
@@ -20,8 +21,14 @@ import { computeLayout } from "@/lib/layout";
  * callers read this directly, so laying out in any one of those would leave
  * the others on stale hand-authored coordinates. computeLayout is a pure
  * function of the graph's shape, so every caller gets identical positions.
+ *
+ * A workspaceId that real ingest (lib/services/ingest.ts) has actually built
+ * or added a paper to resolves to that workspace instead of the fixture --
+ * still through this one seam, not a second data path. Every id that has
+ * never been ingested into keeps today's behaviour exactly: the fixture,
+ * regardless of the id passed in.
  */
-export async function fetchWorkspace(_workspaceId: string): Promise<Workspace> {
-  const workspace = workspaceFixture as unknown as Workspace;
+export async function fetchWorkspace(workspaceId: string): Promise<Workspace> {
+  const workspace = getIngestedWorkspace(workspaceId) ?? (workspaceFixture as unknown as Workspace);
   return { ...workspace, nodes: computeLayout(workspace) };
 }

@@ -57,7 +57,7 @@ Early build, moving fast. Honest status:
 | **Grounded chat** (`lib/services/chat.ts`, `POST /api/chat`) | Query rewrite → route classifier → stable-id context block → answer → citation re-verification. Refusal path with an explicit "answer without sources" opt-in; ungrounded answers render visually distinct. Verified against the live Groq API. |
 | **Canvas layout** (`lib/layout/*`) | Deterministic server-computed positions: radial for one paper, layered columns for several. Verified to produce no overlapping cards at 1, 2, or 3 papers. Pillars open collapsed, edges render only when both endpoints do, cards shed detail as you zoom out (`lib/graph/lod.ts`), and a closed-by-default legend explains every colour and line style the graph actually uses. |
 | **Auth** (`lib/auth/*`, `app/auth/callback`) | Google sign-in via Supabase as the OAuth broker, translated into the app's own signed cookie so there is one answer to "who is signed in". Sign-in buys persistence, not access: the reader and upload are open to guests, with a banner saying plainly that guest work is not kept. |
-| **Upload validation** (`lib/services/upload.ts`, `POST /api/ingest`) | Size (50MB), magic bytes, page cap (120), text-layer check, duplicate detection (DOI then fuzzy title), and arXiv/PMC/DOI URL resolution. `GET /api/jobs/[id]` streams the 9-stage progress list over SSE. Validation is enforced; parsing behind it is still a stub, so `202` means queued, not analyzed. |
+| **Upload validation + ingest** (`lib/services/upload.ts`, `lib/services/ingest.ts`, `POST /api/ingest`) | Size (50MB), magic bytes, page cap (120), text-layer check, duplicate detection (DOI then fuzzy title), and arXiv/PMC/direct-PDF URL resolution (DOI resolution still needs an Unpaywall-style resolver). `GET /api/jobs/[id]` streams the 9-stage progress list over SSE. A `202` kicks off the real pipeline: `scripts/parse.py` (PyMuPDF) extracts sections/chunks/numerics, then `lib/agents/orchestrator.ts` classifies, plans pillars, and fans out generators, all re-verified against the source before the graph updates. |
 | **API** | `POST /api/verify`, `POST /api/audit`, `POST /api/chat`, `POST /api/ingest`, `GET /api/jobs/[id]`, `GET /api/graph/[workspaceId]`, `GET /api/related`, `GET /api/expand` |
 | **Tooling** | Typecheck, lint, test, and build all gated in CI on every push and PR. 246 Vitest cases across 25 files, including the LLM and chat layers tested against a hand-rolled mock model (no API key or network call needed). |
 
@@ -67,7 +67,7 @@ Each of these is a one-line `TODO` at the top of its file, describing what belon
 
 | Area | Missing |
 | --- | --- |
-| **PDF parsing** | `scripts/parse.py` (PyMuPDF), `scripts/ocr_fallback.py`, `scripts/seed.ts`, `lib/services/ingest.ts`. Upload *validation* is real; nothing yet turns an accepted PDF into chunks and anchors. Needs PyMuPDF installed and one open-access test PDF in the repo. |
+| **OCR fallback + seed script** | `scripts/ocr_fallback.py` (PaddleOCR-VL, for scanned/table-heavy pages) and `scripts/seed.ts` (bulk-loading a corpus into Postgres once one exists) are still stubs. `scripts/parse.py` (PyMuPDF) and `lib/services/ingest.ts` are real -- `pip install pymupdf` is the one setup step, since it's a local script per plan.md §2, never a deployed service. |
 | **Remaining generators** | 15 of the 21 in `docs/PLAN-V1.md` §8 (`contributions`, `background`, `jargon`, `biases`, `novelty`, `reproducibility`, `dataset_notes`, `ethics`, `clinical_relevance`, `future_work`, `equations`, `figures`, `concept_links`, `flashcards`, `quiz`), mechanical repeats of the pattern in `lib/agents/generators/`, plus figure vision, which needs cropped rasters from the parse pipeline |
 | **Synthesis** | `lib/services/synthesis.ts`, `POST /api/compare`, `PATCH`/`DELETE /api/nodes/[id]`. `find_contradictions` reads existing `contradicts` edges; nothing writes new ones. |
 | **MCP, remaining** | `add_paper`/`get_job` (need the parse pipeline), `list_workspaces`/`create_workspace` (need real multi-workspace persistence), and the remote streamable-HTTP + OAuth transport. `docs/PLAN-V1.md` §13.4 says verify connector requirements against Anthropic's current docs before building that. |
@@ -91,7 +91,7 @@ Open **<http://localhost:3000/w/ws-1>**. `ws-1` is the only workspace id the fix
 
 No environment file, database, or API key is needed to run it: the app is fully functional against `fixtures/workspace.json`, which ships 3 papers, a contradiction pair, a cross-paper `cites` link, and one planted misattribution that the verifier correctly demotes to `unsupported`.
 
-Requires Node 20 or newer.
+Requires Node 20 or newer. Uploading a real PDF additionally needs Python 3 with PyMuPDF (`pip install -r scripts/requirements.txt`) and a `GROQ_API_KEY` (or `FEATHERLESS_API_KEY`) in `.env` -- neither is needed just to browse the fixture workspace.
 
 ### Scripts
 

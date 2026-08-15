@@ -1,11 +1,7 @@
 // POST. Accepts a PDF upload (multipart) or a source URL (JSON), validates it
 // per docs/PLAN-V1.md §6, and returns a jobId to poll via GET /api/jobs/[id].
-//
-// Validation is real and enforced here. Parsing is not: PyMuPDF isn't
-// installed and scripts/parse.py is still a stub, so a validated upload is
-// accepted and its job reports the stages it can honestly report, rather than
-// this route pretending a graph was built. The seam for real parsing is
-// lib/services/ingest.ts.
+// Kicks off the real parse -> generate pipeline (lib/services/ingest.ts) in
+// the background rather than only queuing a job with nothing behind it.
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { fetchWorkspace } from "@/lib/services/workspace";
@@ -15,7 +11,24 @@ import {
   resolveSourceUrl,
   validateUpload,
 } from "@/lib/services/upload";
-import { createJob } from "@/lib/services/jobs";
+import { createJob, failJob } from "@/lib/services/jobs";
+import { runIngest } from "@/lib/services/ingest";
+
+/**
+ * Fire-and-forget: the route returns 202 with a jobId immediately (§6), and
+ * the real pipeline -- a PyMuPDF subprocess plus a Groq generator fan-out --
+ * runs for the 15-45s plan.md §1 quotes, reporting progress through
+ * lib/services/jobs.ts for GET /api/jobs/[id] to stream. This only keeps
+ * running because `next dev`/a long-lived Node process stays up after the
+ * response is sent; a serverless deployment would need an explicit
+ * background-work primitive (e.g. Vercel's waitUntil), which is out of scope
+ * here.
+ */
+function startIngest(input: Parameters<typeof runIngest>[0]) {
+  void runIngest(input).catch((err) => {
+    failJob(input.jobId, err instanceof Error ? err.message : String(err));
+  });
+}
 
 const urlBodySchema = z.object({
   workspaceId: z.string(),
@@ -61,6 +74,31 @@ export async function POST(request: Request) {
       workspaceId: parsed.data.workspaceId,
       source: { kind: resolved.kind, url: resolved.pdfUrl ?? parsed.data.url, doi: resolved.doi },
     });
+
+    if (resolved.kind === "doi") {
+      // DOI -> PDF resolution needs a resolver (Unpaywall) that isn't wired
+      // up yet -- an honest failure on the job, not a silent hang.
+      failJob(job.id, "DOI resolution isn't implemented yet. Paste a direct PDF link, or upload the file.");
+      return NextResponse.json({ jobId: job.id, source: resolved }, { status: 202 });
+    }
+
+    void (async () => {
+      try {
+        const res = await fetch(resolved.pdfUrl!);
+        if (!res.ok) throw new Error(`Fetching the PDF failed (${res.status}).`);
+        const bytes = new Uint8Array(await res.arrayBuffer());
+        startIngest({
+          jobId: job.id,
+          workspaceId: parsed.data.workspaceId,
+          paperTitle: parsed.data.url,
+          sourceUrl: resolved.pdfUrl ?? parsed.data.url,
+          bytes,
+        });
+      } catch (err) {
+        failJob(job.id, err instanceof Error ? err.message : String(err));
+      }
+    })();
+
     return NextResponse.json({ jobId: job.id, source: resolved }, { status: 202 });
   }
 
@@ -103,6 +141,15 @@ export async function POST(request: Request) {
       workspaceId,
       source: { kind: "upload", filename: file.name, bytes: file.size },
     });
+
+    startIngest({
+      jobId: job.id,
+      workspaceId,
+      paperTitle: file.name.replace(/\.pdf$/i, ""),
+      sourceUrl: null,
+      bytes,
+    });
+
     return NextResponse.json(
       { jobId: job.id, warnings: validation.warnings, estimatedPages: validation.estimatedPages },
       { status: 202 },
