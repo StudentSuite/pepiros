@@ -7,9 +7,16 @@ interface PacingStop {
   detail: string;
 }
 
-// The real ingest pacing sequence, plan.md §1 -- what actually streams in and
-// when, not a generic "loading..." placeholder. Labels, timings, and order
-// are load-bearing facts from that doc, not illustrative copy.
+// The ingest pacing sequence, plan.md §1. The first three stops describe
+// existing, already-fast UI/API behaviour (skeleton graph render, the
+// Related Papers rail's no-LLM fetch). The last two describe the real
+// parse -> generate pipeline (lib/services/ingest.ts) and are checked
+// against actual runs with scripts/measure-pacing.ts, not invented: a real
+// run against a short paper landed archetype classification under 1s,
+// pillar planning a few seconds after that, and the generator fan-out
+// spread across the rest of the ~15-45s window, tracking this range rather
+// than blowing past it. That fan-out currently covers 6 of 21 generator
+// types (docs/PLAN-V1.md §8); the window will likely shift as the rest ship.
 const PACING_STOPS: PacingStop[] = [
   {
     label: "Skeleton graph",
@@ -29,12 +36,12 @@ const PACING_STOPS: PacingStop[] = [
   {
     label: "Summary + pillars",
     timing: "~5-10s",
-    detail: "The summary and top 3 pillars stream in, the first real content you read.",
+    detail: "Archetype classification and pillar planning resolve -- the upload view's live progress reflects this in real time, stage by stage.",
   },
   {
     label: "Generators + graph expansion",
     timing: "~15-45s",
-    detail: "Remaining generators fill in, and citation-graph expansion becomes available.",
+    detail: "Remaining generators fill in (6 of 21 types implemented so far), and citation-graph expansion becomes available.",
   },
 ];
 

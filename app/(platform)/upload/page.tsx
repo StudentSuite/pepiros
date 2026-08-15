@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { FileText, UploadCloud } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/shadcn/checkbox";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { ReadingColumn } from "@/components/reading/Article";
 import { cn } from "@/lib/utils";
-import { MAX_PAGES, MAX_UPLOAD_BYTES } from "@/lib/services/upload";
+import { MAX_PAGES, MAX_UPLOAD_BYTES, JOB_STAGES } from "@/lib/services/upload";
 
 interface IngestResponse {
   jobId?: string;
@@ -20,6 +20,14 @@ interface IngestResponse {
   warnings?: string[];
   source?: { kind?: string };
   duplicate?: { title?: string };
+}
+
+interface JobProgress {
+  jobId: string;
+  status: "queued" | "running" | "done" | "failed";
+  stages: Array<{ stage: (typeof JOB_STAGES)[number]; state: "done" | "current" | "pending" }>;
+  events: Array<{ stage: string; message: string; at: number }>;
+  error?: string | null;
 }
 
 function formatMb(bytes: number): string {
@@ -33,20 +41,51 @@ function fileBody(file: File): FormData {
   return form;
 }
 
-/**
- * A 202 means the job was created, not that a graph exists -- nothing
- * advances a job yet. Saying "queued" and naming what is missing keeps this
- * from reading as a promise the app cannot keep.
- */
-function describeQueued(body: IngestResponse | null): string {
-  const parts = ["Accepted and queued."];
-  if (body?.estimatedPages) parts.push(`About ${body.estimatedPages} pages.`);
-  if (body?.warnings?.length) parts.push(body.warnings.join(" "));
-  parts.push("Parsing is not built yet, so no graph is generated from it — that is the next thing to land.");
-  return parts.join(" ");
-}
-
 const WORKSPACE_ID = "ws-1";
+
+/**
+ * Live stage checklist, driven by the real SSE stream at
+ * GET /api/jobs/[id] (docs/PLAN-V1.md §6) -- this used to just print a
+ * static "queued" notice and stop, even though the pipeline behind it now
+ * genuinely runs (lib/services/ingest.ts). Each stage lights up as it's
+ * actually reached, from real job_events, not a fixed-duration timer.
+ */
+function JobProgressView({ progress }: { progress: JobProgress }) {
+  const latestMessage = progress.events.at(-1)?.message;
+
+  return (
+    <div className="rounded-md border border-border p-s-4">
+      <ol className="flex flex-col gap-s-2">
+        {progress.stages.map((s) => (
+          <li key={s.stage} className="flex items-center gap-s-3 font-sans text-sm">
+            <span
+              aria-hidden="true"
+              className={cn(
+                "h-1.5 w-1.5 shrink-0 rounded-full",
+                s.state === "done" && "bg-located",
+                s.state === "current" && "animate-pulse bg-accent",
+                s.state === "pending" && "bg-border-strong",
+              )}
+            />
+            <span className={s.state === "pending" ? "text-ink-faint" : "text-ink"}>{s.stage}</span>
+          </li>
+        ))}
+      </ol>
+
+      {progress.status === "failed" ? (
+        <p className="mt-s-3 font-sans text-[13px] leading-relaxed text-unsupported">
+          {progress.error ?? "Ingest failed."}
+        </p>
+      ) : progress.status === "done" ? (
+        <p className="mt-s-3 font-sans text-[13px] leading-relaxed text-located">
+          Ready. <Link href={`/w/${WORKSPACE_ID}`} className="underline underline-offset-2">Open the workspace</Link>.
+        </p>
+      ) : (
+        latestMessage && <p className="mt-s-3 font-sans text-[13px] leading-relaxed text-ink-faint">{latestMessage}</p>
+      )}
+    </div>
+  );
+}
 
 /**
  * Add a paper.
@@ -59,8 +98,11 @@ const WORKSPACE_ID = "ws-1";
  * never called. A validation message that cannot fail is worse than none: it
  * tells the reader their file is fine when nothing looked at it.
  *
- * The parse pipeline behind the endpoint is still a stub, so a successful
- * response means queued, not analyzed, and the copy says exactly that.
+ * The parse -> generate pipeline behind the endpoint is real now
+ * (lib/services/ingest.ts), so a 202 opens a live SSE connection to
+ * GET /api/jobs/[id] and renders the actual stage-by-stage progress
+ * (JobProgressView above) instead of a static "queued, nothing happens next"
+ * notice.
  */
 export default function UploadPage() {
   const [mode, setMode] = useState<"file" | "url">("file");
@@ -68,15 +110,25 @@ export default function UploadPage() {
   const [url, setUrl] = useState("");
   const [licensed, setLicensed] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [progress, setProgress] = useState<JobProgress | null>(null);
   const [pending, setPending] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (!jobId) return;
+    const source = new EventSource(`/api/jobs/${jobId}`);
+    source.addEventListener("progress", (e) => setProgress(JSON.parse((e as MessageEvent).data) as JobProgress));
+    source.addEventListener("error", () => source.close());
+    return () => source.close();
+  }, [jobId]);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setNotice(null);
+    setJobId(null);
+    setProgress(null);
 
     if (mode === "file" && !file) return setError("Choose a PDF first.");
     if (mode === "url" && !url.trim()) return setError("Paste a link first.");
@@ -112,7 +164,11 @@ export default function UploadPage() {
         return;
       }
 
-      setNotice(describeQueued(body));
+      if (!body?.jobId) {
+        setError("The server accepted the upload but returned no job id.");
+        return;
+      }
+      setJobId(body.jobId);
       setFile(null);
       setUrl("");
       if (inputRef.current) inputRef.current.value = "";
@@ -146,12 +202,14 @@ export default function UploadPage() {
           <p className="mt-s-2 font-sans text-[14px] leading-relaxed text-ink-muted">
             Your paper is checked for real: file type, size, page count, whether
             it has a text layer, and whether this workspace already has it.
-            Parsing it into a graph is the next thing to land, so nothing is
-            generated from it yet. Until then, the fully grounded examples in{" "}
+            Accepted, it&rsquo;s actually parsed (PyMuPDF) and its pillars and notes
+            are generated and verified against the source -- not just queued.
+            6 of 21 generator types are implemented so far; the rest fill in
+            over time. See{" "}
             <Link href="/discover" className="text-accent-text underline underline-offset-2">
               the library
             </Link>{" "}
-            show what the output looks like.
+            for fully grounded examples in the meantime.
           </p>
         </div>
 
@@ -272,7 +330,7 @@ export default function UploadPage() {
           </label>
 
           {error && <ErrorBanner message={error} />}
-          {notice && <ErrorBanner message={notice} variant="warn" />}
+          {progress && <JobProgressView progress={progress} />}
 
           <div>
             <Button type="submit" disabled={pending}>

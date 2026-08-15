@@ -149,21 +149,33 @@ export async function runIngest(input: IngestInput): Promise<void> {
     };
 
     appendEvent(input.jobId, "Reading methods", "Classifying archetype and planning pillars.");
-    const result = await runOrchestrator({ workspaceId, paperId, paperTitle, chunks, numerics });
+    const result = await runOrchestrator({
+      workspaceId,
+      paperId,
+      paperTitle,
+      chunks,
+      numerics,
+      // Real incremental progress: these fire as each sub-stage actually
+      // completes (pillar planning, then each leaf generator as it resolves,
+      // concurrency-limited so they land spread over real elapsed time), not
+      // all at once after the whole fan-out finishes.
+      onProgress: (event) => {
+        if (event.type === "archetype") {
+          appendEvent(input.jobId, "Reading methods", `Classified as ${event.detail}.`);
+        } else if (event.type === "pillars") {
+          appendEvent(input.jobId, "Planning your workspace", event.detail);
+        } else {
+          appendEvent(input.jobId, "Writing notes", event.detail);
+        }
+      },
+    });
 
-    appendEvent(input.jobId, "Planning your workspace", `Planned ${result.pillarPlan.pillars.length} pillars.`);
+    appendEvent(input.jobId, "Locating anchors", "Verifying every claim against the source.");
 
     const okLeaves = result.leaves.filter(
       (l): l is typeof l & { node: GraphNode; evidence: NonNullable<(typeof l)["evidence"]> } =>
         l.status === "ok" && Boolean(l.node),
     );
-    appendEvent(
-      input.jobId,
-      "Writing notes",
-      `Generated ${okLeaves.length} of ${result.leaves.length} notes (${result.leaves.length - okLeaves.length} skipped or failed).`,
-    );
-
-    appendEvent(input.jobId, "Locating anchors", "Verifying every claim against the source.");
 
     const paperNode: GraphNode = {
       id: paperId,

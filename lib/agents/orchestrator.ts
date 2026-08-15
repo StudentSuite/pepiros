@@ -29,6 +29,15 @@ export interface OrchestratorInput {
   /** Whole-workspace chunks/numerics; filtered internally to this paper. */
   chunks: Chunk[];
   numerics: Numeric[];
+  /**
+   * Fired as each real sub-stage actually completes -- archetype
+   * classification, pillar planning, then once per leaf as its generator
+   * resolves (concurrency-limited, so these land spread over real elapsed
+   * time, not all at once). Lets a caller (lib/services/ingest.ts) report
+   * genuine incremental progress instead of only knowing "done" after the
+   * entire fan-out finishes.
+   */
+  onProgress?: (event: { type: "archetype" | "pillars" | "leaf"; detail: string }) => void;
 }
 
 export type LeafStatus = "ok" | "failed" | "unimplemented";
@@ -180,6 +189,7 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Orchest
     .map((c) => c.text)
     .join("\n\n");
   const archetype = await classifyArchetype({ title: input.paperTitle, excerpt });
+  input.onProgress?.({ type: "archetype", detail: archetype });
 
   const hasFigures = paperChunks.some((c) => c.kind === "figure_caption");
   const hasEquations = paperChunks.some((c) => c.kind === "equation");
@@ -190,6 +200,7 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Orchest
     hasEquations,
     contextBlock,
   });
+  input.onProgress?.({ type: "pillars", detail: `${pillarPlan.pillars.length} pillars planned` });
 
   const pillarNodes: GraphNode[] = pillarPlan.pillars.map((pillar, i) => ({
     id: `${input.paperId}-pillar-${pillar.key}`,
@@ -228,7 +239,11 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Orchest
           leaf.key,
           leaf.generator,
         ),
-      ) as Promise<LeafResult>;
+      ).then((result) => {
+        const r = result as LeafResult;
+        input.onProgress?.({ type: "leaf", detail: `${leaf.title} (${r.status})` });
+        return r;
+      }) as Promise<LeafResult>;
     }),
   );
 
