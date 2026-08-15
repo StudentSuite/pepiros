@@ -11,6 +11,7 @@ import { mockSession, type MockUser } from "@/lib/mock/session";
 
 const NAV_LINKS = [
   { href: "/how-it-works", label: "How it works" },
+  { href: "/how-to-use", label: "Guide" },
   { href: "/mcp", label: "For agents" },
   { href: "/discover", label: "Discover" },
   { href: "/about", label: "About" },

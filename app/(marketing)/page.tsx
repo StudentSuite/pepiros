@@ -196,7 +196,7 @@ export default function MarketingPage() {
                   Browse the library
                 </Link>
                 <Link
-                  href="/login?next=%2Fw%2Fws-1"
+                  href="/w/ws-1"
                   className={buttonClassName("secondary")}
                 >
                   Try the demo workspace

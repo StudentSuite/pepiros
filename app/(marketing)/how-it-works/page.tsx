@@ -266,7 +266,7 @@ export default function HowItWorksPage() {
       {/* CTA */}
       <section className="border-t border-border">
         <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-center gap-s-3 px-6 py-s-8">
-          <Link href="/login?next=%2Fw%2Fws-1" className={buttonClassName("primary")}>
+          <Link href="/w/ws-1" className={buttonClassName("primary")}>
             Try the demo workspace
           </Link>
           <Link href="/docs" className={buttonClassName("secondary")}>

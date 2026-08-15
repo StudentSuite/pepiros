@@ -35,7 +35,7 @@ export function Hero() {
         </p>
 
         <div className="mt-s-7 flex flex-wrap items-center justify-center gap-s-3">
-          <Link href="/login?next=%2Fw%2Fws-1" className={buttonClassName("primary")}>
+          <Link href="/w/ws-1" className={buttonClassName("primary")}>
             Try the demo workspace
           </Link>
           <Link href="/how-it-works" className={buttonClassName("secondary")}>

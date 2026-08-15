@@ -3,13 +3,13 @@ import { Logo } from "@/components/ui/Logo";
 
 const PRODUCT_LINKS = [
   { href: "/how-it-works", label: "How it works" },
+  { href: "/how-to-use", label: "Guide" },
   { href: "/mcp", label: "For agents" },
   { href: "/docs", label: "Docs" },
   { href: "/discover", label: "Discover" },
-  // /workspaces is behind middleware, so a signed-out visitor clicking this
-  // used to land on /login with no explanation. Route through login, which
-  // shows the guest credentials, and carry them to the reader afterwards.
-  { href: "/login?next=%2Fw%2Fws-1", label: "Try the demo" },
+  // Straight to the reader: /w is open to guests now, so routing through
+  // /login would ask for credentials this no longer needs.
+  { href: "/w/ws-1", label: "Try the demo" },
 ] as const;
 
 const PROJECT_LINKS = [
