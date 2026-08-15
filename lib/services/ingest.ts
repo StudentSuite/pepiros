@@ -8,7 +8,8 @@ import type { Chunk, GraphEdge, GraphNode, Numeric, Paper, Workspace } from "@/t
 import { runOrchestrator } from "@/lib/agents/orchestrator";
 import { fetchWorkspace } from "./workspace";
 import { getIngestedWorkspace, setIngestedWorkspace } from "./ingestStore";
-import { appendEvent, failJob } from "./jobs";
+import { appendEvent, createJob, failJob } from "./jobs";
+import { findDuplicate, resolveSourceUrl, type DuplicateMatch, type ResolvedSource } from "./upload";
 
 /**
  * Orchestrates parse -> generate -> merge for one paper (docs/PLAN-V1.md
@@ -219,4 +220,53 @@ export async function runIngest(input: IngestInput): Promise<void> {
   } finally {
     await unlink(tmpPath).catch(() => {});
   }
+}
+
+export type QueueUrlIngestResult =
+  | { jobId: string; source: ResolvedSource }
+  | { error: "unsupported_source" | "duplicate"; detail: string; duplicate?: DuplicateMatch };
+
+/**
+ * Shared by POST /api/ingest's URL path and the MCP `add_paper` tool
+ * (docs/PLAN-V1.md §13.2), so a paper queued from either surface goes
+ * through one duplicate check and one job/ingest kickoff, not two that could
+ * drift (CLAUDE.md's service-layer boundary).
+ */
+export async function queueUrlIngest(workspaceId: string, url: string): Promise<QueueUrlIngestResult> {
+  const resolved = resolveSourceUrl(url);
+  if (resolved.kind === "unsupported") {
+    return { error: "unsupported_source", detail: resolved.message ?? "Unsupported link." };
+  }
+
+  const workspace = await fetchWorkspace(workspaceId);
+  const duplicate = findDuplicate({ title: url, doi: resolved.doi ?? null }, workspace.papers);
+  if (duplicate) {
+    return {
+      error: "duplicate",
+      detail: `This looks like "${duplicate.title}", already in this workspace.`,
+      duplicate,
+    };
+  }
+
+  const job = createJob({ workspaceId, source: { kind: resolved.kind, url: resolved.pdfUrl ?? url, doi: resolved.doi } });
+
+  if (resolved.kind === "doi") {
+    // DOI -> PDF resolution needs a resolver (Unpaywall) that isn't wired up
+    // yet -- an honest failure on the job, not a silent hang.
+    failJob(job.id, "DOI resolution isn't implemented yet. Paste a direct PDF link, or upload the file.");
+    return { jobId: job.id, source: resolved };
+  }
+
+  void (async () => {
+    try {
+      const res = await fetch(resolved.pdfUrl!);
+      if (!res.ok) throw new Error(`Fetching the PDF failed (${res.status}).`);
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      await runIngest({ jobId: job.id, workspaceId, paperTitle: url, sourceUrl: resolved.pdfUrl ?? url, bytes });
+    } catch (err) {
+      failJob(job.id, err instanceof Error ? err.message : String(err));
+    }
+  })();
+
+  return { jobId: job.id, source: resolved };
 }

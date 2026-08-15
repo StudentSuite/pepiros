@@ -7,6 +7,7 @@ import {
   ReadingColumn,
 } from "@/components/reading/Article";
 import { AgentMock } from "@/components/mockups/ReaderMock";
+import { LIVE_TOOLS, PLANNED_TOOLS, type ToolGroup } from "@/lib/mcp/registry";
 
 export const metadata: Metadata = {
   title: "MCP Server",
@@ -15,39 +16,17 @@ export const metadata: Metadata = {
 };
 
 /**
- * The tools that are actually registered in mcp/tools/index.ts.
- *
- * This list previously advertised twelve, of which only eight existed, so an
- * agent reading the page would call a tool that was not there. Anything not yet
- * built is in PLANNED below and labelled as such.
+ * Grouped straight from lib/mcp/registry.ts -- the single source of truth
+ * mcp/tools/index.ts's actual registrations are tested against
+ * (lib/mcp/registry.test.ts). This page previously hand-maintained its own
+ * copy of this list and drifted from what was actually registered; it can't
+ * anymore, since there's nothing left here to drift.
  */
-const TOOLS = [
-  {
-    group: "Search and read",
-    items: [
-      { name: "list_papers", args: "workspace_id", desc: "Titles, authors, year, archetype, status." },
-      { name: "search_paper", args: "workspace_id, query, paper_id?, k?", desc: "Returns [C7 | Methods | p.4] chunks plus verbatim text." },
-      { name: "get_outline", args: "workspace_id", desc: "Pillars, leaf titles and evidence counts, as a compact tree." },
-      { name: "get_node", args: "node_id", desc: "A node's body, with anchors resolved inline to quote, page and deep link." },
-    ],
-  },
-  {
-    group: "Verify and write",
-    items: [
-      { name: "verify_claim", args: "paper_id, claim, quote?", desc: "Re-verifies server-side and returns quote_located, paraphrase, or unsupported, with a match score and page." },
-      { name: "create_node", args: "workspace_id, parent_id?, title, body_md, evidence[]", desc: "Writes an audited node in. Re-verifies server-side, and never trusts a client-asserted tier." },
-    ],
-  },
-  {
-    group: "Audit",
-    items: [
-      { name: "find_contradictions", args: "workspace_id, concept?", desc: "Pairs with two-sided evidence, both quotes, both deep links." },
-      { name: "paper_facts", args: "paper_id, kind", desc: "Numeric ledger, coverage, references, or does-not-establish, for one paper." },
-    ],
-  },
-] as const;
-
-const PLANNED = ["list_workspaces", "create_workspace", "add_paper", "get_job"] as const;
+const GROUPS: ToolGroup[] = ["Search and read", "Verify and write", "Audit", "Workspace and ingest"];
+const TOOLS = GROUPS.map((group) => ({
+  group,
+  items: LIVE_TOOLS.filter((t) => t.group === group),
+})).filter((g) => g.items.length > 0);
 
 export default function McpPage() {
   return (
@@ -80,7 +59,7 @@ export default function McpPage() {
         <ArticleRule />
 
         <h2 className="font-serif text-[1.45rem] leading-snug text-ink">
-          Eight tools, live today
+          {LIVE_TOOLS.length} tools, live today
         </h2>
         <div className="mt-s-5 flex flex-col gap-s-6">
           {TOOLS.map((group) => (
@@ -99,7 +78,7 @@ export default function McpPage() {
                       ({t.args})
                     </code>
                     <p className="mt-1 font-sans text-[14px] leading-relaxed text-ink-muted">
-                      {t.desc}
+                      {t.description}
                     </p>
                   </li>
                 ))}
@@ -108,26 +87,23 @@ export default function McpPage() {
           ))}
         </div>
 
-        <div className="mt-s-6 rounded-md border border-dashed border-border p-s-4">
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
-            Planned, not yet registered
-          </p>
-          <p className="mt-s-2 font-sans text-[14px] leading-relaxed text-ink-muted">
-            {PLANNED.map((p) => (
-              <code
-                key={p}
-                className="mr-2 inline-block break-words font-mono text-[13px] text-ink"
-              >
-                {p}
-              </code>
-            ))}
-          </p>
-          <p className="mt-s-2 font-sans text-[13px] leading-relaxed text-ink-faint">
-            Workspace management and ingest are not exposed over MCP yet. They
-            are listed here so an agent does not discover their absence by
-            calling one.
-          </p>
-        </div>
+        {PLANNED_TOOLS.length > 0 && (
+          <div className="mt-s-6 rounded-md border border-dashed border-border p-s-4">
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+              Planned, not yet registered
+            </p>
+            <p className="mt-s-2 font-sans text-[14px] leading-relaxed text-ink-muted">
+              {PLANNED_TOOLS.map((t) => (
+                <code key={t.name} className="mr-2 inline-block break-words font-mono text-[13px] text-ink">
+                  {t.name}
+                </code>
+              ))}
+            </p>
+            <p className="mt-s-2 font-sans text-[13px] leading-relaxed text-ink-faint">
+              Listed here so an agent does not discover their absence by calling one.
+            </p>
+          </div>
+        )}
 
         <ArticleRule />
 

@@ -5,14 +5,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { fetchWorkspace } from "@/lib/services/workspace";
-import {
-  MAX_UPLOAD_BYTES,
-  findDuplicate,
-  resolveSourceUrl,
-  validateUpload,
-} from "@/lib/services/upload";
+import { MAX_UPLOAD_BYTES, findDuplicate, validateUpload } from "@/lib/services/upload";
 import { createJob, failJob } from "@/lib/services/jobs";
-import { runIngest } from "@/lib/services/ingest";
+import { runIngest, queueUrlIngest } from "@/lib/services/ingest";
 
 /**
  * Fire-and-forget: the route returns 202 with a jobId immediately (§6), and
@@ -51,55 +46,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "invalid_body" }, { status: 400 });
     }
 
-    const resolved = resolveSourceUrl(parsed.data.url);
-    if (resolved.kind === "unsupported") {
-      return rejection(resolved.message ?? "Unsupported link.", "unsupported_source");
-    }
-
-    const workspace = await fetchWorkspace(parsed.data.workspaceId);
-    const duplicate = findDuplicate(
-      { title: parsed.data.url, doi: resolved.doi ?? null },
-      workspace.papers,
-    );
-    if (duplicate) {
-      // Not an error: §6 wants a merge-or-open-existing prompt, so this is a
-      // 409 the UI can offer a choice on rather than a hard refusal.
-      return NextResponse.json(
-        { error: "duplicate", duplicate, detail: `This looks like "${duplicate.title}", already in this workspace.` },
-        { status: 409 },
-      );
-    }
-
-    const job = createJob({
-      workspaceId: parsed.data.workspaceId,
-      source: { kind: resolved.kind, url: resolved.pdfUrl ?? parsed.data.url, doi: resolved.doi },
-    });
-
-    if (resolved.kind === "doi") {
-      // DOI -> PDF resolution needs a resolver (Unpaywall) that isn't wired
-      // up yet -- an honest failure on the job, not a silent hang.
-      failJob(job.id, "DOI resolution isn't implemented yet. Paste a direct PDF link, or upload the file.");
-      return NextResponse.json({ jobId: job.id, source: resolved }, { status: 202 });
-    }
-
-    void (async () => {
-      try {
-        const res = await fetch(resolved.pdfUrl!);
-        if (!res.ok) throw new Error(`Fetching the PDF failed (${res.status}).`);
-        const bytes = new Uint8Array(await res.arrayBuffer());
-        startIngest({
-          jobId: job.id,
-          workspaceId: parsed.data.workspaceId,
-          paperTitle: parsed.data.url,
-          sourceUrl: resolved.pdfUrl ?? parsed.data.url,
-          bytes,
-        });
-      } catch (err) {
-        failJob(job.id, err instanceof Error ? err.message : String(err));
+    const result = await queueUrlIngest(parsed.data.workspaceId, parsed.data.url);
+    if ("error" in result) {
+      if (result.error === "duplicate") {
+        // Not an error: §6 wants a merge-or-open-existing prompt, so this is
+        // a 409 the UI can offer a choice on rather than a hard refusal.
+        return NextResponse.json({ error: "duplicate", duplicate: result.duplicate, detail: result.detail }, { status: 409 });
       }
-    })();
+      return rejection(result.detail, result.error);
+    }
 
-    return NextResponse.json({ jobId: job.id, source: resolved }, { status: 202 });
+    return NextResponse.json({ jobId: result.jobId, source: result.source }, { status: 202 });
   }
 
   // --- File upload path ---

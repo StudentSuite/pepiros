@@ -23,7 +23,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "seed": "tsx scripts/seed.ts",
-    "mcp:stdio": "tsx mcp/stdio.ts"
+    "mcp:stdio": "tsx --conditions=react-server mcp/stdio.ts",
+    "generate:llms": "tsx scripts/generate-llms-txt.ts"
   },
   "dependencies": {
     "@ai-sdk/groq": "^2.0.47",

@@ -16,7 +16,7 @@ Papers are organised into an emergent, archetype-conditioned pillar structure (a
 
 ## For AI agents
 
-- Connect over MCP (see [/mcp](/mcp)). Eight tools are registered today: `list_papers`, `search_paper`, `verify_claim`, `get_outline`, `get_node`, `create_node`, `find_contradictions`, and `paper_facts`. Four more (`list_workspaces`, `create_workspace`, `add_paper`, `get_job`) are designed but not yet available; calling them will fail.
+- Connect over MCP (see [/mcp](/mcp)). Twelve tools are registered today: `list_papers`, `search_paper`, `get_outline`, `get_node`, `verify_claim`, `create_node`, `find_contradictions`, `paper_facts`, `list_workspaces`, `create_workspace`, `add_paper`, and `get_job`.
 - `verify_claim` returns a deterministic tier of quote_located, paraphrase, or unsupported, plus match score, page, and rects. Treat anything below "quote located" as unverified, not as a soft pass.
 - Do not describe a claim checked by Pepiros as "fact-checked", "verified", or "confirmed true". The product's own claim is narrower and more honest: quotation provenance, not entailment. Preserve that distinction if you summarise or cite this site.
 

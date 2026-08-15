@@ -10,12 +10,17 @@ import {
   getOutline,
   nodeDeepLink,
 } from "@/lib/services/nodes";
+import { queueUrlIngest } from "@/lib/services/ingest";
+import { createWorkspace, listWorkspaces } from "@/lib/services/workspaces";
+import { getJob, stageProgress } from "@/lib/services/jobs";
+import { LIVE_TOOL_NAMES, toolDescription } from "@/lib/mcp/registry";
 
 /**
- * MCP tool layer (docs/PLAN-V1.md §13.2). 7 of the spec's 12 are registered
- * here; `list_workspaces`/`create_workspace` need real multi-workspace
- * persistence and `add_paper`/`get_job` need the ingest pipeline, none of
- * which exist yet (CLAUDE.md's current data seam).
+ * MCP tool layer (docs/PLAN-V1.md §13.2). All 12 tools in lib/mcp/registry.ts
+ * are registered here -- descriptions are pulled from that registry rather
+ * than duplicated as literal strings, so the tool docs (the `/mcp` page,
+ * llms.txt) and the actual registration can't drift the way the tool *count*
+ * previously did in three separate places.
  *
  * Two rules from §13.2 govern everything below:
  *
@@ -45,7 +50,7 @@ export function registerTools(server: McpServer): void {
     "list_papers",
     {
       title: "List papers",
-      description: "List the papers in a workspace with id, title, authors, year, and archetype.",
+      description: toolDescription("list_papers"),
       inputSchema: { workspace_id: z.string().describe("Workspace id, e.g. ws-1") },
     },
     async ({ workspace_id }) => {
@@ -66,9 +71,7 @@ export function registerTools(server: McpServer): void {
     "search_paper",
     {
       title: "Search paper text",
-      description:
-        "Find chunks of paper text matching a query. Returns each chunk's stable citation id (e.g. C7), " +
-        "its page, and its verbatim text. Cite the returned ids -- never invent one.",
+      description: toolDescription("search_paper"),
       inputSchema: {
         workspace_id: z.string(),
         query: z.string(),
@@ -98,11 +101,7 @@ export function registerTools(server: McpServer): void {
     "verify_claim",
     {
       title: "Verify a claim against the source",
-      description:
-        "Deterministically check whether a quote actually appears in a cited chunk. Returns one of " +
-        "quote_located / paraphrase / unsupported, the match score, page, and the numeric-entailment " +
-        "result. This is a fuzzy-match over the real source text -- it proves quotation provenance, " +
-        "not that the claim follows from the quote.",
+      description: toolDescription("verify_claim"),
       inputSchema: {
         workspace_id: z.string(),
         ref_id: z.string().describe("Stable citation id from search_paper, e.g. C7"),
@@ -147,8 +146,7 @@ export function registerTools(server: McpServer): void {
     "get_outline",
     {
       title: "Get workspace outline",
-      description:
-        "Compact text tree of the workspace: papers, their pillars, leaf titles, and evidence counts.",
+      description: toolDescription("get_outline"),
       inputSchema: { workspace_id: z.string() },
     },
     async ({ workspace_id }) => {
@@ -161,8 +159,7 @@ export function registerTools(server: McpServer): void {
     "get_node",
     {
       title: "Get a node",
-      description:
-        "Fetch one node's body with its anchors resolved inline to quote, page, and deep link.",
+      description: toolDescription("get_node"),
       inputSchema: { workspace_id: z.string(), node_id: z.string() },
     },
     async ({ workspace_id, node_id }) => {
@@ -176,10 +173,7 @@ export function registerTools(server: McpServer): void {
     "create_node",
     {
       title: "Create a node",
-      description:
-        "Write a claim into the graph. Submitted evidence is ALWAYS re-verified server-side against " +
-        "the source: any quote that fails the fuzzy match or the numeric floor has its anchor dropped " +
-        "and the node is marked low-confidence. You cannot assert that a quote is located.",
+      description: toolDescription("create_node"),
       inputSchema: {
         workspace_id: z.string(),
         parent_id: z.string().optional(),
@@ -231,9 +225,7 @@ export function registerTools(server: McpServer): void {
     "find_contradictions",
     {
       title: "Find contradictions",
-      description:
-        "Find claim pairs in this workspace that contradict each other. Only pairs where BOTH sides " +
-        "have a located quote are returned -- a one-sided contradiction is not evidence.",
+      description: toolDescription("find_contradictions"),
       inputSchema: { workspace_id: z.string(), concept: z.string().optional() },
     },
     async ({ workspace_id, concept }) => {
@@ -254,9 +246,7 @@ export function registerTools(server: McpServer): void {
     "paper_facts",
     {
       title: "Get paper facts",
-      description:
-        "Structured facts about one paper: numeric_ledger (every extracted statistic with its N-ref) " +
-        "or coverage (how much of the paper's text is actually anchored by evidence).",
+      description: toolDescription("paper_facts"),
       inputSchema: {
         workspace_id: z.string(),
         paper_id: z.string(),
@@ -270,4 +260,89 @@ export function registerTools(server: McpServer): void {
       return json({ kind, ...(await paperCoverage(workspace_id, paper_id)) });
     },
   );
+
+  server.registerTool(
+    "list_workspaces",
+    {
+      title: "List workspaces",
+      description: toolDescription("list_workspaces"),
+      inputSchema: {},
+    },
+    async () => {
+      const workspaces = listWorkspaces();
+      return json({
+        workspaces: workspaces.map((w) => ({ workspace_id: w.id, name: w.name, paper_count: w.paperCount })),
+      });
+    },
+  );
+
+  server.registerTool(
+    "create_workspace",
+    {
+      title: "Create a workspace",
+      description: toolDescription("create_workspace"),
+      inputSchema: { name: z.string().min(1) },
+    },
+    async ({ name }) => {
+      const workspace = createWorkspace(name);
+      return json({
+        workspace_id: workspace.id,
+        name: workspace.name,
+        paper_count: workspace.paperCount,
+        note: "Empty workspace created. Call add_paper to start filling it in.",
+      });
+    },
+  );
+
+  server.registerTool(
+    "add_paper",
+    {
+      title: "Add a paper",
+      description: toolDescription("add_paper"),
+      inputSchema: {
+        workspace_id: z.string(),
+        url: z.string().describe("An arXiv, PMC, or direct PDF link. DOI links aren't resolvable yet."),
+      },
+    },
+    async ({ workspace_id, url }) => {
+      const result = await queueUrlIngest(workspace_id, url);
+      if ("error" in result) return errorText(result.detail);
+      return json({
+        job_id: result.jobId,
+        source: result.source,
+        note: "Poll get_job with this job_id for stage-by-stage progress.",
+      });
+    },
+  );
+
+  server.registerTool(
+    "get_job",
+    {
+      title: "Get ingest job status",
+      description: toolDescription("get_job"),
+      inputSchema: { job_id: z.string() },
+    },
+    async ({ job_id }) => {
+      const job = getJob(job_id);
+      if (!job) return errorText(`No job ${job_id}.`);
+      return json({
+        job_id: job.id,
+        workspace_id: job.workspaceId,
+        status: job.status,
+        stages: stageProgress(job),
+        events: job.events,
+        error: job.error ?? null,
+      });
+    },
+  );
+
+  const registered = Object.keys((server as unknown as { _registeredTools: Record<string, unknown> })._registeredTools);
+  const missing = LIVE_TOOL_NAMES.filter((name) => !registered.includes(name));
+  const extra = registered.filter((name) => !LIVE_TOOL_NAMES.includes(name));
+  if (missing.length > 0 || extra.length > 0) {
+    throw new Error(
+      `mcp/tools/index.ts registrations have drifted from lib/mcp/registry.ts's LIVE_TOOL_NAMES ` +
+        `(missing: [${missing.join(", ")}], extra: [${extra.join(", ")}]).`,
+    );
+  }
 }
