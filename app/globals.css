@@ -3,36 +3,55 @@
 @tailwind utilities;
 
 /*
- * Design system: "lab notebook at night" (docs/PLAN-V1.md §14), Editorial
- * Paper direction (docs/PLAN-V1.md §22.4, design/DIRECTIONS.md). Dark-first,
- * low-chroma chrome; paper-white reading surfaces sit on that chrome, leaned
- * warmer and grainier than the base thesis; pillar colour is structural
- * (shared by edges/borders/chips), not decorative. Full token rationale:
- * docs/PLAN-V1.md §14.2 and §22.4.
+ * Design system: "soft glass over papyrus". Day-first (day is the default
+ * theme), with a warm-charcoal dark counterpart. Two hard rules govern the
+ * whole system:
+ *
+ *   1. SURFACE RULE. Anything carrying body text to read is OPAQUE (--paper
+ *      in both themes, with grain). Anything that is chrome, a control, or a
+ *      floating panel is SOFT GLASS (--glass-*, backdrop-filter). Glass never
+ *      sits under long-form reading text.
+ *   2. PILLAR RULE. The 7 pillar hues are theme-invariant and are FILLS only
+ *      (canvas nodes, chart series, chip dots, edges). They are never used
+ *      for text. Text uses --pillar-N-text, which is redefined per theme.
+ *
+ * The pillar palette itself is the canonical Editorial Paper set, adopted
+ * from Anay's reference board 2026-08-10 (docs/PLAN-V1.md §22.4) and kept
+ * unchanged through the 2026-08-14 redesign. Everything around it (surfaces,
+ * ink, borders, elevation, glass) was rebuilt.
  */
 :root {
-  /* Surfaces */
-  --surface: #14161a;
-  --surface-raised: #1b1e24;
-  --surface-sunken: #0d0e11;
+  /* Surfaces -- parchment ground. Glass panels sit on top of this. */
+  --surface: #f7f3ea;
+  --surface-raised: #fdfbf6;
+  --surface-sunken: #efe9dc;
 
-  /* Reading surface -- warmer + higher-contrast than the base thesis per
-     Editorial Paper (docs/PLAN-V1.md §22.4). Always light, even on dark chrome. */
-  --paper: #f5f1e8;
-  --paper-muted: #ece5d5;
+  /* Reading surface. OPAQUE, always -- see SURFACE RULE above. */
+  --paper: #fdfbf6;
+  --paper-muted: #f2ecdf;
 
-  --ink: #e8e6e1;
-  --ink-muted: #a3a29c;
-  --ink-faint: #6b6a66;
+  --ink: #1c1a15;
+  --ink-muted: #55504a;
+  --ink-faint: #7d776a;
 
-  --border: #2a2d33;
-  --border-strong: #3c4048;
+  --border: #ded5c4;
+  --border-strong: #c6baa3;
 
-  /* Accent -- interactive/focus/link, distinct from pillar colours */
+  /* Accent -- interactive/focus/link, distinct from pillar colours.
+     --accent is the brand fill; --accent-text is the contrast-safe variant
+     for text and links. Dusk on parchment measures ~4.9:1, which clears AA
+     but leaves no headroom for the muted states, so text gets its own hue. */
   --accent: #6e6aa7;
-  --accent-hover: #8480ba;
-  --accent-sunk: #585480;
-  --accent-wash: #6e6aa71a;
+  --accent-text: #55518c;
+  --accent-hover: #5c589a;
+  --accent-sunk: #464275;
+  --accent-wash: #6e6aa714;
+
+  /* Glass -- chrome only, never under reading text. */
+  --glass-bg: rgba(253, 251, 246, 0.62);
+  --glass-edge: rgba(255, 255, 255, 0.7);
+  --glass-shadow: 0 8px 32px rgba(60, 48, 28, 0.1);
+  --glass-blur: 16px;
 
   /* Pillar palette -- canonical Editorial Paper set, adopted from Anay's
      reference board 2026-08-10 (docs/PLAN-V1.md §22.4). Assigned in planner
@@ -45,13 +64,29 @@
   --pillar-6: #d4b26a; /* ochre */
   --pillar-7: #5f8d86; /* teal  */
 
+  /* Pillar TEXT variants. The fills above are mid-tone by design and most of
+     them fail 4.5:1 on parchment (stone measures ~1.9:1 on --surface), so any
+     pillar-coloured *text* uses these instead. Redefined in .dark below, where
+     the source hues already clear contrast on warm charcoal and the two sets
+     collapse back together. This pair is what replaced the old
+     `.surface-reading .text-ink-muted` contrast-cascade hack, which existed
+     only because there was no light theme to define against. */
+  --pillar-1-text: #6b655a; /* stone */
+  --pillar-2-text: #8a6b47; /* clay  */
+  --pillar-3-text: #4e5a45; /* sage  */
+  --pillar-4-text: #55518c; /* dusk  */
+  --pillar-5-text: #8a4141; /* rose  */
+  --pillar-6-text: #8a6b22; /* ochre */
+  --pillar-7-text: #3b5f59; /* teal  */
+
   /* Evidence tiers (docs/PLAN-V1.md §4.4, §9.4) -- two-tier honesty framing,
-     colour is never the only channel (see §15). */
-  --located: #5f8d86; /* teal, quote_located, deterministic */
-  --paraphrase: #c4a78a; /* clay, 0.75-0.92 match */
-  --unsupported: #b46a6a; /* rose, dropped anchor */
-  --inference: #b8b2a4; /* stone, model-generated, not verified */
-  --ungrounded: #d4b26a; /* ochre, answered without sources */
+     colour is never the only channel (see §15). These are label text, so they
+     derive from the -text variants, not the raw fills. */
+  --located: var(--pillar-7-text); /* teal, quote_located, deterministic */
+  --paraphrase: var(--pillar-2-text); /* clay, 0.75-0.92 match */
+  --unsupported: var(--pillar-5-text); /* rose, dropped anchor */
+  --inference: var(--pillar-1-text); /* stone, model-generated, not verified */
+  --ungrounded: var(--pillar-6-text); /* ochre, answered without sources */
 
   /* --font-serif, --font-grotesque, --font-mono are set by next/font on
      <html> in app/layout.tsx (real webfonts, not just a named fallback
@@ -78,11 +113,25 @@
   --r-xl: 20px;
   --r-full: 999px;
 
-  /* Elevation -- borders plus low-alpha shadow, not big blurs */
-  --e-1: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --e-2: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--border);
-  --e-3: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--border-strong);
+  /* Elevation -- borders plus low-alpha shadow, not big blurs. Day shadows are
+     warm-brown rather than black; pure black on parchment reads as dirt. */
+  --e-1: 0 1px 2px rgba(60, 48, 28, 0.08);
+  --e-2: 0 4px 12px rgba(60, 48, 28, 0.1), 0 0 0 1px var(--border);
+  --e-3: 0 16px 40px rgba(60, 48, 28, 0.14), 0 0 0 1px var(--border-strong);
   --glow-accent: 0 0 0 3px var(--accent-wash);
+
+  /* Paper grain. Multiply darkens correctly on parchment; on the dark theme it
+     crushes to near-black, so .dark switches to overlay at a lower opacity. */
+  --grain-blend: multiply;
+  --grain-opacity: 0.09;
+
+  /* Hero art correction. The generated hero pair renders its quote-lines
+     hotter and more neon than brand teal/dusk. Rather than regenerate, the
+     art is pulled back toward the palette at render time. Dial --hero-saturate
+     to 1 to see the raw generation. */
+  --hero-saturate: 0.74;
+  --hero-contrast: 1.02;
+  --hero-brightness: 1;
 
   /* Motion. Editorial Paper: durations +40% over the base thesis, ease-out
      only -- never spring. --ease-spring stays defined for token completeness
@@ -91,6 +140,7 @@
   --dur-base: 280ms;
   --dur-slow: 450ms;
   --dur-canvas: 590ms;
+  --dur-hero: 620ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-inout: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -102,39 +152,156 @@
   --chat-collapsed: 56px;
   --chat-open: min(46vh, 420px);
   --topbar: 52px;
+
+  /* ---- shadcn/ui bridge ----------------------------------------------
+     shadcn's generated components address colour through its own token
+     names, in space-separated HSL triplets consumed as hsl(var(--x)).
+     Rather than rename either system, these are defined alongside the
+     Pepiros tokens and hold the same values, so shadcn components inherit
+     the papyrus palette with no per-component overrides.
+
+     ONE COLLISION, handled deliberately: shadcn's `--accent` means "subtle
+     hover surface", while Pepiros' `--accent` is the dusk brand colour.
+     Both cannot own the name. shadcn's meaning is remapped to `subtle`
+     (--subtle / --subtle-foreground, exposed as bg-subtle in Tailwind), and
+     vendored shadcn components get bg-accent -> bg-subtle on the way in.
+     Pepiros keeps `accent` for the brand. Every other shadcn token is either
+     disjoint from Pepiros' set or means exactly the same thing (--border). */
+  --background: 41 45% 94%;
+  --foreground: 43 14% 10%;
+  --card: 43 64% 98%;
+  --card-foreground: 43 14% 10%;
+  --popover: 43 64% 98%;
+  --popover-foreground: 43 14% 10%;
+  --primary: 244 26% 54%;
+  --primary-foreground: 43 64% 98%;
+  --secondary: 41 37% 90%;
+  --secondary-foreground: 43 14% 10%;
+  --muted: 41 37% 90%;
+  --muted-foreground: 33 7% 31%;
+  --subtle: 41 37% 90%;
+  --subtle-foreground: 43 14% 10%;
+  --destructive: 0 36% 40%;
+  --destructive-foreground: 43 64% 98%;
+  --input: 39 28% 82%;
+  --ring: 244 26% 54%;
+  --radius: 10px;
 }
 
-/* Reading surfaces (PDF pane, node body copy) stay paper-toned even though
-   chrome is dark -- the reading surface is not the app surface. */
+/*
+ * DARK THEME -- warm charcoal, never blue-black (brand rule, see
+ * design/PEPIROS-BRAND/README.txt). Only the tokens that must change are
+ * redefined here; the 7 pillar fills, spacing, radii, motion and layout
+ * dimensions are theme-invariant and stay in :root.
+ */
+.dark {
+  --surface: #16181b;
+  --surface-raised: #1e2126;
+  --surface-sunken: #0b0c0e;
+
+  /* Reading surface in dark is warm dark, NOT parchment -- a parchment pane
+     on a charcoal app is a flashlight in the face at night. Still opaque. */
+  --paper: #1b1815;
+  --paper-muted: #241f1a;
+
+  --ink: #edeae3;
+  --ink-muted: #a8a296;
+  --ink-faint: #756f63;
+
+  --border: #2a2d33;
+  --border-strong: #3c4048;
+
+  --accent: #6e6aa7;
+  --accent-text: #9b97d4;
+  --accent-hover: #8480ba;
+  --accent-sunk: #585480;
+  --accent-wash: #6e6aa71a;
+
+  --glass-bg: rgba(30, 33, 38, 0.55);
+  --glass-edge: rgba(255, 255, 255, 0.07);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+
+  /* On warm charcoal the source pillar hues already clear 4.5:1, so the text
+     variants collapse back onto the fills. */
+  --pillar-1-text: var(--pillar-1);
+  --pillar-2-text: var(--pillar-2);
+  --pillar-3-text: var(--pillar-3);
+  --pillar-4-text: var(--pillar-4);
+  --pillar-5-text: var(--pillar-5);
+  --pillar-6-text: var(--pillar-6);
+  --pillar-7-text: var(--pillar-7);
+
+  --e-1: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --e-2: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--border);
+  --e-3: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--border-strong);
+
+  /* multiply on a dark ground crushes the grain to black; overlay keeps it */
+  --grain-blend: overlay;
+  --grain-opacity: 0.05;
+
+  /* shadcn bridge, dark */
+  --background: 216 10% 10%;
+  --foreground: 42 22% 91%;
+  --card: 217 12% 13%;
+  --card-foreground: 42 22% 91%;
+  --popover: 217 12% 13%;
+  --popover-foreground: 42 22% 91%;
+  --primary: 244 26% 54%;
+  --primary-foreground: 42 22% 91%;
+  --secondary: 217 12% 16%;
+  --secondary-foreground: 42 22% 91%;
+  --muted: 217 12% 16%;
+  --muted-foreground: 40 9% 62%;
+  --subtle: 217 12% 16%;
+  --subtle-foreground: 42 22% 91%;
+  --destructive: 0 33% 56%;
+  --destructive-foreground: 42 22% 91%;
+  --input: 220 10% 18%;
+  --ring: 244 26% 54%;
+}
+
+/*
+ * LEGACY, FROZEN. `.surface-reading` predates the light theme. It forced an
+ * always-light paper pane onto dark-only chrome, and ~53 call sites across 13
+ * files hardcode `text-[#1c1a15]` inside it because the surface could be
+ * counted on never to change tone.
+ *
+ * It is therefore pinned to literal values rather than being pointed at
+ * --paper/--ink. Wiring it to the tokens would flip these panes to warm dark
+ * in the dark theme and leave every one of those hardcoded near-black strings
+ * sitting on a near-black card.
+ *
+ * Migration target is `bg-paper text-ink`, which IS theme-aware. Each surface
+ * moves as it gets rebuilt; when the last call site is gone, this block goes
+ * with it. Do not add new usages.
+ *
+ * The old scoped contrast cascade that lived here (re-colouring
+ * .text-ink-muted / .text-ink-faint / .text-unsupported to survive on paper)
+ * is deleted: those tokens are now correct against their own theme's surface,
+ * and inside this pinned block the local overrides below cover it.
+ */
 .surface-reading {
-  background-color: var(--paper);
+  background-color: #f5f1e8;
   color: #1c1a15;
-}
 
-/* FormField's label/hint/error text hardcodes text-ink-muted / text-ink-faint /
-   text-unsupported, calibrated for dark chrome. Rendered inside a
-   `.surface-reading` paper panel those fail or sit at the edge of WCAG AA
-   (label/hint ~2.27:1, error ~3.57:1 against --paper). FormField itself is
-   off-limits (Global Constraints: reuse as-is), so the fix is a single scoped
-   cascade rule here rather than a per-page Tailwind descendant-variant
-   override -- previously this was copy-pasted into 5 different pages
-   (login, signup, reset-password, upload, welcome) and had already drifted
-   into 3 slightly different class strings. Scoped under `.surface-reading` so
-   it never touches `text-ink-muted` / `text-ink-faint` / `text-unsupported`
-   on the dark chrome surfaces elsewhere in the app. #4a4740 (~8.2:1) and
-   #7a3535 (~7.8:1) are both measured against --paper #f5f1e8. */
-.surface-reading .text-ink-muted,
-.surface-reading .text-ink-faint {
-  color: #4a4740;
-}
-.surface-reading .text-unsupported {
-  color: #7a3535;
+  /* Pinned too: the surface is always light here, so grain must stay on
+     multiply even when the dark theme has switched the global to overlay. */
+  --grain-blend: multiply;
+  --grain-opacity: 0.09;
+
+  /* Locally restate the ink ramp for this always-light pane, so descendants
+     using text-ink-muted / text-ink-faint stay readable regardless of theme. */
+  --ink: #1c1a15;
+  --ink-muted: #4a4740;
+  --ink-faint: #6b675e;
+  --unsupported: #7a3535;
 }
 
 /* Subtle paper grain for reading surfaces, per Editorial Paper's "visible
-   fiber grain" material rule. Real generated brand asset (design/brand/
-   paper-grain.png, run from design/prompts/brand.md), copied to
-   public/paper-grain.png and tiled -- not a coded/data-URI substitute. */
+   fiber grain" material rule. Real generated brand asset, tiled from
+   public/paper-grain.png -- not a coded/data-URI substitute. The 2026-08-14
+   kit (design/PEPIROS-BRAND) ships no grain texture, so this asset survived
+   the kit swap and public/ is now its only home. */
 .paper-grain {
   position: relative;
 }
@@ -143,11 +310,31 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.09;
-  mix-blend-mode: multiply;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: var(--grain-blend);
   background-image: url("/paper-grain.png");
   background-size: 300px 300px;
   background-repeat: repeat;
+}
+
+/*
+ * SOFT GLASS -- chrome, controls and floating panels only. Never applied to a
+ * surface carrying long-form reading text (see SURFACE RULE at the top).
+ */
+.glass {
+  background-color: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Without backdrop-filter, translucency alone reads as a washed-out panel and
+   text contrast drops below AA. Fall back to near-opaque instead. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    background-color: var(--surface-raised);
+  }
 }
 
 html,
@@ -260,6 +447,106 @@ button:focus-visible {
   animation: dash-march 3s linear infinite;
 }
 
+/*
+ * HERO THEME CROSSFADE
+ *
+ * Both hero images render at once and swap by opacity, rather than swapping a
+ * src off useTheme(). Two reasons: the server does not know the theme, so a
+ * conditional render guarantees a hydration mismatch; and a src swap cannot
+ * cross-dissolve, it can only pop.
+ *
+ * Built on ANIMATION, not TRANSITION, on purpose. next-themes'
+ * disableTransitionOnChange injects `* { transition: none !important }` for
+ * one frame during the swap (which we want -- it stops every colour on the
+ * page from lerping at once). It does not touch animations, so the crossfade
+ * survives it. Swapping animation-name is also what makes the fade re-trigger
+ * on each toggle.
+ *
+ * The same fade doubles as the load-in, so first paint eases up from the
+ * placeholder ground instead of snapping.
+ */
+@keyframes hero-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes hero-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.hero-layer {
+  position: absolute;
+  inset: 0;
+  /* the generated art is hotter than brand teal/dusk; pull it back */
+  filter: saturate(var(--hero-saturate)) contrast(var(--hero-contrast))
+    brightness(var(--hero-brightness));
+  /* promote both layers so the fade composites on the GPU and cannot produce
+     subpixel drift between them */
+  will-change: opacity;
+  transform: translateZ(0);
+}
+
+/*
+ * ONLY THE TOP LAYER ANIMATES.
+ *
+ * The obvious implementation -- fade one out while fading the other in -- is
+ * wrong here. Mid-fade both layers sit near 50% opacity, so you see a blend of
+ * two differently-lit versions of the same room, plus the ground bleeding
+ * through both. That double-exposure reads as the image shifting, even though
+ * the two source files are pixel-aligned (verified: correlation offset 0,0).
+ *
+ * So the day layer is the permanent, fully-opaque base, and the dark layer
+ * simply covers it. Coverage is never below 100% at any point in the
+ * transition, which means no ghosting and no ground flash.
+ */
+.hero-layer--day {
+  opacity: 1;
+}
+
+/*
+ * No registration correction is needed here, and that is load-bearing.
+ * hero-dark.png is DERIVED from hero-day.png (scripts/make-hero-dark.cjs), so
+ * the two frames are pixel-aligned by construction rather than by measurement.
+ * An earlier pair of independent generations differed by 0.2% scale and ~5px,
+ * which showed up as the image growing slightly on toggle.
+ */
+.hero-layer--dark {
+  opacity: 0;
+  animation: hero-fade-out var(--dur-hero) var(--ease-out) both;
+}
+.dark .hero-layer--dark {
+  opacity: 1;
+  animation: hero-fade-in var(--dur-hero) var(--ease-out) both;
+}
+
+/* Ground behind the art, so a slow decode shows a plausible surface rather
+   than a hole. Matches the top-of-frame tone of each generated image. */
+.hero-ground {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    120% 80% at 50% 0%,
+    #fbf3df 0%,
+    var(--surface) 70%
+  );
+}
+.dark .hero-ground {
+  background: radial-gradient(
+    120% 80% at 50% 0%,
+    #23262b 0%,
+    var(--surface) 70%
+  );
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -271,5 +558,37 @@ button:focus-visible {
   .motion-dash-march,
   .motion-sweep {
     animation: none !important;
+  }
+}
+
+/*
+ * shadcn sidebar tokens.
+ *
+ * The CLI seeds these with its own neutral greys and a blue ring
+ * (217 91% 60%), which belong to no part of this palette. Restated here on the
+ * papyrus/charcoal system so the app shell matches everything else: a slightly
+ * sunken parchment rail in day, a deeper charcoal rail in dark, dusk for the
+ * active state, and the same --border in both.
+ */
+@layer base {
+  :root {
+    --sidebar-background: 41 37% 90%; /* --surface-sunken */
+    --sidebar-foreground: 43 14% 10%; /* --ink */
+    --sidebar-primary: 244 26% 54%; /* --accent, dusk */
+    --sidebar-primary-foreground: 43 64% 98%;
+    --sidebar-accent: 39 30% 86%; /* hover, a step down from the rail */
+    --sidebar-accent-foreground: 43 14% 10%;
+    --sidebar-border: 39 28% 82%; /* --border */
+    --sidebar-ring: 244 26% 54%;
+  }
+  .dark {
+    --sidebar-background: 220 12% 8%;
+    --sidebar-foreground: 42 22% 91%; /* --ink */
+    --sidebar-primary: 244 26% 54%;
+    --sidebar-primary-foreground: 42 22% 91%;
+    --sidebar-accent: 217 12% 16%;
+    --sidebar-accent-foreground: 42 22% 91%;
+    --sidebar-border: 220 10% 18%; /* --border */
+    --sidebar-ring: 244 26% 54%;
   }
 }
