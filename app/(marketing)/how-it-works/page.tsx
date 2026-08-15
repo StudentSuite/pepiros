@@ -210,7 +210,7 @@ export default function HowItWorksPage() {
             <Link href="/mcp" className={buttonClassName("primary")}>
               See the MCP tools
             </Link>
-            <Link href="/workspaces" className={buttonClassName("secondary")}>
+            <Link href="/login?next=%2Fw%2Fws-1" className={buttonClassName("secondary")}>
               Try the demo workspace
             </Link>
           </div>

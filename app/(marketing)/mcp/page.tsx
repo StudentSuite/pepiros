@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import clsx from "clsx";
 import { buttonClassName } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { EvidenceBadge } from "@/components/ui/EvidenceBadge";
@@ -8,32 +9,37 @@ import { Reveal } from "@/components/ui/Reveal";
 export const metadata: Metadata = {
   title: "MCP Server",
   description:
-    "Connect Pepiros to Claude, Codex, or Cursor over MCP. Call verify_claim to fact-check an agent's own output against a source, live, mid-conversation.",
+    "Connect Pepiros to Claude, Codex, or Cursor over MCP. Call verify_claim and the agent checks its own output against the source, live, mid-conversation.",
 };
 
 interface McpTool {
   name: string;
   args: string;
   description: string;
+  /**
+   * Designed but NOT registered in mcp/tools/index.ts. Marked rather than
+   * hidden: an agent reading this page needs to know the tool exists in the
+   * design without being told it can call it today.
+   */
+  planned?: boolean;
 }
 
-// The 12 MCP tools, docs/PLAN-V1.md §13.2 table. plan.md §7 only names 4 of
-// them (search_paper, verify_claim, create_node, find_contradictions) and
-// points at the fuller doc for the rest -- args and descriptions below are
-// taken from that table, condensed to one line each, not invented. Grouped
-// into 4 rows by what they do, per the task brief's suggested grouping.
+// Tool table from docs/PLAN-V1.md §13.2, condensed to one line each. Eight of
+// these are live; the four flagged `planned` are not registered yet. The page
+// previously advertised all twelve as available, which meant an agent calling
+// the missing four got tool-not-found.
 const TOOL_GROUPS: ReadonlyArray<{ title: string; tools: McpTool[] }> = [
   {
     title: "Workspace & papers",
     tools: [
-      { name: "list_workspaces", args: "none", description: "List workspaces: id, title, paper count." },
-      { name: "create_workspace", args: "title", description: "Create a new workspace." },
+      { name: "list_workspaces", planned: true, args: "none", description: "List workspaces: id, title, paper count." },
+      { name: "create_workspace", planned: true, args: "title", description: "Create a new workspace." },
       {
-        name: "add_paper",
+        name: "add_paper", planned: true,
         args: "workspace_id, url | upload_ref",
         description: "Add a paper by URL or upload, returns a job id.",
       },
-      { name: "get_job", args: "job_id", description: "Check an ingest job's stage, progress, error." },
+      { name: "get_job", planned: true, args: "job_id", description: "Check an ingest job's stage, progress, error." },
       {
         name: "list_papers",
         args: "workspace_id",
@@ -130,21 +136,21 @@ export default function McpPage() {
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-6 pb-16 pt-20 sm:pt-28">
         <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">For agents</p>
         <h1 className="font-serif text-4xl leading-tight text-ink sm:text-5xl">
-          Turn your coding agent into a fact-checker with a source.
+          Let your agent check its own claims against the source.
         </h1>
         <p className="max-w-xl font-sans text-base leading-relaxed text-ink-muted">
-          Twelve tools over MCP. Works with Codex, Claude, and Cursor today: the agent can search
+          Eight tools over MCP today, four more designed. Works with Codex, Claude, and Cursor: the agent can search
           a paper, verify its own claims against the source, and write the audited result back
           into the graph, live, mid-conversation.
         </p>
       </section>
 
-      {/* The 12 tools, grouped. */}
+      {/* The tools, grouped. Planned ones are labelled. */}
       <Reveal>
         <section className="border-t border-border">
           <div className="mx-auto w-full max-w-3xl px-6 py-14">
             <p className="mb-6 font-mono text-xs uppercase tracking-widest text-ink-faint">
-              12 tools
+              8 tools live, 4 planned
             </p>
             <div className="flex flex-col gap-8">
               {TOOL_GROUPS.map((group) => (
@@ -154,13 +160,23 @@ export default function McpPage() {
                     {group.tools.map((tool) => (
                       <div
                         key={tool.name}
-                        className="flex flex-col gap-1.5 rounded border border-border bg-surface-raised p-s-4"
+                        className={clsx(
+                          "flex flex-col gap-1.5 rounded border p-s-4",
+                          tool.planned
+                            ? "border-dashed border-border bg-transparent"
+                            : "border-border bg-surface-raised",
+                        )}
                       >
                         <div className="flex flex-wrap items-baseline gap-2">
                           <span className="font-mono text-xs text-ink">{tool.name}</span>
                           <span className="font-mono text-[10px] text-ink-faint">
                             {tool.args}
                           </span>
+                          {tool.planned && (
+                            <span className="rounded-full border border-border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-ink-faint">
+                              planned
+                            </span>
+                          )}
                         </div>
                         <p className="font-sans text-xs leading-relaxed text-ink-faint">
                           {tool.description}
@@ -224,7 +240,7 @@ export default function McpPage() {
             </p>
             <div className="surface-reading paper-grain mt-4 max-w-md rounded-lg p-s-5">
               <pre className="overflow-x-auto font-mono text-sm text-[#1c1a15]">
-                <code>npx pepiros-mcp</code>
+                <code>npm run mcp:stdio</code>
               </pre>
             </div>
             <p className="mt-4 max-w-xl font-sans text-sm leading-relaxed text-ink-muted">
@@ -239,7 +255,7 @@ export default function McpPage() {
       <Reveal>
         <section className="border-t border-border">
           <div className="mx-auto flex w-full max-w-3xl items-center px-6 py-16">
-            <Link href="/workspaces" className={buttonClassName("primary")}>
+            <Link href="/login?next=%2Fw%2Fws-1" className={buttonClassName("primary")}>
               Try the demo workspace
             </Link>
           </div>

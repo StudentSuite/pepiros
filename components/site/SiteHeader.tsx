@@ -5,6 +5,7 @@ import Link from "next/link";
 import clsx from "clsx";
 import { Logo } from "@/components/ui/Logo";
 import { buttonClassName } from "@/components/ui/Button";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { mockSession, type MockUser } from "@/lib/mock/session";
 
 const NAV_LINKS = [
@@ -50,7 +51,11 @@ export function SiteHeader({
   return (
     <header
       className={clsx(
-        "sticky z-40 border-b border-border bg-surface/95 backdrop-blur-sm transition-[top] duration-fast ease-out",
+        // Soft glass, but only a bottom edge -- the `.glass` utility boxes all
+        // four sides, which is wrong for a full-bleed sticky bar.
+        "sticky z-40 border-b border-[var(--glass-edge)] bg-[var(--glass-bg)]",
+        "backdrop-blur-[var(--glass-blur)] backdrop-saturate-150",
+        "transition-[top] duration-fast ease-out",
         offline ? "top-7" : "top-0",
       )}
     >
@@ -72,6 +77,7 @@ export function SiteHeader({
         </nav>
 
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           {session ? (
             <div className="flex items-center gap-2">
               <Link

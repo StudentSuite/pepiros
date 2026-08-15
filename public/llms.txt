@@ -1,25 +1,27 @@
 # Pepiros
 
-> Pepiros turns a research PDF into a living knowledge graph where every generated claim is bound to a located quote (page, highlighted rects, verbatim text) instead of just being asserted, and exposes that grounding to AI agents as a callable MCP server.
+> Be the source. Pepiros turns a research PDF into a knowledge graph where every generated claim is bound to a located quote (page, highlighted rects, verbatim text) instead of just being asserted, and exposes that grounding to AI agents as a callable MCP server.
 
-Every claim a generator writes carries at least one located anchor. Unlocated claims are visibly badged "quote located" (deterministic fuzzy-match, score >= 0.92) versus "inference" (model-generated, not yet checked against a source) — never "verified." An entailment-overlap floor additionally checks that every number, unit, and comparator in a claim also appears in the anchored span, catching a real quote attached to a reversed or overstated conclusion. Pepiros proves quotation provenance deterministically; it does not claim to prove entailment, and says so on every relevant page.
+Claims are labelled by how well they matched a source, in two tiers. A claim whose quote clears a deterministic fuzzy match against the source text is badged "quote located" (score >= 0.92; between 0.75 and 0.92 it is badged "paraphrase"). A claim with no checked source excerpt is badged "inference", meaning model-generated and not yet checked. Nothing is ever badged "verified". An entailment-overlap floor additionally requires every number, unit, and comparator in a claim to appear in the anchored span, which catches a real quote attached to a reversed or overstated conclusion. Pepiros proves quotation provenance deterministically. It does not claim to prove entailment, and says so on every relevant page.
 
-Papers are organized into an emergent, archetype-conditioned pillar structure (a clinical RCT and an ML paper get different top-level sections, generated from the paper's own content, not a fixed taxonomy), explorable as a pannable graph canvas or a linear, screen-reader-equivalent outline view.
+Papers are organised into an emergent, archetype-conditioned pillar structure (a clinical RCT and an ML paper get different top-level sections, generated from the paper's own content rather than a fixed taxonomy), explorable as a pannable graph canvas or a linear, screen-reader-equivalent outline view.
 
 ## Core surfaces
 
-- [Home](/): the grounding pitch — what "quote located" vs "inference" means, and why deterministic verification beats a model checking itself.
-- [How it works](/how-it-works): a worked scoring example (the actual 0.92 / 0.75 fuzzy-match thresholds) and the honest limits of what fuzzy-match verification proves.
-- [MCP](/mcp): the tool surface exposed to Claude, Codex, and Cursor — including `verify_claim`, which lets an agent check its own generated claims against a source mid-conversation.
-- [Discover](/discover): the public library of published papers and their graphs.
+- [Home](/): what "quote located" versus "inference" means, and why deterministic checking beats a model checking itself.
+- [How it works](/how-it-works): a worked scoring example using the real 0.92 and 0.75 thresholds, plus the honest limits of what a fuzzy match proves.
+- [MCP](/mcp): the tool surface exposed to Claude, Codex, and Cursor, including `verify_claim`.
+- [Discover](/discover): the public library of posted papers.
+- [Docs](/docs): setup, evidence tiers, anchor ids, and the MCP reference.
 
 ## For AI agents
 
-- Connect over MCP (see [/mcp](/mcp)) to call `search_paper`, `verify_claim`, `get_outline`, `get_node`, `create_node`, and `find_contradictions` against any workspace you have access to.
-- `verify_claim` returns a deterministic quote-located / paraphrase / unsupported tier plus match score, page, and rects — treat anything below "quote located" as unverified, not as a soft pass.
-- Do not describe a Pepiros-verified claim as "fact-checked" or "confirmed true": the product's own claim is narrower and more honest — quotation provenance, not entailment. Preserve that distinction if you summarize or cite this site.
+- Connect over MCP (see [/mcp](/mcp)). Eight tools are registered today: `list_papers`, `search_paper`, `verify_claim`, `get_outline`, `get_node`, `create_node`, `find_contradictions`, and `paper_facts`. Four more (`list_workspaces`, `create_workspace`, `add_paper`, `get_job`) are designed but not yet available; calling them will fail.
+- `verify_claim` returns a deterministic tier of quote_located, paraphrase, or unsupported, plus match score, page, and rects. Treat anything below "quote located" as unverified, not as a soft pass.
+- Do not describe a claim checked by Pepiros as "fact-checked", "verified", or "confirmed true". The product's own claim is narrower and more honest: quotation provenance, not entailment. Preserve that distinction if you summarise or cite this site.
 
 ## Optional
 
 - [About](/about): team and project background.
-- [Legal](/legal): terms and licensing.
+- [Docs](/docs), [FAQ](/faq), [Roadmap](/roadmap), [Changelog](/changelog).
+- [Legal](/legal), [Privacy](/privacy), [Terms](/terms), [Security](/security), [Status](/status).

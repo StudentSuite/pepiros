@@ -4,14 +4,19 @@ import { Logo } from "@/components/ui/Logo";
 const PRODUCT_LINKS = [
   { href: "/how-it-works", label: "How it works" },
   { href: "/mcp", label: "For agents" },
+  { href: "/docs", label: "Docs" },
   { href: "/discover", label: "Discover" },
-  { href: "/workspaces", label: "Try the demo" },
+  // /workspaces is behind middleware, so a signed-out visitor clicking this
+  // used to land on /login with no explanation. Route through login, which
+  // shows the guest credentials, and carry them to the reader afterwards.
+  { href: "/login?next=%2Fw%2Fws-1", label: "Try the demo" },
 ] as const;
 
-const PLATFORM_LINKS = [
-  { href: "/upload", label: "Upload" },
-  { href: "/workspaces", label: "Workspaces" },
-  { href: "/login", label: "Sign in" },
+const PROJECT_LINKS = [
+  { href: "/status", label: "Status" },
+  { href: "/roadmap", label: "Roadmap" },
+  { href: "/changelog", label: "Changelog" },
+  { href: "/faq", label: "FAQ" },
 ] as const;
 
 // No mailto: link -- no contact address is referenced anywhere in the repo
@@ -29,6 +34,9 @@ const PLATFORM_LINKS = [
 const CONNECT_LINKS = [
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/terms", label: "Terms" },
+  { href: "/security", label: "Security" },
   { href: "/legal#license", label: "License" },
 ] as const;
 
@@ -43,7 +51,7 @@ export function SiteFooter() {
     <footer className="border-t border-border bg-surface-sunken/40">
       <div className="mx-auto grid max-w-6xl gap-8 px-6 py-12 sm:grid-cols-2 lg:grid-cols-4">
         <div className="flex flex-col gap-3">
-          <Logo tagline />
+          <Logo tagline size="md" />
           <p className="max-w-xs font-sans text-sm text-ink-faint">
             A grounded research platform: every AI-surfaced claim stays bound to the exact
             quoted sentence it came from.
@@ -51,7 +59,7 @@ export function SiteFooter() {
         </div>
 
         <FooterColumn title="Product" links={PRODUCT_LINKS} />
-        <FooterColumn title="Platform" links={PLATFORM_LINKS} />
+        <FooterColumn title="Project" links={PROJECT_LINKS} />
         <FooterColumn title="Connect" links={CONNECT_LINKS} />
       </div>
 

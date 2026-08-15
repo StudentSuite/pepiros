@@ -52,7 +52,7 @@ function renderBodyWithCitations(bodyMd: string, evidence: Evidence[]): ReactNod
       parts.push(
         <span
           key={key++}
-          title="no matching evidence row for this marker (render error per plan.md invariants)"
+          title="This citation marker has no matching evidence row"
           className="mx-0.5 rounded border border-unsupported/60 px-1 font-mono text-[11px] text-unsupported"
         >
           {match[0]}

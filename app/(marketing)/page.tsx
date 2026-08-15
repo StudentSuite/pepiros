@@ -7,6 +7,7 @@ import { PillarChip } from "@/components/ui/PillarChip";
 import { Reveal } from "@/components/ui/Reveal";
 import { PacingStrip } from "@/components/site/PacingStrip";
 import { VerificationDemo } from "@/components/site/VerificationDemo";
+import { Hero } from "@/components/site/Hero";
 import { PreviewCard } from "@/components/site/PreviewCard";
 
 // Platform preview (docs/PLAN-V1.md §22.1), deliberately smaller and quieter
@@ -66,46 +67,15 @@ function CanvasFanOutPreview() {
 export default function MarketingPage() {
   return (
     <main className="flex flex-col">
-      {/* Hero. Not wrapped in Reveal -- it's the first thing on screen, there's
-          nothing to scroll-trigger. Widened to max-w-5xl so the showpiece
-          below the text has room to be the "one majestic moment" the design
-          plan calls for; the copy column stays narrow (max-w-2xl) for
-          readability inside that wider section. */}
-      <section className="relative mx-auto flex w-full max-w-5xl flex-col gap-12 overflow-hidden px-6 pb-24 pt-20 sm:pt-28">
-        {/* Ambient background: soft pillar-colored glow, purely decorative
-            (VerificationDemo below adds its own faint LogoMark watermark,
-            the real regenerated brand glyph asset, not a new one). */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-24 right-0 h-[32rem] w-[32rem] rounded-full bg-pillar-4/10 blur-3xl"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -bottom-40 -left-24 h-[28rem] w-[28rem] rounded-full bg-pillar-7/10 blur-3xl"
-        />
+      {/* Hero. Full-bleed art with the copy over its calm upper third; see
+          components/site/Hero.tsx. Not wrapped in Reveal -- it's the first
+          thing on screen, there's nothing to scroll-trigger. */}
+      <Hero />
 
-        <div className="relative flex max-w-2xl flex-col gap-5">
-          <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">
-            Deterministic verification
-          </p>
-          <h1 className="font-serif text-4xl leading-tight text-ink sm:text-5xl">
-            Every claim, one click from its source.
-          </h1>
-          <p className="max-w-xl font-sans text-base leading-relaxed text-ink-muted">
-            Every generated claim stays bound to the exact quoted sentence it came from, checked
-            deterministically, not just asserted, and the same grounding is callable from Codex,
-            Claude, or Cursor.
-          </p>
-          <div className="flex flex-wrap items-center gap-3 pt-1">
-            <Link href="/workspaces" className={buttonClassName("primary")}>
-              Try the demo workspace
-            </Link>
-            <Link href="/how-it-works" className={buttonClassName("secondary")}>
-              See how verification works
-            </Link>
-          </div>
-        </div>
-
+      {/* The showpiece moved out of the hero: it was competing with the art for
+          the same screen, and it reads better as the first thing you meet after
+          scrolling past the headline. */}
+      <section className="mx-auto w-full max-w-5xl px-6 py-s-8">
         <VerificationDemo />
       </section>
 
@@ -134,7 +104,7 @@ export default function MarketingPage() {
             </p>
             <div className="mt-6">
               <PreviewCard
-                href="/workspaces"
+                href="/login?next=%2Fw%2Fws-1%2Fcanvas"
                 kicker="The canvas"
                 pitch="Explore the graph, one paper at a time"
               >

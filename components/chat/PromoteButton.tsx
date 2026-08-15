@@ -44,7 +44,7 @@ export function PromoteButton({ message }: { message: ChatMessage }) {
       {promoted && (
         <Icon icon={Check} size="xs" className="animate-[node-appear_var(--dur-base)_var(--ease-out)]" />
       )}
-      {promoted ? "Promoted to graph" : "Promote to node"}
+      {promoted ? "Not available yet" : "Promote to node"}
     </button>
   );
 }
