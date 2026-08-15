@@ -60,7 +60,7 @@ export function PillarNode({ data }: NodeProps<PepirosNode>) {
               size={12}
               strokeWidth={1.5}
               aria-hidden
-              className="transition-transform duration-[var(--dur-fast)] ease-[var(--ease-out)]"
+              className="transition-transform duration-fast ease-out"
               style={{ transform: collapsed ? undefined : "rotate(90deg)" }}
             />
           </button>
