@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Source_Serif_4, Inter, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/Toaster";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import "./globals.css";
 
 const sourceSerif = Source_Serif_4({
@@ -54,14 +55,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
+    // `dark` is no longer hardcoded here -- next-themes owns the class on
+    // <html> now, and day is the default. suppressHydrationWarning is required
+    // rather than optional: the theme script writes that class before React
+    // hydrates, so server and client markup differ on <html> by design.
     <html
       lang="en"
-      className={`dark ${sourceSerif.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+      suppressHydrationWarning
+      className={`${sourceSerif.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body>
-        <OfflineBanner />
-        {children}
-        <Toaster />
+        <ThemeProvider>
+          <OfflineBanner />
+          {children}
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );
