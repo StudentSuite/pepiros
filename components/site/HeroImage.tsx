@@ -16,11 +16,22 @@ import Image from "next/image";
  * (HERO THEME CROSSFADE) using keyframe animations rather than transitions,
  * because next-themes freezes transitions for one frame during the swap.
  *
- * Loading strategy: the day image gets `priority` (it is the LCP element on
- * first paint, since day is the default theme). The dark image is `eager` but
- * not `priority` -- it must already be decoded when someone hits the toggle,
- * or the first switch pops, but it should not compete for preload bandwidth
- * with the image actually being looked at.
+ * FORMAT. Both are WebP, generated from the PNG sources by
+ * scripts/optimize-hero.cjs. The pair went from ~3.7MB to ~210KB, which matters
+ * doubly here because BOTH have to be fetched: the whole point is that toggling
+ * the theme does not wait on a download. The PNGs remain the source of truth,
+ * since hero-dark is derived from hero-day and re-deriving from a lossy file
+ * would compound.
+ *
+ * PRIORITY. Both layers carry it. Whichever theme the visitor lands in, that
+ * image is the largest element on screen and therefore the LCP candidate;
+ * marking only the day one left dark-mode visitors with an unprioritised LCP.
+ * At ~105KB each that is an affordable preload, which it would not have been
+ * as PNG.
+ *
+ * No `quality` prop: the sources are already WebP at q82, so asking Next to
+ * re-encode them gains nothing, and setting a non-default value would need an
+ * images.qualities entry in next.config from Next 16 onward.
  */
 export function HeroImage() {
   return (
@@ -30,7 +41,21 @@ export function HeroImage() {
 
       <div className="hero-layer hero-layer--day">
         <Image
-          src="/hero-day.png"
+          src="/hero-day.webp"
+          alt=""
+          fill
+          priority
+          // Full-bleed, so the intrinsic width is the viewport minus whatever
+          // the scrollbar takes. 100vw over-states it slightly and Next warns;
+          // 100vw with a small deduction matches what actually renders.
+          sizes="100vw"
+          className="object-cover object-center"
+        />
+      </div>
+
+      <div className="hero-layer hero-layer--dark">
+        <Image
+          src="/hero-dark.webp"
           alt=""
           fill
           priority
@@ -39,28 +64,13 @@ export function HeroImage() {
         />
       </div>
 
-      <div className="hero-layer hero-layer--dark">
-        <Image
-          src="/hero-dark.png"
-          alt=""
-          fill
-          loading="eager"
-          sizes="100vw"
-          className="object-cover object-center"
-        />
-      </div>
-
       {/*
         Legibility scrim under the copy.
 
-        The art's calm zone is calm in TONE but not in detail -- at shorter
-        viewports the glowing sheets ride up far enough to sit directly behind
-        the sub-paragraph and swallow it. --ink flipping with the theme is not
+        The art's calm zone is calm in TONE but not in detail: at shorter
+        viewports the glowing sheets ride up far enough to sit behind the
+        sub-paragraph and swallow it. --ink flipping with the theme is not
         enough on its own against a bright glowing sheet.
-
-        So this is a real scrim, not a token gesture: near-solid at the very
-        top where the wordmark sits, still substantial through the paragraph
-        and CTAs, fully clear by 78% so the room below reads untouched.
       */}
       <div className="absolute inset-x-0 top-0 h-[78%] bg-gradient-to-b from-[var(--surface)]/85 via-[var(--surface)]/55 to-transparent" />
     </div>
