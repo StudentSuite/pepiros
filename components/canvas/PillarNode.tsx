@@ -37,6 +37,7 @@ export function PillarNode({ data }: NodeProps<PepirosNode>) {
       <Handle type="target" position={Position.Top} style={{ background: color }} />
       <div className="flex items-start justify-between gap-2">
         <div
+          data-lod="title"
           className="font-mono text-[10px] font-medium uppercase tracking-widest"
           style={{ color: pillarTextColor(node.pillarIndex) }}
         >
@@ -66,7 +67,7 @@ export function PillarNode({ data }: NodeProps<PepirosNode>) {
           </button>
         )}
       </div>
-      <p className="mt-1 font-serif text-sm leading-snug text-ink-muted">{stripRefMarkers(node.bodyMd)}</p>
+      <p data-lod="body" className="mt-1 font-serif text-sm leading-snug text-ink-muted">{stripRefMarkers(node.bodyMd)}</p>
       <Handle type="source" position={Position.Bottom} style={{ background: color }} />
     </div>
   );

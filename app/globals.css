@@ -700,3 +700,21 @@ button:focus-visible {
     --sidebar-ring: 244 26% 54%;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Canvas level-of-detail (lib/graph/lod.ts, docs/PLAN-V1.md §9.1)
+
+   GraphCanvas sets data-canvas-detail on an ancestor from the current zoom.
+   Doing the hiding here rather than as a prop on each node means a zoom that
+   crosses a threshold costs one attribute change instead of rebuilding every
+   node's data object.
+
+   `visibility: hidden` rather than `display: none` on purpose: the card keeps
+   its footprint, so nothing reflows or shifts position as detail drops in and
+   out -- only the ink disappears.
+   -------------------------------------------------------------------------- */
+[data-canvas-detail="title"] [data-lod="body"],
+[data-canvas-detail="minimal"] [data-lod="body"],
+[data-canvas-detail="minimal"] [data-lod="title"] {
+  visibility: hidden;
+}

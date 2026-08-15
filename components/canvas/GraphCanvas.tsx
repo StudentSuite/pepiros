@@ -7,12 +7,15 @@ import {
   Background,
   useNodesState,
   useEdgesState,
+  useReactFlow,
   type Node as FlowNode,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import { useWorkspaceStore } from "@/lib/store/workspace";
 import { allPillarIds, hiddenLeafIds, leavesByPillar, visibleEdges } from "@/lib/graph/visibility";
+import { detailLevelFor, LOD_TITLE_THRESHOLD } from "@/lib/graph/lod";
+import { CanvasLegend } from "./CanvasLegend";
 import type { GraphNode, Workspace } from "@/types/anchor";
 import type { CitationExpansionResult, CitationDirection } from "@/lib/services/citationExpand";
 import { PaperNode } from "./PaperNode";
@@ -38,6 +41,9 @@ const NODE_TYPES = {
   synthesisNode: SynthesisNode,
   ghostCitation: GhostCitationNode,
 } as const;
+
+/** CanvasLegend's w-72 (288px) plus its left-4 offset and a gap to breathe. */
+const LEGEND_RESERVED_PX = 320;
 
 const GHOST_DIRECTIONS: CitationDirection[] = ["cites", "cited_by"];
 const GHOST_X_OFFSET = 260;
@@ -227,6 +233,44 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
   const [nodes, setNodes, onNodesChange] = useNodesState<AnyPepirosNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<PepirosEdge>([]);
 
+  // Zoom drives level-of-detail (lib/graph/lod.ts). Kept in React state rather
+  // than read from the transform per node, so a pan does not re-render every
+  // card -- only a zoom that actually crosses a threshold changes anything.
+  const [zoom, setZoom] = useState(1);
+  const detail = detailLevelFor(zoom);
+
+  // The legend is an overlay ~290px wide in the bottom-left. Left alone it sat
+  // on top of the graph, and on the bundled fixture it covered an entire paper
+  // column. Re-fitting with more padding when it opens pulls the graph inward
+  // so nothing ends up underneath it.
+  const [legendOpen, setLegendOpen] = useState(false);
+  const { fitView } = useReactFlow();
+
+  useEffect(() => {
+    if (!workspace) return;
+    // Directional px padding, not a uniform fraction: this graph is wider than
+    // it is tall, so it is width-constrained, and a bigger uniform padding
+    // just scales everything down while the leftmost column still lands under
+    // the panel. Reserving the panel's actual width on the left is what
+    // actually moves content out from under it.
+    const id = requestAnimationFrame(() => {
+      void fitView({
+        padding: legendOpen
+          ? { left: `${LEGEND_RESERVED_PX}px`, right: "24px", y: "24px" }
+          : "12%",
+        // Never fit below the band where titles still render (lib/graph/lod.ts).
+        // Without this floor, reserving room for the legend zoomed a 3-paper
+        // graph down into "minimal" -- so opening the key turned every card
+        // into a blank block, which is the opposite of explaining the picture.
+        // Anything that no longer fits is reachable by panning, which is the
+        // normal way to read a canvas.
+        minZoom: LOD_TITLE_THRESHOLD,
+        duration: 320,
+      });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [legendOpen, workspace, fitView]);
+
   // All pillars start collapsed: the first thing a reader should see is the
   // shape of the argument, not every leaf's body at once (docs/PLAN-V1.md
   // §9.1's PillarNode state table). On the bundled 3-paper fixture this is the
@@ -385,24 +429,31 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
           Add a second paper to unlock cross-paper analysis.
         </div>
       )}
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        nodeTypes={NODE_TYPES}
-        edgeTypes={EDGE_TYPES}
-        onNodeClick={handleNodeClick}
-        onPaneClick={() => selectNode(null)}
-        fitView
-        minZoom={0.2}
-        maxZoom={2}
-        className="bg-surface"
-      >
-        {/* No <MiniMap/> -- explicitly cut (plan.md §11). Custom themed Controls only. */}
-        <Background color="var(--border)" gap={24} />
-        <Controls />
-      </ReactFlow>
+      {/* Level-of-detail is applied as one attribute here rather than as a
+          prop on every node: it affects all cards identically, so a CSS rule
+          on an ancestor beats rebuilding 20+ node objects on every zoom. */}
+      <div className="h-full w-full" data-canvas-detail={detail}>
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          nodeTypes={NODE_TYPES}
+          edgeTypes={EDGE_TYPES}
+          onNodeClick={handleNodeClick}
+          onPaneClick={() => selectNode(null)}
+          onMove={(_, viewport) => setZoom(viewport.zoom)}
+          fitView
+          minZoom={0.2}
+          maxZoom={2}
+          className="bg-surface"
+        >
+          {/* No <MiniMap/> -- explicitly cut (plan.md §11). Custom themed Controls only. */}
+          <Background color="var(--border)" gap={24} />
+          <Controls />
+        </ReactFlow>
+      </div>
+      <CanvasLegend workspace={workspace} open={legendOpen} onOpenChange={setLegendOpen} />
       {/* Canvas is full-bleed (unlike the reader's static split-view inspector
           panel, PLAN-V1.md §9.3), so a selected node needs an overlay, not a
           pushed column -- the shared Drawer primitive from Stage B. */}

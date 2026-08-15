@@ -29,8 +29,8 @@ export function ThreadNode({ data }: NodeProps<PepirosNode>) {
           </span>
         )}
       </div>
-      <div className="mt-1 font-sans text-sm font-medium leading-snug text-ink">{node.title}</div>
-      <p className="mt-1 font-serif text-[13px] leading-snug text-ink-muted">{stripRefMarkers(node.bodyMd)}</p>
+      <div data-lod="title" className="mt-1 font-sans text-sm font-medium leading-snug text-ink">{node.title}</div>
+      <p data-lod="body" className="mt-1 font-serif text-[13px] leading-snug text-ink-muted">{stripRefMarkers(node.bodyMd)}</p>
       <InlineRefs bodyMd={node.bodyMd} evidence={evidence} className="mt-1.5 flex flex-wrap gap-1" />
       <Handle type="source" position={Position.Bottom} className="!bg-ink-faint" />
     </div>

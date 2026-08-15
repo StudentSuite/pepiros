@@ -33,8 +33,8 @@ export function LeafNode({ data }: NodeProps<PepirosNode>) {
       style={{ borderColor: color, animationDelay: `${appearDelayMs ?? 0}ms` }}
     >
       <Handle type="target" position={Position.Top} style={{ background: color }} />
-      <div className="font-sans text-[11px] font-medium leading-snug text-ink">{node.title}</div>
-      <p className="mt-1 line-clamp-3 font-serif text-[12px] leading-snug text-ink-muted">
+      <div data-lod="title" className="font-sans text-[11px] font-medium leading-snug text-ink">{node.title}</div>
+      <p data-lod="body" className="mt-1 line-clamp-3 font-serif text-[12px] leading-snug text-ink-muted">
         {stripRefMarkers(node.bodyMd)}
       </p>
       <InlineRefs bodyMd={node.bodyMd} evidence={evidence} className="mt-1.5 flex flex-wrap gap-1" />
