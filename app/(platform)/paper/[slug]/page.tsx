@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight, MessageSquare } from "lucide-react";
 import { getAdapter } from "@/lib/data/adapter";
+import { getSession } from "@/lib/auth/session";
 import { seedCatalogStats, seedPaperComments } from "@/lib/data/seed";
 import { articleFor } from "@/lib/data/paperContent";
 import {
@@ -15,6 +16,7 @@ import {
 } from "@/components/reading/Article";
 import { ClaimBlock } from "@/components/reading/ClaimBlock";
 import { PaperEngagement } from "./PaperEngagement";
+import { CommentForm } from "./CommentForm";
 import { Avatar, AvatarFallback } from "@/components/shadcn/avatar";
 
 export async function generateMetadata({
@@ -45,8 +47,18 @@ export default async function PaperPage({
 
   const stats = seedCatalogStats(paper.id, paper.year);
   const article = articleFor(paper);
-  const comments = seedPaperComments(paper.id);
   const byline = paper.authors.slice(0, 3).join(", ") + (paper.authors.length > 3 ? ", et al." : "");
+
+  // A real `posts` row (matched by paper_id) means this paper has actually
+  // been published on the live platform -- real comments/likes attach to
+  // that row. No matching row (seed mode, or nobody's published this one
+  // yet) keeps the illustrative seed rendering exactly as before.
+  const adapter = getAdapter();
+  const post = await adapter.getPostByPaperId(paper.id);
+  const viewer = await getSession();
+
+  const comments = post ? await adapter.listCommentsForPost(post.id) : seedPaperComments(paper.id);
+  const likeState = post ? await adapter.getLikeState(post.id, viewer?.id ?? null) : null;
 
   return (
     <main className="pb-s-8">
@@ -63,7 +75,12 @@ export default async function PaperPage({
                 paper.openAccess ? "Open access" : "Paywalled source",
               ].join(" · ")
             }
-            action={<PaperEngagement initialScore={stats.score} />}
+            action={
+              <PaperEngagement
+                initialScore={likeState ? likeState.count : stats.score}
+                real={post ? { postId: post.id, slug, initiallyLiked: likeState!.liked } : undefined}
+              />
+            }
           />
         </ArticleHeader>
 
@@ -171,11 +188,18 @@ export default async function PaperPage({
             ))}
           </ul>
 
-          <p className="mt-s-6 rounded-md border border-dashed border-border px-s-4 py-s-4 font-sans text-[13px] leading-relaxed text-ink-faint">
-            Commenting is not open yet. When it is, a comment can be attached to
-            one specific claim rather than the paper as a whole, which is the
-            only way disagreement stays legible.
-          </p>
+          {post ? (
+            <CommentForm postId={post.id} slug={slug} signedIn={Boolean(viewer)} />
+          ) : (
+            <p className="mt-s-6 rounded-md border border-dashed border-border px-s-4 py-s-4 font-sans text-[13px] leading-relaxed text-ink-faint">
+              This paper hasn&rsquo;t been published on the live platform yet, so
+              there&rsquo;s no real post to attach a comment to -- the discussion
+              above is illustrative. Once it is (or on a paper someone has
+              actually posted), a comment can be attached to one specific claim
+              rather than the paper as a whole, which is the only way
+              disagreement stays legible.
+            </p>
+          )}
         </section>
       </ReadingColumn>
     </main>

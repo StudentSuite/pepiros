@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getAdapter } from "@/lib/data/adapter";
+import { getSession } from "@/lib/auth/session";
 import { seedCatalogStats } from "@/lib/data/seed";
 import { articleFor } from "@/lib/data/paperContent";
 import { CATALOG } from "@/lib/data/papers";
@@ -99,7 +100,17 @@ export default async function ProfilePage({
     .slice(0, 2)
     .join("");
 
-  const followers = profile?.followerCount ?? 100 + papers.length * 37;
+  // profile is only non-null for a real account (today, just "guest") --
+  // catalog author personas without one keep the illustrative follower
+  // count and FollowButton's prior local-only toggle.
+  let followers = 100 + papers.length * 37;
+  let followState: { followeeId: string; username: string; initiallyFollowing: boolean } | undefined;
+  if (profile) {
+    const viewer = await getSession();
+    const follow = await adapter.getFollowState(profile.id, viewer?.id ?? null);
+    followers = follow.followerCount;
+    followState = { followeeId: profile.id, username, initiallyFollowing: follow.following };
+  }
 
   return (
     <main className="pb-s-8">
@@ -132,7 +143,7 @@ export default async function ProfilePage({
           </div>
 
           <div className="mt-s-5 flex justify-center">
-            <FollowButton />
+            <FollowButton real={followState} />
           </div>
         </header>
 

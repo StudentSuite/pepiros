@@ -151,6 +151,134 @@ export const supabaseAdapter: DataAdapter = {
     return this.getProfile(profileRow.id);
   },
 
+  async getPostByPaperId(paperId) {
+    const sb = createSupabaseServiceClient();
+    const { data } = await sb
+      .from("posts")
+      .select("*")
+      .eq("paper_id", paperId)
+      .eq("status", "published")
+      .maybeSingle();
+    if (!data) return null;
+    return {
+      id: data.id,
+      authorId: data.author_id,
+      paperId: data.paper_id,
+      title: data.title,
+      authors: data.authors ?? [],
+      year: data.year ?? 0,
+      venue: data.venue ?? "",
+      field: data.field ?? "Machine learning",
+      openAccess: data.open_access,
+      sourceUrl: data.source_url ?? "",
+      status: data.status,
+      publishedAt: (data.published_at ?? data.created_at).slice(0, 10),
+      groundingCoverage: Number(data.grounding_coverage ?? 0),
+      dropRate: Number(data.drop_rate ?? 0),
+    };
+  },
+
+  async listCommentsForPost(postId) {
+    const sb = createSupabaseServiceClient();
+    const { data } = await sb
+      .from("comments")
+      .select("*, profiles!inner(username, display_name, avatar_initials)")
+      .eq("post_id", postId)
+      .order("created_at", { ascending: false });
+
+    return (data ?? []).map(
+      (row): Comment => ({
+        id: row.id,
+        postId: row.post_id,
+        authorName: row.profiles?.display_name ?? "Unknown",
+        authorUsername: row.profiles?.username ?? "unknown",
+        authorInitials: row.profiles?.avatar_initials ?? "?",
+        body: row.body,
+        createdAt: row.created_at.slice(0, 10),
+        claimRef: row.claim_ref,
+        read: row.read,
+      }),
+    );
+  },
+
+  async addComment({ postId, authorId, body, claimRef }) {
+    const sb = createSupabaseServiceClient();
+    const { data, error } = await sb
+      .from("comments")
+      .insert({ post_id: postId, author_id: authorId, body, claim_ref: claimRef })
+      .select("*, profiles!inner(username, display_name, avatar_initials)")
+      .single();
+    if (error || !data) throw new Error(error?.message ?? "Could not post comment.");
+
+    return {
+      id: data.id,
+      postId: data.post_id,
+      authorName: data.profiles?.display_name ?? "Unknown",
+      authorUsername: data.profiles?.username ?? "unknown",
+      authorInitials: data.profiles?.avatar_initials ?? "?",
+      body: data.body,
+      createdAt: data.created_at.slice(0, 10),
+      claimRef: data.claim_ref,
+      read: data.read,
+    };
+  },
+
+  async getLikeState(postId, viewerId) {
+    const sb = createSupabaseServiceClient();
+    const { count } = await sb.from("likes").select("*", { count: "exact", head: true }).eq("post_id", postId);
+
+    let liked = false;
+    if (viewerId) {
+      const { data } = await sb
+        .from("likes")
+        .select("post_id")
+        .eq("post_id", postId)
+        .eq("profile_id", viewerId)
+        .maybeSingle();
+      liked = Boolean(data);
+    }
+    return { count: count ?? 0, liked };
+  },
+
+  async setLiked(postId, profileId, liked) {
+    const sb = createSupabaseServiceClient();
+    if (liked) {
+      await sb.from("likes").upsert({ post_id: postId, profile_id: profileId });
+    } else {
+      await sb.from("likes").delete().eq("post_id", postId).eq("profile_id", profileId);
+    }
+  },
+
+  async getFollowState(profileId, viewerId) {
+    const sb = createSupabaseServiceClient();
+    const { count } = await sb.from("follows").select("*", { count: "exact", head: true }).eq("followee_id", profileId);
+
+    let following = false;
+    if (viewerId) {
+      const { data } = await sb
+        .from("follows")
+        .select("followee_id")
+        .eq("follower_id", viewerId)
+        .eq("followee_id", profileId)
+        .maybeSingle();
+      following = Boolean(data);
+    }
+    return { followerCount: count ?? 0, following };
+  },
+
+  async setFollowing(followerId, followeeId, following) {
+    // Matches the follows table's own check constraint (no self-follow) --
+    // a no-op here rather than surfacing that as a thrown DB error.
+    if (followerId === followeeId) return;
+
+    const sb = createSupabaseServiceClient();
+    if (following) {
+      await sb.from("follows").upsert({ follower_id: followerId, followee_id: followeeId });
+    } else {
+      await sb.from("follows").delete().eq("follower_id", followerId).eq("followee_id", followeeId);
+    }
+  },
+
   async getProfile(id) {
     // service client: see the header note on auth.uid() being null here
     const sb = createSupabaseServiceClient();

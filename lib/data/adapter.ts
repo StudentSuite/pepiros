@@ -37,11 +37,36 @@ import type {
 
 export type CreateAccountResult = { profile: Profile } | { error: string };
 
+export interface LikeState {
+  count: number;
+  liked: boolean;
+}
+
+export interface FollowState {
+  followerCount: number;
+  following: boolean;
+}
+
 export interface DataAdapter {
   readonly kind: "seed" | "supabase";
 
   verifyCredentials(username: string, password: string): Promise<Profile | null>;
   createAccount(input: { username: string; password: string; displayName: string }): Promise<CreateAccountResult>;
+
+  /**
+   * The live `posts` row a catalog paper corresponds to, if any (matched by
+   * `paper_id`). Null in seed mode (no real post concept there) and in
+   * supabase mode for any catalog paper nobody has published yet -- callers
+   * fall back to the illustrative seed rendering in either case, rather than
+   * showing an empty "real" discussion for a post that doesn't exist.
+   */
+  getPostByPaperId(paperId: string): Promise<Post | null>;
+  listCommentsForPost(postId: string): Promise<Comment[]>;
+  addComment(input: { postId: string; authorId: string; body: string; claimRef: string | null }): Promise<Comment>;
+  getLikeState(postId: string, viewerId: string | null): Promise<LikeState>;
+  setLiked(postId: string, profileId: string, liked: boolean): Promise<void>;
+  getFollowState(profileId: string, viewerId: string | null): Promise<FollowState>;
+  setFollowing(followerId: string, followeeId: string, following: boolean): Promise<void>;
   getProfile(id: string): Promise<Profile | null>;
   getProfileByUsername(username: string): Promise<Profile | null>;
   getOnboarding(profileId: string): Promise<OnboardingResponse | null>;
@@ -94,6 +119,28 @@ const seedAdapter: DataAdapter = {
         "Sign-up needs the Supabase-backed platform, which isn't enabled on this deployment. Sign in as guest/guest instead.",
     };
   },
+
+  // No real post/comment/like/follow concept in seed mode -- callers treat a
+  // null post as "fall back to the illustrative seed rendering," which is
+  // the entire existing /paper and /u experience. These exist only to
+  // satisfy the interface; nothing above calls them when there's no post.
+  async getPostByPaperId() {
+    return null;
+  },
+  async listCommentsForPost() {
+    return [];
+  },
+  async addComment() {
+    throw new Error("Commenting needs the Supabase-backed platform, which isn't enabled on this deployment.");
+  },
+  async getLikeState() {
+    return { count: 0, liked: false };
+  },
+  async setLiked() {},
+  async getFollowState() {
+    return { followerCount: 0, following: false };
+  },
+  async setFollowing() {},
 
   async getOnboarding(profileId) {
     return profileId === GUEST_ID ? GUEST_ONBOARDING : null;
