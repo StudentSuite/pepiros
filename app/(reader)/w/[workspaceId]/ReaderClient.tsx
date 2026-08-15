@@ -133,35 +133,59 @@ export function ReaderClient({ workspaceId }: { workspaceId: string }) {
       />
 
       <div className="flex flex-1 flex-col pb-32">
-        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-3">
-          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 font-sans text-sm">
-            <span className="text-ink-faint">Library</span>
-            <Icon icon={ChevronRight} size="xs" className="text-ink-faint" />
-            <span className="text-ink-faint">{workspace.name}</span>
-            <Icon icon={ChevronRight} size="xs" className="text-ink-faint" />
-            <span className="font-medium text-ink">{activePaper?.title ?? "..."}</span>
+        {/* Reader chrome. Soft glass, so it reads as tooling sitting over the
+            page rather than as part of the document, and sticky so the paper
+            title stays available while reading. */}
+        <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-s-3 border-b border-[var(--glass-edge)] bg-[var(--glass-bg)] px-s-5 py-s-3 backdrop-blur-[var(--glass-blur)] backdrop-saturate-150">
+          <nav
+            aria-label="Breadcrumb"
+            className="flex min-w-0 items-center gap-1.5 font-sans text-[13px]"
+          >
+            <Link href="/workspaces" className="shrink-0 text-ink-faint hover:text-ink">
+              Library
+            </Link>
+            <Icon icon={ChevronRight} size="xs" className="shrink-0 text-ink-faint" />
+            <span className="hidden shrink-0 text-ink-faint sm:inline">
+              {workspace.name}
+            </span>
+            <Icon
+              icon={ChevronRight}
+              size="xs"
+              className="hidden shrink-0 text-ink-faint sm:inline"
+            />
+            <span className="truncate font-medium text-ink">
+              {activePaper?.title ?? "..."}
+            </span>
           </nav>
-          <nav className="flex items-center gap-4 font-sans text-xs text-ink-muted">
-            <Link href={`/w/${workspaceId}/outline`} className="hover:text-ink">
-              Outline
-            </Link>
-            <Link href={`/w/${workspaceId}/audit`} className="hover:text-ink">
-              Audit
-            </Link>
-            <Link href={`/w/${workspaceId}/learn`} className="hover:text-ink">
-              Learn
-            </Link>
+
+          <nav className="flex shrink-0 items-center gap-s-4 font-sans text-[13px] text-ink-faint">
+            {[
+              ["outline", "Outline"],
+              ["audit", "Audit"],
+              ["learn", "Learn"],
+            ].map(([slug, label]) => (
+              <Link
+                key={slug}
+                href={`/w/${workspaceId}/${slug}`}
+                className="transition-colors duration-fast ease-out hover:text-ink"
+              >
+                {label}
+              </Link>
+            ))}
             <Link
               href={`/w/${workspaceId}/canvas`}
-              className="rounded border border-border-strong px-3 py-1.5 hover:text-ink"
+              className="rounded-full border border-border px-s-3 py-1 transition-colors duration-fast ease-out hover:border-border-strong hover:text-ink"
             >
               Explore graph
             </Link>
           </nav>
         </header>
 
-        <div className="grid gap-6 px-6 py-6 lg:grid-cols-[1fr_280px]">
-          <main className="flex flex-col gap-4">
+        {/* Reading first: the paper column gets the room, and the rail is
+            secondary. The previous 1fr/280px split at a full-bleed width put
+            the page image and the node body on an uncomfortably wide measure. */}
+        <div className="mx-auto grid w-full max-w-6xl gap-s-6 px-s-5 py-s-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <main className="flex min-w-0 flex-col gap-s-5">
             {activeChunk ? (
               <PdfPane chunk={activeChunk} highlights={highlights} />
             ) : (
@@ -177,7 +201,7 @@ export function ReaderClient({ workspaceId }: { workspaceId: string }) {
             </Panel>
           </main>
 
-          <aside className="flex flex-col gap-4">
+          <aside className="flex min-w-0 flex-col gap-s-4">
             <GraphPreviewCard workspaceId={workspaceId} nodeCount={workspace.nodes.length} />
             <RelatedPapersRail workspaceId={workspaceId} paperId={activePaper?.id} />
             <NumericChart />

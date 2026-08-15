@@ -24,10 +24,14 @@ export function Hero() {
           Pepiros
         </h1>
 
+        {/* Say what it is before saying why it is good. The previous line led
+            with the mechanism (claims bound to quotes) and never named the
+            product category, so a first-time reader could not tell whether this
+            was a reader, a search engine, or a writing tool. */}
         <p className="mx-auto mt-s-5 max-w-xl font-sans text-base leading-relaxed text-ink-muted sm:text-lg">
-          Every claim a model surfaces stays bound to the exact quoted sentence
-          it came from, checked deterministically rather than asserted, and
-          callable from your agent mid-conversation.
+          Substack for researchers, with a summariser you can actually check.
+          Publish a paper you have read, and every claim in the write-up stays
+          bound to the sentence it came from.
         </p>
 
         <div className="mt-s-7 flex flex-wrap items-center justify-center gap-s-3">

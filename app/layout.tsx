@@ -25,7 +25,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 const TITLE = "Pepiros";
 const DESCRIPTION =
-  "A grounded research platform: every AI-surfaced claim stays bound to the exact quoted sentence it came from.";
+  "Substack for researchers, with a summariser you can check: publish the papers you read, and every claim stays bound to the sentence it came from.";
 
 export const metadata: Metadata = {
   // Same var MCP deep links use (.env.example, README's Configuration table) --

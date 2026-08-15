@@ -11,7 +11,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Pepiros",
     short_name: "Pepiros",
     description:
-      "A grounded research platform: every AI-surfaced claim stays bound to the exact quoted sentence it came from.",
+      "Substack for researchers, with a summariser you can check: publish the papers you read, and every claim stays bound to the sentence it came from.",
     start_url: "/",
     display: "standalone",
     background_color: "#0d0e11",

@@ -59,6 +59,26 @@ export default function MarketingPage() {
     <main className="flex flex-col">
       <Hero />
 
+      <Section kicker="What it is" title="Two things, in one place.">
+        <p>
+          <strong className="text-ink">A publication.</strong> Researchers post
+          the papers they have read, with their own write-up. Readers follow
+          people whose judgement they trust, and the library fills with papers
+          someone has actually worked through rather than a search index.
+        </p>
+        <p>
+          <strong className="text-ink">A summariser you can check.</strong> Each
+          write-up is generated from the paper and then verified against it. Every
+          claim shows the exact sentence it came from, at the page it came from,
+          or says plainly that it has none.
+        </p>
+        <p>
+          The second part is what makes the first part worth reading. A feed of
+          AI summaries nobody can check is just a faster way to spread a
+          misreading.
+        </p>
+      </Section>
+
       <Section
         kicker="The problem"
         title="A confident summary is not evidence."
@@ -71,8 +91,7 @@ export default function MarketingPage() {
         </p>
         <p>
           Pepiros does not ask you to trust its output. It shows you the sentence
-          each claim came from, at the page it came from, and tells you when
-          there is no such sentence.
+          each claim came from, and tells you when there is no such sentence.
         </p>
       </Section>
 
@@ -166,11 +185,11 @@ export default function MarketingPage() {
           <ReadingColumn>
             <div className="text-center">
               <h2 className="font-serif text-[1.75rem] leading-snug text-ink">
-                Read one closely.
+                Start with someone else&rsquo;s reading.
               </h2>
               <p className="mx-auto mt-s-3 max-w-md font-sans text-[15px] leading-relaxed text-ink-muted">
-                The library is open, and every paper in it opens into a grounded
-                read.
+                The library is open. Every paper in it opens into a write-up
+                where each claim sits next to its source.
               </p>
               <div className="mt-s-5 flex flex-wrap items-center justify-center gap-s-3">
                 <Link href="/discover" className={buttonClassName("primary")}>

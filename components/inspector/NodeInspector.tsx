@@ -109,7 +109,7 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
         )}
       </div>
 
-      <h2 className="font-serif text-lg text-ink">{node.title}</h2>
+      <h2 className="font-serif text-xl leading-snug text-ink">{node.title}</h2>
 
       <Tabs
         tabs={[
@@ -135,7 +135,9 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
             onSave={() => setEditing(false)}
           />
         ) : (
-          <p className="font-serif text-sm leading-relaxed text-ink">
+          // Node bodies are read, not scanned, so they use the same measure and
+          // leading as an article body rather than panel-sized text.
+          <p className="max-w-[38rem] font-sans text-[15px] leading-[1.7] text-ink">
             {renderBodyWithCitations(node.bodyMd, nodeEvidence)}
           </p>
         ))}
