@@ -10,17 +10,57 @@ import { Checkbox } from "@/components/shadcn/checkbox";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { ReadingColumn } from "@/components/reading/Article";
 import { cn } from "@/lib/utils";
+import { MAX_PAGES, MAX_UPLOAD_BYTES } from "@/lib/services/upload";
 
-const URL_PATTERN = /(arxiv\.org|ncbi\.nlm\.nih\.gov\/pmc|doi\.org|^10\.\d{4,})/i;
+interface IngestResponse {
+  jobId?: string;
+  error?: string;
+  detail?: string;
+  estimatedPages?: number;
+  warnings?: string[];
+  source?: { kind?: string };
+  duplicate?: { title?: string };
+}
+
+function formatMb(bytes: number): string {
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function fileBody(file: File): FormData {
+  const form = new FormData();
+  form.set("workspaceId", WORKSPACE_ID);
+  form.set("file", file);
+  return form;
+}
+
+/**
+ * A 202 means the job was created, not that a graph exists -- nothing
+ * advances a job yet. Saying "queued" and naming what is missing keeps this
+ * from reading as a promise the app cannot keep.
+ */
+function describeQueued(body: IngestResponse | null): string {
+  const parts = ["Accepted and queued."];
+  if (body?.estimatedPages) parts.push(`About ${body.estimatedPages} pages.`);
+  if (body?.warnings?.length) parts.push(body.warnings.join(" "));
+  parts.push("Parsing is not built yet, so no graph is generated from it — that is the next thing to land.");
+  return parts.join(" ");
+}
+
+const WORKSPACE_ID = "ws-1";
 
 /**
  * Add a paper.
  *
- * Upload validation is real (size, type, page count, text layer), but the parse
- * pipeline behind it is not built yet, so this page says so rather than
- * accepting a file and leaving someone waiting for a graph that will never
- * arrive. The form still works end to end against the validation endpoint,
- * which is the part that exists.
+ * This posts to /api/ingest and reports what the server actually said.
+ * Before, `submit` was entirely client-side and ended in "Validation
+ * passed." unconditionally -- a 200MB executable renamed .pdf got the same
+ * congratulations as a real paper, because the real checks (magic bytes,
+ * page cap, text layer, duplicates) live in lib/services/upload.ts and were
+ * never called. A validation message that cannot fail is worse than none: it
+ * tells the reader their file is fine when nothing looked at it.
+ *
+ * The parse pipeline behind the endpoint is still a stub, so a successful
+ * response means queued, not analyzed, and the copy says exactly that.
  */
 export default function UploadPage() {
   const [mode, setMode] = useState<"file" | "url">("file");
@@ -29,23 +69,58 @@ export default function UploadPage() {
   const [licensed, setLicensed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setNotice(null);
 
     if (mode === "file" && !file) return setError("Choose a PDF first.");
-    if (mode === "url" && !URL_PATTERN.test(url.trim()))
-      return setError("Paste an arXiv, PMC, or DOI link.");
-    if (!licensed)
-      return setError("Confirm the licence position before uploading.");
+    if (mode === "url" && !url.trim()) return setError("Paste a link first.");
+    if (!licensed) return setError("Confirm the licence position before uploading.");
 
-    setNotice(
-      "Validation passed. The parse pipeline is not built yet, so nothing was queued: this is the honest state of ingest today, tracked as an open issue.",
-    );
+    // Checked client-side purely to skip a doomed upload of a large file; the
+    // server enforces the same limit regardless, since anything here is
+    // trivially bypassed.
+    if (mode === "file" && file && file.size > MAX_UPLOAD_BYTES) {
+      return setError(
+        `That file is ${formatMb(file.size)}. The limit is ${formatMb(MAX_UPLOAD_BYTES)}.`,
+      );
+    }
+
+    setPending(true);
+    try {
+      const res =
+        mode === "file"
+          ? await fetch("/api/ingest", { method: "POST", body: fileBody(file!) })
+          : await fetch("/api/ingest", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ workspaceId: WORKSPACE_ID, url: url.trim() }),
+            });
+
+      const body = (await res.json().catch(() => null)) as IngestResponse | null;
+
+      if (!res.ok) {
+        // The route already names the specific problem ("scanned PDF, no text
+        // layer"), which is the whole point of validating server-side, so it
+        // is shown rather than replaced with a generic failure.
+        setError(body?.detail ?? body?.error ?? `Upload failed (${res.status}).`);
+        return;
+      }
+
+      setNotice(describeQueued(body));
+      setFile(null);
+      setUrl("");
+      if (inputRef.current) inputRef.current.value = "";
+    } catch {
+      setError("Could not reach the server. Check your connection and try again.");
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
@@ -66,15 +141,17 @@ export default function UploadPage() {
 
         <div className="rounded-md border border-dashed border-border p-s-4">
           <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
-            Ingest is not live
+            What happens to your file
           </p>
           <p className="mt-s-2 font-sans text-[14px] leading-relaxed text-ink-muted">
-            Uploads are validated but not yet parsed. Until the pipeline lands,
-            the fully grounded examples in{" "}
+            Your paper is checked for real: file type, size, page count, whether
+            it has a text layer, and whether this workspace already has it.
+            Parsing it into a graph is the next thing to land, so nothing is
+            generated from it yet. Until then, the fully grounded examples in{" "}
             <Link href="/discover" className="text-accent-text underline underline-offset-2">
               the library
             </Link>{" "}
-            are the best way to see what the output looks like.
+            show what the output looks like.
           </p>
         </div>
 
@@ -153,7 +230,7 @@ export default function UploadPage() {
                       Drag a PDF here, or click to browse
                     </p>
                     <p className="font-mono text-[11px] text-ink-faint">
-                      PDF only, up to 50 MB
+                      PDF only, up to {formatMb(MAX_UPLOAD_BYTES)}, {MAX_PAGES} pages
                     </p>
                   </>
                 )}
@@ -198,7 +275,9 @@ export default function UploadPage() {
           {notice && <ErrorBanner message={notice} variant="warn" />}
 
           <div>
-            <Button type="submit">Add paper</Button>
+            <Button type="submit" disabled={pending}>
+              {pending ? "Checking…" : "Add paper"}
+            </Button>
           </div>
         </form>
       </ReadingColumn>
