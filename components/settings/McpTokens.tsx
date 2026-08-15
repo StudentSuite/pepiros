@@ -25,45 +25,58 @@ import {
   AlertDialogTitle,
 } from "@/components/shadcn/alert-dialog";
 import { EmptyState } from "@/components/ui/EmptyState";
-import type { MockMcpToken } from "@/lib/mock/settings";
+import { createMcpTokenAction, revokeMcpTokenAction } from "@/app/(app)/actions";
+import type { McpTokenMeta } from "@/lib/services/mcpTokens";
+import type { McpScope } from "@/lib/services/mcpAuth";
 
 /**
- * MCP token management.
- *
- * This is the one account feature with real backend code behind it
- * (lib/services/mcpAuth.ts and the mcp_tokens table), which is why it gets a
- * full section rather than a tab panel.
+ * MCP token management, wired to real server actions
+ * (lib/services/mcpTokens.ts, hashed via lib/services/mcpAuth.ts) rather
+ * than a client-side `Math.random()` string held in React state.
  *
  * A freshly created token is shown exactly once. That is not a UI flourish: a
  * token that can be re-read from a list is a token that leaks from a shared
- * screen or a screenshot.
+ * screen or a screenshot -- and this one genuinely can't be re-read, because
+ * only its hash is stored.
  */
-export function McpTokens({ initial }: { initial: MockMcpToken[] }) {
+export function McpTokens({ initial }: { initial: McpTokenMeta[] }) {
   const [tokens, setTokens] = useState(initial);
   const [label, setLabel] = useState("");
+  const [scope, setScope] = useState<McpScope>("read");
+  const [pending, setPending] = useState(false);
   const [revealed, setRevealed] = useState<string | null>(null);
-  const [revoking, setRevoking] = useState<MockMcpToken | null>(null);
+  const [revoking, setRevoking] = useState<McpTokenMeta | null>(null);
 
-  function create(e: React.FormEvent) {
+  async function create(e: React.FormEvent) {
     e.preventDefault();
-    const name = label.trim() || "Untitled token";
-    const id = `tok-${Date.now()}`;
-    // Demo-only value. Real tokens are minted server-side and HMAC-signed.
-    const secret = `pep_${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
-
-    setTokens((t) => [
-      { id, label: name, createdAt: new Date().toISOString().slice(0, 10), lastUsed: null },
-      ...t,
-    ]);
-    setRevealed(secret);
-    setLabel("");
+    setPending(true);
+    try {
+      const { id, token } = await createMcpTokenAction({ label, scope });
+      setTokens((t) => [
+        { id, label: label.trim() || "Untitled token", scope, workspaceId: null, createdAt: new Date().toISOString(), lastUsedAt: null },
+        ...t,
+      ]);
+      setRevealed(token);
+      setLabel("");
+      setScope("read");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not create a token.");
+    } finally {
+      setPending(false);
+    }
   }
 
-  function confirmRevoke() {
+  async function confirmRevoke() {
     if (!revoking) return;
-    setTokens((t) => t.filter((x) => x.id !== revoking.id));
-    toast.success(`Revoked "${revoking.label}"`);
+    const target = revoking;
     setRevoking(null);
+    try {
+      await revokeMcpTokenAction(target.id);
+      setTokens((t) => t.filter((x) => x.id !== target.id));
+      toast.success(`Revoked "${target.label}"`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not revoke that token.");
+    }
   }
 
   return (
@@ -74,8 +87,8 @@ export function McpTokens({ initial }: { initial: MockMcpToken[] }) {
             Copy this now
           </p>
           <p className="mt-s-2 font-sans text-xs text-ink-muted">
-            This is the only time the token is shown. If you lose it, revoke it
-            and create another.
+            This is the only time the token is shown. Only its hash is stored, so
+            if you lose it, revoke it and create another.
           </p>
           <div className="mt-s-3 flex items-center gap-s-2">
             <code className="min-w-0 flex-1 truncate rounded border border-border bg-surface px-s-3 py-s-2 font-mono text-xs text-ink">
@@ -94,6 +107,11 @@ export function McpTokens({ initial }: { initial: MockMcpToken[] }) {
               Copy
             </Button>
           </div>
+          <p className="mt-s-3 font-sans text-[11px] leading-relaxed text-ink-faint">
+            Set this as <code className="text-ink">PEPIROS_MCP_TOKEN</code> in
+            the environment of whatever runs <code className="text-ink">pepiros-mcp</code>
+            /<code className="text-ink">npm run mcp:stdio</code>.
+          </p>
           <Button
             size="sm"
             variant="ghost"
@@ -120,6 +138,9 @@ export function McpTokens({ initial }: { initial: MockMcpToken[] }) {
                   Label
                 </TableHead>
                 <TableHead className="font-mono text-[11px] uppercase tracking-widest">
+                  Scope
+                </TableHead>
+                <TableHead className="font-mono text-[11px] uppercase tracking-widest">
                   Created
                 </TableHead>
                 <TableHead className="font-mono text-[11px] uppercase tracking-widest">
@@ -132,11 +153,12 @@ export function McpTokens({ initial }: { initial: MockMcpToken[] }) {
               {tokens.map((t) => (
                 <TableRow key={t.id}>
                   <TableCell className="font-sans text-sm text-ink">{t.label}</TableCell>
+                  <TableCell className="font-mono text-xs text-ink-muted">{t.scope}</TableCell>
                   <TableCell className="font-mono text-xs text-ink-muted">
-                    {t.createdAt}
+                    {t.createdAt.slice(0, 10)}
                   </TableCell>
                   <TableCell className="font-mono text-xs text-ink-faint">
-                    {t.lastUsed ?? "never"}
+                    {t.lastUsedAt ? t.lastUsedAt.slice(0, 10) : "never"}
                   </TableCell>
                   <TableCell>
                     <Button
@@ -166,7 +188,21 @@ export function McpTokens({ initial }: { initial: MockMcpToken[] }) {
             className="mt-s-2"
           />
         </div>
-        <Button type="submit">Generate token</Button>
+        <div className="flex flex-col gap-s-2">
+          <Label htmlFor="tokenScope">Scope</Label>
+          <select
+            id="tokenScope"
+            value={scope}
+            onChange={(e) => setScope(e.target.value as McpScope)}
+            className="h-9 rounded border border-border bg-surface-sunken px-s-3 font-sans text-sm text-ink"
+          >
+            <option value="read">Read-only</option>
+            <option value="write">Read + write</option>
+          </select>
+        </div>
+        <Button type="submit" disabled={pending}>
+          {pending ? "Generating…" : "Generate token"}
+        </Button>
       </form>
 
       <AlertDialog open={Boolean(revoking)} onOpenChange={(o) => !o && setRevoking(null)}>

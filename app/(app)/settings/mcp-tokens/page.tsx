@@ -4,7 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { isDemoAccount } from "@/lib/data/demo";
 import { McpTokens } from "@/components/settings/McpTokens";
 import { DemoNotice } from "@/components/settings/DemoNotice";
-import { mockMcpTokens } from "@/lib/mock/settings";
+import { listMcpTokens } from "@/lib/services/mcpTokens";
 
 export const metadata: Metadata = { title: "MCP tokens" };
 
@@ -24,7 +24,7 @@ export default async function McpTokensPage() {
         </p>
       </header>
 
-      <McpTokens initial={mockMcpTokens} />
+      <McpTokens initial={listMcpTokens()} />
     </div>
   );
 }

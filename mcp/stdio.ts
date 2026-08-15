@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createMcpServer } from "./server";
+import { resolveMcpToken } from "@/lib/services/mcpTokens";
+import { checkToken } from "@/lib/services/mcpAuth";
 
 /**
  * stdio entry point (docs/PLAN-V1.md §13.4) -- `npm run mcp:stdio`, or wired
@@ -24,11 +26,40 @@ import { createMcpServer } from "./server";
  * so this process gets the real service-layer code with the guard satisfied
  * rather than needing a second, server-only-free copy of any of it.
  */
+/**
+ * `PEPIROS_MCP_TOKEN`, when set, gates this session: a config like
+ * `{"env": {"PEPIROS_MCP_TOKEN": "pep_..."}}` in a Claude Desktop/Codex/Cursor
+ * MCP config is how a token minted in settings actually reaches the server.
+ * An invalid or revoked token refuses to start rather than silently falling
+ * back to unrestricted access -- that fallback is reserved for the token
+ * being *absent* entirely (today's zero-setup local-dev path).
+ */
+function resolveSession() {
+  const raw = process.env.PEPIROS_MCP_TOKEN;
+  if (!raw) return null;
+
+  const record = resolveMcpToken(raw);
+  const check = checkToken(record);
+  if (!check.ok) {
+    throw new Error(
+      check.reason === "revoked"
+        ? "PEPIROS_MCP_TOKEN has been revoked. Mint a new one in settings."
+        : "PEPIROS_MCP_TOKEN does not match any issued token.",
+    );
+  }
+  return check.token;
+}
+
 async function main() {
-  const server = createMcpServer();
+  const session = resolveSession();
+  const server = createMcpServer(session);
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  process.stderr.write("pepiros mcp: connected over stdio\n");
+  process.stderr.write(
+    session
+      ? `pepiros mcp: connected over stdio (token scope=${session.scope}, workspace=${session.workspaceId ?? "any"})\n`
+      : "pepiros mcp: connected over stdio (no token configured, unrestricted local access)\n",
+  );
 }
 
 main().catch((err) => {

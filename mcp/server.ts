@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerTools } from "./tools";
 import { registerResources } from "./resources";
 import { registerPrompts } from "./prompts";
+import type { McpTokenRecord } from "@/lib/services/mcpAuth";
 
 /**
  * Pepiros MCP server (docs/PLAN-V1.md §13). Assembly only: every tool calls
@@ -18,7 +19,14 @@ import { registerPrompts } from "./prompts";
 export const SERVER_NAME = "pepiros";
 export const SERVER_VERSION = "0.1.0";
 
-export function createMcpServer(): McpServer {
+/**
+ * `session` is the already-resolved+checked token record for this
+ * connection (mcp/stdio.ts resolves `PEPIROS_MCP_TOKEN` before calling this),
+ * or `null`/omitted for unrestricted local-dev access. Threaded straight
+ * through to registerTools(), which is where the actual scope/workspace
+ * gating happens.
+ */
+export function createMcpServer(session?: McpTokenRecord | null): McpServer {
   const server = new McpServer(
     { name: SERVER_NAME, version: SERVER_VERSION },
     {
@@ -35,7 +43,7 @@ export function createMcpServer(): McpServer {
     },
   );
 
-  registerTools(server);
+  registerTools(server, session);
   registerResources(server);
   registerPrompts(server);
 

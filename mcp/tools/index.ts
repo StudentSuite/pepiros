@@ -14,6 +14,7 @@ import { queueUrlIngest } from "@/lib/services/ingest";
 import { createWorkspace, listWorkspaces } from "@/lib/services/workspaces";
 import { getJob, stageProgress } from "@/lib/services/jobs";
 import { LIVE_TOOL_NAMES, toolDescription } from "@/lib/mcp/registry";
+import { canAccessWorkspace, hasScope, type McpTokenRecord } from "@/lib/services/mcpAuth";
 
 /**
  * MCP tool layer (docs/PLAN-V1.md §13.2). All 12 tools in lib/mcp/registry.ts
@@ -45,7 +46,27 @@ function errorText(message: string) {
   return { content: [{ type: "text" as const, text: message }], isError: true };
 }
 
-export function registerTools(server: McpServer): void {
+/**
+ * `session` is the token record resolved from `PEPIROS_MCP_TOKEN` at process
+ * startup (mcp/stdio.ts) -- stdio is one process per connection, so this is
+ * a per-session decision made once, not a per-call header. `undefined`/`null`
+ * (no token configured) means unrestricted local-dev access, matching
+ * `npm run mcp:stdio`'s zero-setup behaviour today; a resolved token gates
+ * writes on its scope and workspace reads on its pin, per
+ * lib/services/mcpAuth.ts's checkToken()/hasScope()/canAccessWorkspace().
+ */
+export function registerTools(server: McpServer, session?: McpTokenRecord | null): void {
+  function authorize(workspaceId: string | null, requireWrite: boolean): string | null {
+    if (!session) return null;
+    if (requireWrite && !hasScope(session, "write")) {
+      return "This MCP token is read-only. Create a token with write scope in settings to use this tool.";
+    }
+    if (workspaceId && !canAccessWorkspace(session, workspaceId)) {
+      return `This MCP token is pinned to a different workspace and cannot reach "${workspaceId}".`;
+    }
+    return null;
+  }
+
   server.registerTool(
     "list_papers",
     {
@@ -54,6 +75,9 @@ export function registerTools(server: McpServer): void {
       inputSchema: { workspace_id: z.string().describe("Workspace id, e.g. ws-1") },
     },
     async ({ workspace_id }) => {
+      const denial = authorize(workspace_id, false);
+      if (denial) return errorText(denial);
+
       const workspace = await fetchWorkspace(workspace_id);
       return json(
         workspace.papers.map((p) => ({
@@ -80,6 +104,9 @@ export function registerTools(server: McpServer): void {
       },
     },
     async ({ workspace_id, query, paper_id, k }) => {
+      const denial = authorize(workspace_id, false);
+      if (denial) return errorText(denial);
+
       const hits = await searchPaper({ workspaceId: workspace_id, query, paperId: paper_id, k });
       if (hits.length === 0) {
         return json({ hits: [], note: "No chunk in this workspace matched those terms." });
@@ -110,6 +137,9 @@ export function registerTools(server: McpServer): void {
       },
     },
     async ({ workspace_id, ref_id, quote, claim }) => {
+      const denial = authorize(workspace_id, false);
+      if (denial) return errorText(denial);
+
       const workspace = await fetchWorkspace(workspace_id);
       const [result] = verifyClaimsAgainstCorpus({
         chunks: workspace.chunks,
@@ -150,6 +180,9 @@ export function registerTools(server: McpServer): void {
       inputSchema: { workspace_id: z.string() },
     },
     async ({ workspace_id }) => {
+      const denial = authorize(workspace_id, false);
+      if (denial) return errorText(denial);
+
       const outline = await getOutline(workspace_id);
       return json({ text: outline.text, papers: outline.papers, cross_paper: outline.crossPaper });
     },
@@ -163,6 +196,9 @@ export function registerTools(server: McpServer): void {
       inputSchema: { workspace_id: z.string(), node_id: z.string() },
     },
     async ({ workspace_id, node_id }) => {
+      const denial = authorize(workspace_id, false);
+      if (denial) return errorText(denial);
+
       const node = await getNode(workspace_id, node_id);
       if (!node) return errorText(`No node ${node_id} in workspace ${workspace_id}.`);
       return json(node);
@@ -190,6 +226,9 @@ export function registerTools(server: McpServer): void {
       },
     },
     async ({ workspace_id, parent_id, title, body_md, evidence }) => {
+      const denial = authorize(workspace_id, true);
+      if (denial) return errorText(denial);
+
       try {
         const result = await createNode({
           workspaceId: workspace_id,
@@ -229,6 +268,9 @@ export function registerTools(server: McpServer): void {
       inputSchema: { workspace_id: z.string(), concept: z.string().optional() },
     },
     async ({ workspace_id, concept }) => {
+      const denial = authorize(workspace_id, false);
+      if (denial) return errorText(denial);
+
       const pairs = await findContradictions(workspace_id, concept);
       if (pairs.length === 0) {
         return json({
@@ -254,6 +296,9 @@ export function registerTools(server: McpServer): void {
       },
     },
     async ({ workspace_id, paper_id, kind }) => {
+      const denial = authorize(workspace_id, false);
+      if (denial) return errorText(denial);
+
       if (kind === "numeric_ledger") {
         return json({ kind, numerics: await paperNumericLedger(workspace_id, paper_id) });
       }
@@ -269,7 +314,10 @@ export function registerTools(server: McpServer): void {
       inputSchema: {},
     },
     async () => {
-      const workspaces = listWorkspaces();
+      // A pinned token only ever sees its own workspace in this list -- listing
+      // every workspace on the server would leak names/paper counts a pinned
+      // token has no other way to reach.
+      const workspaces = listWorkspaces().filter((w) => !session || canAccessWorkspace(session, w.id));
       return json({
         workspaces: workspaces.map((w) => ({ workspace_id: w.id, name: w.name, paper_count: w.paperCount })),
       });
@@ -284,6 +332,9 @@ export function registerTools(server: McpServer): void {
       inputSchema: { name: z.string().min(1) },
     },
     async ({ name }) => {
+      const denial = authorize(null, true);
+      if (denial) return errorText(denial);
+
       const workspace = createWorkspace(name);
       return json({
         workspace_id: workspace.id,
@@ -305,6 +356,9 @@ export function registerTools(server: McpServer): void {
       },
     },
     async ({ workspace_id, url }) => {
+      const denial = authorize(workspace_id, true);
+      if (denial) return errorText(denial);
+
       const result = await queueUrlIngest(workspace_id, url);
       if ("error" in result) return errorText(result.detail);
       return json({
@@ -325,6 +379,10 @@ export function registerTools(server: McpServer): void {
     async ({ job_id }) => {
       const job = getJob(job_id);
       if (!job) return errorText(`No job ${job_id}.`);
+
+      const denial = authorize(job.workspaceId, false);
+      if (denial) return errorText(denial);
+
       return json({
         job_id: job.id,
         workspace_id: job.workspaceId,
