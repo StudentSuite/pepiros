@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import clsx from "clsx";
 import { RefChip } from "@/components/ui/RefChip";
+import { useWorkspaceStore } from "@/lib/store/workspace";
 
 interface QuizQuestion {
   id: string;
@@ -13,65 +14,86 @@ interface QuizQuestion {
   citationRefId: string;
 }
 
-/**
- * The fixture has no `quizzes` table rows, so this is a small hand-authored
- * set grounded in the fixture's actual claims (each explanation cites the
- * real refId behind it -- "explanations always cited", never a bare
- * assertion). Fixed order, fixed set: no adaptive difficulty (cut per
- * plan.md §11).
- */
-const QUESTIONS: QuizQuestion[] = [
-  {
-    id: "q1",
-    prompt:
-      "In the bright-light RCT (Okafor & Lindqvist, 2022), how did sleep onset latency change in the treatment arm vs. placebo?",
-    options: ["Decreased 34% (95% CI 21-45)", "Decreased 12%", "Increased 34%", "No significant change"],
-    correctIndex: 0,
-    explanation: "The located quote in the Results section reports exactly this figure, p=0.003.",
-    citationRefId: "C2",
-  },
-  {
-    id: "q2",
-    prompt: "What pooled effect size did Chen et al.'s meta-analysis find on working memory?",
-    options: ["d=0.85", "r=0.41", "d=0.41 (95% CI 0.29-0.53)", "No effect found"],
-    correctIndex: 2,
-    explanation: "Pooled across 18 studies (n=4,213); the quote is located verbatim in the Results section.",
-    citationRefId: "C5",
-  },
-  {
-    id: "q3",
-    prompt: "In Boateng (2023), how did under-5-hour sleepers' Trail Making Test scores compare to the well-rested subgroup?",
-    options: ["Significant decline (p<0.01)", "Improved performance", "No significant decline (p=0.41)", "Test wasn't administered to that group"],
-    correctIndex: 2,
-    explanation: "A null result -- this is the leg of the cross-paper contradiction with the meta-analysis's pooled effect.",
-    citationRefId: "C9",
-  },
-  {
-    id: "q4",
-    prompt: "What happened to the claim behind citation C7 (cohort-heterogeneity precision) on re-verification?",
-    options: ["It stayed quote located", "It was downgraded to paraphrase", "It came back unsupported and the anchor was dropped", "It was never checked"],
-    correctIndex: 2,
-    explanation:
-      "This is the workspace's one planted misattribution: the claimed quote didn't clear the paraphrase floor, so the anchor was dropped and the citation reads unsupported.",
-    citationRefId: "C7",
-  },
-];
-
 type Stage = "question" | "answered" | "explaining" | "summary";
 
-export function QuizRunner() {
+/**
+ * Questions are generated from whichever workspace is actually loaded
+ * (lib/services/quiz.ts, over leaves whose evidence already cleared
+ * quote_located), not hardcoded to the fixture's authors and citation ids.
+ * Fixed order, fixed set once loaded: no adaptive difficulty (cut per
+ * plan.md §11).
+ */
+export function QuizRunner({ workspaceId }: { workspaceId: string }) {
+  const workspace = useWorkspaceStore((s) => s.workspace);
+  const loadWorkspace = useWorkspaceStore((s) => s.loadWorkspace);
+  const [questions, setQuestions] = useState<QuizQuestion[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
   const [stage, setStage] = useState<Stage>("question");
   const [selected, setSelected] = useState<number | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
 
-  const question = QUESTIONS[index];
+  // /learn is reachable directly, not only via the reader, so the store
+  // can't be assumed already populated the way it is when ReaderClient's
+  // own effect has already run.
+  useEffect(() => {
+    if (!workspace || workspace.id !== workspaceId) void loadWorkspace(workspaceId);
+  }, [workspace, workspaceId, loadWorkspace]);
+
+  useEffect(() => {
+    if (!workspace || workspace.id !== workspaceId) return;
+    let cancelled = false;
+
+    setQuestions(null);
+    setError(null);
+
+    fetch(`/api/quiz?workspaceId=${encodeURIComponent(workspace.id)}`)
+      .then(async (res) => {
+        if (cancelled) return;
+        if (!res.ok) {
+          const body = (await res.json().catch(() => null)) as { error?: string; detail?: string } | null;
+          setError(
+            body?.error === "model_not_configured"
+              ? "Quiz generation is unavailable on this deployment."
+              : (body?.detail ?? `Quiz generation failed (${res.status}).`),
+          );
+          return;
+        }
+        const data = (await res.json()) as { questions: QuizQuestion[] };
+        setQuestions(data.questions);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Quiz generation failed.");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [workspace, workspaceId]);
+
+  if (error) {
+    return <p className="font-sans text-xs text-unsupported">{error}</p>;
+  }
+
+  if (!questions) {
+    return <p className="font-sans text-xs text-ink-faint">Generating quiz questions from this workspace…</p>;
+  }
+
+  if (questions.length === 0) {
+    return (
+      <p className="font-sans text-xs text-ink-faint">
+        Nothing to quiz yet -- no leaf node here has a located quote to test.
+      </p>
+    );
+  }
+
+  const question = questions[index];
 
   if (stage === "summary" || !question) {
     return (
       <div className="flex flex-col items-center gap-3 py-6 text-center">
         <p className="font-serif text-lg text-ink">
-          {correctCount} / {QUESTIONS.length} correct
+          {correctCount} / {questions.length} correct
         </p>
         <button
           type="button"
@@ -97,7 +119,7 @@ export function QuizRunner() {
   }
 
   function goNext() {
-    if (index + 1 >= QUESTIONS.length) {
+    if (index + 1 >= questions!.length) {
       setStage("summary");
     } else {
       setIndex((i) => i + 1);
@@ -109,7 +131,7 @@ export function QuizRunner() {
   return (
     <div className="flex flex-col gap-4">
       <p className="font-sans text-xs text-ink-faint">
-        Question {index + 1} of {QUESTIONS.length}
+        Question {index + 1} of {questions.length}
       </p>
       <p className="font-serif text-base text-ink">{question.prompt}</p>
 
@@ -161,7 +183,7 @@ export function QuizRunner() {
             onClick={goNext}
             className="mt-3 rounded bg-pillar-4/20 px-3 py-1.5 font-sans text-xs text-ink hover:bg-pillar-4/30"
           >
-            {index + 1 >= QUESTIONS.length ? "See summary" : "Next question"}
+            {index + 1 >= questions.length ? "See summary" : "Next question"}
           </button>
         </div>
       )}

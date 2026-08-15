@@ -34,7 +34,7 @@ export default async function LearnPage({
 
         <section className="flex flex-col gap-3 border-t border-border pt-8">
           <h2 className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">Quiz</h2>
-          <QuizRunner />
+          <QuizRunner workspaceId={workspaceId} />
         </section>
       </div>
     </div>
