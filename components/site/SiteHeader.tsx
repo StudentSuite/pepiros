@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { Logo } from "@/components/ui/Logo";
 import { buttonClassName } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { MobileNav } from "@/components/site/MobileNav";
 import { mockSession, type MockUser } from "@/lib/mock/session";
 
 const NAV_LINKS = [
@@ -78,6 +79,7 @@ export function SiteHeader({
 
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <ThemeToggle />
+          <MobileNav links={NAV_LINKS} session={session} />
           {session ? (
             <div className="flex items-center gap-2">
               <Link
@@ -96,10 +98,18 @@ export function SiteHeader({
             </div>
           ) : (
             <>
-              <Link href="/login" className={buttonClassName("ghost", "sm")}>
+              {/* Hidden below sm: the sheet carries these, and three controls
+                  plus a hamburger does not fit a 320px header. */}
+              <Link
+                href="/login"
+                className={`${buttonClassName("ghost", "sm")} hidden sm:inline-flex`}
+              >
                 Sign in
               </Link>
-              <Link href="/signup" className={buttonClassName("secondary", "sm")}>
+              <Link
+                href="/signup"
+                className={`${buttonClassName("secondary", "sm")} hidden sm:inline-flex`}
+              >
                 Sign up
               </Link>
             </>

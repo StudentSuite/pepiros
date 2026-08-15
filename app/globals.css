@@ -442,7 +442,12 @@
 
 html,
 body {
-  height: 100%;
+  /* min-height, NOT height. `height: 100%` boxes body at exactly the viewport,
+     so content taller than one screen overflows the box rather than growing it.
+     A sticky header's containing block is that box, which meant the header
+     stopped sticking after 100vh and scrolled away for the rest of the page.
+     min-height still fills the viewport on short pages. */
+  min-height: 100%;
 }
 
 body {
