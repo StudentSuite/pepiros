@@ -97,11 +97,15 @@ export function VerificationDemo() {
     >
       {/* Brand watermark -- the same LogoMark used in the header, oversized
           and near-invisible, purely for presence. Real generated brand asset
-          (design/brand/PEPIROS-BRAND/glyph/monochrome/, regenerated
-          2026-08-13), not decoration invented for this component. Fixed
-          fill color, not currentColor, so opacity does the "near-invisible"
-          work instead of a text-color alpha. */}
-      <LogoMark className="pointer-events-none absolute -bottom-10 -right-10 h-56 w-auto opacity-[0.04]" />
+          (design/PEPIROS-BRAND/glyph/monochrome/), not decoration invented for
+          this component. Fixed fill color, not currentColor, so opacity does
+          the "near-invisible" work instead of a text-color alpha.
+          `variant="paper"` is pinned because this card is a paper reading
+          surface in BOTH themes, so the mark must stay dark ink either way. */}
+      <LogoMark
+        variant="paper"
+        className="pointer-events-none absolute -bottom-10 -right-10 h-56 w-auto opacity-[0.04]"
+      />
 
       <p className="relative font-mono text-[10px] uppercase tracking-widest text-[#1c1a15]/40">
         Grounding, live
