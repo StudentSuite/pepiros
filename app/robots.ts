@@ -12,9 +12,17 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
+      // Kept in step with middleware.ts's matcher. robots is a request not to
+      // index; middleware is what actually enforces access.
       disallow: [
+        "/home",
         "/workspaces",
+        "/posts",
+        "/analytics",
+        "/comments",
+        "/onboarding",
         "/w/",
+        "/s/",
         "/settings",
         "/welcome",
         "/upload",
