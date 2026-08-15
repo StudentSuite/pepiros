@@ -67,8 +67,70 @@ const asProfile = (row: {
   onboarded: row.onboarded,
 });
 
+function initialsFrom(name: string): string {
+  const initials = name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() ?? "")
+    .join("");
+  return initials || "?";
+}
+
+const USERNAME_PATTERN = /^[a-z0-9_]{3,30}$/;
+
 export const supabaseAdapter: DataAdapter = {
   kind: "supabase",
+
+  async createAccount({ username, password, displayName }) {
+    const normalized = username.trim().toLowerCase();
+    if (!USERNAME_PATTERN.test(normalized)) {
+      return {
+        error: "Usernames are 3-30 characters: lowercase letters, numbers, and underscores only.",
+      };
+    }
+    if (password.length < 8) {
+      return { error: "Password must be at least 8 characters." };
+    }
+
+    const sb = createSupabaseServiceClient();
+
+    const { data: existing } = await sb
+      .from("profiles")
+      .select("id")
+      .eq("username", normalized)
+      .maybeSingle();
+    if (existing) {
+      return { error: "That username is already taken." };
+    }
+
+    const { data: created, error: createError } = await sb.auth.admin.createUser({
+      email: `${normalized}@users.pepiros.dev`,
+      password,
+      email_confirm: true,
+    });
+    if (createError || !created.user) {
+      return { error: createError?.message ?? "Could not create the account." };
+    }
+
+    const { error: profileError } = await sb.from("profiles").insert({
+      id: created.user.id,
+      username: normalized,
+      display_name: displayName.trim() || normalized,
+      avatar_initials: initialsFrom(displayName || normalized),
+    });
+    if (profileError) {
+      // Don't leave an auth user with no profile behind -- exactly the
+      // orphaned-row failure mode 0002_guest_seed.sql's own guard exists to
+      // avoid, just on the write path instead of the migration path.
+      await sb.auth.admin.deleteUser(created.user.id);
+      return { error: profileError.message };
+    }
+
+    const profile = await this.getProfile(created.user.id);
+    if (!profile) return { error: "Account was created but the profile could not be read back." };
+    return { profile };
+  },
 
   async verifyCredentials(username, password) {
     // Supabase Auth owns credentials; usernames map to an email alias.

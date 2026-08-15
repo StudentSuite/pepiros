@@ -2,91 +2,140 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
+import { Card } from "@/components/shadcn/card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 
 /**
- * Sign up.
+ * Sign up. Posts to a real endpoint (POST /api/auth/signup ->
+ * lib/data/adapter.ts's createAccount()) and receives the same signed
+ * session cookie login does, rather than validating input, creating
+ * nothing, and pushing to an auth-gated route.
  *
- * Account creation is not implemented, and this page says so rather than
- * validating, showing a success state, and pushing to an auth-gated route that
- * bounces the person straight back to /login. That is what it used to do.
- *
- * Until there is a real endpoint, the honest offer is the demo account, which
- * is a complete populated account anyone can open immediately.
+ * On a deployment with no Supabase project configured (PEPIROS_PLATFORM_
+ * BACKEND unset), createAccount() returns an honest error instead of a fake
+ * account -- the form still works, it just surfaces that error rather than
+ * a made-up success.
  */
 export default function SignupPage() {
-  const [email, setEmail] = useState("");
-  const [notice, setNotice] = useState<string | null>(null);
+  const router = useRouter();
+  const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setNotice(
-      "Sign-up is not open yet, so nothing was created. Sign in as guest / guest to look around a full account in the meantime.",
-    );
+    setError(null);
+
+    if (!displayName.trim()) return setError("Enter your name.");
+    if (!/^[a-z0-9_]{3,30}$/.test(username.trim().toLowerCase())) {
+      return setError("Usernames are 3-30 characters: lowercase letters, numbers, and underscores only.");
+    }
+    if (password.length < 8) return setError("Password must be at least 8 characters.");
+
+    setPending(true);
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ username, password, displayName }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        setError(body?.error ?? "Could not create an account.");
+        return;
+      }
+      router.push("/onboarding");
+      router.refresh();
+    } catch {
+      setError("Could not reach the server. Check your connection and try again.");
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
     <main className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col justify-center px-6 py-s-8">
-      <Logo size="md" />
+      <Card className="border-border bg-card p-s-6">
+        <Logo size="md" />
 
-      <h1 className="mt-s-6 font-serif text-[1.9rem] leading-tight text-ink">
-        Create an account
-      </h1>
-      <p className="mt-s-3 font-sans text-[15px] leading-relaxed text-ink-muted">
-        Read with every claim traced back to the sentence it came from.
-      </p>
-
-      <div className="mt-s-6 rounded-md border border-dashed border-border p-s-4">
-        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
-          Not open yet
+        <h1 className="mt-s-5 font-serif text-2xl text-ink">Create an account</h1>
+        <p className="mt-s-1 font-sans text-sm text-ink-muted">
+          Read with every claim traced back to the sentence it came from.
         </p>
-        <p className="mt-s-2 font-sans text-[14px] leading-relaxed text-ink-muted">
-          Accounts are not being created while Pepiros is an early build. The
-          demo account is a complete, populated account and needs no signup.
+
+        {error && (
+          <div className="mt-s-4">
+            <ErrorBanner message={error} />
+          </div>
+        )}
+
+        <form onSubmit={submit} className="mt-s-5 flex flex-col gap-s-4">
+          <div className="flex flex-col gap-s-2">
+            <Label htmlFor="displayName">Name</Label>
+            <Input
+              id="displayName"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              autoComplete="name"
+              placeholder="Ada Lovelace"
+            />
+          </div>
+
+          <div className="flex flex-col gap-s-2">
+            <Label htmlFor="username">Username</Label>
+            <Input
+              id="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoComplete="username"
+              placeholder="ada"
+            />
+            <p className="font-sans text-[13px] text-ink-faint">
+              Lowercase letters, numbers, and underscores. 3-30 characters.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-s-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
+              placeholder="••••••••"
+            />
+            <p className="font-sans text-[13px] text-ink-faint">At least 8 characters.</p>
+          </div>
+
+          <Button type="submit" disabled={pending}>
+            {pending ? "Creating account…" : "Create account"}
+          </Button>
+        </form>
+
+        <p className="mt-s-5 font-sans text-xs text-ink-faint">
+          Just looking? Sign in as <span className="font-mono text-ink">guest</span> /{" "}
+          <span className="font-mono text-ink">guest</span> on the{" "}
+          <Link href="/login" className="text-accent-text underline underline-offset-2">
+            sign-in page
+          </Link>{" "}
+          instead.
         </p>
-        <Button asChild variant="outline" size="sm" className="mt-s-3">
-          <Link href="/login">Open the demo account</Link>
-        </Button>
-      </div>
 
-      {notice && (
-        <div className="mt-s-5">
-          <ErrorBanner message={notice} variant="warn" />
-        </div>
-      )}
-
-      <form onSubmit={submit} className="mt-s-6 flex flex-col gap-s-4">
-        <div className="flex flex-col gap-s-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            autoComplete="email"
-          />
-          <p className="font-sans text-[13px] text-ink-faint">
-            Leave your address and we will tell you when accounts open. Nothing
-            is stored yet, so this currently does nothing.
-          </p>
-        </div>
-
-        <Button type="submit" variant="secondary">
-          Notify me
-        </Button>
-      </form>
-
-      <p className="mt-s-6 font-sans text-[13px] text-ink-faint">
-        Already have an account?{" "}
-        <Link href="/login" className="text-accent-text underline underline-offset-2">
-          Sign in
-        </Link>
-      </p>
+        <p className="mt-s-3 font-sans text-[13px] text-ink-faint">
+          Already have an account?{" "}
+          <Link href="/login" className="text-accent-text underline underline-offset-2">
+            Sign in
+          </Link>
+        </p>
+      </Card>
     </main>
   );
 }

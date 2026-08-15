@@ -35,10 +35,13 @@ import type {
  * a single component changing.
  */
 
+export type CreateAccountResult = { profile: Profile } | { error: string };
+
 export interface DataAdapter {
   readonly kind: "seed" | "supabase";
 
   verifyCredentials(username: string, password: string): Promise<Profile | null>;
+  createAccount(input: { username: string; password: string; displayName: string }): Promise<CreateAccountResult>;
   getProfile(id: string): Promise<Profile | null>;
   getProfileByUsername(username: string): Promise<Profile | null>;
   getOnboarding(profileId: string): Promise<OnboardingResponse | null>;
@@ -80,6 +83,16 @@ const seedAdapter: DataAdapter = {
 
   async getProfileByUsername(username) {
     return username.toLowerCase() === GUEST_USERNAME ? GUEST_PROFILE : null;
+  },
+
+  async createAccount() {
+    // The seed backend has no persistence to create a real row in -- it
+    // exists solely so the guest demo works with no Supabase project at all
+    // (see the module doc above). Honest failure here, not a fake account.
+    return {
+      error:
+        "Sign-up needs the Supabase-backed platform, which isn't enabled on this deployment. Sign in as guest/guest instead.",
+    };
   },
 
   async getOnboarding(profileId) {
