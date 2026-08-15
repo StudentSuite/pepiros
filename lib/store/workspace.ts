@@ -20,6 +20,8 @@ import type { Evidence, GraphNode, Workspace } from "@/types/anchor";
 interface WorkspaceState {
   workspace: Workspace | null;
   selectedNodeId: string | null;
+  /** Set when the most recent loadWorkspace() call failed; cleared on the next attempt. */
+  loadError: string | null;
   loadWorkspace: (workspaceId: string) => Promise<void>;
   selectNode: (nodeId: string | null) => void;
   /**
@@ -35,11 +37,21 @@ interface WorkspaceState {
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   workspace: null,
   selectedNodeId: null,
+  loadError: null,
   loadWorkspace: async (workspaceId) => {
-    const res = await fetch(`/api/workspace/${encodeURIComponent(workspaceId)}`);
-    if (!res.ok) throw new Error(`Could not load workspace ${workspaceId} (${res.status}).`);
-    const workspace = (await res.json()) as Workspace;
-    set({ workspace });
+    // Every call site fires this from a useEffect as `void loadWorkspace(...)`
+    // (or bare, uncaught) -- none of them are prepared to catch a rejection,
+    // since the old direct in-process call could never actually fail. Caught
+    // here rather than left to become an unhandled rejection in each of them.
+    set({ loadError: null });
+    try {
+      const res = await fetch(`/api/workspace/${encodeURIComponent(workspaceId)}`);
+      if (!res.ok) throw new Error(`Could not load workspace ${workspaceId} (${res.status}).`);
+      const workspace = (await res.json()) as Workspace;
+      set({ workspace });
+    } catch (err) {
+      set({ loadError: err instanceof Error ? err.message : "Could not load workspace." });
+    }
   },
   selectNode: (nodeId) => set({ selectedNodeId: nodeId }),
   addNode: (node, evidence) =>
