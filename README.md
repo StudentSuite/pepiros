@@ -55,10 +55,11 @@ Early build, moving fast. Honest status:
 | **LLM layer** (`lib/agents/*`) | Archetype classifier, archetype-conditioned pillar planner, and 6 of the 21 node generators (`summary`, `methodology`, `statistical_validity`, `stated_limitations`, `weaknesses`, `does_not_establish`), fanned out via `p-queue` with per-node failure isolation. Runs on **Groq (primary) + Featherless (fallback)**, not Anthropic: see [Configuration](#configuration). Every claimed quote is re-verified through the grounding spine before it becomes a real evidence row. Verified end to end against both live APIs, not just mocked. |
 | **MCP server** (`mcp/*`) | 8 tools (`search_paper`, `verify_claim`, `get_outline`, `get_node`, `create_node`, `find_contradictions`, `paper_facts`, `list_papers`), 3 resource templates for `@`-mentioning a workspace/paper/node, and the 4 `docs/PLAN-V1.md` §13.3 prompts, over stdio. `create_node` re-verifies submitted evidence server-side, so a client cannot assert `quote_located`. Verified over the real protocol with the SDK's own client. |
 | **Grounded chat** (`lib/services/chat.ts`, `POST /api/chat`) | Query rewrite → route classifier → stable-id context block → answer → citation re-verification. Refusal path with an explicit "answer without sources" opt-in; ungrounded answers render visually distinct. Verified against the live Groq API. |
-| **Canvas layout** (`lib/layout/*`) | Deterministic server-computed positions: radial for one paper, layered columns for several. Verified to produce no overlapping cards at 1, 2, or 3 papers. Pillars open collapsed, and edges render only when both endpoints do. |
+| **Canvas layout** (`lib/layout/*`) | Deterministic server-computed positions: radial for one paper, layered columns for several. Verified to produce no overlapping cards at 1, 2, or 3 papers. Pillars open collapsed, edges render only when both endpoints do, cards shed detail as you zoom out (`lib/graph/lod.ts`), and a closed-by-default legend explains every colour and line style the graph actually uses. |
+| **Auth** (`lib/auth/*`, `app/auth/callback`) | Google sign-in via Supabase as the OAuth broker, translated into the app's own signed cookie so there is one answer to "who is signed in". Sign-in buys persistence, not access: the reader and upload are open to guests, with a banner saying plainly that guest work is not kept. |
 | **Upload validation** (`lib/services/upload.ts`, `POST /api/ingest`) | Size (50MB), magic bytes, page cap (120), text-layer check, duplicate detection (DOI then fuzzy title), and arXiv/PMC/DOI URL resolution. `GET /api/jobs/[id]` streams the 9-stage progress list over SSE. Validation is enforced; parsing behind it is still a stub, so `202` means queued, not analyzed. |
 | **API** | `POST /api/verify`, `POST /api/audit`, `POST /api/chat`, `POST /api/ingest`, `GET /api/jobs/[id]`, `GET /api/graph/[workspaceId]`, `GET /api/related`, `GET /api/expand` |
-| **Tooling** | Typecheck, lint, test, and build all gated in CI on every push and PR. 218 Vitest cases across 22 files, including the LLM and chat layers tested against a hand-rolled mock model (no API key or network call needed). |
+| **Tooling** | Typecheck, lint, test, and build all gated in CI on every push and PR. 246 Vitest cases across 25 files, including the LLM and chat layers tested against a hand-rolled mock model (no API key or network call needed). |
 
 ### Not built yet
 
@@ -170,6 +171,16 @@ Nothing below is required to run against the fixture. Copy [`.env.example`](.env
 | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | Postgres, Storage, Auth, Realtime |
 | `DATABASE_URL` | Drizzle's direct Postgres connection |
+| `SESSION_SECRET` | Signs the app's own session cookie. Any long random string; falls back to a known constant in development and refuses to start without one in production |
+
+### Enabling Google sign-in
+
+The app is wired for it, but Google itself is enabled per-Supabase-project, not per-env-var — so this is two dashboard steps, not a code change:
+
+1. **Google Cloud Console** → create an OAuth 2.0 client (Web application), and set the authorised redirect URI to `https://<your-project>.supabase.co/auth/v1/callback`.
+2. **Supabase dashboard** → Authentication → Providers → Google → paste the client ID and secret, and add your app's origin (`http://localhost:3000` in development) to Authentication → URL Configuration → Redirect URLs.
+
+Until that is done the button still renders and fails honestly: the callback bounces back to `/login` with a message rather than dead-ending on a provider error page. Email/password sign-in and guest browsing are unaffected either way.
 
 **Free, no key required:**
 
