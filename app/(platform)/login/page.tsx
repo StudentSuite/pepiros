@@ -128,7 +128,12 @@ function LoginForm() {
           </div>
 
           <div className="flex flex-col gap-s-2">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              <Link href="/reset-password" className="font-sans text-xs text-ink-faint underline underline-offset-2 hover:text-accent-text">
+                Forgot password?
+              </Link>
+            </div>
             <Input
               id="password"
               type="password"
