@@ -20,17 +20,6 @@ function papersBy(username: string) {
   );
 }
 
-const KNOWN = [
-  "guest",
-  "priyasub",
-  "jonasw",
-  "hanak",
-  "tferreira",
-  "amarao",
-  "weiz",
-  "eroux",
-];
-
 const DISPLAY: Record<string, { name: string; bio: string }> = {
   guest: {
     name: "Guest Reader",
@@ -73,8 +62,14 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { username } = await params;
   const who = DISPLAY[username];
-  if (!who) return { title: "Profile not found" };
-  return { title: who.name, description: who.bio };
+  if (who) return { title: who.name, description: who.bio };
+
+  // Not an illustrative catalog persona -- check for a real account before
+  // giving up (same real-vs-illustrative fallback the page body itself
+  // uses below).
+  const profile = await getAdapter().getProfileByUsername(username);
+  if (!profile) return { title: "Profile not found" };
+  return { title: profile.displayName, description: profile.bio || undefined };
 }
 
 export default async function ProfilePage({
@@ -84,25 +79,36 @@ export default async function ProfilePage({
 }) {
   const { username } = await params;
 
-  // Previously this rendered the same mock profile for ANY username, so
-  // /u/anything looked like a real account. Unknown handles now 404.
-  if (!KNOWN.includes(username)) notFound();
-
-  const who = DISPLAY[username];
-  if (!who) notFound();
-
   const adapter = getAdapter();
   const profile = await adapter.getProfileByUsername(username);
-  const papers = papersBy(username);
-  const initials = who.name
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("");
+  const who = DISPLAY[username];
 
-  // profile is only non-null for a real account (today, just "guest") --
-  // catalog author personas without one keep the illustrative follower
-  // count and FollowButton's prior local-only toggle.
+  // KNOWN/DISPLAY are the fixed illustrative catalog personas (marketing
+  // content, not real accounts -- "guest" is the one entry that's both).
+  // Previously this rendered the same mock profile for ANY username at all,
+  // so /u/anything looked like a real account; the fix for that (KNOWN-only)
+  // then over-corrected the other way and 404'd every *real* signed-up
+  // account too, since KNOWN was never meant to be an allowlist of real
+  // users -- confirmed live: a real test account's own profile page 404'd
+  // even though getProfileByUsername() found it fine. A username is real
+  // precisely when adapter.getProfileByUsername() finds it; unknown handles
+  // that are neither a real account nor a catalog persona still 404.
+  if (!who && !profile) notFound();
+
+  const displayName = profile?.displayName ?? who!.name;
+  const bio = profile?.bio || who?.bio || "";
+  const papers = papersBy(username);
+  const initials =
+    profile?.avatarInitials ??
+    displayName
+      .split(" ")
+      .map((w) => w[0])
+      .slice(0, 2)
+      .join("");
+
+  // Real follower/follow-state only applies to a real account; a catalog
+  // persona with no profile row keeps the illustrative follower count and
+  // FollowButton's prior local-only toggle.
   let followers = 100 + papers.length * 37;
   let followState: { followeeId: string; username: string; initiallyFollowing: boolean } | undefined;
   if (profile) {
@@ -124,13 +130,15 @@ export default async function ProfilePage({
           </Avatar>
 
           <h1 className="mt-s-4 font-serif text-[1.9rem] leading-tight text-ink">
-            {who.name}
+            {displayName}
           </h1>
           <p className="mt-1 font-mono text-[12px] text-ink-faint">@{username}</p>
 
-          <p className="mx-auto mt-s-4 max-w-md font-sans text-[15px] leading-relaxed text-ink-muted">
-            {who.bio}
-          </p>
+          {bio && (
+            <p className="mx-auto mt-s-4 max-w-md font-sans text-[15px] leading-relaxed text-ink-muted">
+              {bio}
+            </p>
+          )}
 
           <div className="mt-s-5 flex items-center justify-center gap-s-3 font-sans text-[13px] text-ink-faint">
             <span>
