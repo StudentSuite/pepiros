@@ -2,10 +2,19 @@
  * Drizzle schema, full table list per plan.md §5. No vector column, no HNSW
  * index (pgvector/embeddings/BM25 killed -- whole paper goes in context,
  * prompt-cached, stable citation ids instead).
+ *
+ * All ids are `text`, not `uuid`. The app assigns its own human-readable,
+ * structurally meaningful ids (`paper-a1b2c3d4`, `{paperId}-c3` for a chunk,
+ * `synth-consensus-{workspaceId}` for a synthesis node, `mcp-<ts>-<rand>` from
+ * the MCP create_node path, `ws-1` for the bundled fixture) rather than
+ * Postgres-generated UUIDs -- chunk/numeric ids are deliberately prefixed by
+ * their paper so a citation id stays legible, and several ids are recomputed
+ * deterministically (e.g. synthesisNodeId) rather than randomly, which a
+ * `uuid` column's `defaultRandom()` can't express. No row here is ever
+ * inserted without the app already having assigned its id.
  */
 import {
   pgTable,
-  uuid,
   text,
   integer,
   real,
@@ -84,14 +93,14 @@ export const jobStatus = pgEnum("job_status", [
 // --- Core corpus ------------------------------------------------------
 
 export const workspaces = pgTable("workspaces", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: text("id").primaryKey(),
   name: text("name").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const papers = pgTable("papers", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  workspaceId: uuid("workspace_id")
+  id: text("id").primaryKey(),
+  workspaceId: text("workspace_id")
     .notNull()
     .references(() => workspaces.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
@@ -104,8 +113,8 @@ export const papers = pgTable("papers", {
 });
 
 export const sections = pgTable("sections", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  paperId: uuid("paper_id")
+  id: text("id").primaryKey(),
+  paperId: text("paper_id")
     .notNull()
     .references(() => papers.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
@@ -113,11 +122,11 @@ export const sections = pgTable("sections", {
 });
 
 export const chunks = pgTable("chunks", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  paperId: uuid("paper_id")
+  id: text("id").primaryKey(),
+  paperId: text("paper_id")
     .notNull()
     .references(() => papers.id, { onDelete: "cascade" }),
-  sectionId: uuid("section_id").references(() => sections.id, {
+  sectionId: text("section_id").references(() => sections.id, {
     onDelete: "set null",
   }),
   kind: chunkKind("kind").notNull().default("prose"),
@@ -136,8 +145,8 @@ export const chunks = pgTable("chunks", {
 });
 
 export const figures = pgTable("figures", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  paperId: uuid("paper_id")
+  id: text("id").primaryKey(),
+  paperId: text("paper_id")
     .notNull()
     .references(() => papers.id, { onDelete: "cascade" }),
   page: integer("page").notNull(),
@@ -146,8 +155,8 @@ export const figures = pgTable("figures", {
 });
 
 export const numerics = pgTable("numerics", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  chunkId: uuid("chunk_id")
+  id: text("id").primaryKey(),
+  chunkId: text("chunk_id")
     .notNull()
     .references(() => chunks.id, { onDelete: "cascade" }),
   rawText: text("raw_text").notNull(),
@@ -160,8 +169,8 @@ export const numerics = pgTable("numerics", {
 });
 
 export const references_ = pgTable("references_", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  paperId: uuid("paper_id")
+  id: text("id").primaryKey(),
+  paperId: text("paper_id")
     .notNull()
     .references(() => papers.id, { onDelete: "cascade" }),
   rawText: text("raw_text").notNull(),
@@ -172,11 +181,11 @@ export const references_ = pgTable("references_", {
 // --- Graph layer --------------------------------------------------------
 
 export const nodes = pgTable("nodes", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  workspaceId: uuid("workspace_id")
+  id: text("id").primaryKey(),
+  workspaceId: text("workspace_id")
     .notNull()
     .references(() => workspaces.id, { onDelete: "cascade" }),
-  paperId: uuid("paper_id").references(() => papers.id, { onDelete: "cascade" }),
+  paperId: text("paper_id").references(() => papers.id, { onDelete: "cascade" }),
   type: nodeType("type").notNull(),
   title: text("title").notNull(),
   bodyMd: text("body_md").notNull().default(""),
@@ -188,8 +197,8 @@ export const nodes = pgTable("nodes", {
 });
 
 export const nodeVersions = pgTable("node_versions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  nodeId: uuid("node_id")
+  id: text("id").primaryKey(),
+  nodeId: text("node_id")
     .notNull()
     .references(() => nodes.id, { onDelete: "cascade" }),
   bodyMd: text("body_md").notNull(),
@@ -197,25 +206,25 @@ export const nodeVersions = pgTable("node_versions", {
 });
 
 export const edges = pgTable("edges", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  workspaceId: uuid("workspace_id")
+  id: text("id").primaryKey(),
+  workspaceId: text("workspace_id")
     .notNull()
     .references(() => workspaces.id, { onDelete: "cascade" }),
   kind: edgeKind("kind").notNull(),
-  sourceId: uuid("source_id")
+  sourceId: text("source_id")
     .notNull()
     .references(() => nodes.id, { onDelete: "cascade" }),
-  targetId: uuid("target_id")
+  targetId: text("target_id")
     .notNull()
     .references(() => nodes.id, { onDelete: "cascade" }),
 });
 
 export const evidence = pgTable("evidence", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  nodeId: uuid("node_id")
+  id: text("id").primaryKey(),
+  nodeId: text("node_id")
     .notNull()
     .references(() => nodes.id, { onDelete: "cascade" }),
-  chunkId: uuid("chunk_id").references(() => chunks.id, { onDelete: "set null" }),
+  chunkId: text("chunk_id").references(() => chunks.id, { onDelete: "set null" }),
   /** Stable citation id as shown to the model, e.g. "C7", "F3", "N12". */
   refId: text("ref_id").notNull(),
   quote: text("quote"),
@@ -229,16 +238,16 @@ export const evidence = pgTable("evidence", {
 // --- Conversation + learning ---------------------------------------------
 
 export const conversations = pgTable("conversations", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  workspaceId: uuid("workspace_id")
+  id: text("id").primaryKey(),
+  workspaceId: text("workspace_id")
     .notNull()
     .references(() => workspaces.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const messages = pgTable("messages", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  conversationId: uuid("conversation_id")
+  id: text("id").primaryKey(),
+  conversationId: text("conversation_id")
     .notNull()
     .references(() => conversations.id, { onDelete: "cascade" }),
   role: text("role").notNull(),
@@ -247,26 +256,26 @@ export const messages = pgTable("messages", {
 });
 
 export const flashcards = pgTable("flashcards", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  workspaceId: uuid("workspace_id")
+  id: text("id").primaryKey(),
+  workspaceId: text("workspace_id")
     .notNull()
     .references(() => workspaces.id, { onDelete: "cascade" }),
-  nodeId: uuid("node_id").references(() => nodes.id, { onDelete: "set null" }),
+  nodeId: text("node_id").references(() => nodes.id, { onDelete: "set null" }),
   front: text("front").notNull(),
   back: text("back").notNull(),
 });
 
 export const quizzes = pgTable("quizzes", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  workspaceId: uuid("workspace_id")
+  id: text("id").primaryKey(),
+  workspaceId: text("workspace_id")
     .notNull()
     .references(() => workspaces.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
 });
 
 export const quizAttempts = pgTable("quiz_attempts", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  quizId: uuid("quiz_id")
+  id: text("id").primaryKey(),
+  quizId: text("quiz_id")
     .notNull()
     .references(() => quizzes.id, { onDelete: "cascade" }),
   score: real("score").notNull(),
@@ -274,10 +283,10 @@ export const quizAttempts = pgTable("quiz_attempts", {
 });
 
 export const learningState = pgTable("learning_state", {
-  nodeId: uuid("node_id")
+  nodeId: text("node_id")
     .notNull()
     .references(() => nodes.id, { onDelete: "cascade" }),
-  workspaceId: uuid("workspace_id")
+  workspaceId: text("workspace_id")
     .notNull()
     .references(() => workspaces.id, { onDelete: "cascade" }),
   lastReviewedAt: timestamp("last_reviewed_at", { withTimezone: true }),
@@ -286,8 +295,8 @@ export const learningState = pgTable("learning_state", {
 // --- Jobs + sharing -------------------------------------------------------
 
 export const jobs = pgTable("jobs", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  workspaceId: uuid("workspace_id")
+  id: text("id").primaryKey(),
+  workspaceId: text("workspace_id")
     .notNull()
     .references(() => workspaces.id, { onDelete: "cascade" }),
   kind: text("kind").notNull(),
@@ -296,8 +305,8 @@ export const jobs = pgTable("jobs", {
 });
 
 export const jobEvents = pgTable("job_events", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  jobId: uuid("job_id")
+  id: text("id").primaryKey(),
+  jobId: text("job_id")
     .notNull()
     .references(() => jobs.id, { onDelete: "cascade" }),
   message: text("message").notNull(),
@@ -306,7 +315,7 @@ export const jobEvents = pgTable("job_events", {
 
 export const shareTokens = pgTable("share_tokens", {
   token: text("token").primaryKey(),
-  workspaceId: uuid("workspace_id")
+  workspaceId: text("workspace_id")
     .notNull()
     .references(() => workspaces.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -326,14 +335,21 @@ export const shareTokens = pgTable("share_tokens", {
  *   Null means the token may reach any workspace its owner can.
  * - `revokedAt` ("Support revocation") rather than deleting the row, so an
  *   audit trail of a revoked token's past calls survives the revocation.
+ *
+ * Not actually backed by this table yet -- lib/services/mcpTokens.ts uses a
+ * gitignored JSON file instead, on purpose: mcp/stdio.ts runs as a separate OS
+ * process from the Next.js server, and needs to see a token immediately after
+ * Settings mints it without a shared in-process cache. The table stays here as
+ * the eventual real store once that process boundary is worth crossing with a
+ * DB round-trip on every tool call.
  */
 export const mcpTokenScope = pgEnum("mcp_token_scope", ["read", "write"]);
 
 export const mcpTokens = pgTable("mcp_tokens", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: text("id").primaryKey(),
   tokenHash: text("token_hash").notNull().unique(),
   scope: mcpTokenScope("scope").notNull().default("read"),
-  workspaceId: uuid("workspace_id").references(() => workspaces.id, { onDelete: "cascade" }),
+  workspaceId: text("workspace_id").references(() => workspaces.id, { onDelete: "cascade" }),
   label: text("label"),
   lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),

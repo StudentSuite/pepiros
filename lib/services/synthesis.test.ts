@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { LanguageModelV2 } from "@ai-sdk/provider";
+import { eq } from "drizzle-orm";
 import { mockTextModel } from "@/lib/testing/mockLanguageModel";
+import { db } from "@/lib/db/client";
+import { workspaces } from "@/lib/db/schema";
 import workspaceFixture from "@/fixtures/workspace.json";
 import type { Workspace } from "@/types/anchor";
 
@@ -17,12 +20,13 @@ vi.mock("@/lib/ai/client", () => ({
   fastModel: () => mockTextModel("{}"),
 }));
 
-afterEach(() => {
+afterEach(async () => {
   strongQueue = [];
-  // runSynthesis persists into the shared in-memory ingestStore keyed by
-  // workspaceId ("ws-1") -- clear it so other test files reading the
-  // pristine fixture via fetchWorkspace("ws-1") aren't affected.
-  delete (globalThis as { __pepirosIngestedWorkspaces?: unknown }).__pepirosIngestedWorkspaces;
+  // runSynthesis persists into the real "ws-1" workspace row (lib/db/queries)
+  // -- delete it (cascades to every child table) so the next test's
+  // fetchWorkspace("ws-1") reads the pristine fixture again, not the
+  // previous test's synthesis output piled on top of it.
+  await db.delete(workspaces).where(eq(workspaces.id, "ws-1"));
 });
 
 import { runSynthesis } from "./synthesis";
@@ -46,6 +50,9 @@ function relationResponse(input: {
 }
 
 describe("runSynthesis", () => {
+  // 15s, not the 5s default: runSynthesis now round-trips real Postgres
+  // (lib/db/queries) for every fetchWorkspace/createNode call instead of an
+  // in-memory Map, and each test pays that network latency several times over.
   it("writes a two-sided contradicts edge and a Contradictions synthesis node when both quotes verify", async () => {
     strongQueue = [
       relationResponse({
@@ -78,14 +85,14 @@ describe("runSynthesis", () => {
     // recognize "[^eN]"-shaped ids) never render a citation chip and the
     // literal text "[^n0]" leaks into the UI.
     const contradictsEdge = contradictsEdges[0]!;
-    const merged = getIngestedWorkspace("ws-1")!;
+    const merged = (await getIngestedWorkspace("ws-1"))!;
     const sideNodeA = merged.nodes.find((n) => n.id === contradictsEdge.sourceId)!;
     const sideNodeB = merged.nodes.find((n) => n.id === contradictsEdge.targetId)!;
     expect(sideNodeA.bodyMd).not.toContain("[^n0]");
     expect(sideNodeB.bodyMd).not.toContain("[^n0]");
     expect(sideNodeA.bodyMd).toMatch(/\[\^[\w-]+\]/);
     expect(sideNodeB.bodyMd).toMatch(/\[\^[\w-]+\]/);
-  });
+  }, 15000);
 
   it("rejects a pair when one side's quote does not verify against its own paper (two-sided evidence invariant)", async () => {
     strongQueue = [
@@ -108,7 +115,7 @@ describe("runSynthesis", () => {
 
     expect(result.edgesWritten.filter((e) => e.kind === "contradicts")).toHaveLength(0);
     expect(result.rejected.some((r) => r.reason.includes("did not verify"))).toBe(true);
-  });
+  }, 15000);
 
   it("writes a Consensus node for an agrees relation", async () => {
     strongQueue = [
@@ -129,5 +136,5 @@ describe("runSynthesis", () => {
 
     expect(result.edgesWritten.some((e) => e.kind === "agrees")).toBe(true);
     expect(result.synthesisNodesWritten.some((n) => n.title === "Consensus")).toBe(true);
-  });
+  }, 15000);
 });

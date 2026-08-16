@@ -77,7 +77,7 @@ export async function runIngest(input: IngestInput): Promise<void> {
       `Found ${parsed.sections.length} sections across ${parsed.pageCount} pages.`,
     );
 
-    const base = getIngestedWorkspace(input.workspaceId) ?? (await fetchWorkspace(input.workspaceId));
+    const base = (await getIngestedWorkspace(input.workspaceId)) ?? (await fetchWorkspace(input.workspaceId));
     const paperId = `paper-${randomUUID().slice(0, 8)}`;
     const workspaceId = input.workspaceId;
     // The PDF's own embedded title, when present, is more trustworthy than a
@@ -201,7 +201,7 @@ export async function runIngest(input: IngestInput): Promise<void> {
       evidence: [...base.evidence, ...okLeaves.flatMap((l) => l.evidence)],
     };
 
-    setIngestedWorkspace(merged);
+    await setIngestedWorkspace(merged);
     appendEvent(
       input.jobId,
       "Ready",

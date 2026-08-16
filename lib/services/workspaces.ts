@@ -29,8 +29,8 @@ function summarize(workspace: Workspace): WorkspaceSummary {
  * own id, in which case that (now-merged) entry supersedes it rather than
  * showing up twice.
  */
-export function listWorkspaces(): WorkspaceSummary[] {
-  const ingested = listIngestedWorkspaces();
+export async function listWorkspaces(): Promise<WorkspaceSummary[]> {
+  const ingested = await listIngestedWorkspaces();
   const summaries = ingested.map(summarize);
   if (!ingested.some((w) => w.id === FIXTURE_ID)) {
     summaries.unshift(summarize(workspaceFixture as unknown as Workspace));
@@ -38,7 +38,7 @@ export function listWorkspaces(): WorkspaceSummary[] {
   return summaries;
 }
 
-export function createWorkspace(name: string): WorkspaceSummary {
+export async function createWorkspace(name: string): Promise<WorkspaceSummary> {
   const workspace: Workspace = {
     id: `ws-${randomUUID().slice(0, 8)}`,
     name,
@@ -49,10 +49,10 @@ export function createWorkspace(name: string): WorkspaceSummary {
     edges: [],
     evidence: [],
   };
-  setIngestedWorkspace(workspace);
+  await setIngestedWorkspace(workspace);
   return summarize(workspace);
 }
 
-export function workspaceExists(workspaceId: string): boolean {
-  return workspaceId === FIXTURE_ID || Boolean(getIngestedWorkspace(workspaceId));
+export async function workspaceExists(workspaceId: string): Promise<boolean> {
+  return workspaceId === FIXTURE_ID || Boolean(await getIngestedWorkspace(workspaceId));
 }

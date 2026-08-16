@@ -318,7 +318,8 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
       // A pinned token only ever sees its own workspace in this list -- listing
       // every workspace on the server would leak names/paper counts a pinned
       // token has no other way to reach.
-      const workspaces = listWorkspaces().filter((w) => !session || canAccessWorkspace(session, w.id));
+      const allWorkspaces = await listWorkspaces();
+      const workspaces = allWorkspaces.filter((w) => !session || canAccessWorkspace(session, w.id));
       return json({
         workspaces: workspaces.map((w) => ({ workspace_id: w.id, name: w.name, paper_count: w.paperCount })),
       });
@@ -336,7 +337,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
       const denial = authorize(null, true);
       if (denial) return errorText(denial);
 
-      const workspace = createWorkspace(name);
+      const workspace = await createWorkspace(name);
       return json({
         workspace_id: workspace.id,
         name: workspace.name,

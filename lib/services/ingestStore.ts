@@ -1,34 +1,31 @@
 import "server-only";
 import type { Workspace } from "@/types/anchor";
+import { getWorkspace, saveWorkspace, listWorkspaceSummaries } from "@/lib/db/queries";
 
 /**
  * Holds workspaces that real ingest (lib/services/ingest.ts) has actually
- * built or added a paper to. Same in-memory, DB-shaped pattern as
- * lib/services/jobs.ts and lib/services/share.ts -- there is no live
- * Postgres for the grounding domain yet (CLAUDE.md's current data seam), so
- * this is what a real ingested workspace lives in until one exists.
+ * built or added a paper to. Backed by the live Postgres project via
+ * lib/db/queries/index.ts (issue #47) -- this used to be a `global`
+ * in-memory Map, which meant a paper ingested in one server run had no
+ * graph left the next time the process started (every dev-server restart,
+ * every Vercel cold start). Same seam, same function names, real storage.
  *
  * lib/services/workspace.ts's fetchWorkspace() is the only reader: this file
  * is not a second data path, it's what that one seam falls back to before
  * the static fixture.
  */
-declare global {
-  var __pepirosIngestedWorkspaces: Map<string, Workspace> | undefined;
+
+export async function getIngestedWorkspace(workspaceId: string): Promise<Workspace | undefined> {
+  return getWorkspace(workspaceId);
 }
 
-function store(): Map<string, Workspace> {
-  if (!global.__pepirosIngestedWorkspaces) global.__pepirosIngestedWorkspaces = new Map();
-  return global.__pepirosIngestedWorkspaces;
+export async function setIngestedWorkspace(workspace: Workspace): Promise<void> {
+  await saveWorkspace(workspace);
 }
 
-export function getIngestedWorkspace(workspaceId: string): Workspace | undefined {
-  return store().get(workspaceId);
-}
-
-export function setIngestedWorkspace(workspace: Workspace): void {
-  store().set(workspace.id, workspace);
-}
-
-export function listIngestedWorkspaces(): Workspace[] {
-  return [...store().values()];
+/** Every workspace real ingest has actually written -- no fixture here; lib/services/workspaces.ts's listWorkspaces() adds that. */
+export async function listIngestedWorkspaces(): Promise<Workspace[]> {
+  const summaries = await listWorkspaceSummaries();
+  const real = await Promise.all(summaries.map((s) => getWorkspace(s.id)));
+  return real.filter((w): w is Workspace => Boolean(w));
 }

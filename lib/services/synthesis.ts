@@ -74,7 +74,7 @@ function synthesisNodeId(workspaceId: string, kind: string): string {
 }
 
 export async function runSynthesis(workspaceId: string): Promise<SynthesisResult> {
-  const workspace = getIngestedWorkspace(workspaceId) ?? (await fetchWorkspace(workspaceId));
+  const workspace = (await getIngestedWorkspace(workspaceId)) ?? (await fetchWorkspace(workspaceId));
   const papers = workspace.papers;
 
   const newLeafNodes: GraphNode[] = [];
@@ -237,7 +237,7 @@ export async function runSynthesis(workspaceId: string): Promise<SynthesisResult
     edges: [...workspace.edges, ...edgesWritten],
     evidence: [...workspace.evidence, ...newEvidence],
   };
-  setIngestedWorkspace(merged);
+  await setIngestedWorkspace(merged);
 
   return { pairsCompared, edgesWritten, synthesisNodesWritten, rejected };
 }
