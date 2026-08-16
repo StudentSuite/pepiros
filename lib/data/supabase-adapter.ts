@@ -346,6 +346,19 @@ export const supabaseAdapter: DataAdapter = {
     return data ? asProfile(data) : null;
   },
 
+  async updateProfile(profileId, { displayName, bio }) {
+    const sb = createSupabaseServiceClient();
+    const trimmedName = displayName.trim();
+    const { data, error } = await sb
+      .from("profiles")
+      .update({ display_name: trimmedName, bio: bio.trim(), avatar_initials: initialsFrom(trimmedName) })
+      .eq("id", profileId)
+      .select("*")
+      .single();
+    if (error || !data) throw new Error(error?.message ?? "Could not update the profile.");
+    return asProfile(data);
+  },
+
   async getProfileByUsername(username) {
     const sb = await createSupabaseServerClient();
     const { data } = await sb

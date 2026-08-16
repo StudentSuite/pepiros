@@ -8,6 +8,7 @@ import { Textarea } from "@/components/shadcn/textarea";
 import { Avatar, AvatarFallback } from "@/components/shadcn/avatar";
 import { SettingsRow } from "./SettingsRow";
 import type { Profile } from "@/lib/data/types";
+import { updateProfileAction } from "@/app/(app)/actions";
 
 const BIO_MAX = 280;
 
@@ -27,13 +28,14 @@ export function ProfileForm({
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 300));
-    setSaving(false);
-    toast.success("Saved", {
-      description: readOnly
-        ? "Shared demo account, so this is not persisted."
-        : undefined,
-    });
+    try {
+      await updateProfileAction({ displayName, bio });
+      toast.success("Saved");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save your changes.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (

@@ -43,6 +43,24 @@ export async function saveOnboardingAction(response: OnboardingResponse) {
 }
 
 /**
+ * Persist a display name/bio edit (components/settings/ProfileForm.tsx).
+ * Used to just await a setTimeout and show a success toast with no real
+ * write at all -- the same silently-vanishing-edit failure mode the
+ * node-editor Save bug was, before that one got its own real fix. The
+ * profile id comes from the session, never the client, same reasoning as
+ * every other action here.
+ */
+export async function updateProfileAction(input: { displayName: string; bio: string }) {
+  const profile = await getSession();
+  if (!profile) throw new Error("Not signed in.");
+
+  const updated = await getAdapter().updateProfile(profile.id, input);
+  revalidatePath("/settings/profile");
+  revalidatePath(`/u/${updated.username}`);
+  return updated;
+}
+
+/**
  * Mint a real MCP token (lib/services/mcpTokens.ts, backed by
  * lib/services/mcpAuth.ts's hashing). The raw token is returned to the
  * caller exactly once here and is never retrievable again -- only its hash

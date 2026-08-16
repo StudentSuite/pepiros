@@ -92,6 +92,17 @@ export interface DataAdapter {
   requestPasswordReset(username: string): Promise<{ ok: true } | { error: string }>;
 
   /**
+   * components/settings/ProfileForm.tsx's Save button used to just await a
+   * setTimeout and show a success toast -- a real edit vanished exactly
+   * like the node-editor Save bug (a P0 that got its own real fix) did
+   * before that one was caught. This is the real persistence that was
+   * missing: displayName/bio only, since username is deliberately
+   * unchangeable (its own row in that form says so) and avatar/onboarding
+   * have their own paths.
+   */
+  updateProfile(profileId: string, input: { displayName: string; bio: string }): Promise<Profile>;
+
+  /**
    * The live `posts` row a catalog paper corresponds to, if any (matched by
    * `paper_id`). Null in seed mode (no real post concept there) and in
    * supabase mode for any catalog paper nobody has published yet -- callers
@@ -162,6 +173,15 @@ const seedAdapter: DataAdapter = {
     return {
       error: "Password reset needs the Supabase-backed platform, which isn't enabled on this deployment.",
     };
+  },
+
+  async updateProfile() {
+    // Unreachable in practice: the seed backend's only profile is the guest
+    // demo account, and ProfileForm always renders it readOnly (its inputs
+    // are disabled, so "dirty" can never become true to enable Save). A real
+    // call here would mean that guard was bypassed, which is a bug to
+    // surface loudly, not something to paper over with a silent no-op.
+    throw new Error("The demo account's profile cannot be edited.");
   },
 
   // No real post/comment/like/follow concept in seed mode -- callers treat a
