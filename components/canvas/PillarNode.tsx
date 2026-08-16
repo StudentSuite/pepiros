@@ -30,7 +30,12 @@ export function PillarNode({ data }: NodeProps<PepirosNode>) {
       )}
       style={{
         borderColor: color,
-        backgroundColor: `color-mix(in srgb, ${color} 8%, var(--surface-raised))`,
+        // 8% -> 4%: pillarTextColor()'s --pillar-N-text tokens are calibrated
+        // for 4.5:1 against plain --surface-raised (app/globals.css); the tint
+        // this card adds on top of that shifted the worst hue (stone) down to
+        // 3.61:1 in practice. Halving it recovers most of that margin back
+        // without losing the pillar-tinted-card effect entirely.
+        backgroundColor: `color-mix(in srgb, ${color} 4%, var(--surface-raised))`,
         animationDelay: `${appearDelayMs ?? 0}ms`,
       }}
     >
@@ -47,8 +52,10 @@ export function PillarNode({ data }: NodeProps<PepirosNode>) {
           <button
             type="button"
             // nodrag/nopan: without these React Flow treats the pointerdown as a
-            // node drag and the click never lands.
-            className="nodrag nopan -mr-1 -mt-0.5 flex shrink-0 items-center gap-1 rounded px-1 py-0.5 font-mono text-[10px] text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink"
+            // node drag and the click never lands. Visible box stays small to
+            // fit this cramped card header; before: expands the invisible hit
+            // area out to the WCAG 44px touch-target minimum instead.
+            className="nodrag nopan relative -mr-1 -mt-0.5 flex shrink-0 items-center gap-1 rounded px-1 py-0.5 font-mono text-[10px] text-ink-muted transition-colors before:absolute before:-inset-[13px] before:content-[''] hover:bg-surface-sunken hover:text-ink"
             onClick={(event) => {
               event.stopPropagation();
               onToggleCollapse!();

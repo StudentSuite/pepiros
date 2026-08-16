@@ -4,6 +4,7 @@ import clsx from "clsx";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { PepirosNode } from "./types";
 import { InlineRefs, stripRefMarkers } from "./InlineRefs";
+import { useWorkspaceStore } from "@/lib/store/workspace";
 
 /**
  * Cross-paper synthesis -- has no pillarIndex and no paperId (it isn't scoped to one
@@ -15,6 +16,7 @@ import { InlineRefs, stripRefMarkers } from "./InlineRefs";
  */
 export function SynthesisNode({ data }: NodeProps<PepirosNode>) {
   const { node, evidence, spannedPapers, appearDelayMs } = data;
+  const selectNode = useWorkspaceStore((s) => s.selectNode);
   return (
     <div
       className={clsx(
@@ -29,13 +31,22 @@ export function SynthesisNode({ data }: NodeProps<PepirosNode>) {
         {spannedPapers && spannedPapers.length > 0 && (
           <div className="flex -space-x-1.5">
             {spannedPapers.map((p) => (
-              <span
+              // A real jump to that paper's node, not just a decorative
+              // avatar -- these used to render as inert <span>s that looked
+              // clickable (rounded chip, hover-shaped) and did nothing.
+              <button
                 key={p.id}
+                type="button"
                 title={p.label}
-                className="flex h-5 w-5 items-center justify-center rounded-full border border-surface-raised bg-surface-sunken font-mono text-[9px] text-ink-muted"
+                aria-label={`Open ${p.label}`}
+                className="nodrag nopan relative flex h-5 w-5 items-center justify-center rounded-full border border-surface-raised bg-surface-sunken font-mono text-[9px] text-ink-muted transition-colors before:absolute before:-inset-2 before:content-[''] hover:bg-accent-wash hover:text-accent-text focus-visible:z-10 focus-visible:outline-none focus-visible:shadow-glow-accent"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  selectNode(p.id);
+                }}
               >
                 {p.label}
-              </span>
+              </button>
             ))}
           </div>
         )}

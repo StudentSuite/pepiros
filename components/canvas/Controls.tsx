@@ -2,8 +2,11 @@
 
 import { Panel as FlowPanel, useReactFlow } from "@xyflow/react";
 
+// h-11 w-11 = 44px, the WCAG 2.5.5/2.5.8 touch-target minimum -- was h-7 w-7
+// (28px). Focus ring comes from globals.css's global `button:focus-visible`
+// fallback rule, no class needed here.
 const buttonClass =
-  "flex h-7 w-7 items-center justify-center rounded font-sans text-sm leading-none text-ink-muted hover:bg-surface-sunken hover:text-ink";
+  "flex h-11 w-11 items-center justify-center rounded font-sans text-sm leading-none text-ink-muted hover:bg-surface-sunken hover:text-ink";
 
 // React Flow's fitView takes a raw ms number, not a CSS class, so this can't
 // read `duration-canvas` directly -- kept numerically equal to --dur-canvas

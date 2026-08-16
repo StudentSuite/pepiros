@@ -118,7 +118,14 @@
   --e-1: 0 1px 2px rgba(60, 48, 28, 0.08);
   --e-2: 0 4px 12px rgba(60, 48, 28, 0.1), 0 0 0 1px var(--border);
   --e-3: 0 16px 40px rgba(60, 48, 28, 0.14), 0 0 0 1px var(--border-strong);
-  --glow-accent: 0 0 0 3px var(--accent-wash);
+  /* Focus ring. A halo, not a wash: a 2px surface-colour gap then a solid
+     3px --accent ring, so it reads at real contrast against whatever it
+     sits on (--accent measures ~4.9:1 against parchment, comfortably over
+     WCAG 2.4.11's 3:1 floor for UI indicators) rather than reusing
+     --accent-wash's ~8% alpha, which was designed as a background tint
+     (upload dropzone, onboarding, MCP token banner) and computed to
+     ~1.05:1 -- effectively invisible -- when reused here for a ring. */
+  --glow-accent: 0 0 0 2px var(--surface-raised), 0 0 0 5px var(--accent);
 
   /* Paper grain. Multiply darkens correctly on parchment; on the dark theme it
      crushes to near-black, so .dark switches to overlay at a lower opacity. */
@@ -463,6 +470,18 @@ body {
 
 .react-flow__attribution {
   display: none;
+}
+
+/* Every canvas node is keyboard-reachable (role="group" tabindex="0", React
+   Flow's own default) but rendered with no visible focus state at all --
+   Tab lands on a node and opens its inspector correctly, with nothing on
+   screen showing where you are. React Flow's node wrapper is library-owned
+   markup (no class hook from inside a node component reaches it), so this
+   is patched globally here, same pattern as .react-flow__attribution above. */
+.react-flow__node:focus-visible {
+  outline: none;
+  box-shadow: var(--glow-accent);
+  border-radius: var(--r-sm);
 }
 
 /* Global focus-visible fallback (docs/PLAN-V1.md §15). Primitives (Button,

@@ -89,6 +89,8 @@ export function GraphEdge({
     targetPosition,
   });
   const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const revealed = hovered || focused;
 
   const samePillar = sourcePillarIndex != null && sourcePillarIndex === targetPillarIndex;
   const color = TINTABLE.has(edge.kind) && samePillar ? pillarColor(sourcePillarIndex) : baseColor(edge.kind);
@@ -104,27 +106,38 @@ export function GraphEdge({
         className={clsx(marching && "motion-dash-march")}
         style={{
           stroke: color,
-          // Hover thickens (docs/PLAN-V1.md §9.1). Widening the stroke rather
-          // than changing color keeps the kind's own semantic color intact --
-          // a contradiction stays red while hovered.
-          strokeWidth: strokeWidth(edge.kind) + (hovered ? 1 : 0),
+          // Hover thickens (docs/PLAN-V1.md §9.1); keyboard focus does the same
+          // (see the interaction path below) so a sighted keyboard user gets
+          // the same cue a mouse hover gives. Widening the stroke rather than
+          // changing color keeps the kind's own semantic color intact -- a
+          // contradiction stays red while hovered/focused.
+          strokeWidth: strokeWidth(edge.kind) + (revealed ? 1 : 0),
           strokeDasharray: DASH[edge.kind],
           transition: "stroke-width var(--dur-fast) var(--ease-out)",
         }}
       />
       {/* A bezier path is ~1px of hit target, which is unhittable in practice.
           This invisible wider path is what actually catches the pointer; React
-          Flow passes its own default width in via interactionWidth. */}
+          Flow passes its own default width in via interactionWidth. Also the
+          only way to reach an edge's meaning by keyboard: relationship kind
+          used to be hover-only, so a sighted keyboard user (and anyone who
+          can't hover) had no way to learn what a line meant. Tab reaches it
+          and focus reveals the same label hover does. */}
       <path
         d={path}
         fill="none"
         strokeOpacity={0}
         strokeWidth={interactionWidth ?? 20}
         className="react-flow__edge-interaction"
+        tabIndex={0}
+        role="img"
+        aria-label={KIND_LABEL[edge.kind]}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
       />
-      {hovered && (
+      {revealed && (
         <EdgeLabelRenderer>
           <div
             // Borrowed styling rather than the Tooltip/Popover primitives: both

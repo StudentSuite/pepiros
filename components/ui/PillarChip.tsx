@@ -26,10 +26,18 @@ export function pillarColor(pillarIndex: number | null): string {
  * this, not pillarColor(), wherever a pillar hue is the literal text
  * colour of real content -- borders, dots, and edge strokes keep the exact
  * canonical hex from the reference board.
+ *
+ * Reads the dedicated --pillar-N-text tokens (app/globals.css), which exist
+ * for exactly this and are already redefined per theme (collapsed back onto
+ * the raw fills in dark mode, where they already clear contrast). This used
+ * to mix the fill 75% toward *white* instead, which lightens an
+ * already-borderline hue -- the wrong direction on a light parchment
+ * surface, and measured as low as 1.58:1 in practice.
  */
 export function pillarTextColor(pillarIndex: number | null): string {
   if (!pillarIndex) return "var(--ink-faint)";
-  return `color-mix(in srgb, ${pillarColor(pillarIndex)} 75%, white)`;
+  const index = ((pillarIndex - 1) % PILLAR_COLOR_VAR.length) + 1;
+  return `var(--pillar-${index}-text)`;
 }
 
 /**

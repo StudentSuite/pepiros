@@ -38,7 +38,9 @@ export function CanvasLegend({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="absolute bottom-4 left-4 z-10 inline-flex items-center gap-2 rounded-full border border-border-strong bg-surface-raised px-3 py-1.5 font-sans text-xs text-ink-muted shadow-e-2 transition-colors duration-fast ease-out hover:text-ink"
+        // min-h-11 (44px, the WCAG 2.5.5/2.5.8 touch-target minimum) -- was
+        // sized off py-1.5 alone, which measured 29px.
+        className="absolute bottom-4 left-4 z-10 inline-flex min-h-11 items-center gap-2 rounded-full border border-border-strong bg-surface-raised px-3 py-1.5 font-sans text-xs text-ink-muted shadow-e-2 transition-colors duration-fast ease-out hover:text-ink"
       >
         <HelpCircle className="size-3.5" aria-hidden />
         What am I looking at?
@@ -56,7 +58,10 @@ export function CanvasLegend({
           type="button"
           onClick={() => setOpen(false)}
           aria-label="Close legend"
-          className="rounded p-0.5 text-ink-faint transition-colors duration-fast hover:text-ink"
+          // Visible box stays small (18px, matching this compact sticky header) --
+          // before: expands the invisible hit area out to the WCAG 44px minimum
+          // rather than growing the icon itself, which would blow out the row.
+          className="relative rounded p-0.5 text-ink-faint transition-colors duration-fast before:absolute before:-inset-[13px] before:content-[''] hover:text-ink"
         >
           <X className="size-3.5" aria-hidden />
         </button>

@@ -26,7 +26,9 @@ export function IconButton({
       aria-label={label}
       title={label}
       className={clsx(
-        "inline-flex h-8 w-8 items-center justify-center rounded-md transition duration-fast ease-out",
+        // h-11 w-11 = 44px, the WCAG 2.5.5/2.5.8 touch-target minimum -- was
+        // h-8 w-8 (32px), measured failing in practice (Drawer's close button).
+        "inline-flex h-11 w-11 items-center justify-center rounded-md transition duration-fast ease-out",
         "focus-visible:outline-none focus-visible:shadow-glow-accent",
         "disabled:pointer-events-none disabled:opacity-40",
         VARIANT_CLASS[variant],
