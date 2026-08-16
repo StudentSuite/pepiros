@@ -1,11 +1,23 @@
-// TODO: GET|DELETE single node. DELETE cascades per PLAN-V1.md §4.6 invariant 4.
+// TODO: DELETE single node. Cascades per PLAN-V1.md §4.6 invariant 4.
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { notImplemented } from "@/lib/api/notImplemented";
-import { updateNodeBody } from "@/lib/services/nodes";
+import { getNode, updateNodeBody } from "@/lib/services/nodes";
 
-export async function GET() {
-  return notImplemented("GET /api/nodes/[id]");
+/** ?workspaceId=... -- the same query-param convention app/api/related/route.ts already uses for a GET that needs one. */
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const { searchParams } = new URL(request.url);
+  const workspaceId = searchParams.get("workspaceId");
+  if (!workspaceId) {
+    return NextResponse.json({ error: "invalid_query", detail: "workspaceId is required" }, { status: 400 });
+  }
+
+  const node = await getNode(workspaceId, id);
+  if (!node) {
+    return NextResponse.json({ error: "not_found", detail: `node ${id} does not exist in workspace ${workspaceId}` }, { status: 404 });
+  }
+  return NextResponse.json({ node });
 }
 
 const patchBodySchema = z.object({
