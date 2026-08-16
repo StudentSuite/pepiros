@@ -404,6 +404,73 @@ export async function updateNodeBody(input: {
   return updated;
 }
 
+// --- delete_node ------------------------------------------------------------
+
+export interface DeleteNodeResult {
+  /** Every other node that had an edge pointing at the deleted one, marked
+   *  `stale` rather than deleted or left with a dangling reference. */
+  staleNodeIds: string[];
+}
+
+/**
+ * plan.md §4's only stated cascade invariant is paper-scoped: "Deleting a
+ * paper cascades its nodes/chunks but marks cross-paper synthesis nodes
+ * `stale` rather than deleting them." There's no equivalent spec for a
+ * single node, so this generalizes that one level down -- but only for edge
+ * kinds where the *content* of one node actually depends on the other.
+ * `contains` is purely structural (a pillar containing a leaf isn't a claim
+ * about that leaf's content), so a pillar losing a leaf is not "stale," just
+ * smaller -- marking it stale would be a false positive on every ordinary
+ * delete. relates/derived_from/agrees/contradicts/extends/shares_method/cites
+ * all mean one node's own claim draws on the other's, so losing that other
+ * node genuinely does make the referencing node's content incomplete.
+ *
+ * Edges where the deleted node is the *source* cascade away with it
+ * regardless of kind (they represent its own existence), along with its own
+ * evidence rows. Edges where it's the *target* are removed either way (a
+ * dangling edge.targetId is never valid), and for the content-dependent
+ * kinds the other node is marked `stale: true` instead of silently left
+ * referencing nothing -- the same "stale, not deleted" signal the
+ * paper-delete invariant already uses.
+ */
+const CONTENT_DEPENDENT_EDGE_KINDS: ReadonlySet<GraphEdge["kind"]> = new Set([
+  "relates",
+  "derived_from",
+  "agrees",
+  "contradicts",
+  "extends",
+  "shares_method",
+  "cites",
+]);
+
+export async function deleteNode(input: { workspaceId: string; nodeId: string }): Promise<DeleteNodeResult> {
+  const base = (await getIngestedWorkspace(input.workspaceId)) ?? (await fetchWorkspace(input.workspaceId));
+  if (!base.nodes.some((n) => n.id === input.nodeId)) {
+    throw new Error(`node ${input.nodeId} does not exist in workspace ${input.workspaceId}`);
+  }
+
+  const dependentNodeIds = [
+    ...new Set(
+      base.edges
+        .filter((e) => e.targetId === input.nodeId && CONTENT_DEPENDENT_EDGE_KINDS.has(e.kind))
+        .map((e) => e.sourceId),
+    ),
+  ];
+  const staleSet = new Set(dependentNodeIds);
+
+  const merged: Workspace = {
+    ...base,
+    nodes: base.nodes
+      .filter((n) => n.id !== input.nodeId)
+      .map((n) => (staleSet.has(n.id) ? { ...n, stale: true } : n)),
+    edges: base.edges.filter((e) => e.sourceId !== input.nodeId && e.targetId !== input.nodeId),
+    evidence: base.evidence.filter((e) => e.nodeId !== input.nodeId),
+  };
+  await setIngestedWorkspace(merged);
+
+  return { staleNodeIds: dependentNodeIds };
+}
+
 // --- expand_node (followup chips) ------------------------------------------
 
 export interface ExpandNodeInput {

@@ -1,8 +1,6 @@
-// TODO: DELETE single node. Cascades per PLAN-V1.md §4.6 invariant 4.
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { notImplemented } from "@/lib/api/notImplemented";
-import { getNode, updateNodeBody } from "@/lib/services/nodes";
+import { deleteNode, getNode, updateNodeBody } from "@/lib/services/nodes";
 
 /** ?workspaceId=... -- the same query-param convention app/api/related/route.ts already uses for a GET that needs one. */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -50,6 +48,22 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 }
 
-export async function DELETE() {
-  return notImplemented("DELETE /api/nodes/[id]");
+/** ?workspaceId=... -- same convention as GET above. See lib/services/nodes.ts's deleteNode() for the cascade/stale-marking contract. */
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const { searchParams } = new URL(request.url);
+  const workspaceId = searchParams.get("workspaceId");
+  if (!workspaceId) {
+    return NextResponse.json({ error: "invalid_query", detail: "workspaceId is required" }, { status: 400 });
+  }
+
+  try {
+    const result = await deleteNode({ workspaceId, nodeId: id });
+    return NextResponse.json(result);
+  } catch (err) {
+    return NextResponse.json(
+      { error: "not_found", detail: err instanceof Error ? err.message : String(err) },
+      { status: 404 },
+    );
+  }
 }

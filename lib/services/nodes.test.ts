@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Workspace } from "@/types/anchor";
 import workspaceFixture from "@/fixtures/workspace.json";
-import { createNode, findContradictions, getNode, getOutline, nodeDeepLink } from "./nodes";
+import { getIngestedWorkspace } from "./ingestStore";
+import { createNode, deleteNode, findContradictions, getNode, getOutline, nodeDeepLink } from "./nodes";
 
 const workspace = workspaceFixture as unknown as Workspace;
 const WS = workspace.id;
@@ -138,6 +139,45 @@ describe("createNode", () => {
         claims: [],
       }),
     ).rejects.toThrow("does not exist");
+  });
+});
+
+describe("deleteNode", () => {
+  it("cascades the node's own evidence/edges and marks a content-dependent referencer stale, but not a purely structural contains parent", async () => {
+    // n-p1-key-finding-leaf-1 has two edges pointing at it in the static
+    // fixture: e-4 (contains, from its parent pillar n-p1-key-finding) and
+    // e-21 (derived_from, from n-thread-1) -- exercises both branches at
+    // once. Asserted against the raw fixture import, not a live fetch: this
+    // test permanently deletes the node from whatever real row it runs
+    // against (same "the DB accumulates real writes across runs" trade-off
+    // createNode's own tests already accept, just in the removal direction),
+    // so a live fetch here would only prove today's specific run order.
+    expect(workspace.edges.some((e) => e.targetId === "n-p1-key-finding-leaf-1" && e.kind === "contains")).toBe(true);
+    expect(workspace.edges.some((e) => e.targetId === "n-p1-key-finding-leaf-1" && e.kind === "derived_from")).toBe(
+      true,
+    );
+
+    const result = await deleteNode({ workspaceId: WS, nodeId: "n-p1-key-finding-leaf-1" });
+
+    expect(result.staleNodeIds).toEqual(["n-thread-1"]);
+    expect(result.staleNodeIds).not.toContain("n-p1-key-finding");
+
+    const after = await getIngestedWorkspace(WS);
+    expect(after).not.toBeUndefined();
+    expect(after!.nodes.some((n) => n.id === "n-p1-key-finding-leaf-1")).toBe(false);
+    expect(after!.edges.some((e) => e.sourceId === "n-p1-key-finding-leaf-1" || e.targetId === "n-p1-key-finding-leaf-1")).toBe(
+      false,
+    );
+    expect(after!.evidence.some((e) => e.nodeId === "n-p1-key-finding-leaf-1")).toBe(false);
+
+    const thread = after!.nodes.find((n) => n.id === "n-thread-1")!;
+    expect(thread.stale).toBe(true);
+    const parentPillar = after!.nodes.find((n) => n.id === "n-p1-key-finding")!;
+    expect(parentPillar.stale).toBe(false);
+  });
+
+  it("rejects a nodeId that does not exist", async () => {
+    await expect(deleteNode({ workspaceId: WS, nodeId: "not-a-real-node" })).rejects.toThrow("does not exist");
   });
 });
 
