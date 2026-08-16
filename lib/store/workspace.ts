@@ -32,6 +32,9 @@ interface WorkspaceState {
    * not a durable write.
    */
   addNode: (node: GraphNode, evidence: Evidence[]) => void;
+  /** Applies a successfully-persisted body edit (PATCH /api/nodes/[id]) to the
+   *  in-memory workspace so the drawer reflects it without a full reload. */
+  updateNodeBody: (nodeId: string, bodyMd: string) => void;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({
@@ -62,6 +65,16 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
           ...state.workspace,
           nodes: [...state.workspace.nodes, node],
           evidence: [...state.workspace.evidence, ...evidence],
+        },
+      };
+    }),
+  updateNodeBody: (nodeId, bodyMd) =>
+    set((state) => {
+      if (!state.workspace) return state;
+      return {
+        workspace: {
+          ...state.workspace,
+          nodes: state.workspace.nodes.map((n) => (n.id === nodeId ? { ...n, bodyMd } : n)),
         },
       };
     }),
