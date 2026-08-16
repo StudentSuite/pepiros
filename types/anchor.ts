@@ -92,6 +92,13 @@ export interface GraphNode {
   y: number;
   paperId: string | null;
   stale: boolean;
+  /**
+   * 2-4 follow-up questions a reader might click to go deeper (docs/PLAN-V1.md
+   * §9.4), generated alongside the node's own content. Optional and additive:
+   * every existing node (including the whole fixture) predates this field, so
+   * its absence just means "no follow-ups to offer," not a render error.
+   */
+  followups?: string[];
 }
 
 export type EdgeKind =

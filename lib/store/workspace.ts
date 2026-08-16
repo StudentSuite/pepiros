@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Evidence, GraphNode, Workspace } from "@/types/anchor";
+import type { Evidence, GraphEdge, GraphNode, Workspace } from "@/types/anchor";
 
 /**
  * Client-side store for components/ and app/(app)/ pages.
@@ -26,12 +26,13 @@ interface WorkspaceState {
   selectNode: (nodeId: string | null) => void;
   /**
    * Appends a node created through the MCP `create_node` path (chat's
-   * Promote button, POST /api/nodes) to the in-memory workspace so it
-   * renders immediately -- there is no live Postgres to persist it to yet
-   * (CLAUDE.md's current data seam), so this is optimistic client state,
-   * not a durable write.
+   * Promote button, POST /api/nodes; a followup chip's POST /api/nodes/[id]/
+   * expand, which also carries a derived_from edge) to the in-memory
+   * workspace so it renders immediately -- there is no live Postgres to
+   * persist it to yet (CLAUDE.md's current data seam), so this is optimistic
+   * client state, not a durable write.
    */
-  addNode: (node: GraphNode, evidence: Evidence[]) => void;
+  addNode: (node: GraphNode, evidence: Evidence[], edges?: GraphEdge[]) => void;
   /** Applies a successfully-persisted body edit (PATCH /api/nodes/[id]) to the
    *  in-memory workspace so the drawer reflects it without a full reload. */
   updateNodeBody: (nodeId: string, bodyMd: string) => void;
@@ -57,13 +58,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
     }
   },
   selectNode: (nodeId) => set({ selectedNodeId: nodeId }),
-  addNode: (node, evidence) =>
+  addNode: (node, evidence, edges = []) =>
     set((state) => {
       if (!state.workspace) return state;
       return {
         workspace: {
           ...state.workspace,
           nodes: [...state.workspace.nodes, node],
+          edges: [...state.workspace.edges, ...edges],
           evidence: [...state.workspace.evidence, ...evidence],
         },
       };

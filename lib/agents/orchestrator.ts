@@ -100,6 +100,7 @@ async function runLeaf(
       y: 0,
       paperId,
       stale: false,
+      followups: output.followups,
     };
 
     return { pillarKey, leafKey, generator: generatorName, status: "ok", node, evidence };

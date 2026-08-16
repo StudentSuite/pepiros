@@ -2,15 +2,25 @@
 
 import { useState, type ReactNode } from "react";
 import clsx from "clsx";
+import { Loader2 } from "lucide-react";
 import { useWorkspaceStore } from "@/lib/store/workspace";
 import { useToastStore } from "@/lib/store/toast";
-import type { Evidence } from "@/types/anchor";
+import type { Evidence, GraphEdge, GraphNode } from "@/types/anchor";
 import { RefChip } from "@/components/ui/RefChip";
 import { PillarChip } from "@/components/ui/PillarChip";
 import { Tabs } from "@/components/ui/Tabs";
 import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
 import { EvidenceList } from "./EvidenceList";
 import { NodeEditor } from "./NodeEditor";
+
+interface ExpandNodeApiResponse {
+  node: GraphNode;
+  edge: GraphEdge;
+  evidence: Array<Omit<Evidence, "id"> & { id: string }>;
+  deepLink: string;
+  lowConfidence: boolean;
+}
 
 const MARKER_RE = /\[\^([a-zA-Z0-9_-]+)\]/g;
 
@@ -79,9 +89,13 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
   const workspace = useWorkspaceStore((s) => s.workspace);
   const selectedNodeId = useWorkspaceStore((s) => s.selectedNodeId);
   const updateNodeBody = useWorkspaceStore((s) => s.updateNodeBody);
+  const selectNode = useWorkspaceStore((s) => s.selectNode);
+  const addNode = useWorkspaceStore((s) => s.addNode);
   const [tab, setTab] = useState<Tab>("content");
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [pendingFollowup, setPendingFollowup] = useState<string | null>(null);
+  const [followupError, setFollowupError] = useState<string | null>(null);
 
   if (!workspace) {
     return <p className="font-sans text-xs text-ink-faint">Loading workspace...</p>;
@@ -97,6 +111,34 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
   }
 
   const nodeEvidence = workspace.evidence.filter((e) => e.nodeId === node.id);
+  // Captured here (rather than read as `node.id`/`workspace.id` inside the
+  // closure below) because TS's control-flow narrowing from the `if (!node)`/
+  // `if (!workspace)` guards above doesn't carry into a nested function body.
+  const nodeId = node.id;
+  const workspaceId = workspace.id;
+
+  async function askFollowup(question: string) {
+    setPendingFollowup(question);
+    setFollowupError(null);
+    try {
+      const res = await fetch(`/api/nodes/${encodeURIComponent(nodeId)}/expand`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workspaceId, question }),
+      });
+      const body = (await res.json().catch(() => null)) as ExpandNodeApiResponse | { detail?: string } | null;
+      if (!res.ok) {
+        throw new Error((body as { detail?: string } | null)?.detail ?? `Could not answer that (${res.status}).`);
+      }
+      const data = body as ExpandNodeApiResponse;
+      addNode(data.node, data.evidence, [data.edge]);
+      selectNode(data.node.id);
+    } catch (err) {
+      setFollowupError(err instanceof Error ? err.message : "Could not answer that follow-up.");
+    } finally {
+      setPendingFollowup(null);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -162,6 +204,30 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
             {renderBodyWithCitations(node.bodyMd, nodeEvidence)}
           </p>
         ))}
+
+      {/* Followup chips (docs/PLAN-V1.md §9.3): click one to generate and
+          verify a real child node via POST /api/nodes/[id]/expand, same
+          re-verification contract as create_node -- not a canned response. */}
+      {tab === "content" && !editing && !readOnly && node.followups && node.followups.length > 0 && (
+        <div className="flex flex-col gap-1.5 border-t border-border pt-3">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">Go deeper</p>
+          <div className="flex flex-wrap gap-1.5">
+            {node.followups.map((question) => (
+              <button
+                key={question}
+                type="button"
+                onClick={() => void askFollowup(question)}
+                disabled={pendingFollowup !== null}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border-strong px-2.5 py-1 text-left font-sans text-xs text-ink-muted transition duration-fast ease-out hover:border-accent hover:text-ink disabled:opacity-50"
+              >
+                {pendingFollowup === question && <Icon icon={Loader2} size="xs" className="animate-spin" />}
+                {question}
+              </button>
+            ))}
+          </div>
+          {followupError && <p className="font-sans text-xs text-unsupported">{followupError}</p>}
+        </div>
+      )}
 
       {tab === "evidence" && <EvidenceList evidence={nodeEvidence} />}
     </div>

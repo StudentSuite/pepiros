@@ -1,7 +1,10 @@
-import type { Evidence, GraphNode, Workspace } from "@/types/anchor";
+import "server-only";
+import type { Evidence, GraphEdge, GraphNode, Workspace } from "@/types/anchor";
 import { verifyAndBindClaims } from "./verify";
 import { fetchWorkspace } from "./workspace";
 import { getIngestedWorkspace, setIngestedWorkspace } from "./ingestStore";
+import { buildContextBlock } from "@/lib/prompts/contextBlock";
+import { GENERATORS, runGenerator } from "@/lib/agents/generators";
 
 /**
  * Node reads/writes for the MCP surface and `app/api/nodes/*`
@@ -368,4 +371,96 @@ export async function updateNodeBody(input: {
   };
   await setIngestedWorkspace(merged);
   return updated;
+}
+
+// --- expand_node (followup chips) ------------------------------------------
+
+export interface ExpandNodeInput {
+  workspaceId: string;
+  /** The node the reader clicked a followup chip on. Must belong to a paper. */
+  nodeId: string;
+  /** The followup question itself (one of node.followups), verbatim. */
+  question: string;
+}
+
+export interface ExpandNodeResult {
+  node: GraphNode;
+  /** `derived_from`, new node -> the node the followup was asked from. */
+  edge: GraphEdge;
+  evidence: Array<Omit<Evidence, "id"> & { id: string }>;
+  deepLink: string;
+  lowConfidence: boolean;
+}
+
+/**
+ * Answers one followup question (docs/PLAN-V1.md §9.3: "Followup chips call
+ * POST /nodes/[id]/expand") by running the same `custom` generator the
+ * pillar planner's anti-template leaf uses, scoped to the parent node's own
+ * paper with the question as its customPrompt, then re-verifying and binding
+ * the result exactly like create_node does -- this is the same "verify
+ * before persisting" contract as every other node-creating path, just with
+ * an LLM call in front of it instead of a caller-supplied bodyMd.
+ */
+export async function expandNode(input: ExpandNodeInput): Promise<ExpandNodeResult> {
+  const workspace = await fetchWorkspace(input.workspaceId);
+
+  const parent = workspace.nodes.find((n) => n.id === input.nodeId);
+  if (!parent) throw new Error(`node ${input.nodeId} does not exist in workspace ${input.workspaceId}`);
+  if (!parent.paperId) throw new Error(`node ${input.nodeId} has no associated paper to expand from`);
+
+  const paper = workspace.papers.find((p) => p.id === parent.paperId);
+  if (!paper) throw new Error(`paper ${parent.paperId} not found in workspace ${input.workspaceId}`);
+
+  const contextBlock = buildContextBlock(parent.paperId, workspace.chunks, workspace.numerics);
+  const output = await runGenerator(GENERATORS.custom!, {
+    paperTitle: paper.title,
+    // A best-effort default for a paper whose archetype hasn't been
+    // classified: this only steers the generator's framing, it's never
+    // persisted, so a generic fallback here doesn't misrepresent anything.
+    archetype: paper.archetype ?? "method_paper",
+    contextBlock,
+    customPrompt: input.question,
+  });
+
+  const nodeId = `expand-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const { bodyMd, evidence } = verifyAndBindClaims({
+    nodeId,
+    bodyMd: output.body_md,
+    claims: output.evidence,
+    chunks: workspace.chunks,
+    numerics: workspace.numerics,
+    idPrefix: `${nodeId}-e`,
+  });
+
+  const node: GraphNode = {
+    id: nodeId,
+    workspaceId: input.workspaceId,
+    type: "leaf",
+    title: output.title,
+    bodyMd,
+    pillarIndex: parent.pillarIndex,
+    x: 0,
+    y: 0,
+    paperId: parent.paperId,
+    stale: false,
+    followups: output.followups,
+  };
+
+  const edge: GraphEdge = {
+    id: `${nodeId}-derived-from-${parent.id}`,
+    workspaceId: input.workspaceId,
+    kind: "derived_from",
+    sourceId: nodeId,
+    targetId: parent.id,
+  };
+
+  const droppedRefs = evidence.filter((e) => e.tier === "unsupported");
+
+  return {
+    node,
+    edge,
+    evidence,
+    deepLink: nodeDeepLink(input.workspaceId, nodeId),
+    lowConfidence: droppedRefs.length > 0,
+  };
 }
