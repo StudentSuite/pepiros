@@ -10,6 +10,30 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      # The grounding domain reads/writes real Postgres now (issue #47), and
+      # npm test's write-path suites (createNode/deleteNode/runSynthesis,
+      # the MCP create_workspace tool) need a real DATABASE_URL to do that --
+      # CI never had one, so every one of those has been failing since #47
+      # landed (issue #56's ##[error] logs, reproduced locally against this
+      # same ephemeral-Postgres setup: 279/279 pass once a real DB exists).
+      # An ephemeral service container needs no secret and nobody has to
+      # provision or pay for a real project just to keep CI green.
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -17,6 +41,7 @@ jobs:
           node-version: "20"
           cache: "npm"
       - run: npm ci
+      - run: npm run db:migrate
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
