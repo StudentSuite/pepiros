@@ -24,7 +24,7 @@ interface ChatApiResponse {
  * ungrounded answer is marked as such rather than rendered as if it were
  * sourced -- §9.4 requires ungrounded output be visually distinct.
  */
-export function ChatDock() {
+export function ChatDock({ activePaperId }: { activePaperId?: string }) {
   const workspace = useWorkspaceStore((s) => s.workspace);
   const selectedNodeId = useWorkspaceStore((s) => s.selectedNodeId);
   const [open, setOpen] = useState(true);
@@ -54,15 +54,15 @@ export function ChatDock() {
     ]);
 
     // "node" scope means the currently *selected* node's paper, not just
-    // "the first paper in the workspace" -- selecting a node from paper #2
-    // and asking a "this node" question used to silently answer over paper
-    // #1's context instead, which made "this node" behave identically to
-    // "this paper" (and wrongly, whenever the selection wasn't in the first
-    // paper). "paper" scope still falls back to the first paper: ChatDock
-    // isn't told which paper the reader is actively looking at (that's
-    // ReaderClient's own local state), so that part of the gap remains.
+    // "whichever paper the reader happens to be looking at" -- selecting a
+    // node from a different paper than the active one and asking a "this
+    // node" question used to silently answer over the wrong paper's context.
+    // "paper" scope uses activePaperId (ReaderClient's own state, passed in
+    // as a prop), falling back to the workspace's first paper only if it
+    // wasn't given -- both used to hardcode the first paper regardless.
     const selectedNodePaperId =
       scope === "node" ? workspace?.nodes.find((n) => n.id === selectedNodeId)?.paperId : undefined;
+    const scopedPaperId = selectedNodePaperId ?? activePaperId ?? workspace?.papers[0]?.id;
 
     try {
       const res = await fetch("/api/chat", {
@@ -73,7 +73,7 @@ export function ChatDock() {
           question,
           history,
           scope,
-          paperId: scope !== "all" ? (selectedNodePaperId ?? workspace?.papers[0]?.id) : undefined,
+          paperId: scope !== "all" ? scopedPaperId : undefined,
           allowUngrounded: options.allowUngrounded ?? allowUngrounded,
         }),
       });

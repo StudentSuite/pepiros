@@ -251,7 +251,7 @@ export function ReaderClient({ workspaceId }: { workspaceId: string }) {
         </div>
       </div>
 
-      <ChatDock />
+      <ChatDock activePaperId={activePaper?.id} />
     </div>
   );
 }
