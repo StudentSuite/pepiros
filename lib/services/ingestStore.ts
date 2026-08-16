@@ -15,8 +15,27 @@ import { getWorkspace, saveWorkspace, listWorkspaceSummaries } from "@/lib/db/qu
  * the static fixture.
  */
 
+/**
+ * Reads only (writes below still throw loudly -- silently pretending a save
+ * succeeded would be real data loss) fall back to "nothing ingested" on any
+ * DB error, not just "no row found": CLAUDE.md's own contract is "the app
+ * runs fine on fixtures/workspace.json without it," and lib/services/
+ * workspace.ts's fetchWorkspace() doc comment promises the same for any
+ * never-ingested id. A missing DATABASE_URL, an unreachable host, or a
+ * connection timeout used to just mean "the in-memory Map is empty" before
+ * this was wired to real Postgres (issue #47) -- without this catch, the
+ * same conditions instead 500 every route that reads a workspace (issue
+ * #56, reproduced live: a 32s hang then a 500, on a read that's supposed to
+ * degrade to the static fixture with no backend at all). Logged to stderr,
+ * never stdout (mcp/stdio.ts's transport), so a real outage stays visible.
+ */
 export async function getIngestedWorkspace(workspaceId: string): Promise<Workspace | undefined> {
-  return getWorkspace(workspaceId);
+  try {
+    return await getWorkspace(workspaceId);
+  } catch (err) {
+    console.error(`[ingestStore] getWorkspace(${workspaceId}) unavailable, falling back to the fixture:`, err);
+    return undefined;
+  }
 }
 
 export async function setIngestedWorkspace(workspace: Workspace): Promise<void> {
@@ -25,7 +44,13 @@ export async function setIngestedWorkspace(workspace: Workspace): Promise<void> 
 
 /** Every workspace real ingest has actually written -- no fixture here; lib/services/workspaces.ts's listWorkspaces() adds that. */
 export async function listIngestedWorkspaces(): Promise<Workspace[]> {
-  const summaries = await listWorkspaceSummaries();
+  let summaries;
+  try {
+    summaries = await listWorkspaceSummaries();
+  } catch (err) {
+    console.error("[ingestStore] listWorkspaceSummaries() unavailable:", err);
+    return [];
+  }
   const real = await Promise.all(summaries.map((s) => getWorkspace(s.id)));
   return real.filter((w): w is Workspace => Boolean(w));
 }
