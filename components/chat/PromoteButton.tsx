@@ -12,6 +12,9 @@ import type { ChatMessage } from "./MessageList";
 interface CreateNodeApiResponse {
   nodeId: string;
   deepLink: string;
+  /** The submitted bodyMd with real evidence markers already bound in -- see
+   *  lib/services/nodes.ts's CreateNodeResult.bodyMd doc comment. */
+  bodyMd: string;
   lowConfidence: boolean;
   droppedRefs: string[];
   evidence: Array<Omit<Evidence, "id"> & { id: string }>;
@@ -86,25 +89,12 @@ export function PromoteButton({ message }: { message: ChatMessage }) {
 
       const data = (await res.json()) as CreateNodeApiResponse;
 
-      // data.evidence is index-aligned with the submitted claims array (one
-      // claim per ref, in order), which is what refToMarkerIndex's [^n{i}]
-      // markers were built against -- so each notional marker's real
-      // replacement is data.evidence[i]'s own id. Without this substitution
-      // the rendered node would keep the literal "[^n0]" text: InlineRefs/
-      // stripRefMarkers only ever recognize the real "[^eN]"-shaped marker
-      // (components/canvas/InlineRefs.tsx's REF_MARKER), never "[^n0]", so
-      // the citation chip row would silently never appear either.
-      const finalBodyMd = bodyMd.replace(/\[\^n(\d+)\]/g, (match, indexStr: string) => {
-        const evidenceRow = data.evidence[Number(indexStr)];
-        return evidenceRow ? `[^${evidenceRow.id}]` : match;
-      });
-
       const node: GraphNode = {
         id: data.nodeId,
         workspaceId: workspace.id,
         type: "leaf",
         title,
-        bodyMd: finalBodyMd,
+        bodyMd: data.bodyMd,
         pillarIndex: null,
         x: 0,
         y: 0,

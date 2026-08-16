@@ -5,10 +5,8 @@ import type { PillarPlan } from "@/lib/schemas";
 import { buildContextBlock } from "@/lib/prompts/contextBlock";
 import { classifyArchetype } from "./archetypeClassifier";
 import { planPillars } from "./pillarPlanner";
-import { GENERATORS, runGenerator, bindEvidenceMarkers, type GeneratorContext } from "./generators";
-import { verifyClaimsAgainstCorpus } from "@/lib/services/verify";
-import { stripDroppedCitation } from "@/lib/grounding/verify";
-import type { ClaimedEvidence } from "@/lib/grounding/verify";
+import { GENERATORS, runGenerator, type GeneratorContext } from "./generators";
+import { verifyAndBindClaims } from "@/lib/services/verify";
 
 /**
  * Generator fan-out for one paper (docs/PLAN-V1.md §7-8): archetype ->
@@ -59,65 +57,6 @@ export interface OrchestratorResult {
   leaves: LeafResult[];
 }
 
-/**
- * Verifies a generator's claimed evidence against the corpus and binds real
- * evidence ids into body_md. A claim with N refs (an aggregate claim, plan.md
- * §4) becomes N separate Evidence rows -- the existing Evidence type is
- * one-ref-per-row -- concatenated into one marker replacement, so the CI
- * invariant "every [^eN] marker has a matching evidence row" still holds for
- * every individual marker, not just the claim as a whole.
- */
-/**
- * A model is instructed (runGenerator.ts's SHARED_SYSTEM_PROMPT) to cite the
- * bare id ("C7"), not the full context-block header ("C7 | Methods | p.4")
- * -- but a prompt is a request, not a guarantee, and this exact slip was
- * observed live while building this. Stripping to the leading token before
- * verification means a model that ignores the instruction still resolves
- * correctly instead of silently registering as a hallucinated_ref.
- */
-function normalizeRef(ref: string): string {
-  return ref.split("|")[0]!.trim();
-}
-
-function verifyGeneratorOutput(
-  nodeId: string,
-  bodyMd: string,
-  claims: Array<{ refs: string[]; quote: string }>,
-  chunks: Chunk[],
-  numerics: Numeric[],
-  idPrefix: string,
-): { bodyMd: string; evidence: Evidence[] } {
-  const flatClaims: ClaimedEvidence[] = claims.flatMap((claim) =>
-    claim.refs.map((refId) => ({ nodeId, refId: normalizeRef(refId), quote: claim.quote })),
-  );
-
-  const verified = verifyClaimsAgainstCorpus({ chunks, numerics, claims: flatClaims });
-
-  const evidence: Evidence[] = [];
-  const markerReplacements: string[] = [];
-  let cursor = 0;
-
-  for (const claim of claims) {
-    const group = verified.slice(cursor, cursor + claim.refs.length);
-    cursor += claim.refs.length;
-
-    const ids = group.map((result) => {
-      const id = `${idPrefix}${evidence.length + 1}`;
-      evidence.push({ id, ...result.evidence });
-      return id;
-    });
-    markerReplacements.push(ids.map((id) => `[^${id}]`).join(""));
-  }
-
-  const bound = bindEvidenceMarkers(bodyMd, markerReplacements);
-  const finalBody = evidence.reduce(
-    (body, ev) => (ev.tier === "unsupported" ? stripDroppedCitation(body, ev.id) : body),
-    bound,
-  );
-
-  return { bodyMd: finalBody, evidence };
-}
-
 async function runLeaf(
   ctx: GeneratorContext,
   nodeId: string,
@@ -141,14 +80,14 @@ async function runLeaf(
 
   try {
     const output = await runGenerator(config, ctx);
-    const { bodyMd, evidence } = verifyGeneratorOutput(
+    const { bodyMd, evidence } = verifyAndBindClaims({
       nodeId,
-      output.body_md,
-      output.evidence,
+      bodyMd: output.body_md,
+      claims: output.evidence,
       chunks,
       numerics,
-      `${nodeId}-e`,
-    );
+      idPrefix: `${nodeId}-e`,
+    });
 
     const node: GraphNode = {
       id: nodeId,

@@ -240,6 +240,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
         return json({
           node_id: result.nodeId,
           deep_link: result.deepLink,
+          body_md: result.bodyMd,
           low_confidence: result.lowConfidence,
           dropped_refs: result.droppedRefs,
           evidence: result.evidence.map((e) => ({

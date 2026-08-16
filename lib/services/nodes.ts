@@ -1,5 +1,5 @@
 import type { Evidence, GraphNode, Workspace } from "@/types/anchor";
-import { verifyClaimsAgainstCorpus } from "./verify";
+import { verifyAndBindClaims } from "./verify";
 import { fetchWorkspace } from "./workspace";
 
 /**
@@ -200,6 +200,16 @@ export interface CreateNodeInput {
 export interface CreateNodeResult {
   nodeId: string;
   deepLink: string;
+  /**
+   * The submitted bodyMd with every notional "[^n{i}]" marker bound to its
+   * real evidence id(s), and any marker whose claim turned out unsupported
+   * stripped entirely -- the same reconciliation lib/agents/orchestrator.ts
+   * does for generator-created nodes. Use this, not the bodyMd you sent in:
+   * a caller that persists the original submitted bodyMd instead leaves the
+   * literal placeholder text in the node (this was a real, shipped bug in
+   * two separate callers before create_node started doing this itself).
+   */
+  bodyMd: string;
   evidence: Array<Omit<Evidence, "id"> & { id: string }>;
   /** True when at least one submitted claim failed re-verification. */
   lowConfidence: boolean;
@@ -231,29 +241,21 @@ export async function createNode(input: CreateNodeInput): Promise<CreateNodeResu
 
   const nodeId = `mcp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
-  // One Evidence row per ref: the Evidence type is one-ref-per-row, and a
-  // multi-ref aggregate claim (plan.md §4) must be able to keep its passing
-  // refs while dropping only the failing one.
-  const flatClaims = input.claims.flatMap((claim) =>
-    claim.refs.map((refId) => ({ nodeId, refId: refId.split("|")[0]!.trim(), quote: claim.quote })),
-  );
-
-  const verified = verifyClaimsAgainstCorpus({
+  const { bodyMd, evidence } = verifyAndBindClaims({
+    nodeId,
+    bodyMd: input.bodyMd,
+    claims: input.claims,
     chunks: workspace.chunks,
     numerics: workspace.numerics,
-    claims: flatClaims,
+    idPrefix: `${nodeId}-e`,
   });
-
-  const evidence = verified.map((result, i) => ({
-    id: `${nodeId}-e${i + 1}`,
-    ...result.evidence,
-  }));
 
   const droppedRefs = evidence.filter((e) => e.tier === "unsupported").map((e) => e.refId);
 
   return {
     nodeId,
     deepLink: nodeDeepLink(input.workspaceId, nodeId),
+    bodyMd,
     evidence,
     lowConfidence: droppedRefs.length > 0,
     droppedRefs,
