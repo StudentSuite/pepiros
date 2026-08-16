@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Workspace } from "@/types/anchor";
 import workspaceFixture from "@/fixtures/workspace.json";
 import { getIngestedWorkspace } from "./ingestStore";
-import { createNode, deleteNode, findContradictions, getNode, getOutline, nodeDeepLink } from "./nodes";
+import { createNode, deleteNode, findContradictions, getNode, getOutline, nodeDeepLink, promoteToThread } from "./nodes";
 
 const workspace = workspaceFixture as unknown as Workspace;
 const WS = workspace.id;
@@ -178,6 +178,53 @@ describe("deleteNode", () => {
 
   it("rejects a nodeId that does not exist", async () => {
     await expect(deleteNode({ workspaceId: WS, nodeId: "not-a-real-node" })).rejects.toThrow("does not exist");
+  });
+});
+
+describe("promoteToThread", () => {
+  it("writes derived_from + relates to the best-overlapping node in each of the two papers it actually cites", async () => {
+    const c1 = workspace.chunks.find((c) => c.ordinal === 1)!; // c-p1-methods-1, cited by n-p1-methods-leaf-1
+    const c8 = workspace.chunks.find((c) => c.ordinal === 8)!; // c-p3-methods-1, cited by n-p3-methods-leaf-1
+
+    const result = await promoteToThread({
+      workspaceId: WS,
+      title: "Cross-paper methods comparison",
+      bodyMd: "P1 used a light-exposure protocol. [^n0] P3 used a longer observational design. [^n1]",
+      claims: [
+        { refs: ["C1"], quote: c1.text },
+        { refs: ["C8"], quote: c8.text },
+      ],
+    });
+
+    expect(result.node.type).toBe("thread");
+    expect(result.node.paperId).toBeNull();
+    expect(result.node.pillarIndex).toBeNull();
+    expect(result.lowConfidence).toBe(false);
+    expect(result.evidence.every((e) => e.tier === "quote_located")).toBe(true);
+
+    expect(result.edges).toHaveLength(2);
+    const kinds = result.edges.map((e) => e.kind).sort();
+    expect(kinds).toEqual(["derived_from", "relates"]);
+    const targets = result.edges.map((e) => e.targetId).sort();
+    expect(targets).toEqual(["n-p1-methods-leaf-1", "n-p3-methods-leaf-1"]);
+    expect(result.edges.every((e) => e.sourceId === result.node.id)).toBe(true);
+  });
+
+  it("writes no edges when the only cited ref fails re-verification, even though a real node also cites it", async () => {
+    // C1 really is cited by n-p1-methods-leaf-1 in the fixture -- this proves
+    // overlap is scored against *this thread's own verified* refIds, not
+    // just whatever ref string the caller mentioned, so a claim that gets
+    // dropped as unsupported can't still pull in a derived_from edge.
+    const result = await promoteToThread({
+      workspaceId: WS,
+      title: "Standalone thread",
+      bodyMd: "Nothing here overlaps with an existing node. [^n0]",
+      claims: [{ refs: ["C1"], quote: "This text does not match the real chunk, so it resolves unsupported." }],
+    });
+
+    expect(result.lowConfidence).toBe(true);
+    expect(result.evidence[0]!.tier).toBe("unsupported");
+    expect(result.edges).toEqual([]);
   });
 });
 

@@ -559,3 +559,121 @@ export async function expandNode(input: ExpandNodeInput): Promise<ExpandNodeResu
     lowConfidence: droppedRefs.length > 0,
   };
 }
+
+// --- promote_to_thread (chat -> ThreadNode, issue #55) ---------------------
+
+export interface PromoteToThreadInput {
+  workspaceId: string;
+  title: string;
+  /** Body with notional "[^n0]", "[^n1]", ... markers, one per claims[i]. */
+  bodyMd: string;
+  claims: CreateNodeClaim[];
+}
+
+export interface PromoteToThreadResult {
+  node: GraphNode;
+  /** One `derived_from` to the strongest-overlapping node, `relates` to any
+   *  other paper this answer also draws on. Empty if nothing overlapped. */
+  edges: GraphEdge[];
+  evidence: Array<Omit<Evidence, "id"> & { id: string }>;
+  deepLink: string;
+  lowConfidence: boolean;
+}
+
+/**
+ * plan.md §9.4: "Message -> ThreadNode. Pillar classifier picks parent,
+ * writes derived_from edge" -- for chat answers that draw on more than one
+ * paper, which components/chat/PromoteButton.tsx's existing leaf-node promote
+ * (POST /api/nodes) isn't shaped for (one paperId/pillarIndex per node).
+ *
+ * Rather than a new LLM classifier guessing which pillar/node this text
+ * "relates to," this uses the same deterministic spine the rest of the app
+ * already trusts: this thread's own claims are re-verified into real
+ * Evidence rows exactly like any other node, and *those* refIds are checked
+ * against every existing node's evidence for real overlap -- two nodes citing
+ * the same source excerpt is a fact, not a guess. refIds are workspace-wide
+ * unique (chunk.ordinal is assigned once, never per-paper-reset -- confirmed
+ * against the fixture data), so this works correctly across papers with no
+ * collision risk. The single best-overlapping node becomes the `derived_from`
+ * parent (the fixture's own n-thread-1 has exactly one), and the best
+ * candidate from any *other* paper this answer also cites gets a `relates`
+ * edge -- one node's evidence can't itself span two papers, but a thread
+ * node's citations legitimately can. A thread with no overlap at all (a
+ * genuinely new combination of sources) gets no edges, which is a real,
+ * valid outcome, not an error.
+ */
+export async function promoteToThread(input: PromoteToThreadInput): Promise<PromoteToThreadResult> {
+  const base = (await getIngestedWorkspace(input.workspaceId)) ?? (await fetchWorkspace(input.workspaceId));
+
+  const nodeId = `thread-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const { bodyMd, evidence } = verifyAndBindClaims({
+    nodeId,
+    bodyMd: input.bodyMd,
+    claims: input.claims,
+    chunks: base.chunks,
+    numerics: base.numerics,
+    idPrefix: `${nodeId}-e`,
+  });
+
+  const citedRefIds = new Set(evidence.filter((e) => e.tier !== "unsupported").map((e) => e.refId));
+
+  const overlapScoreByNode = new Map<string, number>();
+  for (const ev of base.evidence) {
+    if (!citedRefIds.has(ev.refId)) continue;
+    overlapScoreByNode.set(ev.nodeId, (overlapScoreByNode.get(ev.nodeId) ?? 0) + 1);
+  }
+
+  const nodeById = new Map(base.nodes.map((n) => [n.id, n] as const));
+  const bestPerPaper = new Map<string, { nodeId: string; score: number }>();
+  for (const [candidateId, score] of overlapScoreByNode) {
+    const candidate = nodeById.get(candidateId);
+    // Grouped by paperId so at most one candidate per paper survives; a
+    // paperless candidate (another thread/synthesis node) groups by its own
+    // id instead so it doesn't collide with a real paper's key.
+    const groupKey = candidate?.paperId ?? candidateId;
+    const current = bestPerPaper.get(groupKey);
+    if (!current || score > current.score) {
+      bestPerPaper.set(groupKey, { nodeId: candidateId, score });
+    }
+  }
+
+  const ranked = [...bestPerPaper.values()].sort((a, b) => b.score - a.score);
+  const edges: GraphEdge[] = ranked.map((match, i) => ({
+    id: `${nodeId}-${i === 0 ? "derived-from" : "relates"}-${match.nodeId}`,
+    workspaceId: input.workspaceId,
+    kind: i === 0 ? "derived_from" : "relates",
+    sourceId: nodeId,
+    targetId: match.nodeId,
+  }));
+
+  const node: GraphNode = {
+    id: nodeId,
+    workspaceId: input.workspaceId,
+    type: "thread",
+    title: input.title,
+    bodyMd,
+    pillarIndex: null,
+    x: 0,
+    y: 0,
+    paperId: null,
+    stale: false,
+  };
+
+  const merged: Workspace = {
+    ...base,
+    nodes: [...base.nodes, node],
+    edges: [...base.edges, ...edges],
+    evidence: [...base.evidence, ...evidence],
+  };
+  await setIngestedWorkspace(merged);
+
+  const droppedRefs = evidence.filter((e) => e.tier === "unsupported");
+
+  return {
+    node,
+    edges,
+    evidence,
+    deepLink: nodeDeepLink(input.workspaceId, nodeId),
+    lowConfidence: droppedRefs.length > 0,
+  };
+}
