@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import clsx from "clsx";
 import { useWorkspaceStore } from "@/lib/store/workspace";
+import { useToastStore } from "@/lib/store/toast";
 import type { Evidence } from "@/types/anchor";
 import { RefChip } from "@/components/ui/RefChip";
 import { PillarChip } from "@/components/ui/PillarChip";
@@ -77,8 +78,10 @@ type Tab = "content" | "evidence";
 export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
   const workspace = useWorkspaceStore((s) => s.workspace);
   const selectedNodeId = useWorkspaceStore((s) => s.selectedNodeId);
+  const updateNodeBody = useWorkspaceStore((s) => s.updateNodeBody);
   const [tab, setTab] = useState<Tab>("content");
   const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   if (!workspace) {
     return <p className="font-sans text-xs text-ink-faint">Loading workspace...</p>;
@@ -120,7 +123,7 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
         onChange={(v) => setTab(v as Tab)}
         trailing={
           !readOnly && tab === "content" ? (
-            <Button variant="ghost" size="sm" onClick={() => setEditing((e) => !e)}>
+            <Button variant="ghost" size="sm" disabled={saving} onClick={() => setEditing((e) => !e)}>
               {editing ? "Cancel edit" : "Edit"}
             </Button>
           ) : undefined
@@ -131,8 +134,26 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
         (editing ? (
           <NodeEditor
             initialContent={node.bodyMd}
+            saving={saving}
             onCancel={() => setEditing(false)}
-            onSave={() => setEditing(false)}
+            onSave={async (html) => {
+              setSaving(true);
+              try {
+                const res = await fetch(`/api/nodes/${encodeURIComponent(node.id)}`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ workspaceId: workspace.id, bodyMd: html }),
+                });
+                if (!res.ok) throw new Error(`Save failed (${res.status})`);
+                updateNodeBody(node.id, html);
+                setEditing(false);
+                useToastStore.getState().push("Saved", "success");
+              } catch {
+                useToastStore.getState().push("Couldn't save — try again", "error");
+              } finally {
+                setSaving(false);
+              }
+            }}
           />
         ) : (
           // Node bodies are read, not scanned, so they use the same measure and

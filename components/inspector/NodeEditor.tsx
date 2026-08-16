@@ -5,16 +5,19 @@ import StarterKit from "@tiptap/starter-kit";
 import clsx from "clsx";
 
 /**
- * Rich-text editor for a node's bodyMd. Local state only this pass -- no
- * save-to-backend wiring exists yet (node_versions table isn't written from
- * here), so `onSave` is a stub the caller can console.log from.
+ * Rich-text editor for a node's bodyMd. `onSave` is expected to persist (see
+ * NodeInspector's caller, which PATCHes /api/nodes/[id]) and only resolves
+ * once that's settled -- `saving` disables the button and relabels it so a
+ * slow save can't be double-submitted or look like a no-op.
  */
 export function NodeEditor({
   initialContent,
+  saving = false,
   onSave,
   onCancel,
 }: {
   initialContent: string;
+  saving?: boolean;
   onSave?: (html: string) => void;
   onCancel?: () => void;
 }) {
@@ -56,23 +59,25 @@ export function NodeEditor({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded border border-border px-3 py-1 font-sans text-xs text-ink-muted hover:text-ink"
+          disabled={saving}
+          className="rounded border border-border px-3 py-1 font-sans text-xs text-ink-muted hover:text-ink disabled:pointer-events-none disabled:opacity-50"
         >
           Cancel
         </button>
         <button
           type="button"
-          onClick={() => {
-            const html = editor?.getHTML() ?? initialContent;
-             
-            console.log("save node body (stub, no backend write yet):", html);
-            onSave?.(html);
-          }}
+          // getText(), not getHTML(): bodyMd is plain text with inline
+          // `[^id]` citation markers (NodeInspector's renderBodyWithCitations,
+          // lib/prompts/contextBlock.ts), never HTML -- saving Tiptap's HTML
+          // output showed up as literal `<p>...</p>` tags once Save actually
+          // persisted and re-rendered it (it never used to re-render at all).
+          onClick={() => onSave?.(editor?.getText() ?? initialContent)}
+          disabled={saving}
           className={clsx(
-            "rounded bg-pillar-4/20 px-3 py-1 font-sans text-xs text-ink hover:bg-pillar-4/30",
+            "rounded bg-pillar-4/20 px-3 py-1 font-sans text-xs text-ink hover:bg-pillar-4/30 disabled:pointer-events-none disabled:opacity-60",
           )}
         >
-          Save
+          {saving ? "Saving…" : "Save"}
         </button>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import type { Evidence, GraphNode, Workspace } from "@/types/anchor";
 import { verifyAndBindClaims } from "./verify";
 import { fetchWorkspace } from "./workspace";
+import { getIngestedWorkspace, setIngestedWorkspace } from "./ingestStore";
 
 /**
  * Node reads/writes for the MCP surface and `app/api/nodes/*`
@@ -331,4 +332,40 @@ export async function findContradictions(
       return { edgeId: edge.id, left, right };
     })
     .filter((pair): pair is ContradictionPair => pair !== null);
+}
+
+// --- update_node_body -------------------------------------------------
+
+/**
+ * Persists an edited node body (`components/inspector/NodeEditor.tsx`'s Save
+ * button). Used to be a stub that only ever called `console.log` and closed
+ * the editor -- a user's edit vanished on Save with no indication it hadn't
+ * gone anywhere (impeccable critique, 2026-08-16, P0). Now a real write
+ * through the same seam ingest.ts/synthesis.ts already use:
+ * setIngestedWorkspace's node upsert is an UPDATE on a re-used id (see
+ * lib/db/queries's onConflictDoUpdate for `nodes`), not a fresh insert.
+ *
+ * Does not re-run claim verification against the edited text and does not
+ * write a node_versions history row -- both real, both out of scope for this
+ * fix (types/anchor.ts's Workspace contract has no node-version concept to
+ * extend without widening that frozen contract, a separate decision).
+ */
+export async function updateNodeBody(input: {
+  workspaceId: string;
+  nodeId: string;
+  bodyMd: string;
+}): Promise<GraphNode> {
+  const base = (await getIngestedWorkspace(input.workspaceId)) ?? (await fetchWorkspace(input.workspaceId));
+  const target = base.nodes.find((n) => n.id === input.nodeId);
+  if (!target) {
+    throw new Error(`node ${input.nodeId} does not exist in workspace ${input.workspaceId}`);
+  }
+
+  const updated: GraphNode = { ...target, bodyMd: input.bodyMd };
+  const merged: Workspace = {
+    ...base,
+    nodes: base.nodes.map((n) => (n.id === input.nodeId ? updated : n)),
+  };
+  await setIngestedWorkspace(merged);
+  return updated;
 }
