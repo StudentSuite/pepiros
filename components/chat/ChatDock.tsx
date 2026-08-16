@@ -26,6 +26,7 @@ interface ChatApiResponse {
  */
 export function ChatDock() {
   const workspace = useWorkspaceStore((s) => s.workspace);
+  const selectedNodeId = useWorkspaceStore((s) => s.selectedNodeId);
   const [open, setOpen] = useState(true);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
@@ -52,6 +53,17 @@ export function ChatDock() {
       { id: `u${prev.length}`, role: "user", segments: [{ kind: "text", text: question }] },
     ]);
 
+    // "node" scope means the currently *selected* node's paper, not just
+    // "the first paper in the workspace" -- selecting a node from paper #2
+    // and asking a "this node" question used to silently answer over paper
+    // #1's context instead, which made "this node" behave identically to
+    // "this paper" (and wrongly, whenever the selection wasn't in the first
+    // paper). "paper" scope still falls back to the first paper: ChatDock
+    // isn't told which paper the reader is actively looking at (that's
+    // ReaderClient's own local state), so that part of the gap remains.
+    const selectedNodePaperId =
+      scope === "node" ? workspace?.nodes.find((n) => n.id === selectedNodeId)?.paperId : undefined;
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -61,7 +73,7 @@ export function ChatDock() {
           question,
           history,
           scope,
-          paperId: scope !== "all" ? workspace?.papers[0]?.id : undefined,
+          paperId: scope !== "all" ? (selectedNodePaperId ?? workspace?.papers[0]?.id) : undefined,
           allowUngrounded: options.allowUngrounded ?? allowUngrounded,
         }),
       });
