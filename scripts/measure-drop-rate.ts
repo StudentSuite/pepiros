@@ -9,10 +9,10 @@
 // README for what to put there; this repo ships no PDFs, per the same
 // convention as fixtures/*.pdf).
 import { readFileSync, readdirSync, writeFileSync, mkdirSync } from "node:fs";
-import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import { runPythonScript } from "@/lib/services/pythonRunner";
 
 interface ParsedChunk {
   page: number;
@@ -31,22 +31,7 @@ interface ParsedDocument {
 }
 
 function runParsePy(pdfPath: string): Promise<ParsedDocument> {
-  return new Promise((resolve, reject) => {
-    const child = spawn("python3", [path.join(process.cwd(), "scripts", "parse.py"), pdfPath]);
-    let stdout = "";
-    let stderr = "";
-    child.stdout.on("data", (d: Buffer) => (stdout += d.toString("utf8")));
-    child.stderr.on("data", (d: Buffer) => (stderr += d.toString("utf8")));
-    child.on("error", reject);
-    child.on("close", (code) => {
-      if (code !== 0) return reject(new Error(stderr.trim() || `parse.py exited ${code}`));
-      try {
-        resolve(JSON.parse(stdout) as ParsedDocument);
-      } catch (err) {
-        reject(new Error(`parse.py produced invalid JSON: ${err instanceof Error ? err.message : String(err)}`));
-      }
-    });
-  });
+  return runPythonScript<ParsedDocument>(path.join(process.cwd(), "scripts", "parse.py"), [pdfPath]);
 }
 
 interface PaperResult {

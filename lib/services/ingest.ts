@@ -1,5 +1,4 @@
 import "server-only";
-import { spawn } from "node:child_process";
 import { writeFile, unlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -10,6 +9,7 @@ import { fetchWorkspace } from "./workspace";
 import { getIngestedWorkspace, setIngestedWorkspace } from "./ingestStore";
 import { appendEvent, createJob, failJob } from "./jobs";
 import { findDuplicate, resolveSourceUrl, type DuplicateMatch, type ResolvedSource } from "./upload";
+import { runPythonScript } from "./pythonRunner";
 
 /**
  * Orchestrates parse -> generate -> merge for one paper (docs/PLAN-V1.md
@@ -51,27 +51,7 @@ interface ParsedDocument {
 }
 
 function runParsePy(pdfPath: string): Promise<ParsedDocument> {
-  return new Promise((resolve, reject) => {
-    const child = spawn("python3", [path.join(process.cwd(), "scripts", "parse.py"), pdfPath]);
-    let stdout = "";
-    let stderr = "";
-    child.stdout.on("data", (chunk: Buffer) => (stdout += chunk.toString("utf8")));
-    child.stderr.on("data", (chunk: Buffer) => (stderr += chunk.toString("utf8")));
-    child.on("error", (err) =>
-      reject(new Error(`Could not run scripts/parse.py (is python3 + pymupdf installed?): ${err.message}`)),
-    );
-    child.on("close", (code) => {
-      if (code !== 0) {
-        reject(new Error(stderr.trim() || `scripts/parse.py exited with code ${code}.`));
-        return;
-      }
-      try {
-        resolve(JSON.parse(stdout) as ParsedDocument);
-      } catch (err) {
-        reject(new Error(`scripts/parse.py produced invalid JSON: ${err instanceof Error ? err.message : String(err)}`));
-      }
-    });
-  });
+  return runPythonScript<ParsedDocument>(path.join(process.cwd(), "scripts", "parse.py"), [pdfPath]);
 }
 
 export interface IngestInput {
