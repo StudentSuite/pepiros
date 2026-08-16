@@ -37,38 +37,38 @@ const ROWS: { area: string; state: State; note: string }[] = [
   },
   {
     area: "Citation expansion",
-    state: "partial",
-    note: "Reading the citation graph works. Adding a ghost node to a workspace does not yet.",
+    state: "live",
+    note: "Reading the citation graph and adding a ghost node to the workspace both work.",
   },
   {
     area: "MCP server",
     state: "partial",
-    note: "Eight tools registered over stdio. Four more designed. Remote HTTP is not built.",
+    note: "Twelve tools registered over stdio, all live. Remote HTTP transport is not built.",
   },
   {
     area: "Reading surface",
     state: "partial",
-    note: "The reader, canvas, outline, audit and learn views run on a fixed demo workspace.",
+    note: "The reader, canvas, outline, audit and learn views work against the demo workspace and any real ingested paper alike.",
   },
   {
     area: "PDF ingest",
-    state: "planned",
-    note: "Upload validation is real. Parsing a PDF into the graph is not wired yet.",
+    state: "live",
+    note: "Upload validation and parsing a PDF (or arXiv link) into the graph are both real.",
   },
   {
     area: "Contradiction synthesis",
-    state: "planned",
-    note: "Existing contradiction edges are shown. New ones are not generated yet.",
+    state: "live",
+    note: "Existing contradiction edges are shown, and new ones are generated from cross-paper comparison.",
   },
   {
     area: "Export",
-    state: "planned",
-    note: "Markdown and BibTeX export are specified, not implemented.",
+    state: "live",
+    note: "Markdown and BibTeX export are both implemented.",
   },
   {
     area: "Accounts and publishing",
-    state: "planned",
-    note: "The guest demo account is generated. Real sign-up writes nowhere yet.",
+    state: "partial",
+    note: "Real sign-up persists to Supabase, including an optional email for password recovery. Password-reset email delivery itself is not wired yet.",
   },
 ];
 
