@@ -212,9 +212,21 @@ function platformBackendIsSupabase(): boolean {
     process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   );
   if (!configured) {
-    throw new Error(
-      "PEPIROS_PLATFORM_BACKEND=supabase but NEXT_PUBLIC_SUPABASE_URL / _ANON_KEY are not set.",
+    // This used to throw, uncaught, inside getAdapter() -- which every one
+    // of a dozen-plus routes/pages calls with no try/catch (login, signup,
+    // every server component under app/(app)/layout.tsx that reads the
+    // current session). A real but incomplete config (the flag set, the
+    // actual credentials forgotten) crashed every one of those instead of
+    // degrading. Logged loudly so this is diagnosable, but falls back to the
+    // seed adapter rather than crashing the page -- which is safe to do:
+    // every seedAdapter method already returns an honest "needs the
+    // Supabase-backed platform" error rather than a fake success, so this
+    // fallback can't silently lose real data the way it would if the
+    // *supabase* adapter's writes failed silently instead.
+    console.error(
+      "[data/adapter] PEPIROS_PLATFORM_BACKEND=supabase but NEXT_PUBLIC_SUPABASE_URL / _ANON_KEY are not set -- falling back to the seed adapter.",
     );
+    return false;
   }
   return true;
 }
