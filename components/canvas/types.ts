@@ -25,8 +25,9 @@ export interface PepirosNodeData extends Record<string, unknown> {
   /** Pillar nodes only: toggles this pillar's leaves. Absent means non-interactive. */
   onToggleCollapse?: () => void;
   /** Paper nodes only: on-demand OpenAlex citation expansion (docs/PLAN-V1.md §6.2).
-   *  Gated behind this rather than auto-fired, so ghost nodes -- whose one action
-   *  needs an ingest pipeline that doesn't exist -- never clutter the graph unasked. */
+   *  Gated behind this rather than auto-fired, so ghost nodes don't clutter the
+   *  graph unasked -- their "Add to workspace" action does real ingest work now
+   *  (lib/services/ingest.ts), not nothing, so it's still worth asking first. */
   ghostsShown?: boolean;
   ghostsLoading?: boolean;
   onToggleGhosts?: () => void;
@@ -61,6 +62,11 @@ export interface GhostCitationData extends Record<string, unknown> {
   direction: "cites" | "cited_by";
   openalexId: string;
   url: string;
+  /** A real, directly fetchable open-access PDF, when OpenAlex has one --
+   *  what "Add to workspace" actually ingests. Null means paywalled/unindexed,
+   *  so the node offers only the OpenAlex link, same as before this existed. */
+  pdfUrl: string | null;
+  workspaceId: string;
 }
 
 export type GhostCitationNodeType = Node<GhostCitationData, "ghostCitation">;

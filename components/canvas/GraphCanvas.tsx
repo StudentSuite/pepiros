@@ -94,6 +94,8 @@ async function fetchGhostsForPaper(
           direction,
           openalexId: candidate.openalexId,
           url: candidate.url,
+          pdfUrl: candidate.pdfUrl,
+          workspaceId,
         },
       });
       // Edge id includes paperNode.id, not just ghostId: two different workspace

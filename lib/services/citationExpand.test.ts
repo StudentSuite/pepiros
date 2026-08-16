@@ -36,9 +36,44 @@ describe("fetchCitationExpansion", () => {
 
     expect(result.status).toBe("ok");
     expect(result.candidates).toEqual([
-      { openalexId: "W2", title: "Citing Paper", authors: ["A. Author"], year: 2022, url: "https://openalex.org/W2" },
+      {
+        openalexId: "W2",
+        title: "Citing Paper",
+        authors: ["A. Author"],
+        year: 2022,
+        url: "https://openalex.org/W2",
+        pdfUrl: null,
+      },
     ]);
     expect(fetchMock.mock.calls[1]?.[0]).toContain("filter=cites:W1");
+  });
+
+  it("surfaces best_oa_location.pdf_url as pdfUrl when OpenAlex has one", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({
+          results: [{ id: "https://openalex.org/W1", display_name: "Root Paper", publication_year: 2020 }],
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          results: [
+            {
+              id: "https://openalex.org/W2",
+              display_name: "Open Access Paper",
+              publication_year: 2021,
+              best_oa_location: { pdf_url: "https://example.com/paper.pdf" },
+              open_access: { is_oa: true, oa_url: "https://example.com/landing" },
+            },
+          ],
+        }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await fetchCitationExpansion("Root Paper", "cited_by");
+
+    expect(result.candidates[0]?.pdfUrl).toBe("https://example.com/paper.pdf");
   });
 
   it("expands cites via the resolved work's referenced_works", async () => {

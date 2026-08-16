@@ -1,7 +1,7 @@
 // OpenAlex API client. Free, no key. "What cites this" / "what this cites" for a paper not necessarily in the
-// workspace. Returns ghost-node candidates for canvas-edge expansion (plan.md "New features"). A selected ghost node
-// would be passed to lib/services/ingest.ts to become a real paper -- that pipeline doesn't exist yet, so there is no
-// write path here, only discovery.
+// workspace. Returns ghost-node candidates for canvas-edge expansion (plan.md "New features"). A ghost candidate
+// with a real open-access PDF URL can be passed straight to lib/services/ingest.ts's queueUrlIngest() to become a
+// real paper -- see components/canvas/GhostCitationNode.tsx's "Add to workspace" button.
 import { classifyExternalError, fetchJson, type ExternalApiStatus } from "./externalFetch";
 
 export type CitationDirection = "cites" | "cited_by";
@@ -12,6 +12,14 @@ export interface GhostCitationCandidate {
   authors: string[];
   year: number | null;
   url: string;
+  /**
+   * A directly fetchable open-access PDF, when OpenAlex knows of one --
+   * null for a paywalled or unindexed work. This is what actually lets
+   * "Add to workspace" ingest the paper for real: `url` above is just the
+   * OpenAlex work's own landing page, not something scripts/parse.py could
+   * ever read as a PDF.
+   */
+  pdfUrl: string | null;
 }
 
 export interface CitationExpansionResult {
@@ -27,6 +35,8 @@ interface OpenAlexWork {
   publication_year: number | null;
   referenced_works?: string[];
   authorships?: Array<{ author?: { display_name?: string } }>;
+  open_access?: { is_oa?: boolean; oa_url?: string | null };
+  best_oa_location?: { pdf_url?: string | null } | null;
 }
 
 interface OpenAlexSearchResponse {
@@ -59,6 +69,11 @@ function toCandidate(work: OpenAlexWork): GhostCitationCandidate {
       .filter((name): name is string => Boolean(name)),
     year: work.publication_year,
     url: work.id,
+    // best_oa_location.pdf_url is OpenAlex's own "yes, this is actually a
+    // PDF" field -- open_access.oa_url is often just a repository landing
+    // page, which lib/services/upload.ts's resolveSourceUrl() (and so
+    // ingest) can't do anything with.
+    pdfUrl: work.best_oa_location?.pdf_url ?? null,
   };
 }
 
