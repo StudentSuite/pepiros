@@ -1,3 +1,41 @@
 {
-  "_todo": "One golden test case per generator (21 total) + verifier edge cases. See PLAN-V1.md §8."
+  "_comment": "One golden case per generator was the original spec (plan.md §8), which needs a human to review actual output prose quality per generator -- that judgment isn't something to fabricate (see this issue's own reasoning). This is a starting set: real structural invariants (does a real claim survive re-verification, are banned generic-critique phrases actually absent), checked against the fixture's own already-curated papers, not invented text. Extend with more generators/cases as they get a real human content review, per evals/run.ts's header comment.",
+  "cases": [
+    {
+      "name": "methodology cites a real, verifiable excerpt",
+      "generator": "methodology",
+      "paperId": "p1",
+      "expect": { "requiresSupportedEvidence": true }
+    },
+    {
+      "name": "statistical_validity cites a real, verifiable excerpt",
+      "generator": "statistical_validity",
+      "paperId": "p1",
+      "expect": { "requiresSupportedEvidence": true }
+    },
+    {
+      "name": "weaknesses avoids banned generic critique",
+      "generator": "weaknesses",
+      "paperId": "p1",
+      "expect": { "requiresSupportedEvidence": true, "noBannedPhrases": true }
+    },
+    {
+      "name": "biases avoids banned generic critique",
+      "generator": "biases",
+      "paperId": "p2",
+      "expect": { "requiresSupportedEvidence": true, "noBannedPhrases": true }
+    },
+    {
+      "name": "contributions cites a real, verifiable excerpt",
+      "generator": "contributions",
+      "paperId": "p2",
+      "expect": { "requiresSupportedEvidence": true }
+    },
+    {
+      "name": "background cites a real, verifiable excerpt",
+      "generator": "background",
+      "paperId": "p3",
+      "expect": { "requiresSupportedEvidence": true }
+    }
+  ]
 }
