@@ -33,10 +33,21 @@ export function DangerZone({ username }: { username: string }) {
   const canConfirm = !needsTyping || typed === username;
 
   function confirm() {
-    toast.success(
-      pending === "account" ? "Account deleted" : "Workspace deleted",
-      { description: "Demo account: nothing was actually deleted." },
-    );
+    // This used to unconditionally toast.success("Account deleted", {
+    // description: "Demo account: nothing was actually deleted." }) --
+    // for every real, non-demo user reaching this page (the only account
+    // type that ever does; app/(app)/settings/danger/page.tsx redirects the
+    // demo account away before this component even renders), claiming a
+    // serious, typed-confirmation, "cannot be undone" action succeeded while
+    // silently doing nothing. Real cascading account/workspace deletion is
+    // real, separate, higher-risk work (issue #69) -- this is the honest
+    // interim state instead of a false success claim.
+    toast.error("Not implemented yet", {
+      description:
+        pending === "account"
+          ? "Real account deletion isn't built yet. Nothing was deleted."
+          : "Real workspace deletion isn't built yet. Nothing was deleted.",
+    });
     setPending(null);
     setTyped("");
   }
