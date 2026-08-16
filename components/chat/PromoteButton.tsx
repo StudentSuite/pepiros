@@ -10,6 +10,7 @@ import type { Evidence, GraphNode } from "@/types/anchor";
 import type { ChatMessage } from "./MessageList";
 
 interface CreateNodeApiResponse {
+  node: GraphNode;
   nodeId: string;
   deepLink: string;
   /** The submitted bodyMd with real evidence markers already bound in -- see
@@ -30,8 +31,9 @@ function truncate(text: string, max: number): string {
  * lib/services/nodes.ts createNode()), which re-verifies every claim
  * server-side against the corpus -- a promoted node can come back
  * low-confidence if a citation doesn't hold up, exactly like any other node.
- * No parent/persistence yet (fixture-backed data seam), so the node is added
- * to the client-side workspace store, same as everything else read from it.
+ * createNode() persists the node itself (issue #51), so this only adds
+ * `data.node` (not a client-reconstructed one) to the store for immediate
+ * render -- the actual save already happened server-side.
  */
 export function PromoteButton({ message }: { message: ChatMessage }) {
   const workspace = useWorkspaceStore((s) => s.workspace);
@@ -89,19 +91,7 @@ export function PromoteButton({ message }: { message: ChatMessage }) {
 
       const data = (await res.json()) as CreateNodeApiResponse;
 
-      const node: GraphNode = {
-        id: data.nodeId,
-        workspaceId: workspace.id,
-        type: "leaf",
-        title,
-        bodyMd: data.bodyMd,
-        pillarIndex: null,
-        x: 0,
-        y: 0,
-        paperId: workspace.papers[0]?.id ?? null,
-        stale: false,
-      };
-      addNode(node, data.evidence);
+      addNode(data.node, data.evidence);
 
       setResult({ deepLink: data.deepLink, lowConfidence: data.lowConfidence });
       setState("done");

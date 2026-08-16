@@ -202,6 +202,7 @@ export interface CreateNodeInput {
 }
 
 export interface CreateNodeResult {
+  node: GraphNode;
   nodeId: string;
   deepLink: string;
   /**
@@ -231,16 +232,25 @@ export interface CreateNodeResult {
  * the generators go through. There is deliberately no parameter a caller
  * could use to assert one.
  *
- * Persistence is out of scope while `fetchWorkspace()` is fixture-backed
- * (CLAUDE.md's current data seam); this returns the verified node for the
- * caller to persist, which is the same contract `runOrchestrator` already
- * uses.
+ * Persists the verified node itself (issue #51): this used to return the
+ * node for the caller to persist "once fetchWorkspace() isn't fixture-backed
+ * anymore" -- that's true now (#47), and both callers (POST /api/nodes,
+ * chat's Promote button; the MCP create_node tool) had never actually done
+ * that persisting, so a promoted node only ever lived in the client's
+ * optimistic zustand state and vanished on refresh. Merges and saves through
+ * the same getIngestedWorkspace/setIngestedWorkspace seam updateNodeBody()
+ * and runSynthesis() already use, rather than leaving a third caller to
+ * reimplement it.
  */
 export async function createNode(input: CreateNodeInput): Promise<CreateNodeResult> {
-  const workspace = await fetchWorkspace(input.workspaceId);
+  const base = (await getIngestedWorkspace(input.workspaceId)) ?? (await fetchWorkspace(input.workspaceId));
 
-  if (input.parentId && !workspace.nodes.some((n) => n.id === input.parentId)) {
-    throw new Error(`parent node ${input.parentId} does not exist in workspace ${input.workspaceId}`);
+  let parent: GraphNode | undefined;
+  if (input.parentId) {
+    parent = base.nodes.find((n) => n.id === input.parentId);
+    if (!parent) {
+      throw new Error(`parent node ${input.parentId} does not exist in workspace ${input.workspaceId}`);
+    }
   }
 
   const nodeId = `mcp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -249,14 +259,35 @@ export async function createNode(input: CreateNodeInput): Promise<CreateNodeResu
     nodeId,
     bodyMd: input.bodyMd,
     claims: input.claims,
-    chunks: workspace.chunks,
-    numerics: workspace.numerics,
+    chunks: base.chunks,
+    numerics: base.numerics,
     idPrefix: `${nodeId}-e`,
   });
 
   const droppedRefs = evidence.filter((e) => e.tier === "unsupported").map((e) => e.refId);
 
+  const node: GraphNode = {
+    id: nodeId,
+    workspaceId: input.workspaceId,
+    type: "leaf",
+    title: input.title,
+    bodyMd,
+    pillarIndex: parent?.pillarIndex ?? null,
+    x: 0,
+    y: 0,
+    paperId: parent?.paperId ?? base.papers[0]?.id ?? null,
+    stale: false,
+  };
+
+  const merged: Workspace = {
+    ...base,
+    nodes: [...base.nodes, node],
+    evidence: [...base.evidence, ...evidence],
+  };
+  await setIngestedWorkspace(merged);
+
   return {
+    node,
     nodeId,
     deepLink: nodeDeepLink(input.workspaceId, nodeId),
     bodyMd,
