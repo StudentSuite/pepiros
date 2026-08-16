@@ -5,6 +5,7 @@ import { isDemoAccount } from "@/lib/data/demo";
 import { SettingsRow } from "@/components/settings/SettingsRow";
 import { SignOutButton } from "@/components/settings/SignOutButton";
 import { DemoNotice } from "@/components/settings/DemoNotice";
+import { PasswordChangeForm } from "@/components/settings/PasswordChangeForm";
 
 export const metadata: Metadata = { title: "Security settings" };
 
@@ -31,10 +32,15 @@ export default async function SecurityPage() {
         description={
           demo
             ? "The demo account uses a published password on purpose, so anyone can look around without signing up."
-            : "Password changes arrive with the rest of Supabase Auth."
+            : "Set a new password directly, or use the forgot-password link on the sign-in page if you don't know your current one."
         }
+        align="start"
       >
-        <p className="font-sans text-sm text-ink-faint">Not available yet</p>
+        {demo ? (
+          <p className="font-sans text-sm text-ink-faint">Not available for the demo account</p>
+        ) : (
+          <PasswordChangeForm />
+        )}
       </SettingsRow>
 
       <SettingsRow
