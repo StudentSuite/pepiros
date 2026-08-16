@@ -2,7 +2,7 @@ import "server-only";
 import type { Evidence, GraphEdge, GraphNode, Workspace } from "@/types/anchor";
 import { verifyAndBindClaims } from "./verify";
 import { fetchWorkspace } from "./workspace";
-import { getIngestedWorkspace, setIngestedWorkspace } from "./ingestStore";
+import { deleteIngestedNode, getIngestedWorkspace, setIngestedWorkspace } from "./ingestStore";
 import { buildContextBlock } from "@/lib/prompts/contextBlock";
 import { GENERATORS, runGenerator } from "@/lib/agents/generators";
 
@@ -456,17 +456,14 @@ export async function deleteNode(input: { workspaceId: string; nodeId: string })
         .map((e) => e.sourceId),
     ),
   ];
-  const staleSet = new Set(dependentNodeIds);
 
-  const merged: Workspace = {
-    ...base,
-    nodes: base.nodes
-      .filter((n) => n.id !== input.nodeId)
-      .map((n) => (staleSet.has(n.id) ? { ...n, stale: true } : n)),
-    edges: base.edges.filter((e) => e.sourceId !== input.nodeId && e.targetId !== input.nodeId),
-    evidence: base.evidence.filter((e) => e.nodeId !== input.nodeId),
-  };
-  await setIngestedWorkspace(merged);
+  // A workspace that's never been ingested before (still pure fixture) has no
+  // real row for deleteIngestedNode() to act on yet -- this upserts the whole
+  // base first (harmless/idempotent if it's already a real row, per
+  // saveWorkspace()'s own "re-writing an unchanged row is a no-op" doc
+  // comment) so the DELETE below always has something real to remove.
+  await setIngestedWorkspace(base);
+  await deleteIngestedNode(input.nodeId, dependentNodeIds);
 
   return { staleNodeIds: dependentNodeIds };
 }

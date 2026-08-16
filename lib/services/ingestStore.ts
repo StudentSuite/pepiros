@@ -1,6 +1,6 @@
 import "server-only";
 import type { Workspace } from "@/types/anchor";
-import { getWorkspace, saveWorkspace, listWorkspaceSummaries } from "@/lib/db/queries";
+import { getWorkspace, saveWorkspace, listWorkspaceSummaries, deleteNodeCascade } from "@/lib/db/queries";
 
 /**
  * Holds workspaces that real ingest (lib/services/ingest.ts) has actually
@@ -40,6 +40,15 @@ export async function getIngestedWorkspace(workspaceId: string): Promise<Workspa
 
 export async function setIngestedWorkspace(workspace: Workspace): Promise<void> {
   await saveWorkspace(workspace);
+}
+
+/**
+ * Real removal, not an upsert -- see lib/db/queries/index.ts's
+ * deleteNodeCascade() for why this can't just be another setIngestedWorkspace()
+ * call. `staleNodeIds` are marked stale in the same transaction as the delete.
+ */
+export async function deleteIngestedNode(nodeId: string, staleNodeIds: string[]): Promise<void> {
+  await deleteNodeCascade(nodeId, staleNodeIds);
 }
 
 /** Every workspace real ingest has actually written -- no fixture here; lib/services/workspaces.ts's listWorkspaces() adds that. */

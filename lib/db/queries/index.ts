@@ -310,6 +310,27 @@ export async function saveWorkspace(workspace: Workspace): Promise<void> {
   });
 }
 
+/**
+ * saveWorkspace() above is deliberately upsert-only (its own doc comment:
+ * "every row is upserted by id rather than diffed") -- issue #54's
+ * deleteNode() is the first caller that needs a row to actually disappear,
+ * which an upsert-only write can never do: a row absent from the object
+ * passed to saveWorkspace() is simply never mentioned, not removed. This is
+ * a real DELETE instead, relying on the schema's own ON DELETE CASCADE on
+ * edges.source_id/target_id and evidence.node_id (0000_dear_bishop.sql) to
+ * remove the deleted node's own edges/evidence -- lib/services/nodes.ts's
+ * deleteNode() only needs to tell this which *other* nodes to mark stale
+ * first (edges pointing at the deleted node from a content-dependent kind).
+ */
+export async function deleteNodeCascade(nodeId: string, staleNodeIds: string[]): Promise<void> {
+  await db.transaction(async (tx) => {
+    if (staleNodeIds.length > 0) {
+      await tx.update(schema.nodes).set({ stale: true }).where(inArray(schema.nodes.id, staleNodeIds));
+    }
+    await tx.delete(schema.nodes).where(eq(schema.nodes.id, nodeId));
+  });
+}
+
 export interface WorkspaceSummaryRow {
   id: string;
   name: string;
