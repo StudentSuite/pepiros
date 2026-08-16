@@ -128,10 +128,17 @@ export function verifyAndBindClaims(input: VerifyAndBindInput): { bodyMd: string
  * marker ("[^e7]"); a multi-ref (aggregate) claim's is the concatenation of
  * one marker per ref ("[^e7][^e8]"), since one Evidence row is still
  * one-ref-per-row.
+ *
+ * Also matches "^[n{i}]" (bracket/caret swapped) -- observed live from a real
+ * Groq call despite the prompt spelling out "[^n0]" explicitly. Same "a
+ * prompt is a request, not a guarantee" class as normalizeRef and
+ * lib/chat/citations.ts's CJK-bracket tolerance: a non-compliant marker
+ * should still resolve to a real evidence chip instead of leaking as raw
+ * text into the rendered node body.
  */
 function bindEvidenceMarkers(bodyMd: string, markerReplacements: string[]): string {
   return markerReplacements.reduce(
-    (body, replacement, i) => body.split(`[^n${i}]`).join(replacement),
+    (body, replacement, i) => body.replace(new RegExp(`\\[\\^n${i}\\]|\\^\\[n${i}\\]`, "g"), () => replacement),
     bodyMd,
   );
 }

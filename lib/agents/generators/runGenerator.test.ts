@@ -60,6 +60,12 @@ describe("bindEvidenceMarkers", () => {
     const bound = bindEvidenceMarkers("A[^n0] and B[^n5].", ["[^e1]"]);
     expect(bound).toBe("A[^e1] and B[^n5].");
   });
+
+  it("also binds a bracket/caret-swapped marker (observed live from a real Groq call)", () => {
+    const bound = bindEvidenceMarkers("No test name appears here.^[n0]", ["[^e2]"]);
+    expect(bound).toBe("No test name appears here.[^e2]");
+    expect(bound).not.toContain("^[n0]");
+  });
 });
 
 describe("findBannedPhrases", () => {

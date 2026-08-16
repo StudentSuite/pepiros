@@ -68,11 +68,16 @@ ${ctx.contextBlock}`;
  * marker ("[^e7]"); a multi-ref claim (docs/PLAN-V1.md §4's aggregate-claim
  * case) verifies each ref as its own Evidence row and its replacement is
  * their concatenation ("[^e7][^e8]"), since one evidence row still means one
- * ref each -- see lib/agents/orchestrator.ts's `verifyGeneratorOutput`.
+ * ref each -- see lib/services/verify.ts's `verifyAndBindClaims`.
+ *
+ * Also matches "^[n{i}]" (bracket/caret swapped) -- observed live from a real
+ * Groq call despite the prompt spelling out "[^n0]" explicitly. Same "a
+ * prompt is a request, not a guarantee" class as normalizeRef and
+ * lib/chat/citations.ts's CJK-bracket tolerance.
  */
 export function bindEvidenceMarkers(bodyMd: string, markerReplacements: string[]): string {
   return markerReplacements.reduce(
-    (body, replacement, i) => body.split(`[^n${i}]`).join(replacement),
+    (body, replacement, i) => body.replace(new RegExp(`\\[\\^n${i}\\]|\\^\\[n${i}\\]`, "g"), () => replacement),
     bodyMd,
   );
 }
