@@ -7,6 +7,8 @@ const Body = z.object({
   username: z.string().min(1),
   password: z.string().min(1),
   displayName: z.string().min(1),
+  /** Optional (issue #45) -- format/uniqueness validated in the adapter, same as username/password. */
+  email: z.string().optional(),
 });
 
 /**

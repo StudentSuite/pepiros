@@ -10,6 +10,8 @@ import { Label } from "@/components/shadcn/label";
 import { Card } from "@/components/shadcn/card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 /**
  * Sign up. Posts to a real endpoint (POST /api/auth/signup ->
  * lib/data/adapter.ts's createAccount()) and receives the same signed
@@ -20,12 +22,18 @@ import { ErrorBanner } from "@/components/ui/ErrorBanner";
  * BACKEND unset), createAccount() returns an honest error instead of a fake
  * account -- the form still works, it just surfaces that error rather than
  * a made-up success.
+ *
+ * Email is optional (issue #45): given one, it becomes the account's real
+ * Supabase Auth email instead of the synthetic placeholder that can never
+ * receive mail, which is what /reset-password actually needs to work.
+ * Leaving it blank keeps signup exactly as fast as before.
  */
 export default function SignupPage() {
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -38,13 +46,17 @@ export default function SignupPage() {
       return setError("Usernames are 3-30 characters: lowercase letters, numbers, and underscores only.");
     }
     if (password.length < 8) return setError("Password must be at least 8 characters.");
+    const trimmedEmail = email.trim();
+    if (trimmedEmail && !EMAIL_RE.test(trimmedEmail)) {
+      return setError("Enter a valid email address, or leave it blank.");
+    }
 
     setPending(true);
     try {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ username, password, displayName }),
+        body: JSON.stringify({ username, password, displayName, email: trimmedEmail || undefined }),
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as { error?: string } | null;
@@ -99,6 +111,21 @@ export default function SignupPage() {
             />
             <p className="font-sans text-[13px] text-ink-faint">
               Lowercase letters, numbers, and underscores. 3-30 characters.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-s-2">
+            <Label htmlFor="email">Email (optional)</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              placeholder="ada@example.com"
+            />
+            <p className="font-sans text-[13px] text-ink-faint">
+              Only used to recover your password if you forget it.
             </p>
           </div>
 

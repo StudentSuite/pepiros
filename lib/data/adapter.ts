@@ -51,7 +51,18 @@ export interface DataAdapter {
   readonly kind: "seed" | "supabase";
 
   verifyCredentials(username: string, password: string): Promise<Profile | null>;
-  createAccount(input: { username: string; password: string; displayName: string }): Promise<CreateAccountResult>;
+  /**
+   * `email` is optional (issue #45): when given, it becomes the account's
+   * real Supabase Auth email instead of the synthetic `${username}@users.
+   * pepiros.dev` placeholder, which is what actually lets password recovery
+   * deliver mail somewhere real. Omitting it keeps today's exact behaviour.
+   */
+  createAccount(input: {
+    username: string;
+    password: string;
+    displayName: string;
+    email?: string;
+  }): Promise<CreateAccountResult>;
 
   /**
    * The live `posts` row a catalog paper corresponds to, if any (matched by

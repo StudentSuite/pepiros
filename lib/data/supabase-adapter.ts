@@ -78,11 +78,12 @@ function initialsFrom(name: string): string {
 }
 
 const USERNAME_PATTERN = /^[a-z0-9_]{3,30}$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const supabaseAdapter: DataAdapter = {
   kind: "supabase",
 
-  async createAccount({ username, password, displayName }) {
+  async createAccount({ username, password, displayName, email }) {
     const normalized = username.trim().toLowerCase();
     if (!USERNAME_PATTERN.test(normalized)) {
       return {
@@ -91,6 +92,11 @@ export const supabaseAdapter: DataAdapter = {
     }
     if (password.length < 8) {
       return { error: "Password must be at least 8 characters." };
+    }
+
+    const normalizedEmail = email?.trim().toLowerCase() || undefined;
+    if (normalizedEmail && !EMAIL_PATTERN.test(normalizedEmail)) {
+      return { error: "Enter a valid email address, or leave it blank." };
     }
 
     const sb = createSupabaseServiceClient();
@@ -104,8 +110,14 @@ export const supabaseAdapter: DataAdapter = {
       return { error: "That username is already taken." };
     }
 
+    // A real email becomes the actual Supabase Auth email instead of the
+    // synthetic placeholder (issue #45) -- that placeholder can never
+    // receive mail, which is exactly why /reset-password has stayed a UI-only
+    // stub. email_confirm stays true either way: this app has no confirm-
+    // email UX, and gating account creation on a confirmation click is a
+    // separate, bigger decision than "collect an address to recover to."
     const { data: created, error: createError } = await sb.auth.admin.createUser({
-      email: `${normalized}@users.pepiros.dev`,
+      email: normalizedEmail ?? `${normalized}@users.pepiros.dev`,
       password,
       email_confirm: true,
     });
@@ -133,7 +145,13 @@ export const supabaseAdapter: DataAdapter = {
   },
 
   async verifyCredentials(username, password) {
-    // Supabase Auth owns credentials; usernames map to an email alias.
+    // Supabase Auth owns credentials; usernames map to an email alias. That
+    // alias is NOT always the synthetic `${username}@users.pepiros.dev`
+    // pattern any more (issue #45: a real email given at signup becomes the
+    // account's actual Auth email), so this looks up whatever is really
+    // stored for this user's auth.users row via the admin API rather than
+    // reconstructing the synthetic pattern and getting it wrong for every
+    // account created with a real email.
     const sb = await createSupabaseServerClient();
     const { data: profileRow } = await sb
       .from("profiles")
@@ -142,10 +160,11 @@ export const supabaseAdapter: DataAdapter = {
       .maybeSingle();
     if (!profileRow) return null;
 
-    const { error } = await sb.auth.signInWithPassword({
-      email: `${profileRow.username}@users.pepiros.dev`,
-      password,
-    });
+    const admin = createSupabaseServiceClient();
+    const { data: authUser } = await admin.auth.admin.getUserById(profileRow.id);
+    const email = authUser.user?.email ?? `${profileRow.username}@users.pepiros.dev`;
+
+    const { error } = await sb.auth.signInWithPassword({ email, password });
     if (error) return null;
 
     return this.getProfile(profileRow.id);
