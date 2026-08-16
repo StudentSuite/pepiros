@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAdapter } from "@/lib/data/adapter";
-import { SESSION_COOKIE, SESSION_MAX_AGE, serializeSession } from "@/lib/auth/session";
+import { SESSION_COOKIE, SESSION_MAX_AGE, isSessionSigningConfigured, serializeSession } from "@/lib/auth/session";
 
 const Body = z.object({
   username: z.string().min(1),
@@ -18,6 +18,17 @@ const Body = z.object({
  * account in that mode.
  */
 export async function POST(req: Request) {
+  // Same reasoning as app/api/auth/login/route.ts: fail fast with a clear
+  // reason rather than creating a real account and then throwing on the
+  // cookie step, which used to be an uncaught 500 in production.
+  if (!isSessionSigningConfigured()) {
+    console.error("[auth/signup] SESSION_SECRET is not set in production -- refusing to sign a session.");
+    return NextResponse.json(
+      { error: "Sign-up is not configured for this deployment. Contact the site administrator." },
+      { status: 503 },
+    );
+  }
+
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });

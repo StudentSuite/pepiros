@@ -28,6 +28,23 @@ const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 export const SESSION_COOKIE = COOKIE;
 export const SESSION_MAX_AGE = MAX_AGE;
 
+/**
+ * Whether a session can be signed/verified at all. False only when
+ * SESSION_SECRET is unset in production -- secret() below throws in that
+ * case rather than falling back to the dev-only constant.
+ *
+ * Every call site that signs or verifies a session (login, signup, the
+ * Google callback, and middleware.ts on *every* protected-route request)
+ * needs to check this first: before it existed, a missing SESSION_SECRET in
+ * production meant an uncaught throw on every single one of those paths --
+ * login/signup 500ing outright, and middleware crashing instead of
+ * gracefully redirecting to /login, which is a much worse and harder to
+ * diagnose failure than "sign-in is not configured for this deployment."
+ */
+export function isSessionSigningConfigured(): boolean {
+  return Boolean(process.env.SESSION_SECRET) || process.env.NODE_ENV !== "production";
+}
+
 function secret(): string {
   // Falls back to a constant in development so the demo works with no env
   // setup at all. In production an unset secret is a real problem, so it is

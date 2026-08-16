@@ -40,7 +40,17 @@ export async function middleware(req: NextRequest) {
   );
   if (!needsAuth) return NextResponse.next();
 
-  const profileId = await parseSession(req.cookies.get(SESSION_COOKIE)?.value);
+  // A config error (SESSION_SECRET unset in production) must not crash
+  // routing for every protected-page request -- fail closed to "not
+  // authenticated" instead, same as an actually-missing/invalid cookie, and
+  // log server-side so this is diagnosable rather than surfacing as an
+  // opaque platform error page on every single visit.
+  let profileId: string | null = null;
+  try {
+    profileId = await parseSession(req.cookies.get(SESSION_COOKIE)?.value);
+  } catch (err) {
+    console.error("[middleware] parseSession failed:", err);
+  }
   if (profileId) return NextResponse.next();
 
   const url = req.nextUrl.clone();

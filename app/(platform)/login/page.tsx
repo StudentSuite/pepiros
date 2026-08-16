@@ -30,6 +30,11 @@ const OAUTH_ERRORS: Record<string, string> = {
   google_failed: "Google sign-in did not complete. Try again.",
   google_unavailable:
     "Google sign-in is not configured for this deployment. Use a username and password instead.",
+  // Not actually Google-specific (app/auth/callback/route.ts's own SESSION_SECRET
+  // check) -- every sign-in path fails the same way when it's unset, so the
+  // message says so rather than pointing at Google as the cause.
+  auth_not_configured:
+    "Sign-in is not configured for this deployment. Contact the site administrator.",
 };
 
 function LoginForm() {

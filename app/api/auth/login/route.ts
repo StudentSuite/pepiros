@@ -4,6 +4,7 @@ import { getAdapter } from "@/lib/data/adapter";
 import {
   SESSION_COOKIE,
   SESSION_MAX_AGE,
+  isSessionSigningConfigured,
   serializeSession,
 } from "@/lib/auth/session";
 
@@ -21,6 +22,18 @@ const Body = z.object({
  * accounts.
  */
 export async function POST(req: Request) {
+  // Checked before touching the adapter at all: a credentials check that
+  // then fails to sign the resulting session is a worse failure mode than
+  // failing fast with a clear reason (this is what was previously an
+  // uncaught throw -- a raw 500 -- on every login attempt in production).
+  if (!isSessionSigningConfigured()) {
+    console.error("[auth/login] SESSION_SECRET is not set in production -- refusing to sign a session.");
+    return NextResponse.json(
+      { error: "Sign-in is not configured for this deployment. Contact the site administrator." },
+      { status: 503 },
+    );
+  }
+
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });

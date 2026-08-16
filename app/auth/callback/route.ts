@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { profileFromGoogle, type GoogleIdentityInput } from "@/lib/auth/google";
-import { SESSION_COOKIE, SESSION_MAX_AGE, serializeInlineSession } from "@/lib/auth/session";
+import { SESSION_COOKIE, SESSION_MAX_AGE, isSessionSigningConfigured, serializeInlineSession } from "@/lib/auth/session";
 
 /**
  * Finishes Google sign-in.
@@ -21,6 +21,16 @@ function failTo(origin: string, reason: string) {
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const { origin } = url;
+
+  // Checked before exchanging the code at all: succeeding at the Google
+  // round-trip and then throwing on the cookie step (SESSION_SECRET unset in
+  // production) used to be an uncaught 500 here, the same gap login/signup
+  // had -- and for Google specifically, that failure looks identical to
+  // "Google isn't configured," which is the wrong diagnosis to hand back.
+  if (!isSessionSigningConfigured()) {
+    console.error("[auth/callback] SESSION_SECRET is not set in production -- refusing to sign a session.");
+    return failTo(origin, "auth_not_configured");
+  }
 
   // Google's own failure (user hit "cancel", provider not enabled in the
   // Supabase project, consent withdrawn). Surfaced rather than swallowed.
