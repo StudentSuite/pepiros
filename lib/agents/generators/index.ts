@@ -31,14 +31,30 @@ export * from "./runGenerator";
  *
  * Deliberately still unimplemented, each for a reason beyond "not built yet":
  * - `figures` needs a vision call against a cropped raster (docs/PLAN-V1.md
- *   §8), and scripts/parse.py doesn't extract figure crops yet.
+ *   §8), and scripts/parse.py doesn't extract figure crops yet. Also needs a
+ *   real product/infra decision this file can't make on its own: Groq's
+ *   structured-output-capable models (gpt-oss-20b/-120b, CLAUDE.md) are
+ *   text-only, so a real vision call means a third model path alongside
+ *   fastModel()/strongModel(), not just a new prompt (issue #59).
  * - `equations` needs equation-kind chunks with bbox anchoring; parse.py
- *   only emits `kind: "prose"` today.
- * - `concept_links` needs cross-paper context (other papers' outlines) that
- *   GeneratorContext doesn't carry -- it's scoped to one paper by design,
- *   same reason chunking is per-paper. Proposing real `relates` edges from
- *   a generator's output also doesn't fit the uniform body_md+evidence
- *   contract the way this file's other generators do.
+ *   only emits `kind: "prose"` today, and detecting equation regions with no
+ *   semantic markup to key off is real, empirical parser work this file
+ *   can't shortcut with a plausible-looking heuristic (issue #60).
+ * - `concept_links` (issue #48) turned out to already be solved a different
+ *   way, discovered rather than built: lib/services/synthesis.ts's
+ *   runSynthesis() already proposes cross-paper `relates` edges (its
+ *   PairRelationSchema's "relates" branch -- "same topic, but no direct
+ *   agreement, contradiction, extension, or shared method"), backed by the
+ *   same two-sided verified evidence every other synthesis edge gets.
+ *   Confirmed live against the fixture's 3 real papers, not just by reading
+ *   the code: one of the 3 pairs classified as exactly that. A discrete
+ *   per-leaf generator was never going to fit this well anyway -- it needs
+ *   cross-paper context (other papers' outlines) that GeneratorContext
+ *   deliberately doesn't carry (scoped to one paper, same reason chunking
+ *   is per-paper), and a body_md+evidence contract has no slot for "also
+ *   create this edge." runSynthesis() already is the workspace-level,
+ *   cross-paper pass this needs -- concept_links doesn't need its own code
+ *   path, just this pointer to the one that already does its job.
  * - `quiz`/`flashcards` are real, but solved a different way:
  *   lib/services/quiz.ts derives quiz questions from leaves that already
  *   have quote_located evidence, and components/learn/FlashcardDeck.tsx
