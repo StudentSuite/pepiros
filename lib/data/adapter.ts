@@ -65,6 +65,33 @@ export interface DataAdapter {
   }): Promise<CreateAccountResult>;
 
   /**
+   * Issue #45 collected an optional real email so this would have somewhere
+   * to send to -- this is that follow-up.
+   *
+   * The Supabase implementation always resolves `{ ok: true }`, regardless
+   * of whether the username exists or has a real email on file: a
+   * per-outcome response ("no such account" vs. "no recovery email") would
+   * let a caller enumerate real usernames, the same reason
+   * verifyCredentials's failure message is generic. The real distinction
+   * (account not found / no real email / link actually sent) is logged
+   * server-side, never returned to the caller.
+   *
+   * `{ error }` is reserved for the seed adapter, where the feature isn't
+   * available in this deployment at all -- a statement about the
+   * deployment, not about any specific account, so it isn't an enumeration
+   * risk the way a per-account result would be.
+   *
+   * Not returning a blanket "check your email" for every input either is
+   * what makes this honest: a prior attempt at this exact feature was built
+   * and reverted specifically for claiming success while never delivering
+   * mail to the synthetic `${username}@users.pepiros.dev` placeholder.
+   * Collapsing the *response* is not the same as collapsing the *behavior*
+   * -- a real email genuinely gets a real link; the response is just
+   * silent about which case happened.
+   */
+  requestPasswordReset(username: string): Promise<{ ok: true } | { error: string }>;
+
+  /**
    * The live `posts` row a catalog paper corresponds to, if any (matched by
    * `paper_id`). Null in seed mode (no real post concept there) and in
    * supabase mode for any catalog paper nobody has published yet -- callers
@@ -128,6 +155,12 @@ const seedAdapter: DataAdapter = {
     return {
       error:
         "Sign-up needs the Supabase-backed platform, which isn't enabled on this deployment. Sign in as guest/guest instead.",
+    };
+  },
+
+  async requestPasswordReset() {
+    return {
+      error: "Password reset needs the Supabase-backed platform, which isn't enabled on this deployment.",
     };
   },
 

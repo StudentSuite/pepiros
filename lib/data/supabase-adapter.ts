@@ -170,6 +170,47 @@ export const supabaseAdapter: DataAdapter = {
     return this.getProfile(profileRow.id);
   },
 
+  async requestPasswordReset(username) {
+    const normalized = username.trim().toLowerCase();
+    const sb = createSupabaseServiceClient();
+
+    // Always returns the same {ok: true} regardless of whether the account
+    // exists or has a real email -- a per-case error message ("no such
+    // account" vs. "no recovery email on file") would let a caller enumerate
+    // real usernames the same way verifyCredentials's own generic failure
+    // message avoids, one level up from what #45 fixed. #45's honesty fix
+    // was about never CLAIMING a link was sent when it wasn't (the prior,
+    // reverted attempt's actual bug) -- that's a different problem from
+    // "the response shape differs per input," and the fix for this one is
+    // the standard one: collapse the response, keep the real distinction
+    // server-side only (logged, not returned).
+    const { data: profileRow } = await sb
+      .from("profiles")
+      .select("id, username")
+      .eq("username", normalized)
+      .maybeSingle();
+
+    if (profileRow) {
+      const { data: authUser } = await sb.auth.admin.getUserById(profileRow.id);
+      const email = authUser.user?.email ?? null;
+      const isRealEmail = Boolean(email) && email !== `${profileRow.username}@users.pepiros.dev`;
+
+      if (isRealEmail) {
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+        const { error } = await sb.auth.resetPasswordForEmail(email!, {
+          redirectTo: `${appUrl}/auth/reset-callback`,
+        });
+        if (error) console.error(`[requestPasswordReset] resetPasswordForEmail failed for ${normalized}:`, error.message);
+      } else {
+        console.error(`[requestPasswordReset] ${normalized} has no real recovery email on file -- nothing sent.`);
+      }
+    } else {
+      console.error(`[requestPasswordReset] no account for username ${normalized} -- nothing sent.`);
+    }
+
+    return { ok: true };
+  },
+
   async getPostByPaperId(paperId) {
     const sb = createSupabaseServiceClient();
     const { data } = await sb

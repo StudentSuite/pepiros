@@ -1,40 +1,71 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { Suspense, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { MailCheck } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { FormField } from "@/components/ui/FormField";
 import { Button } from "@/components/ui/Button";
 import { Logo } from "@/components/ui/Logo";
 import { Icon } from "@/components/ui/Icon";
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 
 /**
- * `/reset-password` -- same card pattern as `/login` and `/signup`, one
- * email field. Submit does real client-side validation, then flips local
- * state to a "check your email" confirmation that replaces the form
- * entirely (Task 7 brief) -- no real email is sent, no fetch call.
+ * `/reset-password` -- same card pattern as `/login` and `/signup`. Asks for
+ * a username, not an email: that's this app's identifier everywhere else
+ * (login, signup), and a user resetting a forgotten password is far more
+ * likely to remember their username than which email they gave at signup,
+ * if they gave one at all.
+ *
+ * Posts to a real endpoint (issue #45's follow-up) and always shows the same
+ * generic confirmation regardless of the account's actual state -- see
+ * lib/data/adapter.ts's requestPasswordReset() doc comment for why a
+ * per-account response would be an enumeration risk. This used to flip to a
+ * "check your email" state with no fetch call at all, a real request that
+ * never went anywhere; that dishonesty is exactly why this app's password
+ * reset is real now instead of decorative.
  */
-export default function ResetPasswordPage() {
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState<string>();
+const LINK_ERRORS: Record<string, string> = {
+  invalid_link: "That reset link is invalid or has expired. Request a new one below.",
+};
+
+function ResetPasswordForm() {
+  const params = useSearchParams();
+  const linkError = LINK_ERRORS[params.get("error") ?? ""] ?? null;
+
+  const [username, setUsername] = useState("");
+  const [error, setError] = useState<string | undefined>(linkError ?? undefined);
+  const [pending, setPending] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const trimmed = email.trim();
+    const trimmed = username.trim();
     if (!trimmed) {
-      setError("Email is required.");
+      setError("Username is required.");
       return;
     }
-    if (!EMAIL_RE.test(trimmed)) {
-      setError("Enter a valid email address.");
-      return;
-    }
+
     setError(undefined);
-    setSubmitted(true);
+    setPending(true);
+    try {
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ username: trimmed }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        setError(body?.error ?? "Could not send a reset link.");
+        return;
+      }
+      setSubmitted(true);
+    } catch {
+      setError("Could not reach the server. Check your connection and try again.");
+    } finally {
+      setPending(false);
+    }
   }
 
   return (
@@ -49,8 +80,8 @@ export default function ResetPasswordPage() {
             </span>
             <h1 className="font-serif text-2xl text-[#1c1a15]">Check your email</h1>
             <p className="font-sans text-sm text-[#1c1a15]/70">
-              If an account exists for <span className="font-medium">{email.trim()}</span>, a reset
-              link is on its way.
+              If <span className="font-medium">{username.trim()}</span> is an account with a recovery
+              email on file, a reset link is on its way there.
             </p>
             <Link href="/login" className="mt-2 font-sans text-xs underline underline-offset-2 hover:text-accent text-[#1c1a15]/70">
               Back to sign in
@@ -60,25 +91,31 @@ export default function ResetPasswordPage() {
           <>
             <h1 className="mt-6 font-serif text-2xl text-[#1c1a15]">Reset your password</h1>
             <p className="mt-1 font-sans text-sm text-[#1c1a15]/70">
-              Enter your email and we&apos;ll send you a link to reset it.
+              Enter your username and, if that account has a recovery email on file, we&apos;ll send a
+              link to it.
             </p>
+
+            {error && (
+              <div className="mt-4">
+                <ErrorBanner message={error} />
+              </div>
+            )}
 
             {/* FormField's label/error contrast on this paper card is handled by
                 the scoped `.surface-reading` cascade rule in app/globals.css. */}
             <form onSubmit={handleSubmit} noValidate className="mt-6 flex flex-col gap-4">
-              <FormField label="Email" required error={error}>
+              <FormField label="Username" required>
                 <Input
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="you@example.com"
-                  autoComplete="email"
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                  placeholder="ada"
+                  autoComplete="username"
                   required
                 />
               </FormField>
 
-              <Button type="submit" variant="primary" className="mt-2 w-full">
-                Send reset link
+              <Button type="submit" variant="primary" className="mt-2 w-full" disabled={pending}>
+                {pending ? "Sending…" : "Send reset link"}
               </Button>
             </form>
 
@@ -91,5 +128,14 @@ export default function ResetPasswordPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function ResetPasswordPage() {
+  // useSearchParams needs a Suspense boundary, same as app/(platform)/login/page.tsx.
+  return (
+    <Suspense fallback={null}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
