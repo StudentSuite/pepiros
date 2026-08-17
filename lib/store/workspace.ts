@@ -33,9 +33,15 @@ interface WorkspaceState {
    * client state, not a durable write.
    */
   addNode: (node: GraphNode, evidence: Evidence[], edges?: GraphEdge[]) => void;
-  /** Applies a successfully-persisted body edit (PATCH /api/nodes/[id]) to the
-   *  in-memory workspace so the drawer reflects it without a full reload. */
-  updateNodeBody: (nodeId: string, bodyMd: string) => void;
+  /**
+   * Applies a successfully-persisted body edit (PATCH /api/nodes/[id]) to
+   * the in-memory workspace so the drawer reflects it without a full
+   * reload. Takes the server's response `evidence` (issue #77: an edit
+   * re-verifies every evidence row already on this node and may downgrade
+   * or drop one) rather than leaving the old rows in place, so a badge that
+   * the server just demoted doesn't keep showing the stale tier.
+   */
+  updateNodeBody: (nodeId: string, bodyMd: string, evidence: Evidence[]) => void;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({
@@ -70,13 +76,15 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
         },
       };
     }),
-  updateNodeBody: (nodeId, bodyMd) =>
+  updateNodeBody: (nodeId, bodyMd, evidence) =>
     set((state) => {
       if (!state.workspace) return state;
+      const evidenceById = new Map(evidence.map((e) => [e.id, e]));
       return {
         workspace: {
           ...state.workspace,
           nodes: state.workspace.nodes.map((n) => (n.id === nodeId ? { ...n, bodyMd } : n)),
+          evidence: state.workspace.evidence.map((e) => evidenceById.get(e.id) ?? e),
         },
       };
     }),

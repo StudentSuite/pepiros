@@ -1,8 +1,8 @@
 import "server-only";
 import type { Evidence, GraphEdge, GraphNode, Workspace } from "@/types/anchor";
-import { verifyAndBindClaims } from "./verify";
+import { verifyAndBindClaims, reverifyNodeEvidence } from "./verify";
 import { fetchWorkspace } from "./workspace";
-import { deleteIngestedNode, getIngestedWorkspace, setIngestedWorkspace } from "./ingestStore";
+import { deleteIngestedNode, getIngestedWorkspace, recordNodeVersion, setIngestedWorkspace } from "./ingestStore";
 import { buildContextBlock } from "@/lib/prompts/contextBlock";
 import { GENERATORS, runGenerator } from "@/lib/agents/generators";
 
@@ -379,29 +379,56 @@ export async function findContradictions(
  * setIngestedWorkspace's node upsert is an UPDATE on a re-used id (see
  * lib/db/queries's onConflictDoUpdate for `nodes`), not a fresh insert.
  *
- * Does not re-run claim verification against the edited text and does not
- * write a node_versions history row -- both real, both out of scope for this
- * fix (types/anchor.ts's Workspace contract has no node-version concept to
- * extend without widening that frozen contract, a separate decision).
+ * Issue #77 (P0): that write left every existing Evidence row's tier
+ * untouched no matter what the new text said -- a "quote located" badge
+ * survived a rewrite that no longer matched its source, in exactly the one
+ * place a human can freely rewrite a claim. Now re-runs the same
+ * deterministic fuzzy-match + entailment-floor check
+ * (lib/services/verify.ts's reverifyNodeEvidence()) against the edited body
+ * for every evidence row already anchored to this node, downgrading/
+ * dropping (and stripping the now-unsupported [^eN] marker) exactly like a
+ * freshly-generated claim would be. Also writes a node_versions row with the
+ * *pre-edit* body first, so an edit is now auditable -- types/anchor.ts's
+ * frozen Workspace contract doesn't need widening for this, since version
+ * history isn't part of what the canvas/reader render; it's a side write
+ * through lib/db/queries, same as share_tokens or mcp_tokens.
  */
 export async function updateNodeBody(input: {
   workspaceId: string;
   nodeId: string;
   bodyMd: string;
-}): Promise<GraphNode> {
+}): Promise<{ node: GraphNode; evidence: Evidence[] }> {
   const base = (await getIngestedWorkspace(input.workspaceId)) ?? (await fetchWorkspace(input.workspaceId));
   const target = base.nodes.find((n) => n.id === input.nodeId);
   if (!target) {
     throw new Error(`node ${input.nodeId} does not exist in workspace ${input.workspaceId}`);
   }
 
-  const updated: GraphNode = { ...target, bodyMd: input.bodyMd };
+  const nodeEvidence = base.evidence.filter((e) => e.nodeId === input.nodeId);
+  const { bodyMd, evidence: reverifiedEvidence } = reverifyNodeEvidence({
+    bodyMd: input.bodyMd,
+    evidence: nodeEvidence,
+    chunks: base.chunks,
+    numerics: base.numerics,
+  });
+
+  const updated: GraphNode = { ...target, bodyMd };
+  const evidenceById = new Map(reverifiedEvidence.map((e) => [e.id, e]));
   const merged: Workspace = {
     ...base,
     nodes: base.nodes.map((n) => (n.id === input.nodeId ? updated : n)),
+    evidence: base.evidence.map((e) => evidenceById.get(e.id) ?? e),
   };
+  // setIngestedWorkspace() first: node_versions.node_id has a real FK to
+  // nodes.id, and for any node that only ever lived in the static fixture
+  // (never yet upserted into a real nodes row -- true of every fixture node
+  // until something first writes to this workspace), recording a version
+  // before that upsert has run has no row to reference yet. target.bodyMd
+  // was captured above, before this overwrite, so recording it after is
+  // still the pre-edit body, not the one just written.
   await setIngestedWorkspace(merged);
-  return updated;
+  await recordNodeVersion(input.nodeId, target.bodyMd);
+  return { node: updated, evidence: reverifiedEvidence };
 }
 
 // --- delete_node ------------------------------------------------------------

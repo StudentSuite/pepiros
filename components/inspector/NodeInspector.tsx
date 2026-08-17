@@ -187,7 +187,16 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
                   body: JSON.stringify({ workspaceId: workspace.id, bodyMd: html }),
                 });
                 if (!res.ok) throw new Error(`Save failed (${res.status})`);
-                updateNodeBody(node.id, html);
+                // Server response, not the local `html`: updateNodeBody()
+                // re-verifies every evidence row against the edited text and
+                // may strip a now-unsupported citation marker from bodyMd or
+                // downgrade its tier (issue #77) -- applying our own copy
+                // instead would show a citation the server just dropped.
+                const { node: savedNode, evidence: savedEvidence } = (await res.json()) as {
+                  node: GraphNode;
+                  evidence: Evidence[];
+                };
+                updateNodeBody(node.id, savedNode.bodyMd, savedEvidence);
                 setEditing(false);
                 useToastStore.getState().push("Saved", "success");
               } catch {

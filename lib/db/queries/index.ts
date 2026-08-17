@@ -305,7 +305,22 @@ export async function saveWorkspace(workspace: Workspace): Promise<void> {
             numericOk: e.numericOk,
           })),
         )
-        .onConflictDoNothing({ target: schema.evidence.id });
+        // Issue #77: re-verifying an existing node's evidence on a body edit
+        // updates the *same* evidence row ids with a new tier/matchScore/
+        // anchor -- onConflictDoNothing silently dropped exactly that
+        // update, since every prior caller only ever inserted brand-new
+        // evidence rows and never needed to change one already saved.
+        .onConflictDoUpdate({
+          target: schema.evidence.id,
+          set: {
+            chunkId: sql`excluded.chunk_id`,
+            quote: sql`excluded.quote`,
+            spans: sql`excluded.spans`,
+            tier: sql`excluded.tier`,
+            matchScore: sql`excluded.match_score`,
+            numericOk: sql`excluded.numeric_ok`,
+          },
+        });
     }
   });
 }
@@ -328,6 +343,22 @@ export async function deleteNodeCascade(nodeId: string, staleNodeIds: string[]):
       await tx.update(schema.nodes).set({ stale: true }).where(inArray(schema.nodes.id, staleNodeIds));
     }
     await tx.delete(schema.nodes).where(eq(schema.nodes.id, nodeId));
+  });
+}
+
+/**
+ * Issue #77: an inspector body edit had no history at all -- the previous
+ * bodyMd was simply gone once saveWorkspace()'s onConflictDoUpdate replaced
+ * it. Called with the *pre-edit* body, before that overwrite, so a
+ * node_versions row is the text being superseded, not the new text -- the
+ * schema's own `node_id` FK is `on delete cascade` (lib/db/schema.ts), so
+ * these clean up automatically if the node itself is later deleted.
+ */
+export async function createNodeVersion(nodeId: string, bodyMd: string): Promise<void> {
+  await db.insert(schema.nodeVersions).values({
+    id: `nv-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+    nodeId,
+    bodyMd,
   });
 }
 

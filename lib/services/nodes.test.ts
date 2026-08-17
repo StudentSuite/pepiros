@@ -1,8 +1,20 @@
 import { describe, expect, it } from "vitest";
+import { eq } from "drizzle-orm";
 import type { Workspace } from "@/types/anchor";
 import workspaceFixture from "@/fixtures/workspace.json";
+import { db } from "@/lib/db/client";
+import { nodeVersions } from "@/lib/db/schema";
 import { getIngestedWorkspace } from "./ingestStore";
-import { createNode, deleteNode, findContradictions, getNode, getOutline, nodeDeepLink, promoteToThread } from "./nodes";
+import {
+  createNode,
+  deleteNode,
+  findContradictions,
+  getNode,
+  getOutline,
+  nodeDeepLink,
+  promoteToThread,
+  updateNodeBody,
+} from "./nodes";
 
 const workspace = workspaceFixture as unknown as Workspace;
 const WS = workspace.id;
@@ -138,6 +150,64 @@ describe("createNode", () => {
         bodyMd: "x",
         claims: [],
       }),
+    ).rejects.toThrow("does not exist");
+  });
+});
+
+describe("updateNodeBody", () => {
+  const c1 = workspace.chunks.find((c) => c.ordinal === 1)!;
+
+  it("keeps a quote_located badge when the edit still matches the source, and records a version row", async () => {
+    const created = await createNode({
+      workspaceId: WS,
+      title: "Editable",
+      bodyMd: `A claim. [^n0]`,
+      claims: [{ refs: ["C1"], quote: c1.text }],
+    });
+    const evidenceId = created.evidence[0]!.id;
+    const originalBody = created.bodyMd;
+
+    const { node, evidence } = await updateNodeBody({
+      workspaceId: WS,
+      nodeId: created.nodeId,
+      bodyMd: `${c1.text}[^${evidenceId}]`,
+    });
+
+    expect(evidence[0]!.tier).toBe("quote_located");
+    expect(node.bodyMd).toContain(`[^${evidenceId}]`);
+
+    const versions = await db.select().from(nodeVersions).where(eq(nodeVersions.nodeId, created.nodeId));
+    expect(versions.some((v) => v.bodyMd === originalBody)).toBe(true);
+  });
+
+  it("downgrades a quote_located badge to unsupported and strips the marker when the edit no longer matches the source", async () => {
+    const created = await createNode({
+      workspaceId: WS,
+      title: "Editable, then rewritten",
+      bodyMd: `A claim. [^n0]`,
+      claims: [{ refs: ["C1"], quote: c1.text }],
+    });
+    const evidenceId = created.evidence[0]!.id;
+    expect(created.evidence[0]!.tier).toBe("quote_located");
+
+    const { node, evidence } = await updateNodeBody({
+      workspaceId: WS,
+      nodeId: created.nodeId,
+      bodyMd: `Something the source never says.[^${evidenceId}]`,
+    });
+
+    expect(evidence[0]!.tier).toBe("unsupported");
+    expect(evidence[0]!.anchor).toBeNull();
+    expect(node.bodyMd).not.toContain(`[^${evidenceId}]`);
+
+    const after = await getIngestedWorkspace(WS);
+    const persisted = after!.evidence.find((e) => e.id === evidenceId)!;
+    expect(persisted.tier).toBe("unsupported");
+  });
+
+  it("rejects a nodeId that does not exist", async () => {
+    await expect(
+      updateNodeBody({ workspaceId: WS, nodeId: "not-a-real-node", bodyMd: "x" }),
     ).rejects.toThrow("does not exist");
   });
 });

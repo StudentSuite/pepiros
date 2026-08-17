@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Chunk } from "@/types/anchor";
-import { verifyAndBindClaims } from "./verify";
+import type { Chunk, Evidence } from "@/types/anchor";
+import { reverifyNodeEvidence, verifyAndBindClaims } from "./verify";
 
 const CHUNKS: Chunk[] = [
   {
@@ -28,5 +28,58 @@ describe("verifyAndBindClaims", () => {
 
     expect(bodyMd).not.toContain("^[n0]");
     expect(bodyMd).toContain(`[^${evidence[0]!.id}]`);
+  });
+});
+
+describe("reverifyNodeEvidence", () => {
+  const anchoredEvidence: Evidence = {
+    id: "n1-e1",
+    nodeId: "n1",
+    refId: "C1",
+    anchor: {
+      chunkId: "c1",
+      quote: "Participants were randomized 1:1 to receive bright light exposure.",
+      spans: CHUNKS[0]!.rects,
+    },
+    tier: "quote_located",
+    matchScore: 1,
+    numericOk: null,
+  };
+
+  it("keeps a quote_located badge when the edited body still matches the source", () => {
+    const { evidence } = reverifyNodeEvidence({
+      bodyMd: "Participants were randomized 1:1 to receive bright light exposure.[^n1-e1]",
+      evidence: [anchoredEvidence],
+      chunks: CHUNKS,
+      numerics: [],
+    });
+
+    expect(evidence[0]!.tier).toBe("quote_located");
+    expect(evidence[0]!.anchor).not.toBeNull();
+  });
+
+  it("downgrades to unsupported and strips the marker when the edit no longer matches the source", () => {
+    const { bodyMd, evidence } = reverifyNodeEvidence({
+      bodyMd: "Participants all received a placebo instead.[^n1-e1]",
+      evidence: [anchoredEvidence],
+      chunks: CHUNKS,
+      numerics: [],
+    });
+
+    expect(evidence[0]!.tier).toBe("unsupported");
+    expect(evidence[0]!.anchor).toBeNull();
+    expect(bodyMd).not.toContain("[^n1-e1]");
+  });
+
+  it("leaves an already-dropped row (no anchor) untouched", () => {
+    const dropped: Evidence = { ...anchoredEvidence, anchor: null, tier: "unsupported" };
+    const { evidence } = reverifyNodeEvidence({
+      bodyMd: "Anything at all.",
+      evidence: [dropped],
+      chunks: CHUNKS,
+      numerics: [],
+    });
+
+    expect(evidence[0]).toEqual(dropped);
   });
 });

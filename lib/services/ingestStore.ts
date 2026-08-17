@@ -1,6 +1,6 @@
 import "server-only";
 import type { Workspace } from "@/types/anchor";
-import { getWorkspace, saveWorkspace, listWorkspaceSummaries, deleteNodeCascade } from "@/lib/db/queries";
+import { getWorkspace, saveWorkspace, listWorkspaceSummaries, deleteNodeCascade, createNodeVersion } from "@/lib/db/queries";
 
 /**
  * Holds workspaces that real ingest (lib/services/ingest.ts) has actually
@@ -49,6 +49,11 @@ export async function setIngestedWorkspace(workspace: Workspace): Promise<void> 
  */
 export async function deleteIngestedNode(nodeId: string, staleNodeIds: string[]): Promise<void> {
   await deleteNodeCascade(nodeId, staleNodeIds);
+}
+
+/** Records the body being superseded by an inspector edit -- see lib/db/queries's createNodeVersion() doc comment. */
+export async function recordNodeVersion(nodeId: string, bodyMd: string): Promise<void> {
+  await createNodeVersion(nodeId, bodyMd);
 }
 
 /** Every workspace real ingest has actually written -- no fixture here; lib/services/workspaces.ts's listWorkspaces() adds that. */

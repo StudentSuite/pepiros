@@ -28,8 +28,10 @@ const patchBodySchema = z.object({
  * Persists NodeEditor's Save button (components/inspector/NodeInspector.tsx)
  * -- previously a stub, so a user's edit vanished silently on Save with no
  * indication it hadn't gone anywhere (impeccable critique, 2026-08-16, P0).
- * No node_versions row yet -- see lib/services/nodes.ts's updateNodeBody doc
- * comment for why that's still out of scope.
+ * Returns both `node` and `evidence`: updateNodeBody() re-verifies every
+ * evidence row against the edited text and may downgrade/strip a citation
+ * (issue #77), so the client applies the server's response rather than its
+ * own optimistic copy of what it sent.
  */
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -42,8 +44,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (denial) return denial;
 
   try {
-    const node = await updateNodeBody({ workspaceId: parsed.data.workspaceId, nodeId: id, bodyMd: parsed.data.bodyMd });
-    return NextResponse.json({ node });
+    const { node, evidence } = await updateNodeBody({ workspaceId: parsed.data.workspaceId, nodeId: id, bodyMd: parsed.data.bodyMd });
+    return NextResponse.json({ node, evidence });
   } catch (err) {
     return NextResponse.json(
       { error: "not_found", detail: err instanceof Error ? err.message : String(err) },

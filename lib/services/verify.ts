@@ -1,10 +1,14 @@
 import type { Chunk, Evidence, Numeric } from "@/types/anchor";
 import { buildRefIndex } from "@/lib/grounding/anchor";
 import {
+  PARAPHRASE_THRESHOLD,
+  QUOTE_LOCATED_THRESHOLD,
   stripDroppedCitation,
   verifyClaims,
   type ClaimedEvidence,
 } from "@/lib/grounding/verify";
+import { checkEntailmentFloor } from "@/lib/grounding/entail";
+import { normalize, tokenSetRatio } from "@/lib/grounding/fuzzy";
 
 /**
  * Thin API-facing wrapper around lib/grounding/verify.ts (plan.md: "keep the
@@ -141,4 +145,80 @@ function bindEvidenceMarkers(bodyMd: string, markerReplacements: string[]): stri
     (body, replacement, i) => body.replace(new RegExp(`\\[\\^n${i}\\]|\\^\\[n${i}\\]`, "g"), () => replacement),
     bodyMd,
   );
+}
+
+export interface ReverifyNodeEvidenceInput {
+  bodyMd: string;
+  /** This node's current evidence rows -- only ones with a live anchor are re-checked. */
+  evidence: Evidence[];
+  chunks: Chunk[];
+  numerics: Numeric[];
+}
+
+/**
+ * Issue #77: editing a node's body through the inspector's Save button used
+ * to leave every existing Evidence row's tier untouched, no matter what the
+ * new text said -- a "quote located" badge stayed put even after a rewrite
+ * that no longer matched its source. `Evidence.anchor.quote` is the text
+ * that was originally checked; a body edit never touches that field, so
+ * simply re-running the unchanged check against the unchanged quote would
+ * rubber-stamp the same result regardless of what the user wrote.
+ *
+ * What actually needs re-checking is whether the *edited* body still
+ * supports each citation, so this treats the whole new bodyMd as the
+ * candidate claim text and re-runs it against each evidence row's already-
+ * anchored source chunk -- same tokenSetRatio + entailment-floor thresholds
+ * lib/grounding/verify.ts's verifyClaim uses, no LLM judge, same as every
+ * other tier decision in this app. token_set_ratio's intersection-based
+ * scoring means surrounding unrelated prose in a longer body doesn't
+ * automatically tank the score for an unrelated citation elsewhere in it --
+ * what matters is whether the source chunk's own wording is still present
+ * somewhere in the edited text.
+ *
+ * A row already dropped (`anchor: null`) has nothing left to re-check --
+ * its marker is already stripped, and it stays that way.
+ */
+export function reverifyNodeEvidence({
+  bodyMd,
+  evidence,
+  chunks,
+  numerics,
+}: ReverifyNodeEvidenceInput): { bodyMd: string; evidence: Evidence[] } {
+  const chunkById = new Map(chunks.map((c) => [c.id, c]));
+  const numericsByChunk = new Map<string, Numeric[]>();
+  for (const n of numerics) {
+    const bucket = numericsByChunk.get(n.chunkId);
+    if (bucket) bucket.push(n);
+    else numericsByChunk.set(n.chunkId, [n]);
+  }
+
+  const normalizedBody = normalize(bodyMd);
+
+  const nextEvidence = evidence.map((ev): Evidence => {
+    if (!ev.anchor) return ev;
+    const chunk = chunkById.get(ev.anchor.chunkId);
+    if (!chunk) return ev;
+
+    const score = tokenSetRatio(normalizedBody, normalize(chunk.text));
+    let tier: Evidence["tier"] =
+      score >= QUOTE_LOCATED_THRESHOLD ? "quote_located" : score >= PARAPHRASE_THRESHOLD ? "paraphrase" : "unsupported";
+
+    const numericOk = checkEntailmentFloor(bodyMd, numericsByChunk.get(chunk.id) ?? []);
+    if (tier !== "unsupported" && numericOk === false) tier = "unsupported";
+
+    return {
+      ...ev,
+      tier,
+      matchScore: score,
+      numericOk,
+      anchor: tier === "unsupported" ? null : ev.anchor,
+    };
+  });
+
+  const nextBody = reconcileBodyWithVerifiedEvidence(
+    bodyMd,
+    nextEvidence.map((ev) => ({ evidenceId: ev.id, tier: ev.tier })),
+  );
+
+  return { bodyMd: nextBody, evidence: nextEvidence };
 }
