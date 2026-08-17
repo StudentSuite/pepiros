@@ -15,8 +15,9 @@ interface PacingStop {
 // run against a short paper landed archetype classification under 1s,
 // pillar planning a few seconds after that, and the generator fan-out
 // spread across the rest of the ~15-45s window, tracking this range rather
-// than blowing past it. That fan-out currently covers 6 of 21 generator
-// types (docs/PLAN-V1.md §8); the window will likely shift as the rest ship.
+// than blowing past it. Not every generator type ships yet (see
+// lib/agents/generators/index.ts for current coverage); the window will
+// likely shift as the rest land.
 const PACING_STOPS: PacingStop[] = [
   {
     label: "Skeleton graph",
@@ -36,12 +37,12 @@ const PACING_STOPS: PacingStop[] = [
   {
     label: "Summary + pillars",
     timing: "~5-10s",
-    detail: "Archetype classification and pillar planning resolve -- the upload view's live progress reflects this in real time, stage by stage.",
+    detail: "Archetype classification and pillar planning resolve, shown live as they happen.",
   },
   {
     label: "Generators + graph expansion",
     timing: "~15-45s",
-    detail: "Remaining generators fill in (6 of 21 types implemented so far), and citation-graph expansion becomes available.",
+    detail: "Remaining generators fill in, and citation-graph expansion becomes available.",
   },
 ];
 

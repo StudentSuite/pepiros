@@ -191,7 +191,7 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
                 setEditing(false);
                 useToastStore.getState().push("Saved", "success");
               } catch {
-                useToastStore.getState().push("Couldn't save — try again", "error");
+                useToastStore.getState().push("Couldn't save, try again", "error");
               } finally {
                 setSaving(false);
               }

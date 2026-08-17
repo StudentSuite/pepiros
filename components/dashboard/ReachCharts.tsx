@@ -11,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { TrendingUp, BarChart3 } from "lucide-react";
 import {
   ChartContainer,
   ChartTooltip,
@@ -19,6 +20,7 @@ import {
 } from "@/components/shadcn/chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/shadcn/toggle-group";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type { RangeKey, ReachSummary } from "@/lib/data/types";
 
 const RANGES: { value: RangeKey; label: string }[] = [
@@ -99,6 +101,13 @@ export function ReachOverTime({
         </ToggleGroup>
       </CardHeader>
       <CardContent className="pt-s-2">
+        {reach.series.length === 0 ? (
+          <EmptyState
+            icon={TrendingUp}
+            title="No reach yet."
+            description="Views and likes on your published papers show up here once they start coming in."
+          />
+        ) : (
         <ChartContainer config={lineConfig} className="h-[220px] w-full">
           <LineChart data={reach.series} margin={{ left: 4, right: 8, top: 4 }}>
             <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.7} />
@@ -140,6 +149,7 @@ export function ReachOverTime({
             />
           </LineChart>
         </ChartContainer>
+        )}
       </CardContent>
     </Card>
   );
@@ -172,6 +182,13 @@ export function EngagementByPost({ reach }: { reach: ReachSummary }) {
         </p>
       </CardHeader>
       <CardContent>
+        {data.length === 0 ? (
+          <EmptyState
+            icon={BarChart3}
+            title="No posts yet."
+            description="Publish a paper and its per-post views will show up here."
+          />
+        ) : (
         <ChartContainer config={barConfig} className="h-[240px] w-full">
           <BarChart
             data={data}
@@ -215,6 +232,7 @@ export function EngagementByPost({ reach }: { reach: ReachSummary }) {
             </Bar>
           </BarChart>
         </ChartContainer>
+        )}
       </CardContent>
     </Card>
   );

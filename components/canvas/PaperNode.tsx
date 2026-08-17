@@ -27,7 +27,7 @@ export function PaperNode({ data }: NodeProps<PepirosNode>) {
       <div data-lod="title" className="mt-1 font-sans text-base font-semibold leading-snug text-ink">{node.title}</div>
       <p data-lod="body" className="mt-1.5 font-serif text-sm leading-snug text-ink-muted">{stripRefMarkers(node.bodyMd)}</p>
       {node.stale && (
-        <div className="mt-2 font-sans text-[11px] text-ink-faint">stale — source paper removed</div>
+        <div className="mt-2 font-sans text-[11px] text-ink-faint">stale: source paper removed</div>
       )}
       {onToggleGhosts && (
         <button

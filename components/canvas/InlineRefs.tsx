@@ -31,7 +31,7 @@ function tooltipFor(ev: Evidence): string {
   if (!ev.anchor) return tier;
   const quote = ev.anchor.quote;
   const preview = quote.length > 90 ? `${quote.slice(0, 90)}…` : quote;
-  return `${tier} — "${preview}"`;
+  return `${tier}: "${preview}"`;
 }
 
 /**

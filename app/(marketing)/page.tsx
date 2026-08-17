@@ -105,7 +105,7 @@ export default function MarketingPage() {
 
       <Section
         kicker="The problem"
-        title="A confident summary is not evidence."
+        title="You can't tell if a summary is accurate by reading it."
       >
         <p>
           Ask a model to summarise a paper and you get fluent prose that sounds
@@ -121,7 +121,7 @@ export default function MarketingPage() {
 
       <Section
         kicker="The mechanism"
-        title="Checked against the source, not asked of a model twice."
+        title="Every claim is matched against its source sentence and scored."
         media={<VerificationDemo />}
         layout="side-by-side"
         revealVariant="slide"
@@ -134,9 +134,9 @@ export default function MarketingPage() {
           is dropped and the citation is stripped rather than left dangling.
         </p>
         <p>
-          None of this asks a second model whether the first one was honest. It
-          is a deterministic string match against the real text, which is why the
-          same claim always gets the same score.
+          No second model grades the first one&apos;s work. A deterministic
+          string match does that instead, so the same claim always gets the
+          same score.
         </p>
       </Section>
 
@@ -157,7 +157,7 @@ export default function MarketingPage() {
         </p>
       </Section>
 
-      <Section kicker="Ingest" title="Structure lands before any model runs.">
+      <Section kicker="Ingest" title="No blank loading screen.">
         <p>
           The page is never a spinner. The skeleton graph appears first, then
           related work, then metadata, then the summary and pillars, then the
@@ -170,7 +170,7 @@ export default function MarketingPage() {
 
       <Section
         kicker="For agents"
-        title="An agent that can check itself, mid-answer."
+        title="Your agent can check its own claims before it answers."
         media={<AgentMock />}
       >
         <p>
@@ -211,7 +211,7 @@ export default function MarketingPage() {
           <ReadingColumn>
             <div className="text-center">
               <h2 className="font-serif text-[1.75rem] leading-snug text-ink">
-                Start with someone else&rsquo;s reading.
+                Browse papers other people have already read.
               </h2>
               <p className="mx-auto mt-s-3 max-w-md font-sans text-[15px] leading-relaxed text-ink-muted">
                 The library is open. Every paper in it opens into a write-up

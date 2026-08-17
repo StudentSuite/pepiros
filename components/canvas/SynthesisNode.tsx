@@ -55,7 +55,7 @@ export function SynthesisNode({ data }: NodeProps<PepirosNode>) {
       <p data-lod="body" className="mt-1.5 font-serif text-sm leading-snug text-ink-muted">{stripRefMarkers(node.bodyMd)}</p>
       <InlineRefs bodyMd={node.bodyMd} evidence={evidence} className="mt-2 flex flex-wrap gap-1" />
       {node.stale && (
-        <div className="mt-2 font-sans text-[11px] text-ink-faint">stale — a source paper was removed</div>
+        <div className="mt-2 font-sans text-[11px] text-ink-faint">stale: a source paper was removed</div>
       )}
       <Handle type="source" position={Position.Bottom} className="!bg-border-strong" />
     </div>

@@ -10,7 +10,7 @@ import { ReaderMock, GraphMock, AgentMock } from "@/components/mockups/ReaderMoc
 export const metadata: Metadata = {
   title: "How It Works",
   description:
-    "Deterministic checking, not a model's opinion of itself. Every claim is matched against the exact source sentence with a fuzzy-match score.",
+    "Every claim is matched against the exact source sentence and scored, checked by a deterministic string match, not a second model's opinion.",
 };
 
 const WORKED_CLAIM =
@@ -20,10 +20,10 @@ const WORKED_QUOTE =
 const WORKED_SCORE = 0.97;
 
 const LIMITATIONS = [
-  "A fuzzy-matched quote proves quotation provenance, not entailment.",
-  "A model can attach a real Methods sentence to a wrong conclusion and still score 1.0 on the match.",
-  "The badge always reads quote located, and never reads verified.",
-  "Claim and quote render next to each other on purpose, so the reader adjudicates entailment rather than the matcher.",
+  "A matched quote proves the words are really there. It doesn't prove the conclusion follows from them.",
+  "A model can attach a real sentence from the Methods section to the wrong conclusion, and the match still scores 1.0.",
+  "The badge reads quote located. It never reads verified.",
+  "Claim and quote sit side by side on purpose, so you're the one who decides whether the claim follows, not the matcher.",
 ];
 
 /**
@@ -85,12 +85,11 @@ export default function HowItWorksPage() {
           How it works
         </p>
         <h1 className="mt-s-4 font-serif text-4xl leading-tight text-ink sm:text-5xl">
-          Checked against the source, not asked of a model twice.
+          How each claim gets checked against its source.
         </h1>
         <p className="mx-auto mt-s-4 max-w-xl font-sans text-base leading-relaxed text-ink-muted">
-          Every claim is matched against the exact sentence it cites, with a
-          score you can see. No second model is asked whether the first one was
-          telling the truth.
+          Every claim is matched against the exact sentence it cites and
+          scored. No second model grades the first one&apos;s work.
         </p>
       </section>
 
@@ -114,14 +113,14 @@ export default function HowItWorksPage() {
       <Step
         index={2}
         kicker="Structure"
-        title="Sections come from the paper, not from a fixed template."
+        title="Each paper's sections are generated from its own content."
         flip
         media={<GraphMock />}
       >
         <p>
-          A clinical trial and a machine-learning paper do not have the same
-          shape, so they do not get the same headings. Pepiros classifies the
-          paper first and plans its pillars from the content.
+          A clinical trial and a machine-learning paper don&apos;t have the same
+          shape, so they don&apos;t get the same headings. Pepiros classifies the
+          paper first and plans its sections from what&apos;s actually in it.
         </p>
         <p>
           Every leaf under a pillar carries its own evidence, which is what makes
@@ -239,7 +238,7 @@ export default function HowItWorksPage() {
               Said on stage, not just in the docs
             </p>
             <h2 className="mt-s-4 font-serif text-2xl text-ink">
-              What this does not prove
+              Where the guarantee stops
             </h2>
             <ul className="mt-s-5 flex flex-col gap-s-3">
               {LIMITATIONS.map((l) => (

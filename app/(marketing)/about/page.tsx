@@ -10,7 +10,7 @@ import {
 export const metadata: Metadata = {
   title: "About",
   description:
-    "Pepiros binds every AI-surfaced claim to the exact quoted sentence it came from, checked deterministically rather than asserted.",
+    "Every claim Pepiros surfaces is checked against the exact sentence it cites, with a score you can see.",
 };
 
 export default function AboutPage() {
@@ -40,33 +40,29 @@ export default function AboutPage() {
 
           <h2>Why the badge never says &ldquo;verified&rdquo;</h2>
           <p>
-            A fuzzy-matched quote proves quotation provenance. It does not prove
-            entailment. A model can attach a real sentence from the Methods
-            section to a conclusion that sentence does not support, and still
-            score a perfect match.
+            A matched quote tells you the sentence is real. It doesn&apos;t tell
+            you the conclusion built on it is right. A model can quote the
+            Methods section correctly and still draw the wrong conclusion from
+            it.
           </p>
           <p>
-            So the badge reads <strong>quote located</strong>, never{" "}
-            <strong>verified</strong>, and the claim and its quote render next to
-            each other rather than one behind the other. The reader adjudicates
-            whether the claim follows. The matcher only establishes that the
-            sentence is really there, at that page, in that paper.
+            That&apos;s why the badge stops at <strong>quote located</strong> and
+            never says <strong>verified</strong>. Claim and quote sit side by
+            side so you can judge whether the claim actually follows, not so
+            Pepiros can tell you it already checked that part for you.
           </p>
           <p>
-            An entailment overlap floor helps at the margins: every number, unit
-            and comparator in a claim also has to appear in the anchored span.
-            That catches the failure a fuzzy match alone misses, a genuine quote
-            attached to a reversed or overstated conclusion. It is a floor, not a
-            guarantee, and it is described that way on{" "}
+            An entailment overlap floor catches the sharper failure, a real
+            quote attached to a reversed or overstated conclusion. It&apos;s a
+            floor, not a guarantee; the mechanics are on{" "}
             <Link href="/how-it-works">how it works</Link>.
           </p>
 
-          <h2>Built as a service, not just a site</h2>
+          <h2>Also live as an MCP service</h2>
           <p>
             The same grounding is callable over MCP, so an agent can check its
             own claims against a source before asserting them to you, and say so
-            out loud when one comes back unsupported. That is the part we think
-            is genuinely new, and it is documented on{" "}
+            when one comes back unsupported. Documented on{" "}
             <Link href="/mcp">the agents page</Link>.
           </p>
 
