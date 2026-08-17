@@ -53,8 +53,8 @@ export function SiteFooter() {
         <div className="flex flex-col gap-3">
           <Logo tagline size="md" />
           <p className="max-w-xs font-sans text-sm text-ink-faint">
-            Substack for researchers, with a summariser you can check. Every
-            claim stays bound to the sentence it came from.
+            A publishing platform for researchers, with a summariser you can
+            check. Every claim stays bound to the sentence it came from.
           </p>
         </div>
 

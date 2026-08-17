@@ -26,7 +26,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 const TITLE = "Pepiros";
 const DESCRIPTION =
-  "Substack for researchers, with a summariser you can check: publish the papers you read, and every claim stays bound to the sentence it came from.";
+  "A publishing platform for researchers, with a summariser you can check: publish the papers you read, and every claim stays bound to the sentence it came from.";
 
 export const metadata: Metadata = {
   // Same var MCP deep links use (.env.example, README's Configuration table) --

@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback } from "@/components/shadcn/avatar";
 import { cn } from "@/lib/utils";
 
 /**
- * Long-form reading primitives, in the Substack mould.
+ * Long-form reading primitives, built for a publishing surface, not app chrome.
  *
  * The whole system is one narrow measure, generous vertical rhythm, and almost
  * no chrome. Three rules do most of the work:

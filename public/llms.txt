@@ -1,6 +1,6 @@
 # Pepiros
 
-> Be the source. Pepiros is a publishing platform for researchers, in the mould of Substack, combined with a paper summariser whose output can be checked. Researchers publish write-ups of papers they have read; every generated claim in a write-up is bound to a located quote (page, highlighted rects, verbatim text) rather than merely asserted. The same grounding is exposed to AI agents as a callable MCP server.
+> Be the source. Pepiros is a publishing platform for researchers, combined with a paper summariser whose output can be checked. Researchers publish write-ups of papers they have read; every generated claim in a write-up is bound to a located quote (page, highlighted rects, verbatim text) rather than merely asserted. The same grounding is exposed to AI agents as a callable MCP server.
 
 Claims are labelled by how well they matched a source, in two tiers. A claim whose quote clears a deterministic fuzzy match against the source text is badged "quote located" (score >= 0.92; between 0.75 and 0.92 it is badged "paraphrase"). A claim with no checked source excerpt is badged "inference", meaning model-generated and not yet checked. Nothing is ever badged "verified". An entailment-overlap floor additionally requires every number, unit, and comparator in a claim to appear in the anchored span, which catches a real quote attached to a reversed or overstated conclusion. Pepiros proves quotation provenance deterministically. It does not claim to prove entailment, and says so on every relevant page.
 

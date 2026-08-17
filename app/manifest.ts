@@ -11,7 +11,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Pepiros",
     short_name: "Pepiros",
     description:
-      "Substack for researchers, with a summariser you can check: publish the papers you read, and every claim stays bound to the sentence it came from.",
+      "A publishing platform for researchers, with a summariser you can check: publish the papers you read, and every claim stays bound to the sentence it came from.",
     start_url: "/",
     display: "standalone",
     background_color: "#0d0e11",

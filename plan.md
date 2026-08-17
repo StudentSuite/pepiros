@@ -130,7 +130,7 @@ Research Mentor (replaced by the deterministic reading path), SM-2 spaced repeti
 
 ## 12. Platform vision (added 2026-08-10, Aug 17 target)
 
-Pepiros expands from a private single-workspace tool into a public platform: auth/accounts, a public paper library, auto-graph-generation on publish (same engine, triggered like a search engine indexing a page), a discovery feed, per-paper Substack-style discussion, follows/likes, and a curated open-access library (arXiv/PMC-OA/CC only — never a user's own copyrighted upload). Additive to everything above, not a replacement — the grounding spine and Aug 17 demo script are unchanged. Full feature list, licensing, and risk notes: `docs/PLAN-V1.md` §22.
+Pepiros expands from a private single-workspace tool into a public platform: auth/accounts, a public paper library, auto-graph-generation on publish (same engine, triggered like a search engine indexing a page), a discovery feed, per-paper threaded discussion, follows/likes, and a curated open-access library (arXiv/PMC-OA/CC only — never a user's own copyrighted upload). Additive to everything above, not a replacement — the grounding spine and Aug 17 demo script are unchanged. Full feature list, licensing, and risk notes: `docs/PLAN-V1.md` §22.
 
 ---
 

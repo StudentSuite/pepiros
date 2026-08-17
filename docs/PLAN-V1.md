@@ -849,7 +849,7 @@ Net: 26 generators to 21, one whole subsystem gone, one deploy target gone, and 
 2. **Public paper library** — uploaded papers can be published beyond the uploader's private workspace into a shared, discoverable catalog
 3. **Auto-graph-on-upload** — the existing grounding-spine engine (pillars/leaves/anchors) runs automatically on publish, no manual "analyze" step — same engine, new trigger, same as a search engine auto-indexing a submitted page
 4. **Discovery/feed** — browse, search, sort public papers (recent, trending, most-discussed)
-5. **Per-paper discussion** — Substack-style comments/threads on a paper, and on individual claims/nodes
+5. **Per-paper discussion** — threaded comments on a paper, and on individual claims/nodes
 6. **Follows + likes** — follow authors/papers, like a paper or a specific claim
 7. **Curated open-access library** — Pepiros also lists freely-distributable papers itself (arXiv, PMC open access, CC-licensed), so there's something to browse before anyone uploads
 
