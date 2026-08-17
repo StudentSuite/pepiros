@@ -24,7 +24,6 @@ export default function robots(): MetadataRoute.Robots {
         "/w/",
         "/s/",
         "/settings",
-        "/welcome",
         "/upload",
         "/reset-password",
         "/dev/",

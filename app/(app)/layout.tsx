@@ -10,9 +10,9 @@ import { getAdapter } from "@/lib/data/adapter";
 /**
  * The signed-in shell.
  *
- * This did not exist before: /workspaces, /welcome, /settings, /w and /s each
- * hand-rolled their own top bar and Logo placement, which is why five surfaces
- * had drifted into five slightly different chromes. They now share one.
+ * This did not exist before: /workspaces, /settings, /w and /s each hand-rolled
+ * their own top bar and Logo placement, which is why four surfaces had drifted
+ * into four slightly different chromes. They now share one.
  *
  * The reader (/w) and share view (/s) are NOT under this layout -- they moved
  * to the (reader) route group, because they want the full viewport and their

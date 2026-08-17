@@ -63,7 +63,7 @@ export default function SignupPage() {
         setError(body?.error ?? "Could not create an account.");
         return;
       }
-      router.push("/onboarding");
+      router.push("/onboarding/1");
       router.refresh();
     } catch {
       setError("Could not reach the server. Check your connection and try again.");
