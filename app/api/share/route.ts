@@ -4,6 +4,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createShareToken } from "@/lib/services/share";
+import { requireWorkspaceSession } from "@/lib/services/workspaceAccess";
 
 const bodySchema = z.object({ workspaceId: z.string().min(1) });
 
@@ -16,6 +17,9 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "invalid_body", issues: parsed.error.issues }, { status: 400 });
   }
+
+  const denial = await requireWorkspaceSession(parsed.data.workspaceId);
+  if (denial) return denial;
 
   const token = createShareToken(parsed.data.workspaceId);
   return NextResponse.json({ token, url: `${appUrl()}/s/${token}` });

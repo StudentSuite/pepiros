@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { runSynthesis } from "@/lib/services/synthesis";
+import { requireWorkspaceSession } from "@/lib/services/workspaceAccess";
 
 const bodySchema = z.object({ workspaceId: z.string().min(1) });
 
@@ -14,6 +15,9 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "invalid_body", issues: parsed.error.issues }, { status: 400 });
   }
+
+  const denial = await requireWorkspaceSession(parsed.data.workspaceId);
+  if (denial) return denial;
 
   try {
     const result = await runSynthesis(parsed.data.workspaceId);
