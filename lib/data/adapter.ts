@@ -103,6 +103,18 @@ export interface DataAdapter {
   updateProfile(profileId: string, input: { displayName: string; bio: string }): Promise<Profile>;
 
   /**
+   * Issue #75: DangerZone's "Delete account" used to toast a fake success
+   * (later an honest "not implemented" error, #69) while doing nothing.
+   * Real deletion here: the Supabase implementation calls `auth.admin.
+   * deleteUser`, which cascades through every `profiles`-referencing table
+   * in supabase/migrations/0001_platform.sql (posts, comments, likes,
+   * follows, onboarding_responses -- all `on delete cascade` from
+   * `profiles.id references auth.users(id)`). The caller is responsible for
+   * signing the session out afterward; this only removes the row.
+   */
+  deleteAccount(profileId: string): Promise<{ ok: true } | { error: string }>;
+
+  /**
    * The live `posts` row a catalog paper corresponds to, if any (matched by
    * `paper_id`). Null in seed mode (no real post concept there) and in
    * supabase mode for any catalog paper nobody has published yet -- callers
@@ -182,6 +194,17 @@ const seedAdapter: DataAdapter = {
     // call here would mean that guard was bypassed, which is a bug to
     // surface loudly, not something to paper over with a silent no-op.
     throw new Error("The demo account's profile cannot be edited.");
+  },
+
+  async deleteAccount() {
+    // Also unreachable in practice: app/(app)/settings/danger/page.tsx
+    // redirects the demo account away before DangerZone even renders (one
+    // visitor deleting the shared guest account would break the demo for
+    // everyone after them, with no owner to restore it), and the seed
+    // backend has no other account to delete in the first place.
+    return {
+      error: "Account deletion needs the Supabase-backed platform, which isn't enabled on this deployment.",
+    };
   },
 
   // No real post/comment/like/follow concept in seed mode -- callers treat a

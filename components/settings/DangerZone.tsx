@@ -16,96 +16,91 @@ import {
   AlertDialogTitle,
 } from "@/components/shadcn/alert-dialog";
 
-type Action = "workspace" | "account" | null;
-
 /**
- * Destructive actions.
+ * Destructive account deletion (issue #75).
+ *
+ * "Delete this workspace" used to sit here too, but there is no data model
+ * linking a signed-in account to any grounding-domain workspace at all --
+ * profiles/posts (Supabase platform schema) and workspaces/nodes (Drizzle
+ * grounding schema) are deliberately separate, sharing only a paper id
+ * (supabase/migrations/0001_platform.sql's own header comment), and
+ * /workspaces is already known-mocked data (issue #91). There was nothing
+ * real for that row to delete, so it's gone until #91 gives workspaces a
+ * real per-account owner -- removing a button with no real target beats
+ * keeping one that either no-ops or deletes the wrong thing.
  *
  * Account deletion requires typing the username. A confirm button alone is a
  * reflex; typing the name is the smallest friction that forces someone to read
  * what they are about to do.
  */
 export function DangerZone({ username }: { username: string }) {
-  const [pending, setPending] = useState<Action>(null);
+  const [open, setOpen] = useState(false);
   const [typed, setTyped] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
-  const needsTyping = pending === "account";
-  const canConfirm = !needsTyping || typed === username;
+  const canConfirm = typed === username && !deleting;
 
-  function confirm() {
-    // This used to unconditionally toast.success("Account deleted", {
-    // description: "Demo account: nothing was actually deleted." }) --
-    // for every real, non-demo user reaching this page (the only account
-    // type that ever does; app/(app)/settings/danger/page.tsx redirects the
-    // demo account away before this component even renders), claiming a
-    // serious, typed-confirmation, "cannot be undone" action succeeded while
-    // silently doing nothing. Real cascading account/workspace deletion is
-    // real, separate, higher-risk work (issue #69) -- this is the honest
-    // interim state instead of a false success claim.
-    toast.error("Not implemented yet", {
-      description:
-        pending === "account"
-          ? "Real account deletion isn't built yet. Nothing was deleted."
-          : "Real workspace deletion isn't built yet. Nothing was deleted.",
-    });
-    setPending(null);
-    setTyped("");
+  async function confirm() {
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/auth/delete-account", { method: "POST" });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        toast.error(body?.error ?? "Could not delete your account.");
+        setDeleting(false);
+        return;
+      }
+      toast.success("Account deleted");
+      // Full navigation, not router.push: every client-side store (session,
+      // profile, workspace state) needs to reset, not just the route.
+      window.location.href = "/";
+    } catch {
+      toast.error("Could not reach the server. Check your connection and try again.");
+      setDeleting(false);
+    }
   }
 
   return (
     <div className="flex flex-col gap-s-4">
       <Row
-        title="Delete this workspace"
-        description="Removes the workspace and its reading graph. Published papers are not affected."
-        cta="Delete workspace"
-        onClick={() => setPending("workspace")}
-      />
-      <Row
         title="Delete your account"
-        description="Removes your profile, workspaces, published papers, and reach history."
+        description="Removes your profile, published papers, comments, and follows. Cannot be undone."
         cta="Delete account"
-        onClick={() => setPending("account")}
+        onClick={() => setOpen(true)}
       />
 
       <AlertDialog
-        open={pending !== null}
+        open={open}
         onOpenChange={(o) => {
-          if (!o) {
-            setPending(null);
-            setTyped("");
-          }
+          setOpen(o);
+          if (!o) setTyped("");
         }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {pending === "account" ? "Delete your account?" : "Delete this workspace?"}
-            </AlertDialogTitle>
+            <AlertDialogTitle>Delete your account?</AlertDialogTitle>
             <AlertDialogDescription>
-              {pending === "account"
-                ? "This removes your profile, every workspace, every published paper, and all reach history. It cannot be undone."
-                : "This removes the workspace and its reading graph. It cannot be undone."}
+              This removes your profile, every published paper, comments, and follows. It cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          {needsTyping && (
-            <div className="flex flex-col gap-s-2">
-              <Label htmlFor="confirmName">
-                Type <span className="font-mono text-ink">{username}</span> to confirm
-              </Label>
-              <Input
-                id="confirmName"
-                value={typed}
-                onChange={(e) => setTyped(e.target.value)}
-                autoComplete="off"
-              />
-            </div>
-          )}
+          <div className="flex flex-col gap-s-2">
+            <Label htmlFor="confirmName">
+              Type <span className="font-mono text-ink">{username}</span> to confirm
+            </Label>
+            <Input
+              id="confirmName"
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              autoComplete="off"
+            />
+          </div>
 
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction disabled={!canConfirm} onClick={confirm}>
-              Delete
+              {deleting ? "Deleting…" : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

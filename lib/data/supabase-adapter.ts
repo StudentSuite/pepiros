@@ -359,6 +359,18 @@ export const supabaseAdapter: DataAdapter = {
     return asProfile(data);
   },
 
+  async deleteAccount(profileId) {
+    const admin = createSupabaseServiceClient();
+    // No manual cleanup of profiles/posts/comments/likes/follows/
+    // onboarding_responses needed: every one of those references
+    // profiles.id, which references auth.users(id) on delete cascade
+    // (0001_platform.sql), and profiles.id IS the auth user id. Deleting
+    // the auth user is the one operation that removes all of it.
+    const { error } = await admin.auth.admin.deleteUser(profileId);
+    if (error) return { error: error.message };
+    return { ok: true };
+  },
+
   async getProfileByUsername(username) {
     const sb = await createSupabaseServerClient();
     const { data } = await sb
