@@ -30,6 +30,19 @@ HEADER_RE = re.compile(
 )
 REFERENCES_HEADER_RE = re.compile(r"^(references?|bibliography)$", re.IGNORECASE)
 
+# Author/year extraction (issue #82): every real-ingested paper hardcoded
+# authors=[]/year=None forever, since nothing here ever looked. PDF metadata
+# is the first, most reliable pass when a PDF actually carries it; academic
+# PDFs from LaTeX/Word toolchains often don't (or the "Author" field is the
+# tool itself), so both fall back to a heuristic read of the front-matter
+# blocks -- the ones before the first detected section header, where a
+# title/byline/copyright line actually lives.
+YEAR_RE = re.compile(r"\b(19|20)\d{2}\b")
+GENERATOR_AUTHOR_RE = re.compile(r"(LaTeX|Microsoft|Word|Acrobat|PDF|Overleaf)", re.IGNORECASE)
+# A byline candidate: 1-4 capitalized words per name (initials, hyphenated
+# and apostrophed surnames included), several such names joined by commas/and.
+NAME_RE = re.compile(r"^[A-Z][a-zA-Z.\-']*(?:\s+[A-Z][a-zA-Z.\-']*){0,3}$")
+
 # Numeric ledger patterns. The entailment floor (lib/grounding/entail.ts)
 # checks every number/unit/comparator in a claim against these, so precision
 # here matters more than recall -- a missed number just means a claim can't
@@ -162,13 +175,53 @@ def extract_references(sections):
     return []
 
 
+def extract_year(metadata, front_matter_text):
+    """Metadata's creation/mod date first ("D:YYYYMMDD..."), since that's an
+    actual timestamp rather than a guess; falls back to the first plausible
+    19xx/20xx year mentioned in the front matter (a copyright line or
+    conference year usually puts one there) when metadata has none."""
+    for key in ("creationDate", "modDate"):
+        raw = (metadata or {}).get(key) or ""
+        m = re.match(r"D:(\d{4})", raw)
+        if m:
+            year = int(m.group(1))
+            if 1900 <= year <= 2100:
+                return year
+
+    m = YEAR_RE.search(front_matter_text)
+    return int(m.group(0)) if m else None
+
+
+def extract_authors(metadata, front_matter_blocks):
+    """Metadata's `author` field first, filtered against the common case of
+    it actually naming the PDF-producing tool instead of a person; falls
+    back to scanning the first few front-matter blocks (title page, before
+    Abstract) for a line that reads like a comma/and-separated author list."""
+    raw = ((metadata or {}).get("author") or "").strip()
+    if raw and not GENERATOR_AUTHOR_RE.search(raw):
+        names = [n.strip() for n in re.split(r",|;|\band\b", raw) if n.strip()]
+        if names:
+            return names
+
+    for block in front_matter_blocks[:8]:
+        text = block["text"].strip()
+        if not (3 < len(text) < 200):
+            continue
+        candidates = [c.strip() for c in re.split(r",|;|\band\b", text) if c.strip()]
+        if 1 <= len(candidates) <= 12 and all(NAME_RE.match(c) for c in candidates):
+            return candidates
+
+    return []
+
+
 def main():
     if len(sys.argv) < 2:
         print("usage: parse.py <path-to-pdf>", file=sys.stderr)
         sys.exit(2)
 
     doc = fitz.open(sys.argv[1])
-    sections = group_into_sections(extract_blocks(doc))
+    entries = extract_blocks(doc)
+    sections = group_into_sections(entries)
 
     out_sections = []
     out_chunks = []
@@ -199,10 +252,21 @@ def main():
             out_numerics.extend(extract_numerics(chunk_index, chunk["text"]))
 
     metadata_title = (doc.metadata or {}).get("title", "").strip() or None
+    # Page 1's raw blocks, not the "Front matter" *section* -- a paper's own
+    # title is usually the largest font on the page, which is exactly what
+    # is_header() also uses to detect a section break, so the byline/
+    # copyright/abstract that follows the title routinely ends up nested
+    # under a section titled after the paper itself rather than under
+    # "Front matter". Reading the flat per-page blocks sidesteps that
+    # section-grouping question entirely for what's just a metadata guess.
+    page1_blocks = [e for e in entries if e["page"] == 1]
+    page1_text = "\n".join(b["text"] for b in page1_blocks)
 
     json.dump(
         {
             "title": metadata_title,
+            "authors": extract_authors(doc.metadata, page1_blocks),
+            "year": extract_year(doc.metadata, page1_text),
             "sections": out_sections,
             "chunks": out_chunks,
             "numerics": out_numerics,

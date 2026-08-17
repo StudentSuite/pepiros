@@ -43,6 +43,8 @@ interface ParsedNumeric {
 
 interface ParsedDocument {
   title: string | null;
+  authors: string[];
+  year: number | null;
   sections: Array<{ title: string; order: number }>;
   chunks: ParsedChunk[];
   numerics: ParsedNumeric[];
@@ -184,8 +186,8 @@ export async function runIngest(input: IngestInput): Promise<void> {
       id: paperId,
       workspaceId,
       title: paperTitle,
-      authors: [],
-      year: null,
+      authors: parsed.authors,
+      year: parsed.year,
       archetype: null,
       sourceUrl: input.sourceUrl,
       pdfStoragePath: pdfFilename,
