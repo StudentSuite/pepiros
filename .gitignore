@@ -16,3 +16,5 @@ __pycache__
 .venv
 /.worktrees/
 .impeccable/
+.vercel
+.env*
