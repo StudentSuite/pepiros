@@ -7,7 +7,7 @@ import { z } from "zod";
 import { fetchWorkspace } from "@/lib/services/workspace";
 import { MAX_UPLOAD_BYTES, findDuplicate, validateUpload } from "@/lib/services/upload";
 import { createJob, failJob } from "@/lib/services/jobs";
-import { runIngest, queueUrlIngest } from "@/lib/services/ingest";
+import { isPdfIngestSupportedHere, runIngest, queueUrlIngest } from "@/lib/services/ingest";
 
 /**
  * Fire-and-forget: the route returns 202 with a jobId immediately (§6), and
@@ -37,6 +37,23 @@ function rejection(message: string, code: string, extra: Record<string, unknown>
 }
 
 export async function POST(request: Request) {
+  // Checked before any validation or job creation: PDF ingest needs a local
+  // Python interpreter (scripts/parse.py) that Vercel's Node runtime doesn't
+  // have, so a request here would otherwise create a job that can then
+  // never make progress -- see lib/services/ingest.ts's
+  // isPdfIngestSupportedHere() for why this is a real, confirmed limitation,
+  // not a configuration problem to chase.
+  if (!isPdfIngestSupportedHere()) {
+    return NextResponse.json(
+      {
+        error: "ingest_unavailable_here",
+        detail:
+          "PDF ingestion needs a local Python interpreter (PyMuPDF) that this hosted deployment doesn't have. Run Pepiros locally with `npm run dev` to ingest your own papers -- the demo workspace here already has real ingested content to explore.",
+      },
+      { status: 501 },
+    );
+  }
+
   const contentType = request.headers.get("content-type") ?? "";
 
   // --- URL path ---

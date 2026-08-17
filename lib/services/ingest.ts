@@ -54,6 +54,29 @@ function runParsePy(pdfPath: string): Promise<ParsedDocument> {
   return runPythonScript<ParsedDocument>(path.join(process.cwd(), "scripts", "parse.py"), [pdfPath]);
 }
 
+/**
+ * PDF ingest is deliberately local-only (plan.md's cut list: "a deployed
+ * Python service, PyMuPDF/PaddleOCR run as local scripts only"): parsing
+ * shells out to scripts/parse.py, and Vercel's Node.js serverless runtime
+ * has no Python interpreter at all -- confirmed live, not assumed: a real
+ * ingest attempt against the deployed site failed with "Could not find a
+ * Python interpreter (tried python3 and python)". No PATH fix can change
+ * this on Vercel's standard Node runtime; it isn't a configuration problem.
+ *
+ * Checked via `VERCEL`, which Vercel sets in every deployment regardless of
+ * value, rather than attempting a doomed spawn per request just to hit the
+ * same ENOENT every time. app/api/ingest/route.ts calls this before doing
+ * any other work, so a request fails fast with an honest explanation
+ * instead of creating a job that can then never make progress -- ingest
+ * jobs are also process-local in-memory (jobs.ts) and the background
+ * pipeline itself doesn't survive past the triggering request on
+ * serverless (issues #86/#87), both of which this check makes moot for
+ * ingest specifically by never starting one there at all.
+ */
+export function isPdfIngestSupportedHere(): boolean {
+  return !process.env.VERCEL;
+}
+
 export interface IngestInput {
   jobId: string;
   workspaceId: string;
