@@ -41,7 +41,16 @@ export function GoogleSignInButton({
         setError("Google sign-in is not enabled for this project yet.");
         setPending(false);
       }
-    } catch {
+    } catch (err) {
+      // The real cause used to be discarded entirely here -- "Sign-in is
+      // unavailable right now" told a user nothing, and told whoever was
+      // debugging a live deployment even less, since it wasn't logged
+      // anywhere they could see it either. Logged to the browser console so
+      // the actual thrown error (e.g. createSupabaseBrowserClient()'s own
+      // "NEXT_PUBLIC_SUPABASE_URL is not set" if that's genuinely missing
+      // from the deployed bundle) is inspectable, not just this generic
+      // fallback message.
+      console.error("[GoogleSignInButton] sign-in failed:", err);
       setError("Sign-in is unavailable right now.");
       setPending(false);
     }
