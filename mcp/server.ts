@@ -25,8 +25,28 @@ export const SERVER_VERSION = "0.1.0";
  * or `null`/omitted for unrestricted local-dev access. Threaded straight
  * through to registerTools(), which is where the actual scope/workspace
  * gating happens.
+ *
+ * Issue #79: that "no token = unrestricted" fallback used to trigger on the
+ * mere absence of a token, full stop -- fine for stdio today (a subprocess
+ * pipe, never reachable over a network at all, so "unrestricted" there is
+ * no different from the caller already having a shell on the machine), but
+ * a landmine for the remote streamable-HTTP transport this file's own doc
+ * comment says is coming later: adding that transport by just calling this
+ * same function would silently inherit "no token = wide open to anyone who
+ * connects" as its default. Checked once, here, in the one function every
+ * transport (present and future) goes through, rather than trusting each
+ * new entry point to remember to reimplement the guard itself. NODE_ENV is
+ * unset for today's `npm run mcp:stdio` (bare tsx, no NODE_ENV set), so
+ * local dev is untouched; a hypothetical production-configured process is
+ * the only thing this refuses.
  */
 export function createMcpServer(session?: McpTokenRecord | null): McpServer {
+  if (!session && process.env.NODE_ENV === "production") {
+    throw new Error(
+      "No MCP token configured (PEPIROS_MCP_TOKEN) and NODE_ENV=production -- refusing unrestricted access. Mint a token in settings, or unset NODE_ENV for local dev use.",
+    );
+  }
+
   const server = new McpServer(
     { name: SERVER_NAME, version: SERVER_VERSION },
     {

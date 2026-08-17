@@ -51,8 +51,11 @@ function errorText(message: string) {
  * startup (mcp/stdio.ts) -- stdio is one process per connection, so this is
  * a per-session decision made once, not a per-call header. `undefined`/`null`
  * (no token configured) means unrestricted local-dev access, matching
- * `npm run mcp:stdio`'s zero-setup behaviour today; a resolved token gates
- * writes on its scope and workspace reads on its pin, per
+ * `npm run mcp:stdio`'s zero-setup behaviour today -- mcp/server.ts's
+ * createMcpServer() is what actually refuses to reach this point at all in
+ * a production-configured process with no token (issue #79), so by the time
+ * `session` is null here, that check has already passed. A resolved token
+ * gates writes on its scope and workspace reads on its pin, per
  * lib/services/mcpAuth.ts's checkToken()/hasScope()/canAccessWorkspace().
  */
 export function registerTools(server: McpServer, session?: McpTokenRecord | null): void {
