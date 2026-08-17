@@ -51,6 +51,9 @@ export function ShareClient({ shareToken, workspaceId }: { shareToken: string; w
   }
 
   const activeChunk = workspace.chunks.find((c) => c.id === activeChunkId) ?? paperChunks[0];
+  const activePdfUrl = firstPaper.pdfStoragePath
+    ? `/api/papers/${firstPaper.id}/pdf?workspaceId=${encodeURIComponent(workspaceId)}`
+    : null;
   const highlights: Highlight[] = activeChunk
     ? workspace.evidence
         .filter((e) => e.anchor && e.anchor.chunkId === activeChunk.id)
@@ -103,7 +106,7 @@ export function ShareClient({ shareToken, workspaceId }: { shareToken: string; w
         </aside>
 
         <main className="flex flex-col gap-4">
-          {activeChunk && <PdfPane chunk={activeChunk} highlights={highlights} />}
+          {activeChunk && <PdfPane chunk={activeChunk} pdfUrl={activePdfUrl} highlights={highlights} />}
           <div className="rounded border border-border bg-surface-raised p-4">
             <NodeInspector readOnly />
           </div>

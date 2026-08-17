@@ -10,6 +10,7 @@ out
 .DS_Store
 /fixtures/*.pdf
 /evals/golden-papers/*.pdf
+/data/pdfs/
 /evals/results/
 __pycache__
 *.pyc

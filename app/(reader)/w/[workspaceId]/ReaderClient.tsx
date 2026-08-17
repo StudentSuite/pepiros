@@ -118,6 +118,9 @@ export function ReaderClient({ workspaceId }: { workspaceId: string }) {
   const activePaper = workspace.papers.find((p) => p.id === activePaperId) ?? workspace.papers[0];
   const activeChunk = workspace.chunks.find((c) => c.id === activeChunkId) ?? paperChunks[0];
   const activeSectionId = activeChunk?.sectionId ?? null;
+  const activePdfUrl = activePaper?.pdfStoragePath
+    ? `/api/papers/${activePaper.id}/pdf?workspaceId=${encodeURIComponent(workspaceId)}`
+    : null;
 
   const highlights: Highlight[] = activeChunk
     ? workspace.evidence
@@ -229,7 +232,7 @@ export function ReaderClient({ workspaceId }: { workspaceId: string }) {
         <div className="mx-auto grid w-full max-w-6xl gap-s-6 px-s-5 py-s-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
           <main className="flex min-w-0 flex-col gap-s-5">
             {activeChunk ? (
-              <PdfPane chunk={activeChunk} highlights={highlights} />
+              <PdfPane chunk={activeChunk} pdfUrl={activePdfUrl} highlights={highlights} />
             ) : (
               // Page-shaped skeleton, not a blank gap, for the moment before a
               // paper/chunk is selected (docs/PLAN-V1.md §14.5).

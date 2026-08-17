@@ -1,24 +1,96 @@
+"use client";
+
+import { useState } from "react";
+import dynamic from "next/dynamic";
+import { pdfjs } from "react-pdf";
 import type { Chunk } from "@/types/anchor";
 import { HighlightLayer, type Highlight } from "./HighlightLayer";
 
 const PAGE_WIDTH = 612; // US-letter, 72dpi points
 const PAGE_HEIGHT = 792;
+const RENDER_WIDTH = 576; // matches the max-w-xl reading column below
+
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url,
+).toString();
+
+// react-pdf renders into a <canvas>, which pdfjs-dist can only touch in a
+// real browser -- dynamic+ssr:false rather than a plain import so the
+// server render never tries to construct one.
+const Document = dynamic(() => import("react-pdf").then((m) => m.Document), { ssr: false });
+const Page = dynamic(() => import("react-pdf").then((m) => m.Page), { ssr: false });
 
 /**
- * Placeholder for the real PDF page: there is no seeded PDF binary anywhere
- * in this repo (react-pdf is installed but has nothing to load), so this
- * renders a mock paper-toned "page" at US-letter aspect ratio with the
- * chunk's prose text laid out on it, and highlight rects drawn as absolutely
- * positioned overlays scaled into that mock page's coordinate space. Swap
- * this for a real react-pdf <Page/> once scripts/parse.py lands.
+ * The real ingested PDF (issue #76), overlaid with the same HighlightLayer
+ * the old mock used -- rects are already authored in PDF point-space by
+ * scripts/parse.py, so only the pageWidth/pageHeight fed to HighlightLayer
+ * needs to track the actual loaded page's dimensions instead of an assumed
+ * US-letter constant.
+ *
+ * Falls back to MockPdfPane when `pdfUrl` is null: the bundled fixture
+ * workspace's papers are entirely synthetic (fake arXiv ids, no real file
+ * ever existed), and PDF ingest itself only runs locally (isPdfIngestSupportedHere()
+ * in lib/services/ingest.ts) -- so the demo deployment will always take this
+ * fallback branch, which is expected, not a regression.
  */
 export function PdfPane({
   chunk,
+  pdfUrl,
   highlights = [],
 }: {
   chunk: Chunk;
+  pdfUrl: string | null;
   highlights?: Highlight[];
 }) {
+  const [pageSize, setPageSize] = useState({ width: PAGE_WIDTH, height: PAGE_HEIGHT });
+  const [failed, setFailed] = useState(false);
+
+  if (!pdfUrl || failed) {
+    return <MockPdfPane chunk={chunk} highlights={highlights} />;
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div
+        className="relative w-full max-w-xl overflow-hidden rounded shadow-lg"
+        style={{ aspectRatio: `${pageSize.width} / ${pageSize.height}` }}
+      >
+        <Document
+          file={pdfUrl}
+          loading={<div className="h-full w-full animate-pulse bg-paper" />}
+          error={<div className="h-full w-full bg-paper" />}
+          onLoadError={() => setFailed(true)}
+        >
+          <Page
+            pageNumber={chunk.page}
+            width={RENDER_WIDTH}
+            renderTextLayer={false}
+            renderAnnotationLayer={false}
+            onLoadSuccess={(page) =>
+              setPageSize({ width: page.originalWidth, height: page.originalHeight })
+            }
+            onLoadError={() => setFailed(true)}
+          />
+        </Document>
+        <HighlightLayer
+          highlights={highlights}
+          page={chunk.page}
+          pageWidth={pageSize.width}
+          pageHeight={pageSize.height}
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Placeholder for workspaces with no real PDF binary on disk -- the bundled
+ * fixture, or a paper ingested before this repo persisted the file. Styles
+ * the chunk's plain text to look like a page, same as this component used
+ * to do unconditionally before react-pdf was wired up.
+ */
+function MockPdfPane({ chunk, highlights }: { chunk: Chunk; highlights: Highlight[] }) {
   return (
     <div className="flex flex-col items-center gap-2">
       <div
@@ -39,9 +111,9 @@ export function PdfPane({
         />
       </div>
       <p className="font-sans text-[11px] text-ink-faint">
-        Mock page render (placeholder pending the real ingest pipeline / react-pdf wiring, see
-        scripts/parse.py) -- highlight position is authored PDF point-space, not measured from
-        this text.
+        Mock page render (no PDF binary is stored for this paper -- either it&rsquo;s the bundled
+        demo workspace, whose papers are synthetic, or it predates issue #76&rsquo;s PDF storage) --
+        highlight position is authored PDF point-space, not measured from this text.
       </p>
     </div>
   );
