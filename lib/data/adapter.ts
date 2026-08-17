@@ -52,16 +52,19 @@ export interface DataAdapter {
 
   verifyCredentials(username: string, password: string): Promise<Profile | null>;
   /**
-   * `email` is optional (issue #45): when given, it becomes the account's
-   * real Supabase Auth email instead of the synthetic `${username}@users.
-   * pepiros.dev` placeholder, which is what actually lets password recovery
-   * deliver mail somewhere real. Omitting it keeps today's exact behaviour.
+   * `email` was optional (issue #45) and became the account's real Supabase
+   * Auth email when given, or fell back to a synthetic `${username}@users.
+   * pepiros.dev` placeholder that could never receive mail when omitted --
+   * which meant an account created without one had no way to ever recover a
+   * lost password, and requestPasswordReset() would silently no-op for it
+   * while the UI still showed a generic success (issue #83). Required now:
+   * every account gets a real recovery address from creation onward.
    */
   createAccount(input: {
     username: string;
     password: string;
     displayName: string;
-    email?: string;
+    email: string;
   }): Promise<CreateAccountResult>;
 
   /**

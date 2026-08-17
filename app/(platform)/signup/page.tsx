@@ -23,10 +23,11 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * account -- the form still works, it just surfaces that error rather than
  * a made-up success.
  *
- * Email is optional (issue #45): given one, it becomes the account's real
- * Supabase Auth email instead of the synthetic placeholder that can never
- * receive mail, which is what /reset-password actually needs to work.
- * Leaving it blank keeps signup exactly as fast as before.
+ * Email is required (issue #83): it used to be optional (issue #45),
+ * falling back to a synthetic placeholder that could never receive mail --
+ * which meant an account created without one had no way to ever recover a
+ * lost password, while /reset-password's UI still claimed success. Required
+ * now, so every account has somewhere real for that flow to send to.
  */
 export default function SignupPage() {
   const router = useRouter();
@@ -47,8 +48,9 @@ export default function SignupPage() {
     }
     if (password.length < 8) return setError("Password must be at least 8 characters.");
     const trimmedEmail = email.trim();
-    if (trimmedEmail && !EMAIL_RE.test(trimmedEmail)) {
-      return setError("Enter a valid email address, or leave it blank.");
+    if (!trimmedEmail) return setError("Enter an email address so you can recover your password later.");
+    if (!EMAIL_RE.test(trimmedEmail)) {
+      return setError("Enter a valid email address.");
     }
 
     setPending(true);
@@ -56,7 +58,7 @@ export default function SignupPage() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ username, password, displayName, email: trimmedEmail || undefined }),
+        body: JSON.stringify({ username, password, displayName, email: trimmedEmail }),
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as { error?: string } | null;
@@ -115,7 +117,7 @@ export default function SignupPage() {
           </div>
 
           <div className="flex flex-col gap-s-2">
-            <Label htmlFor="email">Email (optional)</Label>
+            <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
@@ -125,7 +127,7 @@ export default function SignupPage() {
               placeholder="ada@example.com"
             />
             <p className="font-sans text-[13px] text-ink-faint">
-              Only used to recover your password if you forget it.
+              Used to recover your password if you forget it -- never shown to other users.
             </p>
           </div>
 

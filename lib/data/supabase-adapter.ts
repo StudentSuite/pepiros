@@ -94,9 +94,20 @@ export const supabaseAdapter: DataAdapter = {
       return { error: "Password must be at least 8 characters." };
     }
 
-    const normalizedEmail = email?.trim().toLowerCase() || undefined;
-    if (normalizedEmail && !EMAIL_PATTERN.test(normalizedEmail)) {
-      return { error: "Enter a valid email address, or leave it blank." };
+    // Issue #83: email used to be optional (issue #45), falling back to a
+    // synthetic `${username}@users.pepiros.dev` placeholder that can never
+    // receive mail -- which meant requestPasswordReset() had no real
+    // address to send to, silently no-opped, and the UI still showed the
+    // generic "check your email" success regardless (an enumeration-safe
+    // *response* is correct; a structurally unrecoverable account is not).
+    // Requiring a real email at the one point it's collected closes that
+    // gap at the source instead of trying to special-case it later.
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      return { error: "Enter an email address so you can recover your password later." };
+    }
+    if (!EMAIL_PATTERN.test(normalizedEmail)) {
+      return { error: "Enter a valid email address." };
     }
 
     const sb = createSupabaseServiceClient();
@@ -110,14 +121,11 @@ export const supabaseAdapter: DataAdapter = {
       return { error: "That username is already taken." };
     }
 
-    // A real email becomes the actual Supabase Auth email instead of the
-    // synthetic placeholder (issue #45) -- that placeholder can never
-    // receive mail, which is exactly why /reset-password has stayed a UI-only
-    // stub. email_confirm stays true either way: this app has no confirm-
-    // email UX, and gating account creation on a confirmation click is a
-    // separate, bigger decision than "collect an address to recover to."
+    // email_confirm stays true: this app has no confirm-email UX, and
+    // gating account creation on a confirmation click is a separate, bigger
+    // decision than "collect an address to recover to."
     const { data: created, error: createError } = await sb.auth.admin.createUser({
-      email: normalizedEmail ?? `${normalized}@users.pepiros.dev`,
+      email: normalizedEmail,
       password,
       email_confirm: true,
     });
