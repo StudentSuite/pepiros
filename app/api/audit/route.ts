@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auditTextAgainstWorkspace } from "@/lib/services/audit";
+import { requireWorkspaceExists } from "@/lib/services/workspaceAccess";
 
 const bodySchema = z.object({
   workspaceId: z.string(),
@@ -16,5 +17,8 @@ export async function POST(request: Request) {
   }
 
   const { workspaceId, text } = parsed.data;
+  const notFound = await requireWorkspaceExists(workspaceId);
+  if (notFound) return notFound;
+
   return NextResponse.json(await auditTextAgainstWorkspace(workspaceId, text));
 }

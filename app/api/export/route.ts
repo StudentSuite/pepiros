@@ -3,6 +3,7 @@
 // lib/services/export.ts only, per CLAUDE.md's service-layer boundary.
 import { NextResponse } from "next/server";
 import { exportWorkspaceBibtex, exportWorkspaceMarkdown } from "@/lib/services/export";
+import { requireWorkspaceExists } from "@/lib/services/workspaceAccess";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -15,6 +16,9 @@ export async function GET(request: Request) {
   if (format !== "md" && format !== "bibtex") {
     return NextResponse.json({ error: "invalid_query", detail: 'format must be "md" or "bibtex".' }, { status: 400 });
   }
+
+  const notFound = await requireWorkspaceExists(workspaceId);
+  if (notFound) return notFound;
 
   const content = format === "md" ? await exportWorkspaceMarkdown(workspaceId) : await exportWorkspaceBibtex(workspaceId);
   const extension = format === "md" ? "md" : "bib";

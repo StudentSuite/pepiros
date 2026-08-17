@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { answerQuestion } from "@/lib/services/chat";
+import { requireWorkspaceExists } from "@/lib/services/workspaceAccess";
 
 const bodySchema = z.object({
   workspaceId: z.string(),
@@ -23,6 +24,9 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "invalid_body", issues: parsed.error.issues }, { status: 400 });
   }
+
+  const notFound = await requireWorkspaceExists(parsed.data.workspaceId);
+  if (notFound) return notFound;
 
   try {
     return NextResponse.json(await answerQuestion(parsed.data));

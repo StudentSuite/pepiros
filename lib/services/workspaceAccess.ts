@@ -1,6 +1,7 @@
 import "server-only";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
+import { getIngestedWorkspace } from "@/lib/services/ingestStore";
 import workspaceFixture from "@/fixtures/workspace.json";
 import type { Workspace } from "@/types/anchor";
 
@@ -51,4 +52,31 @@ export async function requireWorkspaceSession(workspaceId: string): Promise<Next
     );
   }
   return null;
+}
+
+/**
+ * Issue #81: lib/services/workspace.ts's fetchWorkspace() falls back to the
+ * static fixture for ANY workspaceId that was never actually ingested into,
+ * silently -- a typo'd or probed id got served the exact same "valid-
+ * looking" demo workspace ws-1 itself returns, so a caller couldn't tell
+ * "doesn't exist" from "exists but I have no access to it," which made #78's
+ * gap worse in practice. fetchWorkspace() itself is left alone (changing
+ * its contract from "always returns a Workspace" ripples into ~20 call
+ * sites, several of them internal service functions that assume a result
+ * always comes back) -- this is a route-level guard instead, same shape as
+ * requireWorkspaceSession() above, called before fetchWorkspace() so an
+ * unrecognized id 404s before ever reaching the fixture fallback.
+ */
+export async function workspaceExists(workspaceId: string): Promise<boolean> {
+  if (workspaceId === FIXTURE_ID) return true;
+  return (await getIngestedWorkspace(workspaceId)) !== undefined;
+}
+
+/** Returns a 404 `NextResponse` for an unrecognized workspaceId; `null` when the request should proceed. */
+export async function requireWorkspaceExists(workspaceId: string): Promise<NextResponse | null> {
+  if (await workspaceExists(workspaceId)) return null;
+  return NextResponse.json(
+    { error: "not_found", detail: `No workspace ${workspaceId}.` },
+    { status: 404 },
+  );
 }

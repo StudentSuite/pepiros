@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { fetchWorkspace } from "@/lib/services/workspace";
 import { verifyClaimsAgainstCorpus } from "@/lib/services/verify";
+import { requireWorkspaceExists } from "@/lib/services/workspaceAccess";
 
 const bodySchema = z.object({
   workspaceId: z.string(),
@@ -24,6 +25,9 @@ export async function POST(request: Request) {
   }
 
   const { workspaceId, nodeId, refId, quote } = parsed.data;
+  const notFound = await requireWorkspaceExists(workspaceId);
+  if (notFound) return notFound;
+
   const workspace = await fetchWorkspace(workspaceId);
 
   const [result] = verifyClaimsAgainstCorpus({

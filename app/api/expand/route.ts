@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { notImplemented } from "@/lib/api/notImplemented";
 import { fetchWorkspace } from "@/lib/services/workspace";
 import { fetchCitationExpansion, type CitationDirection } from "@/lib/services/citationExpand";
+import { requireWorkspaceExists } from "@/lib/services/workspaceAccess";
 
 function isDirection(value: string | null): value is CitationDirection {
   return value === "cites" || value === "cited_by";
@@ -22,6 +23,9 @@ export async function GET(request: Request) {
       { status: 400 },
     );
   }
+
+  const notFound = await requireWorkspaceExists(workspaceId);
+  if (notFound) return notFound;
 
   const workspace = await fetchWorkspace(workspaceId);
   const paper = workspace.papers.find((p) => p.id === paperId);

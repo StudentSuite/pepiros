@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { deleteNode, getNode, updateNodeBody } from "@/lib/services/nodes";
-import { requireWorkspaceSession } from "@/lib/services/workspaceAccess";
+import { requireWorkspaceExists, requireWorkspaceSession } from "@/lib/services/workspaceAccess";
 
 /** ?workspaceId=... -- the same query-param convention app/api/related/route.ts already uses for a GET that needs one. */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -11,6 +11,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (!workspaceId) {
     return NextResponse.json({ error: "invalid_query", detail: "workspaceId is required" }, { status: 400 });
   }
+
+  const notFound = await requireWorkspaceExists(workspaceId);
+  if (notFound) return notFound;
 
   const node = await getNode(workspaceId, id);
   if (!node) {

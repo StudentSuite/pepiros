@@ -9,12 +9,16 @@
 // function's own doc comment.
 import { NextResponse } from "next/server";
 import { fetchWorkspace } from "@/lib/services/workspace";
+import { requireWorkspaceExists } from "@/lib/services/workspaceAccess";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ workspaceId: string }> },
 ) {
   const { workspaceId } = await params;
+  const notFound = await requireWorkspaceExists(workspaceId);
+  if (notFound) return notFound;
+
   const workspace = await fetchWorkspace(workspaceId);
   return NextResponse.json({ nodes: workspace.nodes, edges: workspace.edges });
 }

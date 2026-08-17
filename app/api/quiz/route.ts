@@ -3,12 +3,16 @@
 // lib/services/quiz.ts only, per CLAUDE.md's service-layer boundary.
 import { NextResponse } from "next/server";
 import { generateQuiz } from "@/lib/services/quiz";
+import { requireWorkspaceExists } from "@/lib/services/workspaceAccess";
 
 export async function GET(request: Request) {
   const workspaceId = new URL(request.url).searchParams.get("workspaceId");
   if (!workspaceId) {
     return NextResponse.json({ error: "invalid_query", detail: "workspaceId is required." }, { status: 400 });
   }
+
+  const notFound = await requireWorkspaceExists(workspaceId);
+  if (notFound) return notFound;
 
   try {
     const questions = await generateQuiz(workspaceId);
