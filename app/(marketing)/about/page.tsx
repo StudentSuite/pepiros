@@ -19,8 +19,8 @@ export default function AboutPage() {
       <ReadingColumn>
         <ArticleHeader
           kicker="About"
-          title="A grounding engine for research reading."
-          dek="Every claim stays bound to the sentence it came from, or says plainly that it has none."
+          title="Turns a research PDF into a living knowledge graph."
+          dek="Every generated claim is bound to a located quote, exposed to Claude as an MCP service."
         />
 
         <ArticleBody>
