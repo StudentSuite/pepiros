@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
 import { Card } from "@/components/shadcn/card";
@@ -135,6 +136,8 @@ export function OnboardingWizard({
       await onComplete({ ...draft, completedAt: new Date().toISOString().slice(0, 10) });
       router.push("/home");
       router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save your answers. Try again.");
     } finally {
       setSaving(false);
     }
