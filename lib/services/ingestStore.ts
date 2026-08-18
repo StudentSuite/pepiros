@@ -1,6 +1,7 @@
 import "server-only";
 import type { Workspace } from "@/types/anchor";
-import { getWorkspace, saveWorkspace, listWorkspaceSummaries, deleteNodeCascade, createNodeVersion } from "@/lib/db/queries";
+import { getWorkspace, saveWorkspace, listWorkspaceSummaries, deleteNodeCascade, createNodeVersion, type VersionedWorkspace } from "@/lib/db/queries";
+import { UserFacingError } from "@/lib/errors";
 
 /**
  * Holds workspaces that real ingest (lib/services/ingest.ts) has actually
@@ -29,7 +30,7 @@ import { getWorkspace, saveWorkspace, listWorkspaceSummaries, deleteNodeCascade,
  * degrade to the static fixture with no backend at all). Logged to stderr,
  * never stdout (mcp/stdio.ts's transport), so a real outage stays visible.
  */
-export async function getIngestedWorkspace(workspaceId: string): Promise<Workspace | undefined> {
+export async function getIngestedWorkspace(workspaceId: string): Promise<VersionedWorkspace | undefined> {
   try {
     return await getWorkspace(workspaceId);
   } catch (err) {
@@ -53,13 +54,24 @@ async function guardedWrite<T>(label: string, fn: () => Promise<T>): Promise<T> 
   try {
     return await fn();
   } catch (err) {
+    // A UserFacingError is already a deliberate, safe-to-show message --
+    // issue #103's version conflict, in particular -- so it passes through
+    // unchanged instead of being flattened into the generic one below.
+    if (err instanceof UserFacingError) throw err;
     console.error(`[ingestStore] ${label} failed:`, err);
-    throw new Error("Could not save this change to the workspace database right now. Try again in a moment.");
+    throw new UserFacingError("Could not save this change to the workspace database right now. Try again in a moment.");
   }
 }
 
-export async function setIngestedWorkspace(workspace: Workspace): Promise<void> {
-  await guardedWrite(`saveWorkspace(${workspace.id})`, () => saveWorkspace(workspace));
+/**
+ * `expectedVersion`, when given, is the `version` a prior `getIngestedWorkspace()`
+ * read returned alongside `workspace` -- pass it so a write against a
+ * snapshot someone else has since changed fails loudly (issue #103) instead
+ * of silently overwriting them. Omit only when there was no such prior read
+ * (a workspace's first-ever write, or a caller that degraded to the fixture).
+ */
+export async function setIngestedWorkspace(workspace: Workspace, expectedVersion?: number): Promise<number> {
+  return await guardedWrite(`saveWorkspace(${workspace.id})`, () => saveWorkspace(workspace, expectedVersion));
 }
 
 /**
@@ -86,5 +98,5 @@ export async function listIngestedWorkspaces(): Promise<Workspace[]> {
     return [];
   }
   const real = await Promise.all(summaries.map((s) => getWorkspace(s.id)));
-  return real.filter((w): w is Workspace => Boolean(w));
+  return real.filter((w): w is VersionedWorkspace => Boolean(w)).map((w) => w.workspace);
 }

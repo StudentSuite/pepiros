@@ -29,6 +29,7 @@ import { getIngestedWorkspace } from "./ingestStore";
  * regardless of the id passed in.
  */
 export async function fetchWorkspace(workspaceId: string): Promise<Workspace> {
-  const workspace = (await getIngestedWorkspace(workspaceId)) ?? (workspaceFixture as unknown as Workspace);
+  const ingested = await getIngestedWorkspace(workspaceId);
+  const workspace = ingested?.workspace ?? (workspaceFixture as unknown as Workspace);
   return { ...workspace, nodes: computeLayout(workspace) };
 }

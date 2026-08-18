@@ -251,6 +251,39 @@ export function findDuplicate(
   return best;
 }
 
+// --- In-flight reservation (issue #104) ------------------------------------
+
+/**
+ * `findDuplicate()` alone is check-then-act: it only sees papers that have
+ * already finished ingest and been persisted (`setIngestedWorkspace`), so two
+ * near-simultaneous requests for the same source -- a double-click, or a
+ * client retry after a slow response -- both read the same pre-ingest
+ * snapshot, both pass the check, and both proceed. Ingest only ever runs in
+ * a single long-lived local process (`isPdfIngestSupportedHere()` is false
+ * on Vercel, so nothing here ever crosses a process boundary), so an
+ * in-memory reservation -- checked and set in one synchronous step, which
+ * Node's single-threaded event loop makes genuinely atomic with no `await`
+ * in between -- closes the real race without needing a DB round-trip.
+ */
+const inFlightIngests = new Set<string>();
+
+function ingestReservationKey(workspaceId: string, identity: string): string {
+  return `${workspaceId}:${identity.trim().toLowerCase()}`;
+}
+
+/** Atomically claims `identity` for `workspaceId`. Returns false if another request already holds it. */
+export function reserveIngest(workspaceId: string, identity: string): boolean {
+  const key = ingestReservationKey(workspaceId, identity);
+  if (inFlightIngests.has(key)) return false;
+  inFlightIngests.add(key);
+  return true;
+}
+
+/** Must be called once the reservation's ingest attempt is fully done, success or failure -- otherwise a real failure permanently blocks retrying the same source. */
+export function releaseIngest(workspaceId: string, identity: string): void {
+  inFlightIngests.delete(ingestReservationKey(workspaceId, identity));
+}
+
 // --- Job stages (§6) ------------------------------------------------------
 
 /**

@@ -8,6 +8,13 @@
       "when": 1786855672972,
       "tag": "0000_dear_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1787048720360,
+      "tag": "0001_broad_thundra",
+      "breakpoints": true
     }
   ]
 }

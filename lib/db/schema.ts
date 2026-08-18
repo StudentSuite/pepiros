@@ -96,6 +96,18 @@ export const workspaces = pgTable("workspaces", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  /**
+   * Optimistic concurrency (issue #103). Every mutating service function
+   * (createNode/updateNodeBody/deleteNode/promoteToThread in nodes.ts,
+   * runSynthesis, runIngest) reads a full Workspace snapshot, changes one
+   * thing in memory, then re-upserts the whole thing -- a lost-update race if
+   * two requests overlap, worst on runIngest specifically since a real parse
+   * + generator fan-out holds that snapshot in memory for 15-45s. saveWorkspace()
+   * increments this and only commits when the caller's expected version still
+   * matches, so a stale write fails loudly (UserFacingError) instead of
+   * silently overwriting whatever landed in between.
+   */
+  version: integer("version").notNull().default(1),
 });
 
 export const papers = pgTable("papers", {

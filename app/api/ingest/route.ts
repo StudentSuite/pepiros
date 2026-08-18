@@ -5,7 +5,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { fetchWorkspace } from "@/lib/services/workspace";
-import { MAX_UPLOAD_BYTES, findDuplicate, validateUpload } from "@/lib/services/upload";
+import { MAX_UPLOAD_BYTES, findDuplicate, validateUpload, reserveIngest, releaseIngest } from "@/lib/services/upload";
 import { createJob, failJob } from "@/lib/services/jobs";
 import { isPdfIngestSupportedHere, runIngest, queueUrlIngest } from "@/lib/services/ingest";
 
@@ -19,10 +19,12 @@ import { isPdfIngestSupportedHere, runIngest, queueUrlIngest } from "@/lib/servi
  * background-work primitive (e.g. Vercel's waitUntil), which is out of scope
  * here.
  */
-function startIngest(input: Parameters<typeof runIngest>[0]) {
-  void runIngest(input).catch((err) => {
-    failJob(input.jobId, err instanceof Error ? err.message : String(err));
-  });
+function startIngest(input: Parameters<typeof runIngest>[0], reservation: { workspaceId: string; identity: string }) {
+  void runIngest(input)
+    .catch((err) => {
+      failJob(input.jobId, err instanceof Error ? err.message : String(err));
+    })
+    .finally(() => releaseIngest(reservation.workspaceId, reservation.identity));
 }
 
 const urlBodySchema = z.object({
@@ -102,9 +104,23 @@ export async function POST(request: Request) {
       return rejection(validation.message ?? "That file can't be processed.", validation.rejection ?? "invalid_file");
     }
 
+    const paperTitle = file.name.replace(/\.pdf$/i, "");
+
+    // Reserved before the duplicate check runs (issue #104): a double-click
+    // or a client retry sends two near-simultaneous requests for the same
+    // file, and a bare check-then-act duplicate check lets both through
+    // since neither has been persisted yet when the other checks.
+    if (!reserveIngest(workspaceId, paperTitle)) {
+      return NextResponse.json(
+        { error: "duplicate", detail: "This file is already being added to this workspace -- give it a moment." },
+        { status: 409 },
+      );
+    }
+
     const workspace = await fetchWorkspace(workspaceId);
-    const duplicate = findDuplicate({ title: file.name.replace(/\.pdf$/i, "") }, workspace.papers);
+    const duplicate = findDuplicate({ title: paperTitle }, workspace.papers);
     if (duplicate) {
+      releaseIngest(workspaceId, paperTitle);
       return NextResponse.json(
         { error: "duplicate", duplicate, detail: `This looks like "${duplicate.title}", already in this workspace.` },
         { status: 409 },
@@ -116,13 +132,10 @@ export async function POST(request: Request) {
       source: { kind: "upload", filename: file.name, bytes: file.size },
     });
 
-    startIngest({
-      jobId: job.id,
-      workspaceId,
-      paperTitle: file.name.replace(/\.pdf$/i, ""),
-      sourceUrl: null,
-      bytes,
-    });
+    startIngest(
+      { jobId: job.id, workspaceId, paperTitle, sourceUrl: null, bytes },
+      { workspaceId, identity: paperTitle },
+    );
 
     return NextResponse.json(
       { jobId: job.id, warnings: validation.warnings, estimatedPages: validation.estimatedPages },

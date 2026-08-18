@@ -201,7 +201,7 @@ describe("updateNodeBody", () => {
     expect(node.bodyMd).not.toContain(`[^${evidenceId}]`);
 
     const after = await getIngestedWorkspace(WS);
-    const persisted = after!.evidence.find((e) => e.id === evidenceId)!;
+    const persisted = after!.workspace.evidence.find((e) => e.id === evidenceId)!;
     expect(persisted.tier).toBe("unsupported");
   });
 
@@ -234,15 +234,17 @@ describe("deleteNode", () => {
 
     const after = await getIngestedWorkspace(WS);
     expect(after).not.toBeUndefined();
-    expect(after!.nodes.some((n) => n.id === "n-p1-key-finding-leaf-1")).toBe(false);
-    expect(after!.edges.some((e) => e.sourceId === "n-p1-key-finding-leaf-1" || e.targetId === "n-p1-key-finding-leaf-1")).toBe(
-      false,
-    );
-    expect(after!.evidence.some((e) => e.nodeId === "n-p1-key-finding-leaf-1")).toBe(false);
+    expect(after!.workspace.nodes.some((n) => n.id === "n-p1-key-finding-leaf-1")).toBe(false);
+    expect(
+      after!.workspace.edges.some(
+        (e) => e.sourceId === "n-p1-key-finding-leaf-1" || e.targetId === "n-p1-key-finding-leaf-1",
+      ),
+    ).toBe(false);
+    expect(after!.workspace.evidence.some((e) => e.nodeId === "n-p1-key-finding-leaf-1")).toBe(false);
 
-    const thread = after!.nodes.find((n) => n.id === "n-thread-1")!;
+    const thread = after!.workspace.nodes.find((n) => n.id === "n-thread-1")!;
     expect(thread.stale).toBe(true);
-    const parentPillar = after!.nodes.find((n) => n.id === "n-p1-key-finding")!;
+    const parentPillar = after!.workspace.nodes.find((n) => n.id === "n-p1-key-finding")!;
     expect(parentPillar.stale).toBe(false);
   });
 

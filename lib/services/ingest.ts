@@ -8,7 +8,7 @@ import { runOrchestrator } from "@/lib/agents/orchestrator";
 import { fetchWorkspace } from "./workspace";
 import { getIngestedWorkspace, setIngestedWorkspace } from "./ingestStore";
 import { appendEvent, createJob, failJob } from "./jobs";
-import { findDuplicate, resolveSourceUrl, type DuplicateMatch, type ResolvedSource } from "./upload";
+import { findDuplicate, resolveSourceUrl, reserveIngest, releaseIngest, type DuplicateMatch, type ResolvedSource } from "./upload";
 import { runPythonScript } from "./pythonRunner";
 
 /**
@@ -124,7 +124,8 @@ export async function runIngest(input: IngestInput): Promise<void> {
       `Found ${parsed.sections.length} sections across ${parsed.pageCount} pages.`,
     );
 
-    const rawBase = (await getIngestedWorkspace(input.workspaceId)) ?? (await fetchWorkspace(input.workspaceId));
+    const ingested = await getIngestedWorkspace(input.workspaceId);
+    const rawBase = ingested?.workspace ?? (await fetchWorkspace(input.workspaceId));
     const paperId = `paper-${randomUUID().slice(0, 8)}`;
     const workspaceId = input.workspaceId;
 
@@ -309,7 +310,13 @@ export async function runIngest(input: IngestInput): Promise<void> {
       evidence: [...base.evidence, ...okLeaves.flatMap((l) => l.evidence)],
     };
 
-    await setIngestedWorkspace(merged);
+    // Issue #103: this is the widest window of them all -- `rawBase` was read
+    // before the PyMuPDF parse and the full generator fan-out, 15-45s per
+    // plan.md §1, the exact stretch a concurrent edit or another ingest is
+    // most likely to land in. `ingested?.version` (undefined only when there
+    // was no real row yet to race against) makes a stale write here fail
+    // loudly instead of silently discarding whatever landed in that window.
+    await setIngestedWorkspace(merged, ingested?.version);
     appendEvent(
       input.jobId,
       "Ready",
@@ -356,9 +363,20 @@ export async function queueUrlIngest(workspaceId: string, url: string): Promise<
     return { error: "unsupported_source", detail: resolved.message ?? "Unsupported link." };
   }
 
+  // Reserved before the duplicate check runs (issue #104): the check and the
+  // reservation together close the race a bare check-then-act leaves open.
+  const identity = resolved.doi ?? resolved.pdfUrl ?? url;
+  if (!reserveIngest(workspaceId, identity)) {
+    return {
+      error: "duplicate",
+      detail: "This source is already being added to this workspace -- give it a moment.",
+    };
+  }
+
   const workspace = await fetchWorkspace(workspaceId);
   const duplicate = findDuplicate({ title: url, doi: resolved.doi ?? null }, workspace.papers);
   if (duplicate) {
+    releaseIngest(workspaceId, identity);
     return {
       error: "duplicate",
       detail: `This looks like "${duplicate.title}", already in this workspace.`,
@@ -370,8 +388,10 @@ export async function queueUrlIngest(workspaceId: string, url: string): Promise<
 
   if (resolved.kind === "doi") {
     // DOI -> PDF resolution needs a resolver (Unpaywall) that isn't wired up
-    // yet -- an honest failure on the job, not a silent hang.
+    // yet -- an honest failure on the job, not a silent hang. Nothing async
+    // follows on this branch, so the reservation is released right here.
     failJob(job.id, "DOI resolution isn't implemented yet. Paste a direct PDF link, or upload the file.");
+    releaseIngest(workspaceId, identity);
     return { jobId: job.id, source: resolved };
   }
 
@@ -383,6 +403,8 @@ export async function queueUrlIngest(workspaceId: string, url: string): Promise<
       await runIngest({ jobId: job.id, workspaceId, paperTitle: url, sourceUrl: resolved.pdfUrl ?? url, bytes });
     } catch (err) {
       failJob(job.id, err instanceof Error ? err.message : String(err));
+    } finally {
+      releaseIngest(workspaceId, identity);
     }
   })();
 

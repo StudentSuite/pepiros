@@ -93,7 +93,8 @@ function synthesisNodeId(workspaceId: string, kind: string): string {
 }
 
 export async function runSynthesis(workspaceId: string): Promise<SynthesisResult> {
-  const workspace = (await getIngestedWorkspace(workspaceId)) ?? (await fetchWorkspace(workspaceId));
+  const ingested = await getIngestedWorkspace(workspaceId);
+  const workspace = ingested?.workspace ?? (await fetchWorkspace(workspaceId));
   const papers = workspace.papers;
 
   const newLeafNodes: GraphNode[] = [];
@@ -306,7 +307,11 @@ export async function runSynthesis(workspaceId: string): Promise<SynthesisResult
     edges: [...workspace.edges, ...edgesWritten],
     evidence: [...workspace.evidence, ...newEvidence],
   };
-  await setIngestedWorkspace(merged);
+  // Issue #103: runSynthesis reads the whole workspace, may spend real time
+  // comparing every paper pair, then writes back everything -- exactly the
+  // shape that silently clobbers a manual edit landing in that window.
+  // `ingested?.version` makes a stale write here fail loudly instead.
+  await setIngestedWorkspace(merged, ingested?.version);
 
   return { pairsCompared, edgesWritten, synthesisNodesWritten, rejected };
 }

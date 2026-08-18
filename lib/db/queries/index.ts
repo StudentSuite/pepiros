@@ -1,7 +1,8 @@
 import "server-only";
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import * as schema from "@/lib/db/schema";
+import { UserFacingError } from "@/lib/errors";
 import type {
   AnchorRect,
   Chunk,
@@ -113,8 +114,14 @@ function toEvidence(row: typeof schema.evidence.$inferSelect): Evidence {
   };
 }
 
+export interface VersionedWorkspace {
+  workspace: Workspace;
+  /** Pass back to `saveWorkspace()` as `expectedVersion` (issue #103) -- a write against a stale read fails loudly instead of silently overwriting whatever landed in between. */
+  version: number;
+}
+
 /** Undefined when no workspace row exists under this id -- the caller falls back to the fixture. */
-export async function getWorkspace(workspaceId: string): Promise<Workspace | undefined> {
+export async function getWorkspace(workspaceId: string): Promise<VersionedWorkspace | undefined> {
   const [row] = await db.select().from(schema.workspaces).where(eq(schema.workspaces.id, workspaceId));
   if (!row) return undefined;
 
@@ -141,14 +148,17 @@ export async function getWorkspace(workspaceId: string): Promise<Workspace | und
   ]);
 
   return {
-    id: row.id,
-    name: row.name,
-    papers: papersRows.map(toPaper),
-    chunks: chunksRows.map(toChunk),
-    numerics: numericsRows.map(toNumeric),
-    nodes: nodesRows.map(toNode),
-    edges: edgesRows.map(toEdge),
-    evidence: evidenceRows.map(toEvidence),
+    workspace: {
+      id: row.id,
+      name: row.name,
+      papers: papersRows.map(toPaper),
+      chunks: chunksRows.map(toChunk),
+      numerics: numericsRows.map(toNumeric),
+      nodes: nodesRows.map(toNode),
+      edges: edgesRows.map(toEdge),
+      evidence: evidenceRows.map(toEvidence),
+    },
+    version: row.version,
   };
 }
 
@@ -170,18 +180,54 @@ function placeholderSectionTitle(sectionId: string): string {
  * workspace), never wrong: ids are assigned once and never reused (chunks.ts/
  * numerics.ts's ordinal comments), so re-writing an unchanged row is a no-op
  * write, not a collision.
+ *
+ * That "re-writing is a no-op" claim only holds for a row nothing else
+ * touched in the meantime (issue #103). Every caller reads a full snapshot,
+ * changes one thing in memory, then calls this with the *whole* merged
+ * result -- so two overlapping requests (a manual edit racing a background
+ * synthesis run, a plain delete racing an edit) each write back their own
+ * stale snapshot of everything else, and whichever commits second silently
+ * wins. `expectedVersion`, when given, makes that race fail loudly instead:
+ * pass the `version` `getWorkspace()`/`getIngestedWorkspace()` returned
+ * alongside the snapshot this write was built from. Omitted only when there
+ * was no prior versioned read to guard against -- a workspace's first-ever
+ * write, or a caller that degraded to the static fixture.
  */
-export async function saveWorkspace(workspace: Workspace): Promise<void> {
+export async function saveWorkspace(workspace: Workspace, expectedVersion?: number): Promise<number> {
   // A real transaction, not just sequential awaits: without one, a concurrent
   // reader (another request mid-ingest, or -- how this was actually caught --
   // two test files hitting the same shared "ws-1" row in parallel) could
   // observe a partially-written workspace, e.g. papers committed but chunks
   // not yet, and see 0 numerics/chunks that are really just not there *yet*.
-  await db.transaction(async (tx) => {
-    await tx
-      .insert(schema.workspaces)
-      .values({ id: workspace.id, name: workspace.name })
-      .onConflictDoUpdate({ target: schema.workspaces.id, set: { name: workspace.name } });
+  return await db.transaction(async (tx) => {
+    let newVersion: number;
+
+    if (expectedVersion === undefined) {
+      const [row] = await tx
+        .insert(schema.workspaces)
+        .values({ id: workspace.id, name: workspace.name })
+        .onConflictDoUpdate({
+          target: schema.workspaces.id,
+          set: { name: workspace.name, version: sql`${schema.workspaces.version} + 1` },
+        })
+        .returning({ version: schema.workspaces.version });
+      newVersion = row!.version;
+    } else {
+      // Zero rows matched means either the version moved (a real conflict)
+      // or the row is already gone -- either way this write is against
+      // something that is no longer true, so it must not proceed.
+      const [row] = await tx
+        .update(schema.workspaces)
+        .set({ name: workspace.name, version: sql`${schema.workspaces.version} + 1` })
+        .where(and(eq(schema.workspaces.id, workspace.id), eq(schema.workspaces.version, expectedVersion)))
+        .returning({ version: schema.workspaces.version });
+      if (!row) {
+        throw new UserFacingError(
+          "This workspace changed while that request was in flight. Refresh and try again.",
+        );
+      }
+      newVersion = row.version;
+    }
 
     if (workspace.papers.length > 0) {
       await tx
@@ -322,6 +368,8 @@ export async function saveWorkspace(workspace: Workspace): Promise<void> {
           },
         });
     }
+
+    return newVersion;
   });
 }
 

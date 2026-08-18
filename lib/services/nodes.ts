@@ -5,6 +5,7 @@ import { fetchWorkspace } from "./workspace";
 import { deleteIngestedNode, getIngestedWorkspace, recordNodeVersion, setIngestedWorkspace } from "./ingestStore";
 import { buildContextBlock } from "@/lib/prompts/contextBlock";
 import { GENERATORS, runGenerator } from "@/lib/agents/generators";
+import { UserFacingError } from "@/lib/errors";
 
 /**
  * Node reads/writes for the MCP surface and `app/api/nodes/*`
@@ -243,13 +244,14 @@ export interface CreateNodeResult {
  * reimplement it.
  */
 export async function createNode(input: CreateNodeInput): Promise<CreateNodeResult> {
-  const base = (await getIngestedWorkspace(input.workspaceId)) ?? (await fetchWorkspace(input.workspaceId));
+  const ingested = await getIngestedWorkspace(input.workspaceId);
+  const base = ingested?.workspace ?? (await fetchWorkspace(input.workspaceId));
 
   let parent: GraphNode | undefined;
   if (input.parentId) {
     parent = base.nodes.find((n) => n.id === input.parentId);
     if (!parent) {
-      throw new Error(`parent node ${input.parentId} does not exist in workspace ${input.workspaceId}`);
+      throw new UserFacingError(`parent node ${input.parentId} does not exist in workspace ${input.workspaceId}`);
     }
   }
 
@@ -284,7 +286,7 @@ export async function createNode(input: CreateNodeInput): Promise<CreateNodeResu
     nodes: [...base.nodes, node],
     evidence: [...base.evidence, ...evidence],
   };
-  await setIngestedWorkspace(merged);
+  await setIngestedWorkspace(merged, ingested?.version);
 
   return {
     node,
@@ -398,10 +400,11 @@ export async function updateNodeBody(input: {
   nodeId: string;
   bodyMd: string;
 }): Promise<{ node: GraphNode; evidence: Evidence[] }> {
-  const base = (await getIngestedWorkspace(input.workspaceId)) ?? (await fetchWorkspace(input.workspaceId));
+  const ingested = await getIngestedWorkspace(input.workspaceId);
+  const base = ingested?.workspace ?? (await fetchWorkspace(input.workspaceId));
   const target = base.nodes.find((n) => n.id === input.nodeId);
   if (!target) {
-    throw new Error(`node ${input.nodeId} does not exist in workspace ${input.workspaceId}`);
+    throw new UserFacingError(`node ${input.nodeId} does not exist in workspace ${input.workspaceId}`);
   }
 
   const nodeEvidence = base.evidence.filter((e) => e.nodeId === input.nodeId);
@@ -426,7 +429,7 @@ export async function updateNodeBody(input: {
   // before that upsert has run has no row to reference yet. target.bodyMd
   // was captured above, before this overwrite, so recording it after is
   // still the pre-edit body, not the one just written.
-  await setIngestedWorkspace(merged);
+  await setIngestedWorkspace(merged, ingested?.version);
   await recordNodeVersion(input.nodeId, target.bodyMd);
   return { node: updated, evidence: reverifiedEvidence };
 }
@@ -471,9 +474,10 @@ const CONTENT_DEPENDENT_EDGE_KINDS: ReadonlySet<GraphEdge["kind"]> = new Set([
 ]);
 
 export async function deleteNode(input: { workspaceId: string; nodeId: string }): Promise<DeleteNodeResult> {
-  const base = (await getIngestedWorkspace(input.workspaceId)) ?? (await fetchWorkspace(input.workspaceId));
+  const ingested = await getIngestedWorkspace(input.workspaceId);
+  const base = ingested?.workspace ?? (await fetchWorkspace(input.workspaceId));
   if (!base.nodes.some((n) => n.id === input.nodeId)) {
-    throw new Error(`node ${input.nodeId} does not exist in workspace ${input.workspaceId}`);
+    throw new UserFacingError(`node ${input.nodeId} does not exist in workspace ${input.workspaceId}`);
   }
 
   const dependentNodeIds = [
@@ -486,10 +490,13 @@ export async function deleteNode(input: { workspaceId: string; nodeId: string })
 
   // A workspace that's never been ingested before (still pure fixture) has no
   // real row for deleteIngestedNode() to act on yet -- this upserts the whole
-  // base first (harmless/idempotent if it's already a real row, per
-  // saveWorkspace()'s own "re-writing an unchanged row is a no-op" doc
-  // comment) so the DELETE below always has something real to remove.
-  await setIngestedWorkspace(base);
+  // base first so the DELETE below always has something real to remove.
+  // Passing `ingested?.version` (issue #103) is what makes this safe when a
+  // real row *does* already exist: a plain "re-save the unmodified base" used
+  // to silently clobber anything another request wrote to it in the window
+  // since this function's own read above -- now a stale version throws
+  // instead of overwriting.
+  await setIngestedWorkspace(base, ingested?.version);
   await deleteIngestedNode(input.nodeId, dependentNodeIds);
 
   return { staleNodeIds: dependentNodeIds };
@@ -527,11 +534,11 @@ export async function expandNode(input: ExpandNodeInput): Promise<ExpandNodeResu
   const workspace = await fetchWorkspace(input.workspaceId);
 
   const parent = workspace.nodes.find((n) => n.id === input.nodeId);
-  if (!parent) throw new Error(`node ${input.nodeId} does not exist in workspace ${input.workspaceId}`);
-  if (!parent.paperId) throw new Error(`node ${input.nodeId} has no associated paper to expand from`);
+  if (!parent) throw new UserFacingError(`node ${input.nodeId} does not exist in workspace ${input.workspaceId}`);
+  if (!parent.paperId) throw new UserFacingError(`node ${input.nodeId} has no associated paper to expand from`);
 
   const paper = workspace.papers.find((p) => p.id === parent.paperId);
-  if (!paper) throw new Error(`paper ${parent.paperId} not found in workspace ${input.workspaceId}`);
+  if (!paper) throw new UserFacingError(`paper ${parent.paperId} not found in workspace ${input.workspaceId}`);
 
   const contextBlock = buildContextBlock(parent.paperId, workspace.chunks, workspace.numerics);
   const output = await runGenerator(GENERATORS.custom!, {
@@ -630,7 +637,8 @@ export interface PromoteToThreadResult {
  * valid outcome, not an error.
  */
 export async function promoteToThread(input: PromoteToThreadInput): Promise<PromoteToThreadResult> {
-  const base = (await getIngestedWorkspace(input.workspaceId)) ?? (await fetchWorkspace(input.workspaceId));
+  const ingested = await getIngestedWorkspace(input.workspaceId);
+  const base = ingested?.workspace ?? (await fetchWorkspace(input.workspaceId));
 
   const nodeId = `thread-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const { bodyMd, evidence } = verifyAndBindClaims({
@@ -692,7 +700,7 @@ export async function promoteToThread(input: PromoteToThreadInput): Promise<Prom
     edges: [...base.edges, ...edges],
     evidence: [...base.evidence, ...evidence],
   };
-  await setIngestedWorkspace(merged);
+  await setIngestedWorkspace(merged, ingested?.version);
 
   const droppedRefs = evidence.filter((e) => e.tier === "unsupported");
 

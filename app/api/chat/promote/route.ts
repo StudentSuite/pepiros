@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { promoteToThread } from "@/lib/services/nodes";
 import { requireWorkspaceSession } from "@/lib/services/workspaceAccess";
+import { UserFacingError } from "@/lib/errors";
 
 const bodySchema = z.object({
   workspaceId: z.string().min(1),
@@ -28,9 +29,13 @@ export async function POST(request: Request) {
     const result = await promoteToThread(parsed.data);
     return NextResponse.json(result);
   } catch (err) {
+    if (err instanceof UserFacingError) {
+      return NextResponse.json({ error: "promote_failed", detail: err.message }, { status: 400 });
+    }
+    console.error("[api/chat/promote] promoteToThread failed:", err);
     return NextResponse.json(
-      { error: "promote_failed", detail: err instanceof Error ? err.message : String(err) },
-      { status: 400 },
+      { error: "promote_failed", detail: "Could not promote this answer right now. Try again." },
+      { status: 500 },
     );
   }
 }

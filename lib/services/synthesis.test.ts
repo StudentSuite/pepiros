@@ -91,7 +91,7 @@ describe("runSynthesis", () => {
     // recognize "[^eN]"-shaped ids) never render a citation chip and the
     // literal text "[^n0]" leaks into the UI.
     const contradictsEdge = contradictsEdges[0]!;
-    const merged = (await getIngestedWorkspace("ws-1"))!;
+    const merged = (await getIngestedWorkspace("ws-1"))!.workspace;
     const sideNodeA = merged.nodes.find((n) => n.id === contradictsEdge.sourceId)!;
     const sideNodeB = merged.nodes.find((n) => n.id === contradictsEdge.targetId)!;
     expect(sideNodeA.bodyMd).not.toContain("[^n0]");

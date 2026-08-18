@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { deleteNode, getNode, updateNodeBody } from "@/lib/services/nodes";
 import { requireWorkspaceExists, requireWorkspaceSession } from "@/lib/services/workspaceAccess";
+import { UserFacingError } from "@/lib/errors";
 
 /** ?workspaceId=... -- the same query-param convention app/api/related/route.ts already uses for a GET that needs one. */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -50,9 +51,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const { node, evidence } = await updateNodeBody({ workspaceId: parsed.data.workspaceId, nodeId: id, bodyMd: parsed.data.bodyMd });
     return NextResponse.json({ node, evidence });
   } catch (err) {
+    if (err instanceof UserFacingError) {
+      return NextResponse.json({ error: "not_found", detail: err.message }, { status: 404 });
+    }
+    // Issue #107: don't let an unanticipated error (e.g. reverifyNodeEvidence
+    // throwing something other than nodes.ts's own hand-authored errors)
+    // reach the client verbatim.
+    console.error(`[api/nodes/${id}] updateNodeBody failed:`, err);
     return NextResponse.json(
-      { error: "not_found", detail: err instanceof Error ? err.message : String(err) },
-      { status: 404 },
+      { error: "update_failed", detail: "Could not save this edit right now. Try again." },
+      { status: 500 },
     );
   }
 }
@@ -73,9 +81,13 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     const result = await deleteNode({ workspaceId, nodeId: id });
     return NextResponse.json(result);
   } catch (err) {
+    if (err instanceof UserFacingError) {
+      return NextResponse.json({ error: "not_found", detail: err.message }, { status: 404 });
+    }
+    console.error(`[api/nodes/${id}] deleteNode failed:`, err);
     return NextResponse.json(
-      { error: "not_found", detail: err instanceof Error ? err.message : String(err) },
-      { status: 404 },
+      { error: "delete_failed", detail: "Could not delete this node right now. Try again." },
+      { status: 500 },
     );
   }
 }
