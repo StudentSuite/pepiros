@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import Link from "next/link";
 import clsx from "clsx";
 import { useWorkspaceStore } from "@/lib/store/workspace";
 import type { Evidence } from "@/types/anchor";
 import { RefChip } from "@/components/ui/RefChip";
 import { EvidenceBadge } from "@/components/ui/EvidenceBadge";
+import { ReaderTabsNav } from "@/components/reader/ReaderTabsNav";
 
 type EvidenceWithTesting = Evidence & { claimedQuoteForTesting?: string };
 
@@ -62,15 +62,13 @@ export function AuditClient({ workspaceId }: { workspaceId: string }) {
   });
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
-      <header className="mb-6 flex items-center justify-between">
+    <main className="mx-auto max-w-6xl px-s-5 py-s-6">
+      <header className="mb-s-5 flex items-center justify-between">
         <h1 className="font-serif text-2xl text-ink">Audit</h1>
-        <Link href={`/w/${workspaceId}`} className="font-sans text-sm text-ink-muted hover:text-ink">
-          Back to reader
-        </Link>
+        <ReaderTabsNav workspaceId={workspaceId} active="audit" />
       </header>
 
-      <section className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <section className="mb-s-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Total evidence" value={total} />
         <Stat label="Quote located" value={locatedCount} accentClassName="text-located" />
         <Stat label="Paraphrase" value={paraphraseCount} accentClassName="text-paraphrase" />
@@ -82,7 +80,7 @@ export function AuditClient({ workspaceId }: { workspaceId: string }) {
       </section>
 
       {staleMarkers.length > 0 && (
-        <section className="mb-8 rounded border border-unsupported/50 bg-unsupported/5 p-4">
+        <section className="mb-s-6 rounded border border-unsupported/50 bg-unsupported/5 p-s-4">
           <h2 className="mb-1.5 font-sans text-sm font-medium text-unsupported">
             Stale citation markers ({staleMarkers.length})
           </h2>

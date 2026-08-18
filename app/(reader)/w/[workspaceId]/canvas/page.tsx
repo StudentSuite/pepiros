@@ -1,6 +1,5 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { GraphCanvas } from "@/components/canvas/GraphCanvas";
+import { ReaderTabsNav } from "@/components/reader/ReaderTabsNav";
 import { getSession } from "@/lib/auth/session";
 import { GuestBanner } from "@/components/auth/GuestBanner";
 
@@ -26,20 +25,11 @@ export default async function CanvasPage({
     <div className="flex h-dvh w-full flex-col bg-surface">
       {!session && <GuestBanner next={`/w/${workspaceId}/canvas`} />}
 
-      <header className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-2.5">
-        <Link
-          href={`/w/${workspaceId}`}
-          className="inline-flex items-center gap-1.5 font-sans text-xs text-ink-muted transition-colors duration-fast ease-out hover:text-ink"
-        >
-          <ArrowLeft className="size-3.5" aria-hidden />
-          Back to reader
-        </Link>
-        <span className="text-border-strong" aria-hidden>
-          /
-        </span>
+      <header className="flex shrink-0 items-center justify-between gap-s-3 border-b border-border px-s-4 py-s-3">
         <h1 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
           Graph
         </h1>
+        <ReaderTabsNav workspaceId={workspaceId} active="canvas" />
       </header>
 
       <div className="relative min-h-0 flex-1">

@@ -6,6 +6,7 @@ import { ChevronRight } from "lucide-react";
 import { useWorkspaceStore } from "@/lib/store/workspace";
 import { useToastStore } from "@/lib/store/toast";
 import { Sidebar } from "@/components/app/Sidebar";
+import { ReaderTabsNav } from "@/components/reader/ReaderTabsNav";
 import { PdfPane } from "@/components/reader/PdfPane";
 import { CoverageOverlay } from "@/components/reader/CoverageOverlay";
 import { GraphPreviewCard } from "@/components/reader/GraphPreviewCard";
@@ -183,26 +184,8 @@ export function ReaderClient({ workspaceId }: { workspaceId: string }) {
             </span>
           </nav>
 
-          <nav className="flex shrink-0 items-center gap-s-4 font-sans text-[13px] text-ink-faint">
-            {[
-              ["outline", "Outline"],
-              ["audit", "Audit"],
-              ["learn", "Learn"],
-            ].map(([slug, label]) => (
-              <Link
-                key={slug}
-                href={`/w/${workspaceId}/${slug}`}
-                className="transition-colors duration-fast ease-out hover:text-ink"
-              >
-                {label}
-              </Link>
-            ))}
-            <Link
-              href={`/w/${workspaceId}/canvas`}
-              className="rounded-full border border-border px-s-3 py-1 transition-colors duration-fast ease-out hover:border-border-strong hover:text-ink"
-            >
-              Explore graph
-            </Link>
+          <div className="flex shrink-0 flex-wrap items-center gap-s-4 font-sans text-[13px] text-ink-faint">
+            <ReaderTabsNav workspaceId={workspaceId} active="reader" />
             <button
               type="button"
               onClick={() => void shareWorkspace()}
@@ -223,7 +206,7 @@ export function ReaderClient({ workspaceId }: { workspaceId: string }) {
             >
               Export .bib
             </a>
-          </nav>
+          </div>
         </header>
 
         {/* Reading first: the paper column gets the room, and the rail is

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useWorkspaceStore } from "@/lib/store/workspace";
 import type { GraphNode } from "@/types/anchor";
 import { PillarChip } from "@/components/ui/PillarChip";
+import { ReaderTabsNav } from "@/components/reader/ReaderTabsNav";
 
 function TreeItem({
   node,
@@ -85,15 +86,13 @@ export function OutlineClient({ workspaceId }: { workspaceId: string }) {
   );
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <header className="mb-6 flex items-center justify-between">
+    <main className="mx-auto max-w-6xl px-s-5 py-s-6">
+      <header className="mb-s-5 flex items-center justify-between">
         <h1 className="font-serif text-2xl text-ink">Outline</h1>
-        <Link href={`/w/${workspaceId}`} className="font-sans text-sm text-ink-muted hover:text-ink">
-          Back to reader
-        </Link>
+        <ReaderTabsNav workspaceId={workspaceId} active="outline" />
       </header>
 
-      <ul className="flex flex-col gap-5">
+      <ul className="flex max-w-3xl flex-col gap-5">
         {roots.map((root) => (
           <TreeItem
             key={root.id}
@@ -105,8 +104,8 @@ export function OutlineClient({ workspaceId }: { workspaceId: string }) {
       </ul>
 
       {looseNodes.length > 0 && (
-        <div className="mt-8 border-t border-border pt-6">
-          <h2 className="mb-3 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+        <div className="mt-s-6 max-w-3xl border-t border-border pt-s-6">
+          <h2 className="mb-s-3 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
             Cross-paper nodes
           </h2>
           <ul className="flex flex-col gap-2">
