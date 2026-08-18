@@ -1,8 +1,14 @@
 // GET ?workspaceId=&paperId=&direction=cites|cited_by. Calls lib/services/citationExpand.ts (OpenAlex API, free, no
-// key). Returns ghost-node candidates for canvas-edge expansion. POST would ingest a selected ghost node for real,
-// but that depends on the ingest pipeline (lib/services/ingest.ts, scripts/parse.py), which doesn't exist yet.
+// key). Returns ghost-node candidates for canvas-edge expansion.
+//
+// Issue #93: there used to be a POST handler here too, permanently 501ing
+// via lib/api/notImplemented.ts -- but components/canvas/GhostCitationNode.tsx's
+// "Add to workspace" button doesn't call it at all; it POSTs a candidate's
+// pdfUrl straight to POST /api/ingest's URL-ingest path, which is the real
+// pipeline (scripts/parse.py exists now). The dead 501 handler was
+// unreachable orphaned code, not a live dead end -- removed rather than
+// implemented, since there was nothing left calling it to fix.
 import { NextResponse } from "next/server";
-import { notImplemented } from "@/lib/api/notImplemented";
 import { fetchWorkspace } from "@/lib/services/workspace";
 import { fetchCitationExpansion, type CitationDirection } from "@/lib/services/citationExpand";
 import { requireWorkspaceExists } from "@/lib/services/workspaceAccess";
@@ -35,8 +41,4 @@ export async function GET(request: Request) {
 
   const result = await fetchCitationExpansion(paper.title, direction);
   return NextResponse.json(result);
-}
-
-export async function POST() {
-  return notImplemented("POST /api/expand");
 }
