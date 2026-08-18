@@ -240,6 +240,49 @@ export const supabaseAdapter: DataAdapter = {
     return { ok: true };
   },
 
+  async createSession(profileId) {
+    const sb = createSupabaseServiceClient();
+    const { data, error } = await sb.from("sessions").insert({ profile_id: profileId }).select("id").single();
+    if (error || !data) {
+      // Expected right after this ships and before supabase/migrations/
+      // 0003_sessions.sql has actually been applied -- degrade to "no
+      // session tracking" rather than failing the login this is part of.
+      console.error("[createSession] could not create a session row (has 0003_sessions.sql been applied?):", error?.message);
+      return null;
+    }
+    return data.id as string;
+  },
+
+  async isSessionRevoked(sessionId) {
+    const sb = createSupabaseServiceClient();
+    const { data, error } = await sb.from("sessions").select("revoked_at").eq("id", sessionId).maybeSingle();
+    if (error) {
+      // Fail open: if the check itself can't run (table missing, network
+      // blip), that's "no revocation enforcement," which is exactly
+      // today's pre-#85 behavior -- not a reason to lock a real session out.
+      console.error(`[isSessionRevoked] could not check session ${sessionId}:`, error.message);
+      return false;
+    }
+    if (!data) return false; // No row (pre-migration cookie, or already-cascaded profile deletion) -- nothing to revoke.
+    return data.revoked_at !== null;
+  },
+
+  async revokeSession(sessionId) {
+    const sb = createSupabaseServiceClient();
+    const { error } = await sb.from("sessions").update({ revoked_at: new Date().toISOString() }).eq("id", sessionId);
+    if (error) console.error(`[revokeSession] could not revoke session ${sessionId}:`, error.message);
+  },
+
+  async revokeAllSessions(profileId) {
+    const sb = createSupabaseServiceClient();
+    const { error } = await sb
+      .from("sessions")
+      .update({ revoked_at: new Date().toISOString() })
+      .eq("profile_id", profileId)
+      .is("revoked_at", null);
+    if (error) console.error(`[revokeAllSessions] could not revoke sessions for ${profileId}:`, error.message);
+  },
+
   async getPostByPaperId(paperId) {
     const sb = createSupabaseServiceClient();
     const { data } = await sb

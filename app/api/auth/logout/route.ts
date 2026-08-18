@@ -1,5 +1,7 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@/lib/auth/session";
+import { getAdapter } from "@/lib/data/adapter";
+import { SESSION_COOKIE, parseSessionFull } from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function POST() {
@@ -21,6 +23,13 @@ export async function POST() {
     // there's no Supabase session to clear in that deployment mode either
     // way, so this app's own cookie below is still cleared regardless.
   }
+
+  // Issue #85: revoke this specific session server-side, not just clear the
+  // cookie in this one browser -- otherwise a copy of the same signed
+  // cookie (leaked before logout, or synced to another device) stays valid
+  // for its full remaining lifetime even after "logging out" here.
+  const parsed = await parseSessionFull((await cookies()).get(SESSION_COOKIE)?.value);
+  if (parsed?.sessionId) await getAdapter().revokeSession(parsed.sessionId);
 
   const res = NextResponse.json({ ok: true });
   res.cookies.set(SESSION_COOKIE, "", {

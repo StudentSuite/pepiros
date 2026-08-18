@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { isDemoAccount } from "@/lib/data/demo";
 import { SettingsRow } from "@/components/settings/SettingsRow";
 import { SignOutButton } from "@/components/settings/SignOutButton";
+import { LogoutEverywhereButton } from "@/components/settings/LogoutEverywhereButton";
 import { DemoNotice } from "@/components/settings/DemoNotice";
 import { PasswordChangeForm } from "@/components/settings/PasswordChangeForm";
 
@@ -50,6 +51,23 @@ export default async function SecurityPage() {
         <div className="flex sm:justify-end">
           <SignOutButton />
         </div>
+      </SettingsRow>
+
+      <SettingsRow
+        label="Sign out everywhere"
+        description={
+          demo
+            ? "Not available for the demo account -- it's a shared credential, and this would sign out every visitor currently using it, not just you."
+            : "Revokes every signed-in session for this account, including any device you've lost access to or a leaked cookie on."
+        }
+      >
+        {demo ? (
+          <p className="font-sans text-sm text-ink-faint">Not available for the demo account</p>
+        ) : (
+          <div className="flex sm:justify-end">
+            <LogoutEverywhereButton />
+          </div>
+        )}
       </SettingsRow>
     </div>
   );

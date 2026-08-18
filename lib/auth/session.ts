@@ -8,8 +8,11 @@ import type { Profile } from "@/lib/data/types";
  * Scope note: this authenticates the demo account so the signed-in surfaces are
  * reachable and route protection is real rather than decorative. It is NOT a
  * production identity system: there is no password hashing (the demo password
- * is a published constant), no refresh, and no revocation. When Supabase auth
- * is wired, this is replaced wholesale rather than extended.
+ * is a published constant), and there is still no refresh (a session simply
+ * expires at MAX_AGE with no silent renewal). Revocation exists now for
+ * password sessions (issue #85, via the `sessions` table + createSession()/
+ * isSessionRevoked() on the data adapter) -- Google/federated sessions still
+ * have none, by design (see serializeInlineSession's own doc comment).
  *
  * WHY WEB CRYPTO AND NOT node:crypto. This runs in middleware.ts, which Next
  * executes on the Edge runtime where `node:crypto`'s createHmac does not exist.
@@ -95,8 +98,19 @@ async function sign(payload: string): Promise<string> {
   return toBase64Url(sig);
 }
 
+/**
+ * Issue #85: adds a server-side-revocable session id alongside the
+ * profile id. `createSession()` returns null when no session store is
+ * available (seed adapter, or the Supabase adapter before
+ * supabase/migrations/0003_sessions.sql has been applied) -- "-" is the
+ * placeholder in that case, so the cookie's shape stays consistent either
+ * way and old 3-part (pre-#85) cookies keep parsing too (see
+ * parseSessionFull() below), rather than forcing every signed-in user to
+ * log back in the moment this ships.
+ */
 export async function serializeSession(profileId: string): Promise<string> {
-  const payload = `${profileId}.${Date.now()}`;
+  const sessionId = (await getAdapter().createSession(profileId)) ?? "-";
+  const payload = `${profileId}.${sessionId}.${Date.now()}`;
   return `${payload}.${await sign(payload)}`;
 }
 
@@ -147,35 +161,78 @@ function decodeInlineProfile(subject: string): Profile | null {
   }
 }
 
-export async function parseSession(token: string | undefined): Promise<string | null> {
-  if (!token) return null;
-  const parts = token.split(".");
-  if (parts.length !== 3) return null;
-  const [profileId, issued, sig] = parts as [string, string, string];
-
-  const payload = `${profileId}.${issued}`;
+async function verifySignature(payload: string, sig: string): Promise<boolean> {
   // crypto.subtle.verify is constant-time, so this does not leak the signature
   // through timing the way a string compare would.
-  const ok = await crypto.subtle.verify(
+  return crypto.subtle.verify(
     "HMAC",
     await hmacKey(),
     fromBase64Url(sig) as unknown as BufferSource,
     new TextEncoder().encode(payload),
   );
-  if (!ok) return null;
+}
 
+function stillFresh(issued: string): boolean {
   const issuedAt = Number(issued);
-  if (!Number.isFinite(issuedAt)) return null;
-  if (Date.now() - issuedAt > MAX_AGE * 1000) return null;
+  return Number.isFinite(issuedAt) && Date.now() - issuedAt <= MAX_AGE * 1000;
+}
 
-  return profileId;
+export interface ParsedSession {
+  /** Profile id (password sessions) or the `g~`-prefixed inline-encoded profile (Google). */
+  subject: string;
+  /** Null for inline sessions and for a pre-#85 cookie issued before this existed. */
+  sessionId: string | null;
+}
+
+/**
+ * The one real parser both parseSession() (middleware, Edge runtime, no DB)
+ * and getSession() (needs the sessionId to check revocation) build on --
+ * kept as a single implementation so the two never verify the signature
+ * differently. Accepts both cookie shapes: 3 parts (subject.issued.sig --
+ * every inline/Google session, and any password session issued before
+ * issue #85) and 4 parts (profileId.sessionId.issued.sig, every password
+ * session issued after).
+ */
+export async function parseSessionFull(token: string | undefined): Promise<ParsedSession | null> {
+  if (!token) return null;
+  const parts = token.split(".");
+
+  if (parts.length === 3) {
+    const [subject, issued, sig] = parts as [string, string, string];
+    if (!(await verifySignature(`${subject}.${issued}`, sig))) return null;
+    if (!stillFresh(issued)) return null;
+    return { subject, sessionId: null };
+  }
+
+  if (parts.length === 4) {
+    const [profileId, sessionId, issued, sig] = parts as [string, string, string, string];
+    if (!(await verifySignature(`${profileId}.${sessionId}.${issued}`, sig))) return null;
+    if (!stillFresh(issued)) return null;
+    return { subject: profileId, sessionId: sessionId === "-" ? null : sessionId };
+  }
+
+  return null;
+}
+
+/** Just the subject, signature/expiry-verified -- middleware.ts's Edge-runtime redirect check never needs the sessionId, so it stays DB-free. */
+export async function parseSession(token: string | undefined): Promise<string | null> {
+  const parsed = await parseSessionFull(token);
+  return parsed?.subject ?? null;
 }
 
 /** Current signed-in profile, or null. Server components and route handlers. */
 export async function getSession(): Promise<Profile | null> {
   const store = await cookies();
-  const subject = await parseSession(store.get(COOKIE)?.value);
-  if (!subject) return null;
+  const parsed = await parseSessionFull(store.get(COOKIE)?.value);
+  if (!parsed) return null;
+  const { subject, sessionId } = parsed;
   if (subject.startsWith(INLINE_PREFIX)) return decodeInlineProfile(subject);
+
+  // Issue #85: the one place a revoked session actually stops working --
+  // logout (this session) and "log out everywhere" (every session for the
+  // profile) both just set revoked_at, they don't touch the cookie sitting
+  // in some other browser/device.
+  if (sessionId && (await getAdapter().isSessionRevoked(sessionId))) return null;
+
   return getAdapter().getProfile(subject);
 }

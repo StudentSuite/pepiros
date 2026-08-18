@@ -51,6 +51,30 @@ export interface DataAdapter {
   readonly kind: "seed" | "supabase";
 
   verifyCredentials(username: string, password: string): Promise<Profile | null>;
+
+  /**
+   * Issue #85: sessions were a pure stateless signed cookie with no
+   * server-side record at all, so a leaked/stolen cookie stayed valid for
+   * its full 7-day lifetime no matter what, and there was no way to log out
+   * a *different* device. These four back the new `sessions` table
+   * (supabase/migrations/0003_sessions.sql) for password-based sessions --
+   * Google/federated sign-in carries its profile inline in the cookie by
+   * design (lib/auth/session.ts's serializeInlineSession) and has no row
+   * here to reference; extending revocation there is a separate, bigger
+   * change to a deliberately different mechanism.
+   *
+   * All four degrade gracefully rather than throwing when the migration
+   * hasn't been applied yet (a real, expected state right after this ships:
+   * the migration needs `supabase db push` or a pasted SQL-editor run
+   * before the table exists) -- createSession() returns null, isRevoked()
+   * returns false, so sign-in and every existing request keep working
+   * exactly as before until the table is there, rather than every login
+   * breaking the moment this code deploys ahead of its own migration.
+   */
+  createSession(profileId: string): Promise<string | null>;
+  isSessionRevoked(sessionId: string): Promise<boolean>;
+  revokeSession(sessionId: string): Promise<void>;
+  revokeAllSessions(profileId: string): Promise<void>;
   /**
    * `email` was optional (issue #45) and became the account's real Supabase
    * Auth email when given, or fell back to a synthetic `${username}@users.
@@ -189,6 +213,19 @@ const seedAdapter: DataAdapter = {
       error: "Password reset needs the Supabase-backed platform, which isn't enabled on this deployment.",
     };
   },
+
+  // No sessions table in seed mode -- there is no DB at all. Sessions behave
+  // exactly as they did before issue #85: the signed cookie alone, no
+  // server-side revocation, which is the guest demo's real limitation, not
+  // a bug this adapter should paper over.
+  async createSession() {
+    return null;
+  },
+  async isSessionRevoked() {
+    return false;
+  },
+  async revokeSession() {},
+  async revokeAllSessions() {},
 
   async updateProfile() {
     // Unreachable in practice: the seed backend's only profile is the guest

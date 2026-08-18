@@ -60,3 +60,55 @@ describe("serializeSession / parseSession", () => {
     await expect(serializeSession("profile-123")).rejects.toThrow("SESSION_SECRET is not set");
   });
 });
+
+describe("parseSessionFull (issue #85)", () => {
+  it("returns sessionId: null for the seed adapter, which has no session store to create a row in", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    delete process.env.SESSION_SECRET;
+    const { serializeSession, parseSessionFull } = await import("./session");
+    const token = await serializeSession("profile-123");
+    const parsed = await parseSessionFull(token);
+    expect(parsed).toEqual({ subject: "profile-123", sessionId: null });
+  });
+
+  it("carries a real sessionId through when the adapter provides one", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    delete process.env.SESSION_SECRET;
+    vi.doMock("@/lib/data/adapter", () => ({
+      getAdapter: () => ({ createSession: async () => "session-abc" }),
+    }));
+    const { serializeSession, parseSessionFull } = await import("./session");
+    const token = await serializeSession("profile-123");
+    const parsed = await parseSessionFull(token);
+    expect(parsed).toEqual({ subject: "profile-123", sessionId: "session-abc" });
+  });
+
+  it("still parses a pre-#85, 3-part token (profileId.issued.sig) with sessionId: null", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    delete process.env.SESSION_SECRET;
+    // Simulates a cookie issued before this change: no sessionId slot at all.
+    vi.doMock("@/lib/data/adapter", () => ({
+      getAdapter: () => ({ createSession: async () => null }),
+    }));
+    const session = await import("./session");
+    // serializeInlineSession's own output is a real 3-part token (subject.
+    // issued.sig, with no sessionId slot) -- exercising it here proves the
+    // exact same 3-part shape a pre-#85 password session would also have
+    // parses correctly, without hand-rolling HMAC signing in the test.
+    const inlineToken = await session.serializeInlineSession({
+      id: "u1",
+      username: "ada",
+      displayName: "Ada",
+      bio: "",
+      avatarInitials: "A",
+      followerCount: 0,
+      followingCount: 0,
+      joinedAt: "2026-01-01",
+      onboarded: true,
+    });
+    expect(inlineToken.split(".")).toHaveLength(3);
+    const parsed = await session.parseSessionFull(inlineToken);
+    expect(parsed?.sessionId).toBeNull();
+    expect(parsed?.subject.startsWith("g~")).toBe(true);
+  });
+});
