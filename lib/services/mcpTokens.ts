@@ -1,33 +1,31 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import path from "node:path";
-import { generateToken, hashToken, hashesMatch, type McpScope, type McpTokenRecord } from "./mcpAuth";
+import {
+  findMcpTokenRowByHash,
+  insertMcpTokenRow,
+  listActiveMcpTokenRows,
+  revokeMcpTokenRow,
+  touchMcpTokenRow,
+} from "@/lib/db/queries";
+import { generateToken, hashToken, type McpScope, type McpTokenRecord } from "./mcpAuth";
 
 /**
- * MCP token issuance/verification (docs/PLAN-V1.md §13.4). The `mcp_tokens`
- * table exists in lib/db/schema.ts but there is no live Postgres to write it
- * to yet (CLAUDE.md's current data seam).
+ * MCP token issuance/verification (docs/PLAN-V1.md §13.4), backed by the
+ * real `mcp_tokens` Postgres table (issue #109).
  *
- * WHY THIS IS A FILE, NOT AN IN-MEMORY MAP LIKE jobs.ts/share.ts/
- * ingestStore.ts. Those all read and write from *inside* the same Next.js
- * server process. A token minted in Settings has to be verifiable by
- * mcp/stdio.ts, which is a *separate OS process* (spawned by Claude Desktop,
- * `npm run mcp:stdio`, or the built `pepiros-mcp` binary) with its own
- * memory -- an in-memory store here would make every freshly minted token
- * invisible to the process that is supposed to check it. A small JSON file
- * under `.pepiros/` (gitignored, created on first use) is the cheapest thing
- * both processes can agree on without standing up a database.
+ * Used to be a gitignored JSON file under `.pepiros/` instead -- that was a
+ * deliberate choice while the only consumer was mcp/stdio.ts, a separate OS
+ * process on the *same machine* as the Next.js server minting the token, so
+ * a shared local file was enough. Issue #109's remote streamable-HTTP
+ * transport breaks that assumption: an OAuth-issued token has to be
+ * verifiable by whichever serverless instance handles the next tool call,
+ * which may not be the instance (or even the same physical machine) that
+ * minted it. Real Postgres is the one thing both definitely share.
  *
  * Only `hashToken()`'s output is ever persisted; the raw token is returned
  * once, at creation, and never again (see mcpAuth.ts's own doc comment on
  * why SHA-256 is the right primitive here).
  */
-
-/** Overridable so tests can point this at a throwaway file instead of the real project directory. */
-function storePath(): string {
-  return process.env.PEPIROS_MCP_TOKENS_PATH ?? path.join(process.cwd(), ".pepiros", "mcp-tokens.json");
-}
 
 export interface McpTokenMeta {
   id: string;
@@ -38,88 +36,57 @@ export interface McpTokenMeta {
   lastUsedAt: string | null;
 }
 
-interface StoredToken extends McpTokenMeta {
-  tokenHash: string;
-  revokedAt: string | null;
-}
-
-function readAll(): StoredToken[] {
-  const file = storePath();
-  if (!existsSync(file)) return [];
-  try {
-    return JSON.parse(readFileSync(file, "utf8")) as StoredToken[];
-  } catch {
-    // A corrupt or hand-edited file is a bad day, not a crash -- treat it as
-    // no tokens rather than taking down every tool call.
-    return [];
-  }
-}
-
-function writeAll(tokens: StoredToken[]): void {
-  const file = storePath();
-  mkdirSync(path.dirname(file), { recursive: true });
-  writeFileSync(file, JSON.stringify(tokens, null, 2));
-}
-
-export function createMcpToken(input: {
+export async function createMcpToken(input: {
   label: string;
   scope: McpScope;
   workspaceId: string | null;
-}): { id: string; token: string } {
+}): Promise<{ id: string; token: string }> {
   const token = generateToken();
   const id = randomUUID();
-  const tokens = readAll();
-  tokens.push({
+  await insertMcpTokenRow({
     id,
-    label: input.label,
+    tokenHash: hashToken(token),
     scope: input.scope,
     workspaceId: input.workspaceId,
-    createdAt: new Date().toISOString(),
-    lastUsedAt: null,
-    revokedAt: null,
-    tokenHash: hashToken(token),
+    label: input.label,
   });
-  writeAll(tokens);
   return { id, token };
 }
 
 /** Metadata only -- never the hash, and never revoked tokens (they're gone, not just marked). */
-export function listMcpTokens(): McpTokenMeta[] {
-  return readAll()
-    .filter((t) => !t.revokedAt)
-    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
-    .map(({ tokenHash: _tokenHash, revokedAt: _revokedAt, ...meta }) => meta);
+export async function listMcpTokens(): Promise<McpTokenMeta[]> {
+  const rows = await listActiveMcpTokenRows();
+  return rows.map((row) => ({
+    id: row.id,
+    label: row.label ?? "Untitled token",
+    scope: row.scope,
+    workspaceId: row.workspaceId,
+    createdAt: row.createdAt.toISOString(),
+    lastUsedAt: row.lastUsedAt?.toISOString() ?? null,
+  }));
 }
 
-export function revokeMcpToken(id: string): boolean {
-  const tokens = readAll();
-  const record = tokens.find((t) => t.id === id);
-  if (!record || record.revokedAt) return false;
-  record.revokedAt = new Date().toISOString();
-  writeAll(tokens);
-  return true;
+export async function revokeMcpToken(id: string): Promise<boolean> {
+  return revokeMcpTokenRow(id);
 }
 
 /**
  * Resolves a raw token (e.g. from the `PEPIROS_MCP_TOKEN` env var an MCP
- * client is configured with) to its record via a constant-time hash
- * compare, and marks it used. Returns undefined for an unknown token --
- * lib/services/mcpAuth.ts's checkToken() turns that into the actual
- * not_found/revoked decision.
+ * client is configured with, or a Bearer header on the remote transport) to
+ * its record via a hash lookup, and marks it used. Returns undefined for an
+ * unknown token -- lib/services/mcpAuth.ts's checkToken() turns that into
+ * the actual not_found/revoked decision.
  */
-export function resolveMcpToken(rawToken: string): McpTokenRecord | undefined {
-  const hash = hashToken(rawToken);
-  const tokens = readAll();
-  const stored = tokens.find((t) => hashesMatch(t.tokenHash, hash));
-  if (!stored) return undefined;
+export async function resolveMcpToken(rawToken: string): Promise<McpTokenRecord | undefined> {
+  const row = await findMcpTokenRowByHash(hashToken(rawToken));
+  if (!row) return undefined;
 
-  stored.lastUsedAt = new Date().toISOString();
-  writeAll(tokens);
+  await touchMcpTokenRow(row.id);
 
   return {
-    id: stored.id,
-    scope: stored.scope,
-    workspaceId: stored.workspaceId,
-    revokedAt: stored.revokedAt ? new Date(stored.revokedAt) : null,
+    id: row.id,
+    scope: row.scope,
+    workspaceId: row.workspaceId,
+    revokedAt: row.revokedAt,
   };
 }

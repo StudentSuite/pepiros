@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import * as schema from "@/lib/db/schema";
 import { UserFacingError } from "@/lib/errors";
@@ -436,4 +436,100 @@ export async function workspaceRowExists(workspaceId: string): Promise<boolean> 
     .from(schema.workspaces)
     .where(eq(schema.workspaces.id, workspaceId));
   return Boolean(row);
+}
+
+// --- MCP tokens (issue #109) -----------------------------------------------
+// Real Postgres, not the gitignored JSON file lib/services/mcpTokens.ts used
+// to keep -- see schema.ts's mcpTokens doc comment for why the remote
+// streamable-HTTP transport needed that swap.
+
+export type McpTokenRow = typeof schema.mcpTokens.$inferSelect;
+
+export async function insertMcpTokenRow(input: {
+  id: string;
+  tokenHash: string;
+  scope: "read" | "write";
+  workspaceId: string | null;
+  label: string;
+}): Promise<void> {
+  await db.insert(schema.mcpTokens).values(input);
+}
+
+/** Every non-revoked token, newest first -- lib/services/mcpTokens.ts's listMcpTokens() never showed revoked ones either. */
+export async function listActiveMcpTokenRows(): Promise<McpTokenRow[]> {
+  return db
+    .select()
+    .from(schema.mcpTokens)
+    .where(isNull(schema.mcpTokens.revokedAt))
+    .orderBy(desc(schema.mcpTokens.createdAt));
+}
+
+export async function findMcpTokenRowByHash(tokenHash: string): Promise<McpTokenRow | undefined> {
+  const [row] = await db.select().from(schema.mcpTokens).where(eq(schema.mcpTokens.tokenHash, tokenHash));
+  return row;
+}
+
+export async function touchMcpTokenRow(id: string): Promise<void> {
+  await db.update(schema.mcpTokens).set({ lastUsedAt: new Date() }).where(eq(schema.mcpTokens.id, id));
+}
+
+/** Returns whether a row was actually revoked -- false if it didn't exist or was already revoked, matching the old JSON-file store's semantics. */
+export async function revokeMcpTokenRow(id: string): Promise<boolean> {
+  const rows = await db
+    .update(schema.mcpTokens)
+    .set({ revokedAt: new Date() })
+    .where(and(eq(schema.mcpTokens.id, id), isNull(schema.mcpTokens.revokedAt)))
+    .returning({ id: schema.mcpTokens.id });
+  return rows.length > 0;
+}
+
+// --- MCP OAuth (issue #109) -------------------------------------------------
+// RFC 7591 dynamic client registration + the authorization-code exchange
+// docs/PLAN-V1.md §13.4 specs for the remote streamable-HTTP transport.
+
+export type McpOAuthClientRow = typeof schema.mcpOAuthClients.$inferSelect;
+
+export async function insertMcpOAuthClient(input: {
+  clientId: string;
+  clientSecretHash: string | null;
+  clientName: string | null;
+  redirectUris: string[];
+}): Promise<void> {
+  await db.insert(schema.mcpOAuthClients).values(input);
+}
+
+export async function findMcpOAuthClient(clientId: string): Promise<McpOAuthClientRow | undefined> {
+  const [row] = await db.select().from(schema.mcpOAuthClients).where(eq(schema.mcpOAuthClients.clientId, clientId));
+  return row;
+}
+
+export async function insertMcpOAuthCode(input: {
+  id: string;
+  codeHash: string;
+  clientId: string;
+  profileId: string;
+  redirectUri: string;
+  codeChallenge: string;
+  scope: "read" | "write";
+  workspaceId: string | null;
+  expiresAt: Date;
+}): Promise<void> {
+  await db.insert(schema.mcpOAuthCodes).values(input);
+}
+
+export type McpOAuthCodeRow = typeof schema.mcpOAuthCodes.$inferSelect;
+
+export async function findMcpOAuthCodeByHash(codeHash: string): Promise<McpOAuthCodeRow | undefined> {
+  const [row] = await db.select().from(schema.mcpOAuthCodes).where(eq(schema.mcpOAuthCodes.codeHash, codeHash));
+  return row;
+}
+
+/** Single-use: only marks the code used if it hadn't been already, so a replayed code loses the race deterministically instead of both callers thinking they won. */
+export async function markMcpOAuthCodeUsed(id: string): Promise<boolean> {
+  const rows = await db
+    .update(schema.mcpOAuthCodes)
+    .set({ usedAt: new Date() })
+    .where(and(eq(schema.mcpOAuthCodes.id, id), isNull(schema.mcpOAuthCodes.usedAt)))
+    .returning({ id: schema.mcpOAuthCodes.id });
+  return rows.length > 0;
 }

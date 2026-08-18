@@ -12,6 +12,8 @@ export default async function McpTokensPage() {
   const profile = await getSession();
   if (!profile) redirect("/login");
 
+  const tokens = await listMcpTokens();
+
   return (
     <div>
       {isDemoAccount(profile) && <DemoNotice />}
@@ -24,7 +26,7 @@ export default async function McpTokensPage() {
         </p>
       </header>
 
-      <McpTokens initial={listMcpTokens()} />
+      <McpTokens initial={tokens} />
     </div>
   );
 }

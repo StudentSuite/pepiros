@@ -34,11 +34,11 @@ import { checkToken } from "@/lib/services/mcpAuth";
  * back to unrestricted access -- that fallback is reserved for the token
  * being *absent* entirely (today's zero-setup local-dev path).
  */
-function resolveSession() {
+async function resolveSession() {
   const raw = process.env.PEPIROS_MCP_TOKEN;
   if (!raw) return null;
 
-  const record = resolveMcpToken(raw);
+  const record = await resolveMcpToken(raw);
   const check = checkToken(record);
   if (!check.ok) {
     throw new Error(
@@ -51,7 +51,7 @@ function resolveSession() {
 }
 
 async function main() {
-  const session = resolveSession();
+  const session = await resolveSession();
   const server = createMcpServer(session);
   const transport = new StdioServerTransport();
   await server.connect(transport);

@@ -348,12 +348,14 @@ export const shareTokens = pgTable("share_tokens", {
  * - `revokedAt` ("Support revocation") rather than deleting the row, so an
  *   audit trail of a revoked token's past calls survives the revocation.
  *
- * Not actually backed by this table yet -- lib/services/mcpTokens.ts uses a
- * gitignored JSON file instead, on purpose: mcp/stdio.ts runs as a separate OS
- * process from the Next.js server, and needs to see a token immediately after
- * Settings mints it without a shared in-process cache. The table stays here as
- * the eventual real store once that process boundary is worth crossing with a
- * DB round-trip on every tool call.
+ * Issue #109: now the real store -- lib/services/mcpTokens.ts used to keep
+ * these in a gitignored JSON file instead, which worked for the stdio
+ * transport (mcp/stdio.ts is a separate OS process on the same machine as
+ * Settings, sharing a local file was enough) but silently breaks the remote
+ * streamable-HTTP transport, where a token minted via OAuth on one
+ * serverless instance must be verifiable by a completely different
+ * instance handling the next tool call. Real Postgres is the one thing both
+ * definitely share.
  */
 export const mcpTokenScope = pgEnum("mcp_token_scope", ["read", "write"]);
 
@@ -365,6 +367,50 @@ export const mcpTokens = pgTable("mcp_tokens", {
   label: text("label"),
   lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Issue #109: RFC 7591 Dynamic Client Registration, the piece that lets a
+ * remote MCP client (claude.ai Connectors, a ChatGPT connector) register
+ * itself with no manual setup, per docs/PLAN-V1.md §13.4. `clientSecretHash`
+ * is null for a public client (PKCE-only, e.g. claude.ai) -- never store the
+ * raw secret for a confidential client either, same reasoning as mcp_tokens'
+ * tokenHash. `redirectUris` is the allowlist `/oauth/authorize` checks the
+ * caller's `redirect_uri` against; an authorization code is only ever
+ * redeemed back to one of these.
+ */
+export const mcpOAuthClients = pgTable("mcp_oauth_clients", {
+  clientId: text("client_id").primaryKey(),
+  clientSecretHash: text("client_secret_hash"),
+  clientName: text("client_name"),
+  redirectUris: jsonb("redirect_uris").notNull().$type<string[]>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * A single-use authorization code from the `/oauth/authorize` consent step,
+ * redeemed exactly once at `/api/mcp/oauth/token` for a real mcp_tokens row.
+ * Stored hashed like every other bearer secret here; `usedAt` makes replay
+ * of an already-redeemed code fail loudly rather than silently minting a
+ * second token. Real Postgres, not an in-memory Map, for the same
+ * cross-serverless-instance reason mcp_tokens moved off its JSON file --
+ * `/oauth/authorize` and the `/token` exchange that follows it are two
+ * separate requests that must agree on this code's existence.
+ */
+export const mcpOAuthCodes = pgTable("mcp_oauth_codes", {
+  id: text("id").primaryKey(),
+  codeHash: text("code_hash").notNull().unique(),
+  clientId: text("client_id")
+    .notNull()
+    .references(() => mcpOAuthClients.clientId, { onDelete: "cascade" }),
+  profileId: text("profile_id").notNull(),
+  redirectUri: text("redirect_uri").notNull(),
+  codeChallenge: text("code_challenge").notNull(),
+  scope: mcpTokenScope("scope").notNull(),
+  workspaceId: text("workspace_id").references(() => workspaces.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

@@ -15,6 +15,7 @@ import { createWorkspace, listWorkspaces } from "@/lib/services/workspaces";
 import { getJob, stageProgress } from "@/lib/services/jobs";
 import { LIVE_TOOL_NAMES, toolDescription } from "@/lib/mcp/registry";
 import { canAccessWorkspace, hasScope, type McpTokenRecord } from "@/lib/services/mcpAuth";
+import { checkRateLimit } from "@/lib/services/mcpRateLimit";
 
 /**
  * MCP tool layer (docs/PLAN-V1.md §13.2). All 12 tools in lib/mcp/registry.ts
@@ -59,8 +60,12 @@ function errorText(message: string) {
  * lib/services/mcpAuth.ts's checkToken()/hasScope()/canAccessWorkspace().
  */
 export function registerTools(server: McpServer, session?: McpTokenRecord | null): void {
-  function authorize(workspaceId: string | null, requireWrite: boolean): string | null {
+  function authorize(workspaceId: string | null, requireWrite: boolean, toolName: string): string | null {
     if (!session) return null;
+    const rate = checkRateLimit(session.id, toolName);
+    if (!rate.ok) {
+      return `Rate limit exceeded for "${toolName}" on this token. Try again in ${Math.ceil(rate.retryAfterMs / 1000)}s.`;
+    }
     if (requireWrite && !hasScope(session, "write")) {
       return "This MCP token is read-only. Create a token with write scope in settings to use this tool.";
     }
@@ -78,7 +83,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
       inputSchema: { workspace_id: z.string().describe("Workspace id, e.g. ws-1") },
     },
     async ({ workspace_id }) => {
-      const denial = authorize(workspace_id, false);
+      const denial = authorize(workspace_id, false, "list_papers");
       if (denial) return errorText(denial);
 
       const workspace = await fetchWorkspace(workspace_id);
@@ -107,7 +112,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
       },
     },
     async ({ workspace_id, query, paper_id, k }) => {
-      const denial = authorize(workspace_id, false);
+      const denial = authorize(workspace_id, false, "search_paper");
       if (denial) return errorText(denial);
 
       const hits = await searchPaper({ workspaceId: workspace_id, query, paperId: paper_id, k });
@@ -140,7 +145,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
       },
     },
     async ({ workspace_id, ref_id, quote, claim }) => {
-      const denial = authorize(workspace_id, false);
+      const denial = authorize(workspace_id, false, "verify_claim");
       if (denial) return errorText(denial);
 
       const workspace = await fetchWorkspace(workspace_id);
@@ -183,7 +188,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
       inputSchema: { workspace_id: z.string() },
     },
     async ({ workspace_id }) => {
-      const denial = authorize(workspace_id, false);
+      const denial = authorize(workspace_id, false, "get_outline");
       if (denial) return errorText(denial);
 
       const outline = await getOutline(workspace_id);
@@ -199,7 +204,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
       inputSchema: { workspace_id: z.string(), node_id: z.string() },
     },
     async ({ workspace_id, node_id }) => {
-      const denial = authorize(workspace_id, false);
+      const denial = authorize(workspace_id, false, "get_node");
       if (denial) return errorText(denial);
 
       const node = await getNode(workspace_id, node_id);
@@ -229,7 +234,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
       },
     },
     async ({ workspace_id, parent_id, title, body_md, evidence }) => {
-      const denial = authorize(workspace_id, true);
+      const denial = authorize(workspace_id, true, "create_node");
       if (denial) return errorText(denial);
 
       try {
@@ -272,7 +277,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
       inputSchema: { workspace_id: z.string(), concept: z.string().optional() },
     },
     async ({ workspace_id, concept }) => {
-      const denial = authorize(workspace_id, false);
+      const denial = authorize(workspace_id, false, "find_contradictions");
       if (denial) return errorText(denial);
 
       const pairs = await findContradictions(workspace_id, concept);
@@ -300,7 +305,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
       },
     },
     async ({ workspace_id, paper_id, kind }) => {
-      const denial = authorize(workspace_id, false);
+      const denial = authorize(workspace_id, false, "paper_facts");
       if (denial) return errorText(denial);
 
       if (kind === "numeric_ledger") {
@@ -337,7 +342,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
       inputSchema: { name: z.string().min(1) },
     },
     async ({ name }) => {
-      const denial = authorize(null, true);
+      const denial = authorize(null, true, "create_workspace");
       if (denial) return errorText(denial);
 
       const workspace = await createWorkspace(name);
@@ -361,7 +366,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
       },
     },
     async ({ workspace_id, url }) => {
-      const denial = authorize(workspace_id, true);
+      const denial = authorize(workspace_id, true, "add_paper");
       if (denial) return errorText(denial);
 
       const result = await queueUrlIngest(workspace_id, url);
@@ -385,7 +390,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
       const job = getJob(job_id);
       if (!job) return errorText(`No job ${job_id}.`);
 
-      const denial = authorize(job.workspaceId, false);
+      const denial = authorize(job.workspaceId, false, "get_job");
       if (denial) return errorText(denial);
 
       return json({
