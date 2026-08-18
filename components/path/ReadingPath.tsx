@@ -65,7 +65,7 @@ export function ReadingPath() {
           type="button"
           onClick={() => setDismissed(true)}
           aria-label="Dismiss reading path"
-          className="font-sans text-xs text-ink-faint hover:text-ink"
+          className="-m-2.5 grid size-11 shrink-0 place-items-center rounded-md font-sans text-xs text-ink-faint transition-colors duration-fast ease-out hover:bg-surface-sunken hover:text-ink"
         >
           x
         </button>

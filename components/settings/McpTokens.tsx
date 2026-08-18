@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/shadcn/alert-dialog";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { IconButton } from "@/components/ui/IconButton";
 import { createMcpTokenAction, revokeMcpTokenAction } from "@/app/(app)/actions";
 import type { McpTokenMeta } from "@/lib/services/mcpTokens";
 import type { McpScope } from "@/lib/services/mcpAuth";
@@ -146,7 +147,7 @@ export function McpTokens({ initial }: { initial: McpTokenMeta[] }) {
                 <TableHead className="font-mono text-[11px] uppercase tracking-widest">
                   Last used
                 </TableHead>
-                <TableHead className="w-10" />
+                <TableHead className="w-14" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -161,14 +162,11 @@ export function McpTokens({ initial }: { initial: McpTokenMeta[] }) {
                     {t.lastUsedAt ? t.lastUsedAt.slice(0, 10) : "never"}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      aria-label={`Revoke ${t.label}`}
+                    <IconButton
+                      icon={Trash2}
+                      label={`Revoke ${t.label}`}
                       onClick={() => setRevoking(t)}
-                    >
-                      <Trash2 className="size-3.5" />
-                    </Button>
+                    />
                   </TableCell>
                 </TableRow>
               ))}
