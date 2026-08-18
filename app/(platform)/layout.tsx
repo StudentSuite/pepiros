@@ -1,22 +1,25 @@
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import { mockSession } from "@/lib/mock/session";
+import { getSession } from "@/lib/auth/session";
 
 /**
  * Platform route group: public pages with auth-aware chrome (discover,
- * paper detail, profile, login/signup, upload). Passes `mockSession`
- * explicitly -- same value SiteHeader would default to on its own, but
- * spelling it out here marks this group as the one meant to branch on auth
- * state as more of it lands in later tasks.
+ * paper detail, profile, login/signup, upload). Issue #88: this used to
+ * pass a hardcoded signed-out mock session unconditionally, so a signed-in
+ * user saw "Sign in / Sign up" here regardless of their real session --
+ * app/(platform)/paper/[slug]/page.tsx, in the same route group, already
+ * called getSession() for its own comment-form gating, it just was never
+ * threaded into the header.
  */
-export default function PlatformLayout({
+export default async function PlatformLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await getSession();
   return (
     <>
-      <SiteHeader session={mockSession} />
+      <SiteHeader session={session} />
       {children}
       <SiteFooter />
     </>

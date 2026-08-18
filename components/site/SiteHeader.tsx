@@ -7,7 +7,7 @@ import { Logo } from "@/components/ui/Logo";
 import { buttonClassName } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { MobileNav } from "@/components/site/MobileNav";
-import { mockSession, type MockUser } from "@/lib/mock/session";
+import type { Profile } from "@/lib/data/types";
 
 const NAV_LINKS = [
   { href: "/how-it-works", label: "How it works" },
@@ -19,16 +19,14 @@ const NAV_LINKS = [
 
 /**
  * Site chrome header, shared by the `(marketing)` and `(platform)` route
- * groups. Auth-aware via an optional `session` prop: a group's layout passes
- * it explicitly to control the right-aligned auth slot; omitting it falls
- * back to the `mockSession` default (signed-out), which is what the
- * `(marketing)` group's layout relies on.
+ * groups. Auth-aware via a `session` prop: both group layouts fetch the
+ * real signed-in profile (lib/auth/session.ts's getSession()) and pass it
+ * in -- issue #88: this used to default to a hardcoded mock `null`, which
+ * both layouts either passed explicitly or fell back to, so a signed-in
+ * user saw "Sign in / Sign up" on every marketing/platform page regardless
+ * of their real auth state.
  */
-export function SiteHeader({
-  session = mockSession,
-}: {
-  session?: { user: MockUser } | null;
-}) {
+export function SiteHeader({ session = null }: { session?: Profile | null }) {
   // components/ui/OfflineBanner.tsx docks `fixed inset-x-0 top-0 z-[70]`, the
   // same top edge this header sticks to, at a higher z-index -- it doesn't
   // expose its visibility to consumers, so the header tracks the same
@@ -88,13 +86,13 @@ export function SiteHeader({
                 aria-label="Account settings"
                 className="flex h-8 w-8 items-center justify-center rounded-full border border-border-strong bg-surface-raised font-mono text-xs text-ink transition-colors duration-fast ease-out hover:border-accent"
               >
-                {session.user.avatarInitials}
+                {session.avatarInitials}
               </Link>
               <Link
-                href={`/u/${session.user.username}`}
+                href={`/u/${session.username}`}
                 className="hidden font-sans text-sm text-ink transition-colors duration-fast ease-out hover:text-accent sm:inline"
               >
-                {session.user.name}
+                {session.displayName}
               </Link>
             </div>
           ) : (

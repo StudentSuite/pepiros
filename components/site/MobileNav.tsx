@@ -10,7 +10,7 @@ import { Logo } from "@/components/ui/Logo";
 import { buttonClassName } from "@/components/ui/Button";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { cn } from "@/lib/utils";
-import type { MockUser } from "@/lib/mock/session";
+import type { Profile } from "@/lib/data/types";
 
 /**
  * Mobile navigation, following the pattern used on the portfolio site: a
@@ -45,7 +45,7 @@ export function MobileNav({
   session,
 }: {
   links: ReadonlyArray<{ href: string; label: string }>;
-  session?: { user: MockUser } | null;
+  session?: Profile | null;
 }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -195,7 +195,7 @@ export function MobileNav({
               {session ? (
                 <>
                   <Link
-                    href={`/u/${session.user.username}`}
+                    href={`/u/${session.username}`}
                     onClick={close}
                     className={buttonClassName("secondary")}
                   >
