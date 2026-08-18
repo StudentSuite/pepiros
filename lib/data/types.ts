@@ -70,6 +70,14 @@ export interface Profile {
   onboarded: boolean;
 }
 
+/** components/settings/NotificationPrefs.tsx's toggle state (issue #70). */
+export interface NotificationPrefs {
+  follow: boolean;
+  comment: boolean;
+  like: boolean;
+  digest: boolean;
+}
+
 export interface OnboardingResponse {
   profileId: string;
   country: string | null;

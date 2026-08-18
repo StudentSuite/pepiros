@@ -2,6 +2,7 @@ import { CATALOG, CATALOG_BY_SLUG } from "./papers";
 import type { DataAdapter } from "./adapter";
 import type {
   Comment,
+  NotificationPrefs,
   Post,
   Profile,
   RangeKey,
@@ -13,6 +14,14 @@ import {
   createSupabaseServerClient,
   createSupabaseServiceClient,
 } from "@/lib/supabase/server";
+
+/** Matches components/settings/NotificationPrefs.tsx's previous hardcoded client-only defaults (issue #70). */
+const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
+  follow: true,
+  comment: true,
+  like: false,
+  digest: true,
+};
 
 /**
  * Postgres-backed implementation, against supabase/migrations/0001_platform.sql
@@ -490,6 +499,36 @@ export const supabaseAdapter: DataAdapter = {
       completed_at: response.completedAt,
     });
     await sb.from("profiles").update({ onboarded: true }).eq("id", response.profileId);
+  },
+
+  async getNotificationPrefs(profileId) {
+    const sb = createSupabaseServiceClient();
+    const { data, error } = await sb.from("profiles").select("notification_prefs").eq("id", profileId).maybeSingle();
+    if (error || !data?.notification_prefs) {
+      // Expected right after this ships and before supabase/migrations/
+      // 0004_notification_prefs.sql has actually been applied -- degrade to
+      // the same defaults the toggle used to hardcode, rather than
+      // breaking the settings page over a column that isn't there yet.
+      if (error) {
+        console.error(
+          `[getNotificationPrefs] could not read prefs for ${profileId} (has 0004_notification_prefs.sql been applied?):`,
+          error.message,
+        );
+      }
+      return DEFAULT_NOTIFICATION_PREFS;
+    }
+    return data.notification_prefs as NotificationPrefs;
+  },
+
+  async saveNotificationPrefs(profileId, prefs) {
+    const sb = createSupabaseServiceClient();
+    const { error } = await sb.from("profiles").update({ notification_prefs: prefs }).eq("id", profileId);
+    if (error) {
+      console.error(
+        `[saveNotificationPrefs] could not save prefs for ${profileId} (has 0004_notification_prefs.sql been applied?):`,
+        error.message,
+      );
+    }
   },
 
   async listPosts(authorId) {

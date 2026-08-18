@@ -12,12 +12,20 @@ import {
 import { supabaseAdapter } from "./supabase-adapter";
 import type {
   Comment,
+  NotificationPrefs,
   OnboardingResponse,
   Post,
   Profile,
   RangeKey,
   ReachSummary,
 } from "./types";
+
+const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
+  follow: true,
+  comment: true,
+  like: false,
+  digest: true,
+};
 
 /**
  * The one seam between the app and its data.
@@ -160,6 +168,19 @@ export interface DataAdapter {
   getOnboarding(profileId: string): Promise<OnboardingResponse | null>;
   saveOnboarding(response: OnboardingResponse): Promise<void>;
 
+  /**
+   * Issue #70: components/settings/NotificationPrefs.tsx's toggle() only
+   * ever updated local component state -- unlike #67/#69, there was no
+   * existing column to wire up at all (checked supabase/migrations/ and
+   * this file), so this needed a real migration first
+   * (supabase/migrations/0004_notification_prefs.sql, a jsonb column on
+   * profiles). Defaults match the component's previous hardcoded
+   * client-only defaults, so an account's first real read matches what it
+   * already displayed.
+   */
+  getNotificationPrefs(profileId: string): Promise<NotificationPrefs>;
+  saveNotificationPrefs(profileId: string, prefs: NotificationPrefs): Promise<void>;
+
   listPosts(authorId: string): Promise<Post[]>;
   deletePost(authorId: string, postId: string): Promise<void>;
   listComments(authorId: string): Promise<Comment[]>;
@@ -180,6 +201,9 @@ export interface DataAdapter {
  * destructive actions as demo-only rather than pretending they persist.
  */
 const deletedPostIds = new Set<string>();
+
+/** Same module-memory trade-off as deletedPostIds above -- a toggle sticks within the session, resets on server restart. */
+const seedNotificationPrefs = new Map<string, NotificationPrefs>();
 
 const seedAdapter: DataAdapter = {
   kind: "seed",
@@ -276,6 +300,14 @@ const seedAdapter: DataAdapter = {
   async saveOnboarding() {
     // no-op: the guest account ships already onboarded, and the wizard is
     // walkable for demonstration without writing anywhere
+  },
+
+  async getNotificationPrefs(profileId) {
+    return seedNotificationPrefs.get(profileId) ?? DEFAULT_NOTIFICATION_PREFS;
+  },
+
+  async saveNotificationPrefs(profileId, prefs) {
+    seedNotificationPrefs.set(profileId, prefs);
   },
 
   async listPosts(authorId) {

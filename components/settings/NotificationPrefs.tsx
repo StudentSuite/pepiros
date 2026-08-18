@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Switch } from "@/components/shadcn/switch";
+import type { NotificationPrefs as NotificationPrefsValue } from "@/lib/data/types";
 import { SettingsRow } from "./SettingsRow";
 
 const PREFS = [
@@ -24,17 +25,24 @@ const PREFS = [
   },
 ] as const;
 
-export function NotificationPrefs() {
-  const [on, setOn] = useState<Record<string, boolean>>({
-    follow: true,
-    comment: true,
-    like: false,
-    digest: true,
-  });
+export function NotificationPrefs({ initial }: { initial: NotificationPrefsValue }) {
+  const [on, setOn] = useState<NotificationPrefsValue>(initial);
 
-  function toggle(key: string, value: boolean) {
-    setOn((p) => ({ ...p, [key]: value }));
-    toast.success(value ? "Notification on" : "Notification off");
+  async function toggle(key: keyof NotificationPrefsValue, value: boolean) {
+    const previous = on[key];
+    setOn((p) => ({ ...p, [key]: value })); // Optimistic: the switch flips immediately, corrected below on failure.
+    try {
+      const res = await fetch("/api/settings/notification-prefs", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key, value }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(value ? "Notification on" : "Notification off");
+    } catch {
+      setOn((p) => ({ ...p, [key]: previous }));
+      toast.error("Could not save that -- try again.");
+    }
   }
 
   return (
@@ -52,7 +60,7 @@ export function NotificationPrefs() {
             <Switch
               id={`pref-${p.key}`}
               checked={on[p.key] ?? false}
-              onCheckedChange={(v) => toggle(p.key, v)}
+              onCheckedChange={(v) => void toggle(p.key, v)}
             />
           </div>
         </SettingsRow>
