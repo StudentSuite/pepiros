@@ -20,7 +20,7 @@ export default async function WorkspacePage({
   return (
     <>
       {!session && <GuestBanner next={`/w/${workspaceId}`} />}
-      <ReaderClient workspaceId={workspaceId} />
+      <ReaderClient workspaceId={workspaceId} isGuest={!session} />
     </>
   );
 }

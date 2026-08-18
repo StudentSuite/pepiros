@@ -27,7 +27,7 @@ import type { Highlight } from "@/components/reader/HighlightLayer";
  * switcher, and bare node list. Canvas is reached only via "Explore graph" --
  * this view never renders the full React Flow canvas itself.
  */
-export function ReaderClient({ workspaceId }: { workspaceId: string }) {
+export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: string; isGuest?: boolean }) {
   const workspace = useWorkspaceStore((s) => s.workspace);
   const loadWorkspace = useWorkspaceStore((s) => s.loadWorkspace);
   const selectedNodeId = useWorkspaceStore((s) => s.selectedNodeId);
@@ -167,8 +167,17 @@ export function ReaderClient({ workspaceId }: { workspaceId: string }) {
             aria-label="Breadcrumb"
             className="flex min-w-0 items-center gap-1.5 font-sans text-[13px]"
           >
-            <Link href="/workspaces" className="shrink-0 text-ink-faint hover:text-ink">
-              Library
+            {/* Issue #98: /workspaces is auth-protected (middleware.ts), but
+                /w itself is deliberately guest-open -- a guest clicking this,
+                the leftmost and most prominent breadcrumb chrome, used to
+                silently bounce to /login?next=/workspaces. Points at
+                /discover instead for a guest session, which is real,
+                guest-accessible, and still a meaningful "go up a level." */}
+            <Link
+              href={isGuest ? "/discover" : "/workspaces"}
+              className="shrink-0 text-ink-faint hover:text-ink"
+            >
+              {isGuest ? "Discover" : "Library"}
             </Link>
             <Icon icon={ChevronRight} size="xs" className="shrink-0 text-ink-faint" />
             <span className="hidden shrink-0 text-ink-faint sm:inline">
