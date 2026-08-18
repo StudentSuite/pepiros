@@ -4,7 +4,7 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { strongModel } from "@/lib/ai/client";
 import { buildContextBlock } from "@/lib/prompts/contextBlock";
-import type { EdgeKind, Evidence, GraphEdge, GraphNode, PaperArchetype, Workspace } from "@/types/anchor";
+import type { EdgeKind, GraphEdge, GraphNode, PaperArchetype, Workspace } from "@/types/anchor";
 import { fetchWorkspace } from "./workspace";
 import { getIngestedWorkspace, setIngestedWorkspace } from "./ingestStore";
 import { createNode } from "./nodes";
@@ -97,10 +97,8 @@ export async function runSynthesis(workspaceId: string): Promise<SynthesisResult
   const workspace = ingested?.workspace ?? (await fetchWorkspace(workspaceId));
   const papers = workspace.papers;
 
-  const newLeafNodes: GraphNode[] = [];
   const newContainsEdges: GraphEdge[] = [];
   const relationEdges: GraphEdge[] = [];
-  const newEvidence: Evidence[] = [];
   const rejected: SynthesisRejection[] = [];
   const contradictionSummaries: string[] = [];
   const agreementSummaries: string[] = [];
@@ -132,20 +130,25 @@ export async function runSynthesis(workspaceId: string): Promise<SynthesisResult
       }
 
       const pairId = randomUUID().slice(0, 8);
-      const [sideA, sideB] = await Promise.all([
-        createNode({
-          workspaceId,
-          title: `${paperA.title}: ${object.relation} position`,
-          bodyMd: `${object.summaryA} [^n0]`,
-          claims: [{ refs: [object.refA], quote: object.quoteA }],
-        }),
-        createNode({
-          workspaceId,
-          title: `${paperB.title}: ${object.relation} position`,
-          bodyMd: `${object.summaryB} [^n0]`,
-          claims: [{ refs: [object.refB], quote: object.quoteB }],
-        }),
-      ]);
+      // Sequential, not Promise.all (issue #103's optimistic concurrency check
+      // made this a real bug, not just a latent one): both createNode() calls
+      // write to the same workspace, so running them concurrently means each
+      // reads the same starting version and the second's write always loses
+      // the race against the first's -- a guaranteed self-inflicted "workspace
+      // changed while in flight" on every two-sided relation, not an actual
+      // external conflict.
+      const sideA = await createNode({
+        workspaceId,
+        title: `${paperA.title}: ${object.relation} position`,
+        bodyMd: `${object.summaryA} [^n0]`,
+        claims: [{ refs: [object.refA], quote: object.quoteA }],
+      });
+      const sideB = await createNode({
+        workspaceId,
+        title: `${paperB.title}: ${object.relation} position`,
+        bodyMd: `${object.summaryB} [^n0]`,
+        claims: [{ refs: [object.refB], quote: object.quoteB }],
+      });
 
       // Two-sided evidence invariant: a relation is only as real as its
       // weaker side. One dropped anchor means the pair doesn't get written.
@@ -188,9 +191,6 @@ export async function runSynthesis(workspaceId: string): Promise<SynthesisResult
         paperId: paperB.id,
         stale: false,
       };
-      newLeafNodes.push(nodeA, nodeB);
-      newEvidence.push(...sideA.evidence, ...sideB.evidence);
-
       const paperNodeA = workspace.nodes.find((n) => n.type === "paper" && n.paperId === paperA.id);
       const paperNodeB = workspace.nodes.find((n) => n.type === "paper" && n.paperId === paperB.id);
       if (paperNodeA) {
@@ -297,21 +297,30 @@ export async function runSynthesis(workspaceId: string): Promise<SynthesisResult
   }
 
   const edgesWritten = [...newContainsEdges, ...relationEdges];
+  // Re-read right before this final write rather than reusing the `ingested`
+  // snapshot from the top of this function: every createNode() call in the
+  // loop above already did its own independent read-modify-write and bumped
+  // the real version each time, so the version captured at function start is
+  // now stale by however many pairs were compared -- using it here would
+  // make this write fail its own optimistic-concurrency check against
+  // writes this same function just made, not a real external conflict. The
+  // freshly re-read workspace already contains every leaf node AND evidence
+  // row createNode() persisted, so it -- not the stale `workspace` -- is the
+  // correct merge base; newContainsEdges/relationEdges are NOT persisted by
+  // createNode() itself and still need writing here.
+  const latest = await getIngestedWorkspace(workspaceId);
+  const latestWorkspace = latest?.workspace ?? workspace;
   const merged: Workspace = {
-    ...workspace,
+    ...latestWorkspace,
     nodes: [
-      ...workspace.nodes.filter((n) => !synthesisNodesWritten.some((s) => s.id === n.id)),
-      ...newLeafNodes,
+      ...latestWorkspace.nodes.filter((n) => !synthesisNodesWritten.some((s) => s.id === n.id)),
       ...synthesisNodesWritten,
     ],
-    edges: [...workspace.edges, ...edgesWritten],
-    evidence: [...workspace.evidence, ...newEvidence],
+    edges: [...latestWorkspace.edges, ...edgesWritten],
   };
-  // Issue #103: runSynthesis reads the whole workspace, may spend real time
-  // comparing every paper pair, then writes back everything -- exactly the
-  // shape that silently clobbers a manual edit landing in that window.
-  // `ingested?.version` makes a stale write here fail loudly instead.
-  await setIngestedWorkspace(merged, ingested?.version);
+  // Issue #103: a stale write here fails loudly instead of silently
+  // clobbering a manual edit that landed while this pass was running.
+  await setIngestedWorkspace(merged, latest?.version);
 
   return { pairsCompared, edgesWritten, synthesisNodesWritten, rejected };
 }

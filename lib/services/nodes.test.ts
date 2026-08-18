@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import type { Workspace } from "@/types/anchor";
 import workspaceFixture from "@/fixtures/workspace.json";
 import { db } from "@/lib/db/client";
-import { nodeVersions } from "@/lib/db/schema";
+import { nodeVersions, workspaces } from "@/lib/db/schema";
 import { getIngestedWorkspace } from "./ingestStore";
 import {
   createNode,
@@ -18,6 +18,20 @@ import {
 
 const workspace = workspaceFixture as unknown as Workspace;
 const WS = workspace.id;
+
+// createNode/updateNodeBody/deleteNode/promoteToThread below all persist
+// into the real "ws-1" row (lib/db/queries) -- delete it after every test
+// (cascades to every child table) so the next test's fetchWorkspace("ws-1")
+// reads the pristine fixture again instead of accumulating every prior
+// test's writes on top of it. Without this, repeated local runs against the
+// same Postgres instance pile up "mcp-..." nodes across runs, and a fuzzy-
+// overlap search like promoteToThread's can start matching leftover debris
+// instead of the fixture node a test actually expects -- CI itself never
+// hit this (a fresh ephemeral Postgres container every run), but any local
+// re-run against a persistent test DB eventually does.
+afterEach(async () => {
+  await db.delete(workspaces).where(eq(workspaces.id, WS));
+});
 
 describe("getOutline", () => {
   it("builds a paper -> pillar -> leaf tree from contains edges", async () => {
