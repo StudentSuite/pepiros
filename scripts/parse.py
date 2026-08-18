@@ -221,6 +221,30 @@ def main():
 
     doc = fitz.open(sys.argv[1])
     entries = extract_blocks(doc)
+
+    # Issue #94: a scanned/image-only PDF has no embedded text layer at
+    # all -- PyMuPDF's get_text() returns nothing to extract, and this used
+    # to just silently produce an empty/near-empty paper, with a generator
+    # fan-out over zero chunks and nothing to ever cite. scripts/
+    # ocr_fallback.py (PaddleOCR-VL) is still an unwired stub -- a real OCR
+    # pass is future work, not something to install as a heavy new
+    # dependency inside this fix -- so this is the minimum honest behavior
+    # the issue itself calls out as acceptable: fail loudly with a clear
+    # diagnosis instead of succeeding with nothing. ~20 chars/page is well
+    # below any page of real prose (hundreds to thousands of characters);
+    # a genuinely scanned page produces at or near zero.
+    MIN_CHARS_PER_PAGE = 20
+    total_chars = sum(len(e["text"]) for e in entries)
+    if len(doc) > 0 and total_chars < MIN_CHARS_PER_PAGE * len(doc):
+        print(
+            f"This PDF appears to be scanned or image-only: only {total_chars} characters of "
+            f"extractable text were found across {len(doc)} page(s). PyMuPDF reads embedded text "
+            "layers, not pixels -- there is no OCR fallback wired up yet, so a scanned PDF can't be "
+            "ingested here.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     sections = group_into_sections(entries)
 
     out_sections = []
