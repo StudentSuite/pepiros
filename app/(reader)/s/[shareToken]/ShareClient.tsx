@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import clsx from "clsx";
 import { useWorkspaceStore } from "@/lib/store/workspace";
 import { SectionNav } from "@/components/reader/SectionNav";
 import { PdfPane } from "@/components/reader/PdfPane";
 import { NodeInspector } from "@/components/inspector/NodeInspector";
+import { Logo } from "@/components/ui/Logo";
+import { buttonClassName } from "@/components/ui/Button";
 import type { Highlight } from "@/components/reader/HighlightLayer";
 
 /**
@@ -47,7 +50,12 @@ export function ShareClient({ shareToken, workspaceId }: { shareToken: string; w
   }, [workspace, selectedNodeId]);
 
   if (!workspace || !firstPaper) {
-    return <p className="p-8 font-sans text-sm text-ink-faint">Loading shared workspace...</p>;
+    return (
+      <div className="min-h-screen">
+        <SiteNav />
+        <p className="p-8 font-sans text-sm text-ink-faint">Loading shared workspace...</p>
+      </div>
+    );
   }
 
   const activeChunk = workspace.chunks.find((c) => c.id === activeChunkId) ?? paperChunks[0];
@@ -64,6 +72,8 @@ export function ShareClient({ shareToken, workspaceId }: { shareToken: string; w
 
   return (
     <div className="min-h-screen">
+      <SiteNav />
+
       <div className="border-b border-border bg-surface-sunken px-6 py-2 text-center font-sans text-xs text-ink-faint">
         Shared read-only view (token {shareToken}) -- no editing, no chat.
       </div>
@@ -113,5 +123,32 @@ export function ShareClient({ shareToken, workspaceId }: { shareToken: string; w
         </main>
       </div>
     </div>
+  );
+}
+
+/**
+ * Issue #89: this page has no header/footer/Logo/Link anywhere else in the
+ * file, unlike every other standalone reader subpage (/audit, /outline,
+ * /learn, /canvas), which at minimum link back to the reader. A share link
+ * is often the very first thing a stranger with zero context on the
+ * product sees -- without this, their only way off the page was the
+ * browser back button, which doesn't even work when they arrived from an
+ * external link or email client.
+ */
+function SiteNav() {
+  return (
+    <nav className="flex items-center justify-between border-b border-border px-6 py-3">
+      <Link href="/" aria-label="Pepiros home">
+        <Logo />
+      </Link>
+      <div className="flex items-center gap-4">
+        <Link href="/how-it-works" className="font-sans text-sm text-ink-muted hover:text-ink">
+          What is this?
+        </Link>
+        <Link href="/signup" className={buttonClassName("secondary", "sm")}>
+          Sign up
+        </Link>
+      </div>
+    </nav>
   );
 }
