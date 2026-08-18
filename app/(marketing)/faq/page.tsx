@@ -59,7 +59,7 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
     q: "Can I connect my own AI agent?",
     a: (
       <>
-        Yes, over MCP. Eight tools are live today, including{" "}
+        Yes, over MCP. All 12 tools are live today, including{" "}
         <code className="font-mono text-xs text-ink">verify_claim</code>, which
         lets an agent check its own output mid-conversation. See{" "}
         <Link href="/mcp" className="text-accent-text underline underline-offset-2">

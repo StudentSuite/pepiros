@@ -56,9 +56,9 @@ const ROWS: { area: string; state: State; note: string }[] = [
     note: "Upload validation and parsing a PDF (or arXiv link) into the graph are both real.",
   },
   {
-    area: "Contradiction synthesis",
-    state: "live",
-    note: "Existing contradiction edges are shown, and new ones are generated from cross-paper comparison.",
+    area: "Cross-paper synthesis",
+    state: "partial",
+    note: "Real agrees/contradicts/extends/shares_method/relates edges, plus 4 of 6 spec'd synthesis node types (Consensus, Contradictions, Timeline of Findings, Methodological Divergence). Dataset Overlap and Open Questions still need signals nothing extracts yet.",
   },
   {
     area: "Export",
@@ -68,7 +68,7 @@ const ROWS: { area: string; state: State; note: string }[] = [
   {
     area: "Accounts and publishing",
     state: "partial",
-    note: "Real sign-up persists to Supabase, including an optional email for password recovery. Password-reset email delivery itself is not wired yet.",
+    note: "Real sign-up persists to Supabase, with a required real email so password recovery and email confirmation both actually deliver. Sessions are server-side revocable (logout, or sign out everywhere), but a workspace still has no owner column, so \"my workspaces\" isn't scoped to who's signed in yet.",
   },
 ];
 
@@ -90,7 +90,7 @@ export default function StatusPage() {
       kicker="Status"
       title="What actually works today"
       intro="Pepiros is an early build and some of it is scaffolding. This page is the honest inventory, kept here so nobody has to find out by clicking."
-      updated="15 August 2026"
+      updated="17 August 2026"
     >
       <div className="overflow-hidden rounded-md border border-border">
         <table className="w-full text-left">

@@ -12,16 +12,16 @@ const GROUPS: { horizon: string; items: { title: string; note: string }[] }[] = 
     horizon: "Next",
     items: [
       {
-        title: "Real PDF ingest",
-        note: "Upload validation already works. Parsing a PDF into sections, chunks, figures and a numeric ledger is the missing half.",
+        title: "OCR fallback for scanned PDFs",
+        note: "A scanned or image-only PDF now fails the ingest job with a clear message instead of silently producing nothing, but there's no way to actually recover text from one yet.",
       },
       {
-        title: "The four remaining MCP tools",
-        note: "list_workspaces, create_workspace, add_paper, get_job. They are thin wrappers over services that already exist.",
+        title: "The 3 remaining node generators",
+        note: "figures (needs a vision call against a cropped page raster), equations (needs equation-kind chunks with bbox anchoring), and concept_links (needs cross-paper context a single-paper generator doesn't carry today).",
       },
       {
-        title: "Node writes",
-        note: "Editing a node body and promoting a chat answer into the graph both have UI and no backend.",
+        title: "Dataset Overlap and Open Questions synthesis",
+        note: "Consensus, Contradictions, Timeline of Findings, and Methodological Divergence are all real. These two need signals nothing in the pipeline extracts yet -- dataset identifiers, a genuine gap-in-the-literature judgment.",
       },
     ],
   },
@@ -29,16 +29,16 @@ const GROUPS: { horizon: string; items: { title: string; note: string }[] }[] = 
     horizon: "After that",
     items: [
       {
-        title: "Contradiction synthesis",
-        note: "Existing contradiction edges render today. Generating new ones across papers is not built.",
+        title: "Per-account workspace ownership",
+        note: "A workspace has no owner column today, so \"my workspaces\" is server-wide, not scoped to who's signed in. The web app also has no \"create a workspace\" route of its own yet -- only MCP's create_workspace tool does that.",
       },
       {
-        title: "Export",
-        note: "Markdown and BibTeX, with anchors preserved as footnotes.",
+        title: "Session refresh",
+        note: "A session is revocable now (logout, or sign-out-everywhere), but it still simply expires at its 7-day lifetime with no silent renewal.",
       },
       {
-        title: "Real accounts",
-        note: "Supabase auth, so publishing and following do something. The schema is written and unapplied.",
+        title: "MCP package publish",
+        note: "The tool layer, bin entry, and esbuild bundle are all real. Publishing to npm is a maintainer decision (account, package-name availability), not a code gap.",
       },
     ],
   },
