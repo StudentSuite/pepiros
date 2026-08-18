@@ -38,8 +38,28 @@ export async function getIngestedWorkspace(workspaceId: string): Promise<Workspa
   }
 }
 
+/**
+ * Still throws on failure -- silently pretending a save succeeded would be
+ * real data loss, per the doc comment above -- but with a message safe to
+ * show a user rather than whatever the driver raised. A raw connection
+ * error (e.g. `getaddrinfo ENOTFOUND db.<ref>.supabase.co`) used to reach
+ * the client as-is through the API route's catch block and render directly
+ * in the UI (e.g. components/chat/PromoteButton.tsx's inline error), which
+ * both leaks an internal hostname and reads as gibberish to a reader who
+ * just clicked "Promote to Node." The real error is still logged to stderr
+ * for debugging, same place getIngestedWorkspace() above logs its own.
+ */
+async function guardedWrite<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    console.error(`[ingestStore] ${label} failed:`, err);
+    throw new Error("Could not save this change to the workspace database right now. Try again in a moment.");
+  }
+}
+
 export async function setIngestedWorkspace(workspace: Workspace): Promise<void> {
-  await saveWorkspace(workspace);
+  await guardedWrite(`saveWorkspace(${workspace.id})`, () => saveWorkspace(workspace));
 }
 
 /**
@@ -48,12 +68,12 @@ export async function setIngestedWorkspace(workspace: Workspace): Promise<void> 
  * call. `staleNodeIds` are marked stale in the same transaction as the delete.
  */
 export async function deleteIngestedNode(nodeId: string, staleNodeIds: string[]): Promise<void> {
-  await deleteNodeCascade(nodeId, staleNodeIds);
+  await guardedWrite(`deleteNodeCascade(${nodeId})`, () => deleteNodeCascade(nodeId, staleNodeIds));
 }
 
 /** Records the body being superseded by an inspector edit -- see lib/db/queries's createNodeVersion() doc comment. */
 export async function recordNodeVersion(nodeId: string, bodyMd: string): Promise<void> {
-  await createNodeVersion(nodeId, bodyMd);
+  await guardedWrite(`createNodeVersion(${nodeId})`, () => createNodeVersion(nodeId, bodyMd));
 }
 
 /** Every workspace real ingest has actually written -- no fixture here; lib/services/workspaces.ts's listWorkspaces() adds that. */
