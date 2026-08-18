@@ -39,6 +39,19 @@ describe("runGenerator", () => {
     expect(promptText).toContain("Only cite ids that appear in the context block");
   });
 
+  it("recovers a real-observed markdown-fenced response (visionModel()'s free OpenRouter model, issue #59)", async () => {
+    const mock = mockTextModel("```json\n" + JSON.stringify(VALID_OUTPUT) + "\n```");
+    const config: GeneratorConfig = { name: "figures", model: () => mock, systemPrompt: "Generator: figures." };
+
+    const output = await runGenerator(config, {
+      paperTitle: "Test Paper",
+      archetype: "ml_model",
+      contextBlock: "[C1 | Methods | p.1] Participants were randomized 1:1 to receive...",
+    });
+
+    expect(output).toEqual(VALID_OUTPUT);
+  });
+
   it("rejects an output missing a required field", async () => {
     const invalid = { ...VALID_OUTPUT, confidence: "very high" };
     const mock = mockTextModel(JSON.stringify(invalid));

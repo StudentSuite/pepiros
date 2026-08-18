@@ -50,13 +50,19 @@ export async function runPythonScript<T>(scriptPath: string, args: string[]): Pr
     }
   }
 
-  if (result.code !== 0) {
-    throw new Error(result.stderr.trim() || `${scriptPath} exited with code ${result.code}.`);
-  }
-
+  // A python process can print its full, valid JSON output and still exit
+  // non-zero from an unrelated post-print teardown crash -- observed live on
+  // figure-bearing PDFs (issue #59): Pix2Text's onnxruntime/CoreML teardown
+  // throws `libc++abi: recursive_mutex lock failed` on this machine, after
+  // stdout is already fully written. Trust real, complete stdout over an
+  // incidental exit code; only report failure when there's no valid JSON to
+  // recover, which is still the exit-code-driven error for a genuine crash.
   try {
     return JSON.parse(result.stdout) as T;
   } catch (err) {
+    if (result.code !== 0) {
+      throw new Error(result.stderr.trim() || `${scriptPath} exited with code ${result.code}.`);
+    }
     throw new Error(`${scriptPath} produced invalid JSON: ${err instanceof Error ? err.message : String(err)}`);
   }
 }

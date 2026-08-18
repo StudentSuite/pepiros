@@ -1,5 +1,5 @@
 import "server-only";
-import { generateObject, type LanguageModel } from "ai";
+import { generateObject, type LanguageModel, type ModelMessage } from "ai";
 import type { PaperArchetype } from "@/types/anchor";
 import { GeneratorOutputSchema, type GeneratorName, type GeneratorOutput } from "@/lib/schemas";
 
@@ -16,6 +16,16 @@ export interface GeneratorContext {
   contextBlock: string;
   /** Only present for the `custom` generator (docs/PLAN-V1.md §7's anti-template leaf). */
   customPrompt?: string;
+  /**
+   * Only present for the `figures` generator (issue #59): the paper's cropped
+   * figure images, each labeled with the ref id of its `figure_caption` chunk
+   * in contextBlock so the model can tell the model which caption text each
+   * image goes with. Kept in-memory only -- nothing here is persisted to disk
+   * or a DB row, since the generator's own citation (to the caption chunk) is
+   * the durable, re-verifiable record; the image is just what made the call
+   * possible in the first place.
+   */
+  images?: Array<{ refId: string; base64: string; mediaType: string }>;
 }
 
 export interface GeneratorConfig {
@@ -45,17 +55,46 @@ Rules:
 - followups are 2-4 short questions a reader might click to go deeper, not restatements of the title.`;
 
 export async function runGenerator(config: GeneratorConfig, ctx: GeneratorContext): Promise<GeneratorOutput> {
-  const prompt = `Paper: ${ctx.paperTitle}
+  const textPrompt = `Paper: ${ctx.paperTitle}
 Archetype: ${ctx.archetype}
 ${ctx.customPrompt ? `\nAdditional instruction for this leaf: ${ctx.customPrompt}\n` : ""}
 Context block:
 ${ctx.contextBlock}`;
+
+  // Plain string prompt for every generator except `figures` -- the one
+  // caller that needs an actual image alongside the text, not just text
+  // referencing an id. AI SDK v5 accepts `prompt: string | ModelMessage[]`.
+  let prompt: string | ModelMessage[] = textPrompt;
+  if (ctx.images?.length) {
+    const imageParts = ctx.images.flatMap((image) => [
+      { type: "text" as const, text: `Image for ref ${image.refId}:` },
+      { type: "image" as const, image: image.base64, mediaType: image.mediaType },
+    ]);
+    prompt = [
+      {
+        role: "user",
+        content: [{ type: "text", text: textPrompt }, ...imageParts],
+      },
+    ];
+  }
 
   const result = await generateObject({
     model: config.model(),
     schema: GeneratorOutputSchema,
     system: `${SHARED_SYSTEM_PROMPT}\n\n${config.systemPrompt}`,
     prompt,
+    // Same "a prompt is a request, not a guarantee" class as normalizeRef()
+    // and lib/chat/citations.ts's CJK-bracket tolerance: observed live from
+    // visionModel()'s free OpenRouter model, which wrapped an otherwise
+    // perfectly valid response in a "```json ... ```" markdown fence despite
+    // supportsStructuredOutputs -- OpenRouter's free-tier routing doesn't
+    // strictly enforce response_format across every backend it proxies to.
+    // Harmless for every other generator/model, which never hits this path
+    // since it only runs after the default parse already failed.
+    experimental_repairText: async ({ text }) => {
+      const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      return fenced?.[1] ?? null;
+    },
   });
 
   return result.object;

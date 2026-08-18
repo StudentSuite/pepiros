@@ -32,6 +32,14 @@ interface ParsedChunk {
   rects: Array<{ page: number; x0: number; y0: number; x1: number; y1: number }>;
 }
 
+interface ParsedFigure {
+  page: number;
+  caption: string | null;
+  imageBase64: string;
+  sectionIndex: number | null;
+  rect: { page: number; x0: number; y0: number; x1: number; y1: number };
+}
+
 interface ParsedNumeric {
   chunkIndex: number;
   rawText: string;
@@ -48,6 +56,7 @@ interface ParsedDocument {
   sections: Array<{ title: string; order: number }>;
   chunks: ParsedChunk[];
   numerics: ParsedNumeric[];
+  figures: ParsedFigure[];
   references: Array<{ rawText: string; doi: string | null }>;
   pageCount: number;
 }
@@ -163,6 +172,32 @@ export async function runIngest(input: IngestInput): Promise<void> {
       rects: c.rects,
     }));
 
+    // Issue #59: one figure_caption chunk per detected figure that has a
+    // real, non-null caption -- a figure Pix2Text couldn't match a caption
+    // for has no citable text, so it's dropped rather than given a chunk
+    // with nothing a downstream verifier could check. figureImages pairs
+    // each such chunk's own ref id with its cropped image, in-memory only
+    // (see GeneratorContext.images), so the `figures` generator can be
+    // shown the image labeled with the same id it's meant to cite.
+    const figureChunks: Chunk[] = [];
+    const figureImages: Array<{ refId: string; base64: string; mediaType: string }> = [];
+    parsed.figures.forEach((figure, i) => {
+      if (!figure.caption) return;
+      const ordinal = ++chunkOrdinal;
+      figureChunks.push({
+        id: `${paperId}-fig${i + 1}`,
+        paperId,
+        sectionId: figure.sectionIndex !== null ? `${paperId}-s${figure.sectionIndex}` : null,
+        kind: "figure_caption",
+        page: figure.page,
+        text: figure.caption,
+        ordinal,
+        rects: [figure.rect],
+      });
+      figureImages.push({ refId: `C${ordinal}`, base64: figure.imageBase64, mediaType: "image/png" });
+    });
+    const allChunks = [...chunks, ...figureChunks];
+
     appendEvent(input.jobId, "Building numeric ledger", `Extracted ${parsed.numerics.length} numeric values.`);
 
     const numerics: Numeric[] = parsed.numerics
@@ -187,8 +222,9 @@ export async function runIngest(input: IngestInput): Promise<void> {
       workspaceId,
       paperId,
       paperTitle,
-      chunks,
+      chunks: allChunks,
       numerics,
+      figureImages,
       // Real incremental progress: these fire as each sub-stage actually
       // completes (pillar planning, then each leaf generator as it resolves,
       // concurrency-limited so they land spread over real elapsed time), not
@@ -266,7 +302,7 @@ export async function runIngest(input: IngestInput): Promise<void> {
       id: workspaceId,
       name: base.name,
       papers: [...base.papers, paper],
-      chunks: [...base.chunks, ...chunks],
+      chunks: [...base.chunks, ...allChunks],
       numerics: [...base.numerics, ...numerics],
       nodes: [...base.nodes, paperNode, ...result.pillarNodes, ...okLeaves.map((l) => l.node)],
       edges: [...base.edges, ...edges],

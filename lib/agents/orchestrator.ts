@@ -28,6 +28,13 @@ export interface OrchestratorInput {
   chunks: Chunk[];
   numerics: Numeric[];
   /**
+   * One entry per figure with a real caption chunk (issue #59), keyed by
+   * that chunk's own ref id ("C7") so the `figures` generator can be shown
+   * an image labeled with the same id it's meant to cite. Not persisted
+   * anywhere -- see GeneratorContext.images's doc comment.
+   */
+  figureImages?: Array<{ refId: string; base64: string; mediaType: string }>;
+  /**
    * Fired as each real sub-stage actually completes -- archetype
    * classification, pillar planning, then once per leaf as its generator
    * resolves (concurrency-limited, so these land spread over real elapsed
@@ -165,6 +172,7 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Orchest
         archetype,
         contextBlock,
         customPrompt: leaf.custom_prompt,
+        images: leaf.generator === "figures" ? input.figureImages : undefined,
       };
       return queue.add(() =>
         runLeaf(

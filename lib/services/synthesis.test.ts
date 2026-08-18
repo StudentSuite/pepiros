@@ -18,6 +18,7 @@ let strongQueue: LanguageModelV2[] = [];
 vi.mock("@/lib/ai/client", () => ({
   strongModel: () => strongQueue.shift() ?? mockTextModel("{}"),
   fastModel: () => mockTextModel("{}"),
+  visionModel: () => mockTextModel("{}"),
 }));
 
 afterEach(async () => {

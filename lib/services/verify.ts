@@ -93,6 +93,28 @@ export interface VerifyAndBindInput {
  * twice done incompletely (chat's Promote button, the synthesis pass) before
  * this was pulled out into one function.
  */
+/**
+ * A model is told to mark each claim with a notional "[^n{i}]" marker, but
+ * this exact slip was observed live from visionModel()'s free OpenRouter
+ * model (issue #59): it cited the bare ref directly ("[C7]") instead,
+ * leaving nothing for bindEvidenceMarkers to find below -- the final body
+ * would keep the raw, unlinked "[C7]" text forever with no citation chip.
+ * Recovers by rewriting the first bare "[refId]" occurrence (for any ref
+ * that claim already cites) into the expected notional marker before
+ * binding. Same "a prompt is a request, not a guarantee" class as
+ * normalizeRef above.
+ */
+function recoverMissingNotionalMarkers(bodyMd: string, claims: Array<{ refs: string[] }>): string {
+  return claims.reduce((body, claim, i) => {
+    if (new RegExp(`\\[\\^n${i}\\]|\\^\\[n${i}\\]`).test(body)) return body;
+    for (const ref of claim.refs) {
+      const bare = new RegExp(`\\[${ref}\\]`);
+      if (bare.test(body)) return body.replace(bare, `[^n${i}]`);
+    }
+    return body;
+  }, bodyMd);
+}
+
 export function verifyAndBindClaims(input: VerifyAndBindInput): { bodyMd: string; evidence: Evidence[] } {
   const flatClaims: ClaimedEvidence[] = input.claims.flatMap((claim) =>
     claim.refs.map((refId) => ({ nodeId: input.nodeId, refId: normalizeRef(refId), quote: claim.quote })),
@@ -116,7 +138,8 @@ export function verifyAndBindClaims(input: VerifyAndBindInput): { bodyMd: string
     markerReplacements.push(ids.map((id) => `[^${id}]`).join(""));
   }
 
-  const bound = bindEvidenceMarkers(input.bodyMd, markerReplacements);
+  const normalizedBody = recoverMissingNotionalMarkers(input.bodyMd, input.claims);
+  const bound = bindEvidenceMarkers(normalizedBody, markerReplacements);
   const finalBody = evidence.reduce(
     (body, ev) => (ev.tier === "unsupported" ? stripDroppedCitation(body, ev.id) : body),
     bound,

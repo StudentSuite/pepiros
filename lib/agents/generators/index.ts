@@ -18,29 +18,27 @@ import { clinicalRelevanceGenerator } from "./clinicalRelevance";
 import { futureWorkGenerator } from "./futureWork";
 import { experimentalDesignGenerator } from "./experimentalDesign";
 import { equationsGenerator } from "./equations";
+import { figuresGenerator } from "./figures";
 import { customGenerator } from "./custom";
 
 export * from "./runGenerator";
 
 /**
  * Registry the pillar planner's leaf.generator values resolve against
- * (docs/PLAN-V1.md §8's generator list; 19 of 22 real types implemented --
+ * (docs/PLAN-V1.md §8's generator list; 20 of 22 real types implemented --
  * see lib/agents/orchestrator.ts for how a plan referencing an
  * unimplemented one is handled, which is a real case the fixture/spec both
  * anticipate, not an error). Add a generator by adding one file + one line
  * here, nothing else changes.
  *
  * Deliberately still unimplemented, each for a reason beyond "not built yet":
- * - `figures` needs a vision call against a cropped raster (docs/PLAN-V1.md
- *   §8), and scripts/parse.py doesn't extract figure crops yet. Also needs a
- *   real product/infra decision this file can't make on its own: Groq's
- *   structured-output-capable models (gpt-oss-20b/-120b, CLAUDE.md) are
- *   text-only, and Featherless's vision models (Qwen2.5-VL) returned
- *   `capacity_exhausted` on every attempt when checked live -- neither of
- *   this project's two providers can serve a vision call reliably right
- *   now. Needs a third provider (issue #59 -- Google's Gemini has a real
- *   free tier with genuine multimodal support) and its API key, which this
- *   file can't provision on its own.
+ * - `figures` (issue #59) is now implemented -- scripts/parse.py crops each
+ *   detected figure region and pairs it with a real `figure_caption`-kind
+ *   chunk, lib/agents/orchestrator.ts passes those crops through
+ *   GeneratorContext.images for this one generator, and lib/ai/client.ts's
+ *   visionModel() (OpenRouter, a free `:free`-suffixed model, verified live)
+ *   is the third model tier this needed since neither Groq nor Featherless
+ *   can serve an image-input call.
  * - `concept_links` (issue #48) turned out to already be solved a different
  *   way, discovered rather than built: lib/services/synthesis.ts's
  *   runSynthesis() already proposes cross-paper `relates` edges (its
@@ -81,5 +79,6 @@ export const GENERATORS: Partial<Record<GeneratorName, GeneratorConfig>> = {
   clinical_relevance: clinicalRelevanceGenerator,
   future_work: futureWorkGenerator,
   equations: equationsGenerator,
+  figures: figuresGenerator,
   custom: customGenerator,
 };

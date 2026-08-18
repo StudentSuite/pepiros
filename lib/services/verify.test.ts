@@ -29,6 +29,20 @@ describe("verifyAndBindClaims", () => {
     expect(bodyMd).not.toContain("^[n0]");
     expect(bodyMd).toContain(`[^${evidence[0]!.id}]`);
   });
+
+  it("binds a bare-ref citation (issue #59, visionModel()'s free OpenRouter model observed live) the same as a compliant [^n0]", () => {
+    const { bodyMd, evidence } = verifyAndBindClaims({
+      nodeId: "n1",
+      bodyMd: "Participants were randomized 1:1 [C1].",
+      claims: [{ refs: ["C1"], quote: "Participants were randomized 1:1 to receive bright light exposure." }],
+      chunks: CHUNKS,
+      numerics: [],
+      idPrefix: "n1-e",
+    });
+
+    expect(bodyMd).not.toContain("[C1]");
+    expect(bodyMd).toContain(`[^${evidence[0]!.id}]`);
+  });
 });
 
 describe("reverifyNodeEvidence", () => {

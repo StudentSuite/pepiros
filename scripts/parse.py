@@ -15,7 +15,9 @@ lib/services/ingest.ts via child_process, same pattern as scripts/seed.ts.
 Prints ONE JSON document to stdout and nothing else; every diagnostic goes to
 stderr so a malformed stdout can never break the caller's JSON.parse.
 """
+import base64
 import contextlib
+import io
 import json
 import os
 import re
@@ -215,19 +217,51 @@ def render_page_image(page, dpi=150):
     return img, zoom
 
 
-def extract_equations(doc):
-    """Issue #60: equation-kind chunks with real bbox anchoring. Pix2Text
-    (free, open-source, runs entirely locally -- github.com/breezedeus/
-    Pix2Text) both detects a formula region on a rendered page image and
-    converts it to LaTeX in one pass, so there's no separate detection
-    heuristic to invent. Only a *display* equation (one that is its own
-    entire page element, not inline text with a symbol in it) becomes a
-    chunk -- Pix2Text merges an inline formula into its surrounding
-    paragraph's text rather than isolating it as its own addressable
-    element, so there's no reliable sub-bbox to anchor an inline one to;
-    a paper's explicitly-numbered display equations are also the ones a
-    reader is actually going to look up by name ("Equation 3"), so this
-    is the case that matters most anyway.
+FIGURE_CAPTION_RE = re.compile(r"^(figure|fig\.?)\s*\d", re.IGNORECASE)
+
+
+def find_nearby_caption(figure_box, text_elements):
+    """The closest text element that reads like a figure caption ("Figure
+    2: ..."/"Fig. 2 ..."), preferring one positioned just below the figure
+    (the near-universal convention) over one above it, which gets a large
+    distance penalty rather than being ruled out outright -- a caption
+    Pix2Text placed slightly out of strict reading order is still a better
+    answer than no caption at all."""
+    _, fy0, _, fy1 = figure_box
+    best_text, best_distance = None, None
+    for el in text_elements:
+        text = (el.text or "").strip()
+        if not FIGURE_CAPTION_RE.match(text):
+            continue
+        _, ey0, _, ey1 = el.box
+        distance = (ey0 - fy1) if ey0 >= fy1 else (fy0 - ey1) + 10_000
+        if best_distance is None or distance < best_distance:
+            best_text, best_distance = text, distance
+    return best_text
+
+
+def extract_equations_and_figures(doc):
+    """Issues #59 and #60: equation-kind chunks with real bbox anchoring,
+    and real figure crops for the `figures` generator's vision call. One
+    Pix2Text (free, open-source, runs entirely locally --
+    github.com/breezedeus/Pix2Text) pass per page detects both kinds of
+    region and converts/crops accordingly, rather than running the same
+    page through the model twice for two different element types.
+
+    Equations: only a *display* equation (its own page element, not a
+    symbol inline with prose) becomes a chunk -- Pix2Text merges an inline
+    formula into its surrounding paragraph with no reliable sub-bbox to
+    anchor to, while a paper's explicitly-numbered display equations are
+    also the ones a reader would actually look up by name ("Equation 3").
+
+    Figures: the crop itself is visual context for the vision call, not
+    something the deterministic verifier can check on its own -- the real,
+    quotable ground truth its evidence cites is the figure's own caption
+    text (a figure_caption-kind chunk lib/services/ingest.ts creates from
+    `caption` below), found here as the nearest "Figure N"/"Fig. N"-shaped
+    text element. A figure with no locatable caption is still returned
+    (`caption: None`) rather than dropped -- lib/services/ingest.ts decides
+    whether an uncaptioned figure is usable, not this parser.
 
     Imported lazily, not at module scope: this pulls in torch/onnxruntime
     transitively, real weight either way, but paying it only when actually
@@ -241,17 +275,37 @@ def extract_equations(doc):
         p2t = Pix2Text.from_config()
 
     equations = []
+    figures = []
     for page_index in range(len(doc)):
         img, zoom = render_page_image(doc[page_index])
         try:
             with suppressed_stdout():
                 page_result = p2t.recognize_page(img)
         except Exception as err:  # A page Pix2Text can't process is a skip, not a failed ingest.
-            print(f"equation extraction skipped page {page_index + 1}: {err}", file=sys.stderr)
+            print(f"equation/figure extraction skipped page {page_index + 1}: {err}", file=sys.stderr)
             continue
+
+        text_elements = [el for el in page_result.elements if el.type in (ElementType.TEXT, ElementType.PLAIN_TEXT)]
 
         for el in page_result.elements:
             text = (el.text or "").strip()
+
+            if el.type == ElementType.FIGURE:
+                x0, y0, x1, y1 = el.box
+                if x1 <= x0 or y1 <= y0:
+                    continue
+                buf = io.BytesIO()
+                img.crop((x0, y0, x1, y1)).save(buf, format="PNG")
+                figures.append(
+                    {
+                        "page": page_index + 1,
+                        "caption": find_nearby_caption(el.box, text_elements),
+                        "imageBase64": base64.b64encode(buf.getvalue()).decode("ascii"),
+                        "rect": {"page": page_index + 1, "x0": x0 / zoom, "y0": y0 / zoom, "x1": x1 / zoom, "y1": y1 / zoom},
+                    }
+                )
+                continue
+
             # A display formula reaches here two different ways depending on
             # how Pix2Text's own layout pass grouped the page: either as its
             # own distinct FORMULA-type element (raw LaTeX, no delimiters --
@@ -277,7 +331,7 @@ def extract_equations(doc):
                     "rect": {"page": page_index + 1, "x0": x0 / zoom, "y0": y0 / zoom, "x1": x1 / zoom, "y1": y1 / zoom},
                 }
             )
-    return equations
+    return equations, figures
 
 
 def extract_year(metadata, front_matter_text):
@@ -380,13 +434,16 @@ def main():
             )
             out_numerics.extend(extract_numerics(chunk_index, chunk["text"]))
 
-    # Issue #60: equation-kind chunks, appended after every prose chunk is
-    # already built so a nearby prose chunk's sectionIndex can be reused --
-    # equations come from a separate page-image pass with no text-based
-    # section detection of its own, so "whichever section's prose chunk
-    # immediately precedes this equation's page" is the best available
-    # section to attribute one to, not a real per-equation classification.
-    for equation in extract_equations(doc):
+    # Issues #59 and #60: equation-kind chunks and figure crops, appended
+    # after every prose chunk is already built so a nearby prose chunk's
+    # sectionIndex can be reused -- both come from a separate page-image
+    # pass with no text-based section detection of its own, so "whichever
+    # section's prose chunk immediately precedes this page" is the best
+    # available section to attribute one to, not a real per-item
+    # classification.
+    equations, figures = extract_equations_and_figures(doc)
+
+    for equation in equations:
         section_index = 0
         for c in out_chunks:
             if c["page"] <= equation["page"]:
@@ -402,6 +459,22 @@ def main():
             }
         )
         out_numerics.extend(extract_numerics(chunk_index, equation["text"]))
+
+    out_figures = []
+    for figure in figures:
+        section_index = 0
+        for c in out_chunks:
+            if c["page"] <= figure["page"]:
+                section_index = c["sectionIndex"]
+        out_figures.append(
+            {
+                "page": figure["page"],
+                "caption": figure["caption"],
+                "imageBase64": figure["imageBase64"],
+                "sectionIndex": section_index,
+                "rect": figure["rect"],
+            }
+        )
 
     metadata_title = (doc.metadata or {}).get("title", "").strip() or None
     # Page 1's raw blocks, not the "Front matter" *section* -- a paper's own
@@ -422,6 +495,7 @@ def main():
             "sections": out_sections,
             "chunks": out_chunks,
             "numerics": out_numerics,
+            "figures": out_figures,
             "references": extract_references(sections),
             "pageCount": len(doc),
         },
