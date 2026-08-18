@@ -1,9 +1,8 @@
 {
-  "name": "pepiros",
+  "name": "pepiros-mcp",
   "version": "0.1.0",
-  "private": true,
   "license": "MIT",
-  "description": "Turns a research PDF into a living knowledge graph where every generated claim is bound to a located quote.",
+  "description": "MCP server for Pepiros: search, verify, and cite claims against a paper's actual text over stdio -- quote-located grounding, not vector similarity.",
   "repository": {
     "type": "git",
     "url": "https://github.com/StudentSuite/pepiros.git"

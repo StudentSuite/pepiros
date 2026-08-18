@@ -32,10 +32,6 @@ const GROUPS: { horizon: string; items: { title: string; note: string }[] }[] = 
         title: "Session refresh",
         note: "A session is revocable now (logout, or sign-out-everywhere), but it still simply expires at its 7-day lifetime with no silent renewal.",
       },
-      {
-        title: "MCP package publish",
-        note: "The tool layer, bin entry, and esbuild bundle are all real. Publishing to npm is a maintainer decision (account, package-name availability), not a code gap.",
-      },
     ],
   },
   {
