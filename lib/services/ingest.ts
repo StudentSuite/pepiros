@@ -182,17 +182,6 @@ export async function runIngest(input: IngestInput): Promise<void> {
       })
       .filter((n): n is Numeric => n !== null);
 
-    const paper: Paper = {
-      id: paperId,
-      workspaceId,
-      title: paperTitle,
-      authors: parsed.authors,
-      year: parsed.year,
-      archetype: null,
-      sourceUrl: input.sourceUrl,
-      pdfStoragePath: pdfFilename,
-    };
-
     appendEvent(input.jobId, "Reading methods", "Classifying archetype and planning pillars.");
     const result = await runOrchestrator({
       workspaceId,
@@ -214,6 +203,24 @@ export async function runIngest(input: IngestInput): Promise<void> {
         }
       },
     });
+
+    // Issue #95: runOrchestrator() already classifies a real archetype (used
+    // internally for pillar planning) but it was never written back onto
+    // the Paper record -- every real-ingested paper's archetype stayed
+    // null forever, same class of gap as #82's authors/year. Persisting it
+    // is also what makes lib/services/synthesis.ts's new Methodological
+    // Divergence node meaningful beyond the fixture, which already had real
+    // (hand-authored) archetype values.
+    const paper: Paper = {
+      id: paperId,
+      workspaceId,
+      title: paperTitle,
+      authors: parsed.authors,
+      year: parsed.year,
+      archetype: result.archetype,
+      sourceUrl: input.sourceUrl,
+      pdfStoragePath: pdfFilename,
+    };
 
     appendEvent(input.jobId, "Locating anchors", "Verifying every claim against the source.");
 

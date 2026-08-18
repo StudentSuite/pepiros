@@ -76,8 +76,13 @@ describe("runSynthesis", () => {
     const contradictsEdges = result.edgesWritten.filter((e) => e.kind === "contradicts");
     expect(contradictsEdges).toHaveLength(1);
 
-    expect(result.synthesisNodesWritten).toHaveLength(1);
-    expect(result.synthesisNodesWritten[0]).toMatchObject({ type: "synthesis", title: "Contradictions" });
+    // Not an exact-length assertion: the fixture's 3 papers have real,
+    // distinct years and archetypes, so the deterministic Timeline/
+    // Methodological Divergence nodes (issue #95) always write alongside
+    // whatever the LLM pass itself produced -- asserting length here would
+    // just be re-testing those two, not this test's actual subject.
+    const contradictionsNode = result.synthesisNodesWritten.find((n) => n.title === "Contradictions");
+    expect(contradictionsNode).toMatchObject({ type: "synthesis", title: "Contradictions" });
 
     // Regression check: each side's leaf node body must carry the *real*
     // evidence marker ("[^<evidenceId>]"), not the notional "[^n0]" createNode's
@@ -136,5 +141,40 @@ describe("runSynthesis", () => {
 
     expect(result.edgesWritten.some((e) => e.kind === "agrees")).toBe(true);
     expect(result.synthesisNodesWritten.some((n) => n.title === "Consensus")).toBe(true);
+  }, 15000);
+
+  // Both nodes below are deterministic (no LLM judge, issue #95) -- every
+  // pairwise comparison is still mocked as "none" so this isolates them
+  // from the LLM-classified Consensus/Contradictions nodes.
+  const noneResponses = [
+    relationResponse({ relation: "none", summaryA: "", refA: `C${p1Chunk.ordinal}`, quoteA: p1Chunk.text, summaryB: "", refB: `C${p2Chunk.ordinal}`, quoteB: p2Chunk.text }),
+    relationResponse({ relation: "none", summaryA: "", refA: `C${p1Chunk.ordinal}`, quoteA: p1Chunk.text, summaryB: "", refB: `C${p3Chunk.ordinal}`, quoteB: p3Chunk.text }),
+    relationResponse({ relation: "none", summaryA: "", refA: `C${p2Chunk.ordinal}`, quoteA: p2Chunk.text, summaryB: "", refB: `C${p3Chunk.ordinal}`, quoteB: p3Chunk.text }),
+  ];
+
+  it("writes a Timeline of Findings node ordering the fixture's 3 dated papers chronologically", async () => {
+    strongQueue = [...noneResponses];
+
+    const result = await runSynthesis("ws-1");
+
+    const timeline = result.synthesisNodesWritten.find((n) => n.title === "Timeline of Findings");
+    expect(timeline).toBeDefined();
+    // Fixture years: p1 2022, p2 2021, p3 2023 -- p2 (earliest) must precede p1, which must precede p3.
+    const body = timeline!.bodyMd;
+    expect(body.indexOf("2021")).toBeLessThan(body.indexOf("2022"));
+    expect(body.indexOf("2022")).toBeLessThan(body.indexOf("2023"));
+  }, 15000);
+
+  it("writes a Methodological Divergence node grouping the fixture's 3 distinct archetypes", async () => {
+    strongQueue = [...noneResponses];
+
+    const result = await runSynthesis("ws-1");
+
+    const divergence = result.synthesisNodesWritten.find((n) => n.title === "Methodological Divergence");
+    expect(divergence).toBeDefined();
+    // Fixture archetypes: p1 rct, p2 systematic_review, p3 cohort_study.
+    expect(divergence!.bodyMd).toContain("RCT");
+    expect(divergence!.bodyMd).toContain("Systematic review");
+    expect(divergence!.bodyMd).toContain("Cohort study");
   }, 15000);
 });

@@ -4,10 +4,22 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { strongModel } from "@/lib/ai/client";
 import { buildContextBlock } from "@/lib/prompts/contextBlock";
-import type { EdgeKind, Evidence, GraphEdge, GraphNode, Workspace } from "@/types/anchor";
+import type { EdgeKind, Evidence, GraphEdge, GraphNode, PaperArchetype, Workspace } from "@/types/anchor";
 import { fetchWorkspace } from "./workspace";
 import { getIngestedWorkspace, setIngestedWorkspace } from "./ingestStore";
 import { createNode } from "./nodes";
+
+const ARCHETYPE_LABELS: Record<PaperArchetype, string> = {
+  rct: "RCT",
+  cohort_study: "Cohort study",
+  systematic_review: "Systematic review",
+  method_paper: "Method paper",
+  ml_model: "ML model",
+  case_report: "Case report",
+  bioinformatics_pipeline: "Bioinformatics pipeline",
+  preprint_theory: "Preprint theory",
+  dataset_paper: "Dataset paper",
+};
 
 /**
  * Cross-paper synthesis (docs/PLAN-V1.md §10): a pairwise comparison pass
@@ -15,13 +27,20 @@ import { createNode } from "./nodes";
  * agrees/contradicts/extends/shares_method/relates edges instead of
  * `find_contradictions` only ever reading edges that were already there.
  *
- * Scope note: this implements the pairwise comparison + contradiction pass
- * + two synthesis node types (Consensus, Contradictions) that the pass
- * actually has evidence to back. §10 additionally specs Methodological
- * Divergence/Dataset Overlap/Open Questions/Timeline synthesis nodes, which
- * need signals (methods metadata, dataset identifiers, a real timeline of
- * publication dates) this pass doesn't compute yet -- left for later rather
- * than shipped as empty/fake sections.
+ * Scope note (issue #95): the pairwise comparison pass backs Consensus and
+ * Contradictions directly (an LLM classification per pair, two-sided-
+ * evidence verified). Timeline of Findings and Methodological Divergence
+ * are added below, deterministically, from real per-paper metadata now
+ * that it exists (paper.year, paper.archetype -- issue #82 and this same
+ * issue's ingest.ts fix respectively; both were null for every real-
+ * ingested paper before that, which is exactly why these two stayed
+ * unshipped: a "timeline" or "divergence" section built from all-null
+ * fields would have been empty or fake for every real workspace, only
+ * ever looking populated against the fixture's hand-authored values).
+ * Dataset Overlap and Open Questions are still deferred: they need
+ * signals nothing in this pipeline extracts at all (dataset identifiers,
+ * a genuine gap-in-the-literature judgment) -- not a metadata-persistence
+ * gap like the other two, but new extraction work.
  *
  * The two-sided evidence invariant (§4.6: "a contradicts edge with one-sided
  * evidence is rejected at write time") is enforced by routing each side's
@@ -218,6 +237,56 @@ export async function runSynthesis(workspaceId: string): Promise<SynthesisResult
       type: "synthesis",
       title: "Consensus",
       bodyMd: agreementSummaries.join("\n"),
+      pillarIndex: null,
+      x: 0,
+      y: 0,
+      paperId: null,
+      stale: false,
+    });
+  }
+
+  // Timeline of Findings: deterministic, no LLM call -- just papers with a
+  // real publication year, chronologically. A single dated paper isn't a
+  // timeline, so this only writes with 2+.
+  const datedPapers = papers.filter((p): p is typeof p & { year: number } => p.year !== null);
+  if (datedPapers.length >= 2) {
+    const sorted = [...datedPapers].sort((a, b) => a.year - b.year);
+    synthesisNodesWritten.push({
+      id: synthesisNodeId(workspaceId, "timeline"),
+      workspaceId,
+      type: "synthesis",
+      title: "Timeline of Findings",
+      bodyMd: sorted.map((p) => `- **${p.year}** — ${p.title}`).join("\n"),
+      pillarIndex: null,
+      x: 0,
+      y: 0,
+      paperId: null,
+      stale: false,
+    });
+  }
+
+  // Methodological Divergence: deterministic, no LLM call -- groups papers
+  // by their already-classified archetype (lib/agents/archetypeClassifier.ts,
+  // persisted onto Paper by ingest.ts). Divergence needs at least two
+  // distinct archetypes actually present; every paper sharing one archetype
+  // isn't a divergence to report.
+  const archetypeGroups = new Map<PaperArchetype, string[]>();
+  for (const p of papers) {
+    if (!p.archetype) continue;
+    const group = archetypeGroups.get(p.archetype) ?? [];
+    group.push(p.title);
+    archetypeGroups.set(p.archetype, group);
+  }
+  if (archetypeGroups.size >= 2) {
+    const lines = [...archetypeGroups.entries()].map(
+      ([archetype, titles]) => `- **${ARCHETYPE_LABELS[archetype] ?? archetype}**: ${titles.join(", ")}`,
+    );
+    synthesisNodesWritten.push({
+      id: synthesisNodeId(workspaceId, "methodological-divergence"),
+      workspaceId,
+      type: "synthesis",
+      title: "Methodological Divergence",
+      bodyMd: lines.join("\n"),
       pillarIndex: null,
       x: 0,
       y: 0,
