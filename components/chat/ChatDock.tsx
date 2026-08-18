@@ -35,11 +35,13 @@ export function ChatDock({ activePaperId }: { activePaperId?: string }) {
   const [error, setError] = useState<string | null>(null);
   const [allowUngrounded, setAllowUngrounded] = useState(false);
   const [lastRefusedQuestion, setLastRefusedQuestion] = useState<string | null>(null);
+  const [lastQuestion, setLastQuestion] = useState<string | null>(null);
   const suggestedQuestions = useMemo(() => deriveSuggestedQuestions(workspace), [workspace]);
 
   async function ask(question: string, options: { allowUngrounded?: boolean } = {}) {
     setPending(true);
     setError(null);
+    setLastQuestion(question);
 
     // History is the prior turns only -- the question being asked is passed
     // separately, since the server rewrites it against this history.
@@ -173,7 +175,10 @@ export function ChatDock({ activePaperId }: { activePaperId?: string }) {
 
               {error && (
                 <div className="mt-3">
-                  <ErrorBanner message={error} onRetry={() => setError(null)} />
+                  <ErrorBanner
+                    message={error}
+                    onRetry={lastQuestion ? () => void ask(lastQuestion) : undefined}
+                  />
                 </div>
               )}
 
