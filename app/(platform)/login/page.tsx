@@ -52,6 +52,9 @@ function LoginForm() {
   const oauthError = OAUTH_ERRORS[params.get("error") ?? ""] ?? null;
   const error = formError ?? oauthError;
   const setError = setFormError;
+  // Set by createAccount()'s emailRedirectTo (issue #84) once Supabase's own
+  // confirmation link is clicked.
+  const confirmed = params.get("confirmed") === "1";
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -101,6 +104,12 @@ function LoginForm() {
           <div className="mt-s-4">
             <ErrorBanner message={error} />
           </div>
+        )}
+
+        {!error && confirmed && (
+          <p className="mt-s-4 rounded-md border border-located/50 bg-located/10 px-s-3 py-s-2 font-sans text-sm text-ink">
+            Email confirmed. Sign in below.
+          </p>
         )}
 
         {/* Google first: it is the path that needs no remembered credential,

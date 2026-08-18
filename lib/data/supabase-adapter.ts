@@ -121,13 +121,17 @@ export const supabaseAdapter: DataAdapter = {
       return { error: "That username is already taken." };
     }
 
-    // email_confirm stays true: this app has no confirm-email UX, and
-    // gating account creation on a confirmation click is a separate, bigger
-    // decision than "collect an address to recover to."
+    // Issue #84: email_confirm used to be unconditionally true -- a typo'd
+    // address, or someone else's email entered by mistake or maliciously,
+    // was permanently treated as verified, with no real confirmation click
+    // ever required. false here defers to whatever this Supabase project's
+    // own "Confirm email" auth setting says about whether an unconfirmed
+    // user can sign in at all; either way, the account is no longer
+    // unconditionally marked verified just because it was created.
     const { data: created, error: createError } = await sb.auth.admin.createUser({
       email: normalizedEmail,
       password,
-      email_confirm: true,
+      email_confirm: false,
     });
     if (createError || !created.user) {
       return { error: createError?.message ?? "Could not create the account." };
@@ -145,6 +149,23 @@ export const supabaseAdapter: DataAdapter = {
       // avoid, just on the write path instead of the migration path.
       await sb.auth.admin.deleteUser(created.user.id);
       return { error: profileError.message };
+    }
+
+    // Admin-created users don't get an automatic confirmation email the way
+    // supabase.auth.signUp() would -- resend() is what actually triggers
+    // Supabase's own confirmation-email send for an existing unconfirmed
+    // user. Best-effort: a delivery failure here (rate-limited default
+    // Supabase mail, no SMTP configured) shouldn't undo an otherwise-valid
+    // account creation, just like requestPasswordReset()'s own send failures
+    // are logged rather than surfaced as this call's result.
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const { error: resendError } = await sb.auth.resend({
+      type: "signup",
+      email: normalizedEmail,
+      options: { emailRedirectTo: `${appUrl}/login?confirmed=1` },
+    });
+    if (resendError) {
+      console.error(`[createAccount] confirmation email send failed for ${normalized}:`, resendError.message);
     }
 
     const profile = await this.getProfile(created.user.id);
