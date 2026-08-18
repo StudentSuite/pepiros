@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, BookOpen, Clock } from "lucide-react";
+import { BookOpen, Clock } from "lucide-react";
 import { getSession } from "@/lib/auth/session";
 import { getAdapter } from "@/lib/data/adapter";
 import { Card, CardContent } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
-import { Progress } from "@/components/shadcn/progress";
-import { Button } from "@/components/shadcn/button";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 
 export const metadata: Metadata = { title: "Home" };
@@ -15,10 +13,15 @@ export const metadata: Metadata = { title: "Home" };
 /**
  * Reader-first home.
  *
- * Calm on purpose: this is the screen someone lands on to READ, so it leads
- * with where they left off rather than with metrics. The numbers live one click
- * away on /analytics. Only what the data model can honestly support appears
- * here, so there is no streak, no reading time, and no activity feed.
+ * Calm on purpose: leads with the account's own recent published papers
+ * rather than with metrics -- those live one click away on /analytics. Only
+ * what the data model can honestly support appears here, so there is no
+ * streak, no reading time, no activity feed, and (issue #92) no "continue
+ * reading" card either: there is no per-account tracking of which
+ * workspace/paper a signed-in user was reading (types/anchor.ts's
+ * Workspace has no ownerId, and there's no reading-progress table at all),
+ * so a card claiming specific resume-progress was always fabricated,
+ * regardless of what the signed-in account had actually done.
  */
 export default async function HomePage() {
   const profile = await getSession();
@@ -34,42 +37,12 @@ export default async function HomePage() {
     <div className="mx-auto w-full max-w-5xl p-s-5">
       <PageHeader
         title={`Welcome back, ${profile.displayName.split(" ")[0]}`}
-        description="Pick up where you left off."
+        description="Your published papers, and how they're doing."
         primaryAction={{ label: "Add a paper", href: "/upload" }}
       />
 
-      {/* Continue reading. The one thing this page exists for. */}
-      <Card className="mt-s-5 border-border bg-card">
-        <CardContent className="p-s-5">
-          <p className="font-mono text-[11px] uppercase tracking-widest text-ink-faint">
-            Continue reading
-          </p>
-          <h2 className="mt-s-3 font-serif text-lg leading-snug text-ink">
-            Circadian Rhythm &amp; Cognition
-          </h2>
-          <p className="mt-s-1 font-mono text-xs text-ink-faint">
-            3 papers · last opened 2 hours ago
-          </p>
-
-          <div className="mt-s-4 max-w-sm">
-            <div className="flex items-center justify-between font-mono text-[11px] text-ink-faint">
-              <span>Reading path</span>
-              <span>3 of 8</span>
-            </div>
-            <Progress value={37} className="mt-s-2 h-1.5" />
-          </div>
-
-          <Button asChild size="sm" className="mt-s-4 gap-1.5">
-            <Link href="/w/ws-1">
-              Resume
-              <ArrowRight className="size-3.5" />
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
-
       {/* Recent papers */}
-      <section className="mt-s-6">
+      <section className="mt-s-5">
         <div className="flex items-center justify-between">
           <h2 className="font-mono text-[11px] uppercase tracking-widest text-ink-faint">
             Your recent papers
