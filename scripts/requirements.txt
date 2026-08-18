@@ -1,1 +1,6 @@
 pymupdf>=1.24
+# Equation region detection + LaTeX recognition (issue #60), for
+# scripts/parse.py's equation-kind chunks. Free, open-source, runs
+# entirely locally -- downloads its own model weights from Hugging Face
+# on first use (~200MB), cached under ~/.pix2text after that.
+pix2text>=1.1

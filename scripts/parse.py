@@ -15,11 +15,14 @@ lib/services/ingest.ts via child_process, same pattern as scripts/seed.ts.
 Prints ONE JSON document to stdout and nothing else; every diagnostic goes to
 stderr so a malformed stdout can never break the caller's JSON.parse.
 """
+import contextlib
 import json
+import os
 import re
 import sys
 
 import pymupdf as fitz  # PyMuPDF; `pymupdf` is the current package name, `fitz` the historical import alias
+from PIL import Image
 
 HEADER_RE = re.compile(
     r"^(abstract|introduction|background|related works?|methods?|methodology|"
@@ -175,6 +178,108 @@ def extract_references(sections):
     return []
 
 
+@contextlib.contextmanager
+def suppressed_stdout():
+    """Redirects the OS-level stdout file descriptor to /dev/null for the
+    duration of the block. This script's whole contract is "prints ONE
+    JSON document to stdout and nothing else" -- but Pix2Text's own
+    dependency stack (Ultralytics' YOLO progress lines, onnxruntime/
+    transformers load messages, and something in its transitive imports
+    that pulls in the legacy `fitz` compat shim, distinct from this
+    file's own `pymupdf as fitz`) writes several kinds of diagnostic
+    output directly to the C-level stdout stream, which reassigning
+    Python's `sys.stdout` alone would not catch. Only stdout (fd 1) is
+    touched -- this file's own stderr diagnostics via `print(...,
+    file=sys.stderr)` are unaffected.
+    """
+    original_fd = os.dup(1)
+    devnull_fd = os.open(os.devnull, os.O_WRONLY)
+    try:
+        os.dup2(devnull_fd, 1)
+        yield
+    finally:
+        os.close(devnull_fd)
+        os.dup2(original_fd, 1)
+        os.close(original_fd)
+
+
+def render_page_image(page, dpi=150):
+    """Renders a page to a raster at the given DPI, returning the PIL image
+    and the zoom factor (DPI/72) needed to convert a bbox measured on that
+    raster back into the page's own PDF point-space -- the same space every
+    other chunk's `rects` are already in, so highlighting doesn't need a
+    special case for equation chunks."""
+    zoom = dpi / 72
+    pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom))
+    img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+    return img, zoom
+
+
+def extract_equations(doc):
+    """Issue #60: equation-kind chunks with real bbox anchoring. Pix2Text
+    (free, open-source, runs entirely locally -- github.com/breezedeus/
+    Pix2Text) both detects a formula region on a rendered page image and
+    converts it to LaTeX in one pass, so there's no separate detection
+    heuristic to invent. Only a *display* equation (one that is its own
+    entire page element, not inline text with a symbol in it) becomes a
+    chunk -- Pix2Text merges an inline formula into its surrounding
+    paragraph's text rather than isolating it as its own addressable
+    element, so there's no reliable sub-bbox to anchor an inline one to;
+    a paper's explicitly-numbered display equations are also the ones a
+    reader is actually going to look up by name ("Equation 3"), so this
+    is the case that matters most anyway.
+
+    Imported lazily, not at module scope: this pulls in torch/onnxruntime
+    transitively, real weight either way, but paying it only when actually
+    reached means the near-zero-text scanned-PDF check above still fails
+    fast without loading a vision model stack it will never use.
+    """
+    with suppressed_stdout():
+        from pix2text import Pix2Text
+        from pix2text.page_elements import ElementType
+
+        p2t = Pix2Text.from_config()
+
+    equations = []
+    for page_index in range(len(doc)):
+        img, zoom = render_page_image(doc[page_index])
+        try:
+            with suppressed_stdout():
+                page_result = p2t.recognize_page(img)
+        except Exception as err:  # A page Pix2Text can't process is a skip, not a failed ingest.
+            print(f"equation extraction skipped page {page_index + 1}: {err}", file=sys.stderr)
+            continue
+
+        for el in page_result.elements:
+            text = (el.text or "").strip()
+            # A display formula reaches here two different ways depending on
+            # how Pix2Text's own layout pass grouped the page: either as its
+            # own distinct FORMULA-type element (raw LaTeX, no delimiters --
+            # observed live), or merged into a TEXT-type paragraph that is
+            # otherwise entirely one $$...$$/$...$-wrapped formula and
+            # nothing else (also observed live, same PDF, different page).
+            # Checking both instead of only the delimiter shape is what
+            # makes this reliable rather than tuned to one specific case.
+            is_formula_element = el.type == ElementType.FORMULA
+            is_wrapped_text = (text.startswith("$$") and text.endswith("$$")) or (
+                text.startswith("$") and text.endswith("$") and not text.startswith("$$")
+            )
+            if not (is_formula_element or is_wrapped_text):
+                continue
+            latex = text.strip("$").strip()
+            if not latex:
+                continue
+            x0, y0, x1, y1 = el.box
+            equations.append(
+                {
+                    "page": page_index + 1,
+                    "text": latex,
+                    "rect": {"page": page_index + 1, "x0": x0 / zoom, "y0": y0 / zoom, "x1": x1 / zoom, "y1": y1 / zoom},
+                }
+            )
+    return equations
+
+
 def extract_year(metadata, front_matter_text):
     """Metadata's creation/mod date first ("D:YYYYMMDD..."), since that's an
     actual timestamp rather than a guess; falls back to the first plausible
@@ -274,6 +379,29 @@ def main():
                 }
             )
             out_numerics.extend(extract_numerics(chunk_index, chunk["text"]))
+
+    # Issue #60: equation-kind chunks, appended after every prose chunk is
+    # already built so a nearby prose chunk's sectionIndex can be reused --
+    # equations come from a separate page-image pass with no text-based
+    # section detection of its own, so "whichever section's prose chunk
+    # immediately precedes this equation's page" is the best available
+    # section to attribute one to, not a real per-equation classification.
+    for equation in extract_equations(doc):
+        section_index = 0
+        for c in out_chunks:
+            if c["page"] <= equation["page"]:
+                section_index = c["sectionIndex"]
+        chunk_index = len(out_chunks)
+        out_chunks.append(
+            {
+                "page": equation["page"],
+                "kind": "equation",
+                "text": equation["text"],
+                "sectionIndex": section_index,
+                "rects": [equation["rect"]],
+            }
+        )
+        out_numerics.extend(extract_numerics(chunk_index, equation["text"]))
 
     metadata_title = (doc.metadata or {}).get("title", "").strip() or None
     # Page 1's raw blocks, not the "Front matter" *section* -- a paper's own

@@ -16,8 +16,8 @@ const GROUPS: { horizon: string; items: { title: string; note: string }[] }[] = 
         note: "A scanned or image-only PDF now fails the ingest job with a clear message instead of silently producing nothing, but there's no way to actually recover text from one yet.",
       },
       {
-        title: "The 3 remaining node generators",
-        note: "figures (needs a vision call against a cropped page raster), equations (needs equation-kind chunks with bbox anchoring), and concept_links (needs cross-paper context a single-paper generator doesn't carry today).",
+        title: "The figures generator",
+        note: "Needs a vision-capable model call against a cropped page raster. Blocked on a provider: Groq has no vision model at all, and Featherless's vision models have returned capacity_exhausted on every attempt checked live -- needs a third provider (Google's Gemini has a real free tier) and an API key this repo doesn't have yet.",
       },
       {
         title: "Dataset Overlap and Open Questions synthesis",
