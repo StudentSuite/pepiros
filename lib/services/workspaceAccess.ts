@@ -1,7 +1,7 @@
 import "server-only";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
-import { getIngestedWorkspace } from "@/lib/services/ingestStore";
+import { workspaceExists } from "@/lib/services/workspaces";
 import workspaceFixture from "@/fixtures/workspace.json";
 import type { Workspace } from "@/types/anchor";
 
@@ -66,11 +66,10 @@ export async function requireWorkspaceSession(workspaceId: string): Promise<Next
  * always comes back) -- this is a route-level guard instead, same shape as
  * requireWorkspaceSession() above, called before fetchWorkspace() so an
  * unrecognized id 404s before ever reaching the fixture fallback.
+ * workspaceExists() itself already existed (lib/services/workspaces.ts, for
+ * the MCP list_workspaces path) but had no caller -- reused here rather
+ * than adding a second copy of the same fixture-or-ingested check.
  */
-export async function workspaceExists(workspaceId: string): Promise<boolean> {
-  if (workspaceId === FIXTURE_ID) return true;
-  return (await getIngestedWorkspace(workspaceId)) !== undefined;
-}
 
 /** Returns a 404 `NextResponse` for an unrecognized workspaceId; `null` when the request should proceed. */
 export async function requireWorkspaceExists(workspaceId: string): Promise<NextResponse | null> {
