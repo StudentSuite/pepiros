@@ -69,9 +69,9 @@ export function ReachOverTime({
 }) {
   return (
     <Card className="border-border bg-card">
-      <CardHeader className="flex-row items-start justify-between gap-s-4 space-y-0 pb-s-2">
+      <CardHeader className="flex-row flex-wrap items-start justify-between gap-s-4 space-y-0 pb-s-2">
         <div>
-          <CardTitle className="font-mono text-[11px] font-normal uppercase tracking-widest text-ink-faint">
+          <CardTitle className="whitespace-nowrap font-mono text-[11px] font-normal uppercase tracking-widest text-ink-faint">
             Reach over time
           </CardTitle>
           <p className="mt-s-2 font-serif text-3xl leading-none text-ink">
@@ -109,7 +109,7 @@ export function ReachOverTime({
           />
         ) : (
         <ChartContainer config={lineConfig} className="h-[220px] w-full">
-          <LineChart data={reach.series} margin={{ left: 4, right: 8, top: 4 }}>
+          <LineChart data={reach.series} margin={{ left: 4, right: 20, top: 4 }}>
             <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.7} />
             <XAxis
               dataKey="date"

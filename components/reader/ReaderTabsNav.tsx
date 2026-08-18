@@ -25,7 +25,7 @@ export function ReaderTabsNav({
   active: "reader" | "outline" | "audit" | "learn" | "canvas";
 }) {
   return (
-    <nav className="flex shrink-0 flex-wrap items-center gap-s-4 font-sans text-[13px] text-ink-faint">
+    <nav className="flex min-w-0 flex-wrap items-center gap-s-4 font-sans text-[13px] text-ink-faint">
       <Link
         href={`/w/${workspaceId}`}
         className={clsx(

@@ -17,9 +17,11 @@ import type { Profile } from "@/lib/data/types";
  * full-screen panel that slides in from the right, with the links set large and
  * vertically centred, rather than a narrow side sheet.
  *
- * The header's link row is `hidden sm:flex`, so below 640px there was no
- * navigation at all: How it works, For agents, Discover and About were
- * unreachable except through the footer.
+ * The header's link row is `hidden lg:flex` (raised from `sm` -- the full row
+ * wrapped mid-word between 640-1023px, so tablet needs the sheet too, not
+ * just phone widths). Below that breakpoint there is no other navigation:
+ * How it works, For agents, Discover and About are unreachable except
+ * through the footer.
  *
  * Three things that make this behave like a real dialog rather than a
  * decorative overlay, all carried over from that pattern:
@@ -116,7 +118,7 @@ export function MobileNav({
         aria-expanded={open}
         aria-controls="mobile-menu-panel"
         aria-label={open ? "Close menu" : "Open menu"}
-        className="grid size-9 place-items-center rounded-md text-ink-muted transition-colors duration-fast ease-out hover:text-ink sm:hidden"
+        className="grid size-9 place-items-center rounded-md text-ink-muted transition-colors duration-fast ease-out hover:text-ink lg:hidden"
       >
         {open ? (
           <X className="size-5" strokeWidth={1.5} />
@@ -142,7 +144,7 @@ export function MobileNav({
               duration: reduced ? 0 : 0.28,
               ease: [0.16, 1, 0.3, 1], // --ease-out
             }}
-            className="fixed inset-0 z-[60] flex flex-col overflow-y-auto bg-surface sm:hidden"
+            className="fixed inset-0 z-[60] flex flex-col overflow-y-auto bg-surface lg:hidden"
           >
             {/* Quiet pillar wash, so the panel reads as a surface of its own
                 rather than a flat block of --surface. */}

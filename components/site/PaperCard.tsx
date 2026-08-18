@@ -23,8 +23,12 @@ export function PaperCard({ paper }: { paper: MockPaper }) {
       className="group flex flex-col gap-s-3 rounded-lg border border-border p-s-4 shadow-e-1 transition duration-base ease-out hover:border-accent hover:shadow-e-2"
       style={{ backgroundColor: `color-mix(in srgb, ${tint} 6%, var(--surface-raised))` }}
     >
-      <div className="flex items-start justify-between gap-2">
-        <PillarChip pillarIndex={paper.pillarIndex} label={topicLabelForPillar(paper.pillarIndex)} />
+      <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
+        <PillarChip
+          pillarIndex={paper.pillarIndex}
+          label={topicLabelForPillar(paper.pillarIndex)}
+          className="whitespace-nowrap"
+        />
         {paper.openAccess ? (
           <Badge dotClassName="bg-accent" className="shrink-0 text-ink-muted">
             Open access

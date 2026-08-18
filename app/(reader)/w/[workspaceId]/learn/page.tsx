@@ -26,7 +26,7 @@ export default async function LearnPage({
       {!session && <GuestBanner next={`/w/${workspaceId}/learn`} />}
 
       <main className="mx-auto max-w-6xl px-s-5 py-s-6">
-        <header className="mb-s-5 flex items-center justify-between">
+        <header className="mb-s-5 flex flex-wrap items-center justify-between gap-2">
           <h1 className="font-serif text-2xl text-ink">Learn</h1>
           <ReaderTabsNav workspaceId={workspaceId} active="learn" />
         </header>

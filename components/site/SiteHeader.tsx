@@ -64,7 +64,7 @@ export function SiteHeader({ session = null }: { session?: Profile | null }) {
           <Logo collapseWordmark />
         </Link>
 
-        <nav className="hidden items-center gap-6 sm:flex">
+        <nav className="hidden items-center gap-6 lg:flex">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
@@ -90,24 +90,26 @@ export function SiteHeader({ session = null }: { session?: Profile | null }) {
               </Link>
               <Link
                 href={`/u/${session.username}`}
-                className="hidden font-sans text-sm text-ink transition-colors duration-fast ease-out hover:text-accent sm:inline"
+                className="hidden font-sans text-sm text-ink transition-colors duration-fast ease-out hover:text-accent lg:inline"
               >
                 {session.displayName}
               </Link>
             </div>
           ) : (
             <>
-              {/* Hidden below sm: the sheet carries these, and three controls
-                  plus a hamburger does not fit a 320px header. */}
+              {/* Hidden below lg: the sheet carries these. Five nav labels
+                  plus two buttons plus the theme toggle wrap mid-word between
+                  640-1023px (tablet), so the hamburger now owns that whole
+                  range too, not just phone widths. */}
               <Link
                 href="/login"
-                className={`${buttonClassName("ghost", "sm")} hidden sm:inline-flex`}
+                className={`${buttonClassName("ghost", "sm")} hidden lg:inline-flex`}
               >
                 Sign in
               </Link>
               <Link
                 href="/signup"
-                className={`${buttonClassName("secondary", "sm")} hidden sm:inline-flex`}
+                className={`${buttonClassName("secondary", "sm")} hidden lg:inline-flex`}
               >
                 Sign up
               </Link>

@@ -6,6 +6,7 @@ import { ChevronRight } from "lucide-react";
 import { useWorkspaceStore } from "@/lib/store/workspace";
 import { useToastStore } from "@/lib/store/toast";
 import { Sidebar } from "@/components/app/Sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/shadcn/sidebar";
 import { ReaderTabsNav } from "@/components/reader/ReaderTabsNav";
 import { PdfPane } from "@/components/reader/PdfPane";
 import { CoverageOverlay } from "@/components/reader/CoverageOverlay";
@@ -135,7 +136,7 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
   );
 
   return (
-    <div className="flex min-h-screen">
+    <SidebarProvider>
       <Sidebar
         papers={workspace.papers}
         activePaperId={activePaper?.id}
@@ -158,7 +159,7 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
         }}
       />
 
-      <div className="flex flex-1 flex-col pb-32">
+      <div className="flex min-w-0 min-h-screen flex-1 flex-col pb-32">
         {/* Reader chrome. Soft glass, so it reads as tooling sitting over the
             page rather than as part of the document, and sticky so the paper
             title stays available while reading. */}
@@ -167,6 +168,7 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
             aria-label="Breadcrumb"
             className="flex min-w-0 items-center gap-1.5 font-sans text-[13px]"
           >
+            <SidebarTrigger className="-ml-1 shrink-0" />
             {/* Issue #98: /workspaces is auth-protected (middleware.ts), but
                 /w itself is deliberately guest-open -- a guest clicking this,
                 the leftmost and most prominent breadcrumb chrome, used to
@@ -193,7 +195,7 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
             </span>
           </nav>
 
-          <div className="flex shrink-0 flex-wrap items-center gap-s-4 font-sans text-[13px] text-ink-faint">
+          <div className="flex min-w-0 flex-wrap items-center gap-s-4 font-sans text-[13px] text-ink-faint">
             <ReaderTabsNav workspaceId={workspaceId} active="reader" />
             <button
               type="button"
@@ -247,6 +249,6 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
       </div>
 
       <ChatDock activePaperId={activePaper?.id} />
-    </div>
+    </SidebarProvider>
   );
 }

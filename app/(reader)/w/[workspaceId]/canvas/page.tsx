@@ -25,7 +25,7 @@ export default async function CanvasPage({
     <div className="flex h-dvh w-full flex-col bg-surface">
       {!session && <GuestBanner next={`/w/${workspaceId}/canvas`} />}
 
-      <header className="flex shrink-0 items-center justify-between gap-s-3 border-b border-border px-s-4 py-s-3">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-s-3 border-b border-border px-s-4 py-s-3">
         <h1 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
           Graph
         </h1>

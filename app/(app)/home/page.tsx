@@ -59,14 +59,14 @@ export default async function HomePage() {
           {recent.map((post) => (
             <Card key={post.id} className="border-border bg-card">
               <CardContent className="flex h-full flex-col p-s-4">
-                <div className="flex items-center gap-s-2">
-                  <Badge variant="outline" className="font-mono text-[10px]">
+                <div className="flex flex-wrap items-center gap-x-s-2 gap-y-1">
+                  <Badge variant="outline" className="shrink-0 whitespace-nowrap font-mono text-[10px]">
                     {post.field}
                   </Badge>
                   {post.openAccess && (
                     <Badge
                       variant="outline"
-                      className="border-pillar-7/40 font-mono text-[10px] text-pillar-text-7"
+                      className="shrink-0 whitespace-nowrap border-pillar-7/40 font-mono text-[10px] text-pillar-text-7"
                     >
                       Open access
                     </Badge>
