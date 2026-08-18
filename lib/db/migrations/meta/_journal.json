@@ -15,6 +15,13 @@
       "when": 1787048720360,
       "tag": "0001_broad_thundra",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787056311824,
+      "tag": "0002_slow_scream",
+      "breakpoints": true
     }
   ]
 }
