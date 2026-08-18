@@ -1,6 +1,7 @@
 "use client";
 
 import clsx from "clsx";
+import Link from "next/link";
 import { Search } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { Icon } from "@/components/ui/Icon";
@@ -51,7 +52,11 @@ export function Sidebar({
 
   return (
     <aside className="flex w-60 shrink-0 flex-col gap-6 border-r border-[var(--glass-edge)] bg-[var(--glass-bg)] px-4 py-5 backdrop-blur-[var(--glass-blur)] backdrop-saturate-150">
-      <Logo />
+      {/* Issue #97: the one shell whose wordmark didn't go anywhere --
+          SiteHeader and AppSidebar both wrap theirs in a home link. */}
+      <Link href="/" aria-label="Pepiros home">
+        <Logo />
+      </Link>
 
       <div className="relative">
         <Icon icon={Search} size="xs" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-faint" />
