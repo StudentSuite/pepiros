@@ -27,7 +27,11 @@ interface ChatApiResponse {
 export function ChatDock({ activePaperId }: { activePaperId?: string }) {
   const workspace = useWorkspaceStore((s) => s.workspace);
   const selectedNodeId = useWorkspaceStore((s) => s.selectedNodeId);
-  const [open, setOpen] = useState(true);
+  // Starts collapsed: a full-height glass panel open over the reading pane
+  // by default, on every visit, covered the sidebar's own graph/related/
+  // numerics cards underneath it (z-40, fixed bottom-center) before a
+  // question was ever asked. One click on "Expand" still gets you there.
+  const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [scope, setScope] = useState<Scope>("all");

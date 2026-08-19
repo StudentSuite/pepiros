@@ -67,7 +67,10 @@ export function NumericChart() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid gap-4 sm:grid-cols-2">
+      {/* Always stacked: this only ever renders in the reader's 18rem sidebar
+          rail, never a full-width area, so a viewport-based sm:grid-cols-2
+          squeezed two full bar charts (axes, tick labels) into ~130px each. */}
+      <div className="grid gap-4 grid-cols-1">
         {roles.map((role, i) => {
           const data = dataForRole(role);
           const color = ROLE_COLORS[i % ROLE_COLORS.length]!;
