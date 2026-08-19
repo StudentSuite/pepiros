@@ -4,7 +4,7 @@ import { getSession } from "@/lib/auth/session";
 import { getAdapter } from "@/lib/data/adapter";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import type { OnboardingResponse } from "@/lib/data/types";
-import { saveOnboardingAction } from "../../actions";
+import { saveOnboardingAction } from "@/app/(app)/actions";
 
 export const metadata: Metadata = { title: "Set up your account" };
 

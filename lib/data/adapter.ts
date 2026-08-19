@@ -184,6 +184,16 @@ export interface DataAdapter {
   listPosts(authorId: string): Promise<Post[]>;
   deletePost(authorId: string, postId: string): Promise<void>;
   listComments(authorId: string): Promise<Comment[]>;
+  /**
+   * Issue #137: nothing ever set a comment's `read` column, so the sidebar's
+   * unread badge (AppSidebar.tsx) and this page's own count were permanently
+   * stuck at whatever the seed/initial state was. Marks every comment on
+   * this author's posts read -- called after listComments() already fetched
+   * the pre-mutation state for this render, so "New" badges on /comments
+   * still reflect what was actually unread on arrival; only the *next*
+   * render (this page or the sidebar elsewhere) sees the cleared count.
+   */
+  markCommentsRead(authorId: string): Promise<void>;
   getReach(authorId: string, range: RangeKey): Promise<ReachSummary>;
 
   listCatalog(): Promise<CatalogPaper[]>;
@@ -321,6 +331,8 @@ const seedAdapter: DataAdapter = {
   async listComments(authorId) {
     return seedComments(await this.listPosts(authorId));
   },
+
+  async markCommentsRead() {},
 
   async getReach(authorId, range) {
     return seedReach(await this.listPosts(authorId), range);

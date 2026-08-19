@@ -612,6 +612,14 @@ export const supabaseAdapter: DataAdapter = {
     );
   },
 
+  async markCommentsRead(authorId) {
+    const sb = createSupabaseServiceClient();
+    const { data: posts } = await sb.from("posts").select("id").eq("author_id", authorId);
+    const postIds = (posts ?? []).map((p) => p.id);
+    if (postIds.length === 0) return;
+    await sb.from("comments").update({ read: true }).in("post_id", postIds).eq("read", false);
+  },
+
   async getReach(authorId, range: RangeKey) {
     const sb = createSupabaseServiceClient();
     const days = RANGE_DAYS[range];

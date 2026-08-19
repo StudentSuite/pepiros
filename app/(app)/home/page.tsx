@@ -7,6 +7,7 @@ import { getAdapter } from "@/lib/data/adapter";
 import { Card, CardContent } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
 import { PageHeader } from "@/components/dashboard/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export const metadata: Metadata = { title: "Home" };
 
@@ -55,6 +56,20 @@ export default async function HomePage() {
           </Link>
         </div>
 
+        {recent.length === 0 ? (
+          // Issue #140: every sibling page (workspaces/comments/posts/
+          // analytics) handles zero-items via EmptyState -- this was the
+          // one gap, a header over a blank rectangle with no CTA for a
+          // fresh account right after onboarding.
+          <div className="mt-s-3">
+            <EmptyState
+              icon={BookOpen}
+              title="No published papers yet."
+              description="Publish a paper to see it here, alongside how it's doing."
+              action={{ label: "Add a paper", href: "/upload" }}
+            />
+          </div>
+        ) : (
         <div className="mt-s-3 grid gap-s-3 sm:grid-cols-2 lg:grid-cols-3">
           {recent.map((post) => (
             <Card key={post.id} className="border-border bg-card">
@@ -93,6 +108,7 @@ export default async function HomePage() {
             </Card>
           ))}
         </div>
+        )}
       </section>
 
       {/* Metrics are deliberately demoted to a single quiet strip. */}

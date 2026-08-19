@@ -19,6 +19,14 @@ export default async function SecurityPage() {
     <div>
       {demo && <DemoNotice />}
 
+      {/* Issue #142: same reasoning as settings/profile/page.tsx's header. */}
+      <header className="pb-s-5">
+        <h2 className="font-serif text-lg text-ink">Security</h2>
+        <p className="mt-1 max-w-prose font-sans text-[13px] leading-relaxed text-ink-faint">
+          Your password and active sessions.
+        </p>
+      </header>
+
       <SettingsRow
         label="Signed in as"
         description="Sessions use a single HTTP-only cookie and last seven days."

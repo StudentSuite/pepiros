@@ -24,6 +24,11 @@ export default async function CommentsPage() {
   const titleFor = new Map(posts.map((p) => [p.id, p.title]));
   const unread = comments.filter((c) => !c.read).length;
 
+  // Issue #137: marks read using the state already fetched above, so "New"
+  // badges below still reflect what was actually unread on arrival -- only
+  // the next visit (here or the sidebar badge) sees the cleared count.
+  if (unread > 0) await adapter.markCommentsRead(profile.id);
+
   return (
     <div className="mx-auto w-full max-w-4xl p-s-5">
       <PageHeader

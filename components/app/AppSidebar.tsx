@@ -57,7 +57,10 @@ import type { Profile } from "@/lib/data/types";
 
 const READING = [
   { href: "/home", label: "Home", icon: Home },
-  { href: "/workspaces", label: "Library", icon: BookOpen },
+  // Issue #139: was "Library", but the page it links to (workspaces/page.tsx)
+  // titles itself "Workspaces" -- two names for the same click. Matched the
+  // nav label to the page's own existing title rather than the reverse.
+  { href: "/workspaces", label: "Workspaces", icon: BookOpen },
   { href: "/discover", label: "Discover", icon: Compass },
 ] as const;
 
@@ -169,19 +172,28 @@ export function AppSidebar({
           <SidebarGroupLabel>Creator</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {CREATOR.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton asChild isActive={isActive(item.href)} tooltip={item.label}>
-                    <Link href={item.href}>
-                      <item.icon />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                  {"badgeKey" in item && unreadComments > 0 && (
-                    <SidebarMenuBadge>{unreadComments}</SidebarMenuBadge>
-                  )}
-                </SidebarMenuItem>
-              ))}
+              {CREATOR.map((item) => {
+                const hasUnread = "badgeKey" in item && unreadComments > 0;
+                // Issue #138: the badge itself is hidden in icon-only
+                // collapsed mode (components/shadcn/sidebar.tsx's
+                // SidebarMenuBadge, group-data-[collapsible=icon]:hidden --
+                // a shared shadcn primitive used elsewhere, not worth
+                // changing globally for one item), and the tooltip was just
+                // item.label with no count -- the one place that signal
+                // could still surface when collapsed.
+                const tooltip = hasUnread ? `${item.label} (${unreadComments} unread)` : item.label;
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton asChild isActive={isActive(item.href)} tooltip={tooltip}>
+                      <Link href={item.href}>
+                        <item.icon />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                    {hasUnread && <SidebarMenuBadge>{unreadComments}</SidebarMenuBadge>}
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

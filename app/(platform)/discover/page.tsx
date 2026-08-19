@@ -18,7 +18,7 @@ export default async function DiscoverPage() {
       <ReadingColumn wide>
         <header className="border-b border-border py-s-7 text-center">
           <h1 className="font-serif text-[2rem] leading-tight text-ink sm:text-[2.4rem]">
-            The Library
+            Discover
           </h1>
           <p className="mx-auto mt-s-3 max-w-md font-sans text-[15px] leading-relaxed text-ink-muted">
             Open-access papers, read closely. Every claim sits next to the
