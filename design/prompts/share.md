@@ -1,4 +1,4 @@
-# Read-only share view — Editorial Paper
+# Read-only share view: Editorial Paper
 
 Existing app surface, consistency pass.
 

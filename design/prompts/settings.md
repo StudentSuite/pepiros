@@ -1,4 +1,4 @@
-# Account settings — Editorial Paper
+# Account settings: Editorial Paper
 
 New surface: profile, MCP tokens, notifications, danger zone.
 

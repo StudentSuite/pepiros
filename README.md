@@ -191,7 +191,7 @@ Nothing below is required to run against the fixture. Copy [`.env.example`](.env
 
 ### Enabling Google sign-in
 
-The app is wired for it, but Google itself is enabled per-Supabase-project, not per-env-var — so this is two dashboard steps, not a code change:
+The app is wired for it, but Google itself is enabled per-Supabase-project, not per-env-var, so this is two dashboard steps, not a code change:
 
 1. **Google Cloud Console** → create an OAuth 2.0 client (Web application), and set the authorised redirect URI to `https://<your-project>.supabase.co/auth/v1/callback`.
 2. **Supabase dashboard** → Authentication → Providers → Google → paste the client ID and secret, and add your app's origin (`http://localhost:3000` in development) to Authentication → URL Configuration → Redirect URLs.

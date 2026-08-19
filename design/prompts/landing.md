@@ -1,4 +1,4 @@
-# Landing / marketing — Editorial Paper
+# Landing / marketing: Editorial Paper
 
 Grounding-first hero, platform vision below the fold (never the headline). See `docs/PLAN-V1.md §22`.
 

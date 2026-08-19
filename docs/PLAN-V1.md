@@ -553,7 +553,7 @@ No `ask` tool. Exposing `search_paper` plus `verify_claim` and letting Claude re
 Resources: `researchsumm://workspace/{id}/outline`, `researchsumm://paper/{id}`, `researchsumm://node/{id}`, so a user can `@`-mention a paper or node.
 Prompts: `brief-me-on-this-paper`, `audit-this-summary`, `where-do-these-disagree`, `what-does-this-not-establish`.
 
-> **Naming, as built:** this section predates the rename to Pepiros. The implemented scheme is `pepiros://workspace/{id}/outline`, `pepiros://paper/{id}`, `pepiros://node/{id}`, and the stdio wrapper in §13.4 is `pepiros-mcp` — the package, repo, and every other identifier say pepiros, so this doc is the stale one, not the code. Prompt names are as listed above and were implemented unchanged.
+> **Naming, as built:** this section predates the rename to Pepiros. The implemented scheme is `pepiros://workspace/{id}/outline`, `pepiros://paper/{id}`, `pepiros://node/{id}`, and the stdio wrapper in §13.4 is `pepiros-mcp`; the package, repo, and every other identifier say pepiros, so this doc is the stale one, not the code. Prompt names are as listed above and were implemented unchanged.
 
 ### 13.4 Transport and auth
 
@@ -841,31 +841,31 @@ Net: 26 generators to 21, one whole subsystem gone, one deploy target gone, and 
 
 ## 22. Platform vision
 
-**Confirmed 2026-08-10, Aug 17 target.** Pepiros expands from a private single-workspace tool into a public platform. This is additive scope on top of §1-21, not a replacement — §2's locked decisions and §16's demo script still govern the Aug 17 grounding-spine/MCP demo itself.
+**Confirmed 2026-08-10, Aug 17 target.** Pepiros expands from a private single-workspace tool into a public platform. This is additive scope on top of §1-21, not a replacement; §2's locked decisions and §16's demo script still govern the Aug 17 grounding-spine/MCP demo itself.
 
 ### 22.1 Feature list
 
-1. **Auth & accounts** — sign up/in, profile (Supabase Auth already in the stack)
-2. **Public paper library** — uploaded papers can be published beyond the uploader's private workspace into a shared, discoverable catalog
-3. **Auto-graph-on-upload** — the existing grounding-spine engine (pillars/leaves/anchors) runs automatically on publish, no manual "analyze" step — same engine, new trigger, same as a search engine auto-indexing a submitted page
-4. **Discovery/feed** — browse, search, sort public papers (recent, trending, most-discussed)
-5. **Per-paper discussion** — threaded comments on a paper, and on individual claims/nodes
-6. **Follows + likes** — follow authors/papers, like a paper or a specific claim
-7. **Curated open-access library** — Pepiros also lists freely-distributable papers itself (arXiv, PMC open access, CC-licensed), so there's something to browse before anyone uploads
+1. **Auth & accounts**: sign up/in, profile (Supabase Auth already in the stack)
+2. **Public paper library**: uploaded papers can be published beyond the uploader's private workspace into a shared, discoverable catalog
+3. **Auto-graph-on-upload**: the existing grounding-spine engine (pillars/leaves/anchors) runs automatically on publish, no manual "analyze" step, same engine, new trigger, same as a search engine auto-indexing a submitted page
+4. **Discovery/feed**: browse, search, sort public papers (recent, trending, most-discussed)
+5. **Per-paper discussion**: threaded comments on a paper, and on individual claims/nodes
+6. **Follows + likes**: follow authors/papers, like a paper or a specific claim
+7. **Curated open-access library**: Pepiros also lists freely-distributable papers itself (arXiv, PMC open access, CC-licensed), so there's something to browse before anyone uploads
 
 ### 22.2 Licensing
 
-**Open-access only.** Only papers Pepiros is legally allowed to list get listed — arXiv/PMC-OA/CC-licensed for the curated library. A user's own copyrighted uploads stay private to their workspace and are never added to the public catalog unless the license permits it.
+**Open-access only.** Only papers Pepiros is legally allowed to list get listed: arXiv/PMC-OA/CC-licensed for the curated library. A user's own copyrighted uploads stay private to their workspace and are never added to the public catalog unless the license permits it.
 
 ### 22.3 Timing and risk
 
-Full platform targets **Aug 17**, the same deadline as the grounding-spine/MCP demo — not a post-hackathon phase. This is a large scope addition on top of an already-ambitious build that the 2026-07-30 council pass (§17 header) already flagged as the plan's biggest risk; flagging it again here because it now compounds with that risk, not because the call is wrong. Built via parallel Claude-Code-driven sessions across Anay and Yash, outside the Aug 10 design-system session that produced this section and the Editorial Paper direction (`design/DIRECTIONS.md`, `design/prompts/`).
+Full platform targets **Aug 17**, the same deadline as the grounding-spine/MCP demo, not a post-hackathon phase. This is a large scope addition on top of an already-ambitious build that the 2026-07-30 council pass (§17 header) already flagged as the plan's biggest risk; flagging it again here because it now compounds with that risk, not because the call is wrong. Built via parallel Claude-Code-driven sessions across Anay and Yash, outside the Aug 10 design-system session that produced this section and the Editorial Paper direction (`design/DIRECTIONS.md`, `design/prompts/`).
 
 ### 22.4 Design direction
 
-Locked: **Editorial Paper** (Are.na × Instapaper/NYT Reader), confirmed by both Anay and Yash. Keeps the existing §14.1 thesis (dark chrome / paper-white reading surface / pillar-hue graph) and leans the reading-surface pillar harder — warm high-grain paper texture, serif small-caps UI chrome, +25% whitespace, ~20%-softened pillar saturation, unhurried ease-out-only motion. Canonical palette (replaces §14.2's placeholder pillar hex values): Stone `#B8B2A4`, Clay `#C4A78A`, Sage `#7D8A73`, Dusk `#6E6AA7`, Rose `#B46A6A`, Ochre `#D4B26A`, Teal `#5F8D86`. Full brief and image-generation prompts for all 8 app surfaces (including the 5 new platform surfaces above) in `design/DIRECTIONS.md` and `design/prompts/`.
+Locked: **Editorial Paper** (Are.na x Instapaper/NYT Reader), confirmed by both Anay and Yash. Keeps the existing §14.1 thesis (dark chrome / paper-white reading surface / pillar-hue graph) and leans the reading-surface pillar harder: warm high-grain paper texture, serif small-caps UI chrome, +25% whitespace, ~20%-softened pillar saturation, unhurried ease-out-only motion. Canonical palette (replaces §14.2's placeholder pillar hex values): Stone `#B8B2A4`, Clay `#C4A78A`, Sage `#7D8A73`, Dusk `#6E6AA7`, Rose `#B46A6A`, Ochre `#D4B26A`, Teal `#5F8D86`. Full brief and image-generation prompts for all 8 app surfaces (including the 5 new platform surfaces above) in `design/DIRECTIONS.md` and `design/prompts/`.
 
-Positioning stays **grounding-first**: the deterministic-verification pitch leads everywhere (landing hero, voice guide), platform ambition is the "where this is going" layer under it, never the headline — it's what the Aug 17 demo script is built on and it's the hardest thing to copy.
+Positioning stays **grounding-first**: the deterministic-verification pitch leads everywhere (landing hero, voice guide), platform ambition is the "where this is going" layer under it, never the headline: it's what the Aug 17 demo script is built on and it's the hardest thing to copy.
 
 ---
 

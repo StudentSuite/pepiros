@@ -1,4 +1,4 @@
-# Workspaces dashboard — Editorial Paper
+# Workspaces dashboard: Editorial Paper
 
 New surface: authenticated landing page listing a user's workspaces.
 

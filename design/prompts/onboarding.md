@@ -1,4 +1,4 @@
-# Onboarding / welcome — Editorial Paper
+# Onboarding / welcome: Editorial Paper
 
 New surface: post-signup first-run flow, 2-3 steps.
 

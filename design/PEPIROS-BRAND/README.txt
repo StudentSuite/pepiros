@@ -1,4 +1,4 @@
-PEPIROS — BRAND ASSET KIT
+PEPIROS: BRAND ASSET KIT
 Be the source.
 
 Glyph: research paper + binder clip. Never substitute another silhouette.

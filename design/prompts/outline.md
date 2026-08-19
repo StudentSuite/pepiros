@@ -1,4 +1,4 @@
-# Outline (a11y tree view) — Editorial Paper
+# Outline (a11y tree view): Editorial Paper
 
 Existing app surface, consistency pass against the Editorial Paper lock.
 

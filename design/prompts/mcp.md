@@ -1,4 +1,4 @@
-# For Claude / MCP — Editorial Paper
+# For Claude / MCP: Editorial Paper
 
 Marketing surface pitching the MCP server layer. See `plan.md` §7.
 

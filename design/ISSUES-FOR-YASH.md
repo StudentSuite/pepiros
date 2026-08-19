@@ -11,7 +11,7 @@ Ordering is by what breaks the demo first, not by size.
 
 ---
 
-## P0 — visible in a two-minute demo
+## P0: visible in a two-minute demo
 
 ### `feat(ingest): wire the PDF parse pipeline behind POST /api/ingest`
 Upload validates and queues, but nothing parses. `lib/services/ingest.ts` is a
@@ -37,7 +37,7 @@ security claim, not just a copy defect: any share link opens the same data.
 
 ---
 
-## P1 — MCP, the differentiator
+## P1: MCP, the differentiator
 
 ### `fix(mcp): register the four missing workspace and ingest tools`
 `/mcp` documents `list_workspaces`, `create_workspace`, `add_paper`, and
@@ -62,7 +62,7 @@ registry), so it will drift again. Generate the docs from the registry.
 
 ---
 
-## P2 — features the site describes
+## P2: features the site describes
 
 ### `feat(synthesis): implement the contradiction synthesis pass`
 `lib/services/synthesis.ts` is two TODO lines, so `find_contradictions` only
@@ -103,7 +103,7 @@ fabricated named comments rendered as if they were real discussion. The tables
 
 ---
 
-## Resolved during the 2026-08-15 redesign — do not file
+## Resolved during the 2026-08-15 redesign, do not file
 
 - **Demo workspace unreachable.** All four "Try the demo workspace" CTAs
   pointed at `/workspaces`, which middleware protects, so the primary hero

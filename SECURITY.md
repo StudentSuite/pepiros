@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Pepiros is pre-1.0 and not yet deployed anywhere with live user data. Only the latest commit on `main` is supported — there are no maintained release branches to backport fixes to.
+Pepiros is pre-1.0 and not yet deployed anywhere with live user data. Only the latest commit on `main` is supported; there are no maintained release branches to backport fixes to.
 
 ## Reporting a vulnerability
 
@@ -16,10 +16,10 @@ Include what you can:
 - Steps to reproduce, or a proof of concept.
 - The affected file(s)/commit.
 
-We'll acknowledge reports as promptly as we can — this is a small, active hackathon project without a dedicated security team, so response times may vary. Please give us a reasonable window to fix an issue before any public disclosure.
+We'll acknowledge reports as promptly as we can: this is a small, active hackathon project without a dedicated security team, so response times may vary. Please give us a reasonable window to fix an issue before any public disclosure.
 
 ## Notes specific to this codebase
 
-- No Supabase project or `FEATHERLESS_API_KEY` is provisioned in this repo by default (see `.env.example`) — running it locally against the bundled fixture does not touch any live infrastructure or third-party API.
+- No Supabase project or `FEATHERLESS_API_KEY` is provisioned in this repo by default (see `.env.example`); running it locally against the bundled fixture does not touch any live infrastructure or third-party API.
 - Once a real backend exists: `SUPABASE_SERVICE_ROLE_KEY` bypasses Row Level Security (see `lib/supabase/server.ts`'s `createSupabaseServiceClient`) and must never be exposed to the client or used in a route that echoes request input back into a query.
-- The MCP layer (`mcp/*`, not yet implemented) is expected to re-verify every claim server-side (`lib/services/verify.ts`) rather than trust a caller-asserted `quote_located` — see `CLAUDE.md` for why this matters for this project specifically.
+- The MCP layer (`mcp/*`, not yet implemented) is expected to re-verify every claim server-side (`lib/services/verify.ts`) rather than trust a caller-asserted `quote_located`; see `CLAUDE.md` for why this matters for this project specifically.

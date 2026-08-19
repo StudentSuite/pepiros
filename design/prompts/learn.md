@@ -1,4 +1,4 @@
-# Learn (flashcards/quiz) — Editorial Paper
+# Learn (flashcards/quiz): Editorial Paper
 
 Existing app surface, consistency pass.
 

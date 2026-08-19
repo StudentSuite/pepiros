@@ -257,7 +257,7 @@ export async function runSynthesis(workspaceId: string): Promise<SynthesisResult
       workspaceId,
       type: "synthesis",
       title: "Timeline of Findings",
-      bodyMd: sorted.map((p) => `- **${p.year}** — ${p.title}`).join("\n"),
+      bodyMd: sorted.map((p) => `- **${p.year}**: ${p.title}`).join("\n"),
       pillarIndex: null,
       x: 0,
       y: 0,

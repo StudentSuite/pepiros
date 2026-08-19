@@ -1,4 +1,4 @@
-# Reverse audit view — Editorial Paper
+# Reverse audit view: Editorial Paper
 
 Existing app surface, consistency pass. See `plan.md` §11 "Research Mentor... replaced by" note and `docs/PLAN-V1.md` audit feature.
 
