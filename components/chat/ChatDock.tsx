@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MessageList, type ChatMessage } from "./MessageList";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -35,6 +35,15 @@ export function ChatDock({ activePaperId }: { activePaperId?: string }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [scope, setScope] = useState<Scope>("all");
+  // Issue #166: "This node" used to silently fall back to paper-scope (or
+  // even the workspace's first paper) whenever no node was selected, with
+  // no indication the user's explicit scope choice wasn't honored. If the
+  // selection clears while "node" scope is active (e.g. the inspector
+  // closes), drop back to "all" rather than keep a scope that's quietly
+  // behaving like something broader.
+  useEffect(() => {
+    if (scope === "node" && !selectedNodeId) setScope("all");
+  }, [scope, selectedNodeId]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [allowUngrounded, setAllowUngrounded] = useState(false);
@@ -135,7 +144,9 @@ export function ChatDock({ activePaperId }: { activePaperId?: string }) {
             >
               <option value="all">All papers</option>
               <option value="paper">This paper</option>
-              <option value="node">This node</option>
+              <option value="node" disabled={!selectedNodeId}>
+                {selectedNodeId ? "This node" : "This node (select one first)"}
+              </option>
             </select>
           </div>
           <button

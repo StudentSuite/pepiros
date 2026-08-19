@@ -43,7 +43,7 @@ export function EvidenceList({ evidence }: { evidence: Evidence[] }) {
               </p>
             ) : (
               <div className="font-sans text-xs text-ink-muted">
-                <p>(dropped -- see claimedQuoteForTesting for what was originally claimed)</p>
+                <p>This citation was dropped -- the quote could not be relocated in the source on re-verification.</p>
                 {typeof claimedQuote === "string" && (
                   <p className="mt-1 font-serif italic text-ink-faint line-through decoration-unsupported/60">
                     &ldquo;{claimedQuote}&rdquo;

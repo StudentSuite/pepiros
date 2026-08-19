@@ -122,11 +122,31 @@ export default function UploadPage() {
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Issue #164: the SSE connection closing after the job legitimately
+  // reaches "done"/"failed" (the server's own controller.close(), GET
+  // /api/jobs/[id]/route.ts) fires this same "error" event as a real
+  // network blip or server restart would -- EventSource has no distinct
+  // signal for "the server hung up because it's actually finished." A ref
+  // (not state) tracks the latest status so this closure always reads the
+  // current value instead of whatever it captured at mount.
+  const latestStatusRef = useRef<JobProgress["status"] | null>(null);
+
   useEffect(() => {
     if (!jobId) return;
+    latestStatusRef.current = null;
     const source = new EventSource(`/api/jobs/${jobId}`);
-    source.addEventListener("progress", (e) => setProgress(JSON.parse((e as MessageEvent).data) as JobProgress));
-    source.addEventListener("error", () => source.close());
+    source.addEventListener("progress", (e) => {
+      const parsed = JSON.parse((e as MessageEvent).data) as JobProgress;
+      latestStatusRef.current = parsed.status;
+      setProgress(parsed);
+    });
+    source.addEventListener("error", () => {
+      source.close();
+      const status = latestStatusRef.current;
+      if (status !== "done" && status !== "failed") {
+        setError("Lost connection while checking progress. The job may still be running -- refresh to check, or try uploading again.");
+      }
+    });
     return () => source.close();
   }, [jobId]);
 

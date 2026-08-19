@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { ExternalLink, Plus } from "lucide-react";
 import type { GhostCitationNodeType } from "./types";
@@ -16,11 +16,34 @@ import type { GhostCitationNodeType } from "./types";
  * actually reports a directly fetchable open-access PDF (`pdfUrl`); a
  * paywalled or unindexed work still only offers the OpenAlex link, since
  * there's genuinely nothing to ingest.
+ *
+ * Issue #165: this used to discard the real jobId POST /api/ingest returns
+ * and just flip to a static "queued -- check the workspace shortly" label,
+ * a blind fire-and-forget worse than the main upload page's real SSE-driven
+ * progress for the exact same job. Now follows the same job over
+ * GET /api/jobs/[id]'s SSE stream and reflects its real terminal state.
  */
 export function GhostCitationNode({ data }: NodeProps<GhostCitationNodeType>) {
   const { title, authors, year, direction, url, pdfUrl, workspaceId } = data;
-  const [state, setState] = useState<"idle" | "pending" | "queued" | "error">("idle");
+  const [state, setState] = useState<"idle" | "pending" | "queued" | "done" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!jobId) return;
+    const source = new EventSource(`/api/jobs/${jobId}`);
+    source.addEventListener("progress", (e) => {
+      const payload = JSON.parse((e as MessageEvent).data) as { status: string; error?: string | null };
+      if (payload.status === "done") {
+        setState("done");
+      } else if (payload.status === "failed") {
+        setError(payload.error ?? "Ingest failed.");
+        setState("error");
+      }
+    });
+    source.addEventListener("error", () => source.close());
+    return () => source.close();
+  }, [jobId]);
 
   async function addToWorkspace() {
     if (!pdfUrl) return;
@@ -32,8 +55,9 @@ export function GhostCitationNode({ data }: NodeProps<GhostCitationNodeType>) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ workspaceId, url: pdfUrl }),
       });
-      const body = (await res.json().catch(() => null)) as { detail?: string; error?: string } | null;
+      const body = (await res.json().catch(() => null)) as { detail?: string; error?: string; jobId?: string } | null;
       if (!res.ok) throw new Error(body?.detail ?? body?.error ?? `Could not queue (${res.status}).`);
+      if (body?.jobId) setJobId(body.jobId);
       setState("queued");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not queue this paper.");
@@ -69,7 +93,7 @@ export function GhostCitationNode({ data }: NodeProps<GhostCitationNodeType>) {
           View on OpenAlex
           <ExternalLink size={10} strokeWidth={1.5} aria-hidden />
         </a>
-        {pdfUrl && state !== "queued" && (
+        {pdfUrl && state !== "queued" && state !== "done" && (
           <button
             type="button"
             onClick={() => void addToWorkspace()}
@@ -82,8 +106,11 @@ export function GhostCitationNode({ data }: NodeProps<GhostCitationNodeType>) {
         )}
       </div>
       {state === "queued" && (
+        <p className="mt-1.5 font-sans text-[10px] leading-snug text-ink-faint">Parsing this paper…</p>
+      )}
+      {state === "done" && (
         <p className="mt-1.5 font-sans text-[10px] leading-snug text-located">
-          Queued -- parsing runs in the background, check the workspace shortly.
+          Added -- refresh the canvas to see it.
         </p>
       )}
       {state === "error" && error && (

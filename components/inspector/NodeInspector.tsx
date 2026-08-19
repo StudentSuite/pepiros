@@ -11,6 +11,16 @@ import { PillarChip } from "@/components/ui/PillarChip";
 import { Tabs } from "@/components/ui/Tabs";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/shadcn/alert-dialog";
 import { EvidenceList } from "./EvidenceList";
 import { NodeEditor } from "./NodeEditor";
 
@@ -91,11 +101,14 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
   const updateNodeBody = useWorkspaceStore((s) => s.updateNodeBody);
   const selectNode = useWorkspaceStore((s) => s.selectNode);
   const addNode = useWorkspaceStore((s) => s.addNode);
+  const removeNode = useWorkspaceStore((s) => s.removeNode);
   const [tab, setTab] = useState<Tab>("content");
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pendingFollowup, setPendingFollowup] = useState<string | null>(null);
   const [followupError, setFollowupError] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   if (!workspace) {
     return <p className="font-sans text-xs text-ink-faint">Loading workspace...</p>;
@@ -140,6 +153,25 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
     }
   }
 
+  async function confirmDelete() {
+    setDeleting(true);
+    try {
+      const res = await fetch(
+        `/api/nodes/${encodeURIComponent(nodeId)}?workspaceId=${encodeURIComponent(workspaceId)}`,
+        { method: "DELETE" },
+      );
+      const body = (await res.json().catch(() => null)) as { detail?: string; staleNodeIds?: string[] } | null;
+      if (!res.ok) throw new Error(body?.detail ?? `Could not delete this node (${res.status}).`);
+      removeNode(nodeId, body?.staleNodeIds ?? []);
+      useToastStore.getState().push("Deleted", "success");
+    } catch (err) {
+      useToastStore.getState().push(err instanceof Error ? err.message : "Could not delete this node.", "error");
+    } finally {
+      setDeleting(false);
+      setConfirmingDelete(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -164,9 +196,18 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
         value={tab}
         onChange={(v) => setTab(v as Tab)}
         trailing={
-          !readOnly && tab === "content" ? (
-            <Button variant="ghost" size="sm" disabled={saving} onClick={() => setEditing((e) => !e)}>
-              {editing ? "Cancel edit" : "Edit"}
+          !readOnly && tab === "content" && !editing ? (
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="sm" disabled={saving} onClick={() => setEditing(true)}>
+                Edit
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setConfirmingDelete(true)}>
+                Delete
+              </Button>
+            </div>
+          ) : !readOnly && tab === "content" ? (
+            <Button variant="ghost" size="sm" disabled={saving} onClick={() => setEditing(false)}>
+              Cancel edit
             </Button>
           ) : undefined
         }
@@ -239,6 +280,24 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
       )}
 
       {tab === "evidence" && <EvidenceList evidence={nodeEvidence} />}
+
+      <AlertDialog open={confirmingDelete} onOpenChange={(o) => !o && setConfirmingDelete(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete &ldquo;{node.title}&rdquo;?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the node and its evidence. Any other node whose own claim depended on
+              this one is marked stale rather than deleted. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction disabled={deleting} onClick={() => void confirmDelete()}>
+              {deleting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

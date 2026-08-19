@@ -42,6 +42,16 @@ interface WorkspaceState {
    * the server just demoted doesn't keep showing the stale tier.
    */
   updateNodeBody: (nodeId: string, bodyMd: string, evidence: Evidence[]) => void;
+  /**
+   * Issue #163: applies a successfully-persisted DELETE /api/nodes/[id] to
+   * the in-memory workspace -- the endpoint (lib/services/nodes.ts's
+   * deleteNode()) already had a working cascade/stale-marking contract with
+   * no UI ever calling it. Removes the node itself, any edge touching it,
+   * and its evidence rows; marks every id in `staleNodeIds` (nodes whose own
+   * claim depended on the one just deleted) stale rather than touching them
+   * further, matching the server's own distinction.
+   */
+  removeNode: (nodeId: string, staleNodeIds: string[]) => void;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({
@@ -85,6 +95,22 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
           ...state.workspace,
           nodes: state.workspace.nodes.map((n) => (n.id === nodeId ? { ...n, bodyMd } : n)),
           evidence: state.workspace.evidence.map((e) => evidenceById.get(e.id) ?? e),
+        },
+      };
+    }),
+  removeNode: (nodeId, staleNodeIds) =>
+    set((state) => {
+      if (!state.workspace) return state;
+      const staleSet = new Set(staleNodeIds);
+      return {
+        selectedNodeId: state.selectedNodeId === nodeId ? null : state.selectedNodeId,
+        workspace: {
+          ...state.workspace,
+          nodes: state.workspace.nodes
+            .filter((n) => n.id !== nodeId)
+            .map((n) => (staleSet.has(n.id) ? { ...n, stale: true } : n)),
+          edges: state.workspace.edges.filter((e) => e.sourceId !== nodeId && e.targetId !== nodeId),
+          evidence: state.workspace.evidence.filter((e) => e.nodeId !== nodeId),
         },
       };
     }),
