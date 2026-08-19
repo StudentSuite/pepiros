@@ -31,21 +31,37 @@ import { Card } from "@/components/shadcn/card";
  * manual continue and no way to cancel; a manual link now sits alongside it,
  * so hitting back mid-countdown isn't the only way to control what happens
  * next.
+ *
+ * Issue #158: this was the one auth screen that never actually got the
+ * per-field validation the #126/#127 pass gave login/signup -- it still
+ * returned on the first failure (fix the length, resubmit, only then
+ * discover the mismatch) and never passed its error into FormField's
+ * `error` prop, so aria-invalid stayed false even when a field was invalid.
  */
+interface FieldErrors {
+  password?: string;
+  confirmPassword?: string;
+}
+
 export default function ResetPasswordConfirmPage() {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState<string | undefined>();
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [formError, setFormError] = useState<string | undefined>();
   const [pending, setPending] = useState(false);
   const [done, setDone] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (password.length < 8) return setError("Password must be at least 8 characters.");
-    if (password !== confirmPassword) return setError("Passwords do not match.");
+    setFormError(undefined);
 
-    setError(undefined);
+    const errors: FieldErrors = {};
+    if (password.length < 8) errors.password = "Must be at least 8 characters.";
+    if (password !== confirmPassword) errors.confirmPassword = "Passwords do not match.";
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
     setPending(true);
     try {
       const res = await fetch("/api/auth/reset-password/confirm", {
@@ -55,13 +71,13 @@ export default function ResetPasswordConfirmPage() {
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as { error?: string } | null;
-        setError(body?.error ?? "Could not reset your password.");
+        setFormError(body?.error ?? "Could not reset your password.");
         return;
       }
       setDone(true);
       setTimeout(() => router.push("/login"), 2000);
     } catch {
-      setError("Could not reach the server. Check your connection and try again.");
+      setFormError("Could not reach the server. Check your connection and try again.");
     } finally {
       setPending(false);
     }
@@ -92,14 +108,14 @@ export default function ResetPasswordConfirmPage() {
               Choose a new password for your account.
             </p>
 
-            {error && (
+            {formError && (
               <div className="mt-s-4">
-                <ErrorBanner message={error} />
+                <ErrorBanner message={formError} />
               </div>
             )}
 
             <form onSubmit={handleSubmit} noValidate className="mt-s-5 flex flex-col gap-s-4">
-              <FormField label="New password" required>
+              <FormField label="New password" required error={fieldErrors.password}>
                 <PasswordInput
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
@@ -109,7 +125,7 @@ export default function ResetPasswordConfirmPage() {
                 />
               </FormField>
 
-              <FormField label="Confirm password" required>
+              <FormField label="Confirm password" required error={fieldErrors.confirmPassword}>
                 <PasswordInput
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}

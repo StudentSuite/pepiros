@@ -215,6 +215,18 @@ const deletedPostIds = new Set<string>();
 /** Same module-memory trade-off as deletedPostIds above -- a toggle sticks within the session, resets on server restart. */
 const seedNotificationPrefs = new Map<string, NotificationPrefs>();
 
+/**
+ * Issue #156: markCommentsRead() used to be a bare no-op here, so the
+ * guest/demo account -- the primary "judge or first-time visitor" path
+ * this app actually ships with no backend required -- never actually
+ * cleared its unread badge, no matter how many times /comments was
+ * visited. seedComments() deterministically re-derives each comment's
+ * `read` flag from a per-post seed on every call with nothing persisted,
+ * so real read-state needs to live here instead. Same module-memory
+ * trade-off as deletedPostIds above.
+ */
+const seedReadCommentIds = new Set<string>();
+
 const seedAdapter: DataAdapter = {
   kind: "seed",
 
@@ -329,10 +341,15 @@ const seedAdapter: DataAdapter = {
   },
 
   async listComments(authorId) {
-    return seedComments(await this.listPosts(authorId));
+    return seedComments(await this.listPosts(authorId)).map((c) =>
+      seedReadCommentIds.has(c.id) ? { ...c, read: true } : c,
+    );
   },
 
-  async markCommentsRead() {},
+  async markCommentsRead(authorId) {
+    const comments = seedComments(await this.listPosts(authorId));
+    for (const c of comments) seedReadCommentIds.add(c.id);
+  },
 
   async getReach(authorId, range) {
     return seedReach(await this.listPosts(authorId), range);

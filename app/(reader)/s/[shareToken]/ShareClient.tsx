@@ -49,9 +49,11 @@ export function ShareClient({ workspaceId }: { workspaceId: string }) {
   );
 
   useEffect(() => {
-    if (paperChunks.length > 0) {
-      setActiveChunkId(paperChunks[0]!.id);
-    }
+    // Issue #157: previously only handled the paperChunks.length > 0 case,
+    // leaving activeChunkId pointing at the *previous* paper's chunk when
+    // the newly-selected paper has none of its own yet (e.g. still
+    // processing). Explicitly null it out instead of leaving it stale.
+    setActiveChunkId(paperChunks.length > 0 ? paperChunks[0]!.id : null);
     // Resets to this paper's own first chunk whenever the selected paper
     // changes, rather than only filling in an empty activeChunkId once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -72,7 +74,11 @@ export function ShareClient({ workspaceId }: { workspaceId: string }) {
     );
   }
 
-  const activeChunk = workspace.chunks.find((c) => c.id === activeChunkId) ?? paperChunks[0];
+  // Issue #157: scoped to this paper's own chunks, not the whole
+  // workspace's -- otherwise a stale activeChunkId from the previously
+  // selected paper could resolve to a real chunk that just belongs to a
+  // different paper than the one currently shown.
+  const activeChunk = paperChunks.find((c) => c.id === activeChunkId) ?? paperChunks[0];
   const activePdfUrl = activePaper.pdfStoragePath
     ? `/api/papers/${activePaper.id}/pdf?workspaceId=${encodeURIComponent(workspaceId)}`
     : null;
@@ -161,7 +167,11 @@ export function ShareClient({ workspaceId }: { workspaceId: string }) {
         </aside>
 
         <main id="main-content" className="flex flex-col gap-s-4">
-          {activeChunk && <PdfPane chunk={activeChunk} pdfUrl={activePdfUrl} highlights={highlights} />}
+          {activeChunk ? (
+            <PdfPane chunk={activeChunk} pdfUrl={activePdfUrl} highlights={highlights} />
+          ) : (
+            <p className="font-sans text-sm text-ink-faint">This paper has no content to show yet.</p>
+          )}
           <div className="rounded border border-border bg-surface-raised p-s-4">
             <NodeInspector readOnly />
           </div>
