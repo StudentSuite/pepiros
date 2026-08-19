@@ -152,6 +152,10 @@ export async function exchangeAuthorizationCode(input: {
     label: input.clientName ? `OAuth: ${input.clientName}` : "OAuth client",
     scope: row.scope,
     workspaceId: row.workspaceId,
+    // Issue #151: row.profileId was already captured on the authorization
+    // code (whoever approved the consent screen) but was dropped here,
+    // making every OAuth-minted token just as ownerless as #150's gap.
+    profileId: row.profileId,
   });
 
   return { ok: true, accessToken: minted.token, scope: row.scope };

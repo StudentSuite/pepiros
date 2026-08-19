@@ -71,7 +71,7 @@ export async function createMcpTokenAction(input: { label: string; scope: McpSco
   if (!profile) throw new Error("Not signed in.");
 
   const label = input.label.trim() || "Untitled token";
-  const result = await createMcpToken({ label, scope: input.scope, workspaceId: null });
+  const result = await createMcpToken({ label, scope: input.scope, workspaceId: null, profileId: profile.id });
   revalidatePath("/settings/mcp-tokens");
   return result;
 }
@@ -80,6 +80,6 @@ export async function revokeMcpTokenAction(id: string) {
   const profile = await getSession();
   if (!profile) throw new Error("Not signed in.");
 
-  await revokeMcpToken(id);
+  await revokeMcpToken(id, profile.id);
   revalidatePath("/settings/mcp-tokens");
 }

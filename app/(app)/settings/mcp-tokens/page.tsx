@@ -12,7 +12,7 @@ export default async function McpTokensPage() {
   const profile = await getSession();
   if (!profile) redirect("/login");
 
-  const tokens = await listMcpTokens();
+  const tokens = await listMcpTokens(profile.id);
 
   return (
     <div>

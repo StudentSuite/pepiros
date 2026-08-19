@@ -451,16 +451,23 @@ export async function insertMcpTokenRow(input: {
   scope: "read" | "write";
   workspaceId: string | null;
   label: string;
+  profileId: string | null;
 }): Promise<void> {
   await db.insert(schema.mcpTokens).values(input);
 }
 
-/** Every non-revoked token, newest first -- lib/services/mcpTokens.ts's listMcpTokens() never showed revoked ones either. */
-export async function listActiveMcpTokenRows(): Promise<McpTokenRow[]> {
+/**
+ * Issue #150: every non-revoked token scoped to one owner, newest first --
+ * this used to return every user's tokens with no filter at all, so any
+ * signed-in user could see (and, via revokeMcpTokenRow, revoke) any other
+ * user's tokens. A null-owner row (predates the profile_id column) is
+ * never returned to anyone.
+ */
+export async function listActiveMcpTokenRows(profileId: string): Promise<McpTokenRow[]> {
   return db
     .select()
     .from(schema.mcpTokens)
-    .where(isNull(schema.mcpTokens.revokedAt))
+    .where(and(isNull(schema.mcpTokens.revokedAt), eq(schema.mcpTokens.profileId, profileId)))
     .orderBy(desc(schema.mcpTokens.createdAt));
 }
 
@@ -473,12 +480,23 @@ export async function touchMcpTokenRow(id: string): Promise<void> {
   await db.update(schema.mcpTokens).set({ lastUsedAt: new Date() }).where(eq(schema.mcpTokens.id, id));
 }
 
-/** Returns whether a row was actually revoked -- false if it didn't exist or was already revoked, matching the old JSON-file store's semantics. */
-export async function revokeMcpTokenRow(id: string): Promise<boolean> {
+/**
+ * Issue #150: only revokes a token owned by `profileId` -- returns false
+ * (not found/already revoked/not yours) rather than revoking regardless of
+ * caller, which is what let any signed-in user revoke any other user's
+ * token by id.
+ */
+export async function revokeMcpTokenRow(id: string, profileId: string): Promise<boolean> {
   const rows = await db
     .update(schema.mcpTokens)
     .set({ revokedAt: new Date() })
-    .where(and(eq(schema.mcpTokens.id, id), isNull(schema.mcpTokens.revokedAt)))
+    .where(
+      and(
+        eq(schema.mcpTokens.id, id),
+        eq(schema.mcpTokens.profileId, profileId),
+        isNull(schema.mcpTokens.revokedAt),
+      ),
+    )
     .returning({ id: schema.mcpTokens.id });
   return rows.length > 0;
 }

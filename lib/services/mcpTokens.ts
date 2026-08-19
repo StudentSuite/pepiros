@@ -36,10 +36,18 @@ export interface McpTokenMeta {
   lastUsedAt: string | null;
 }
 
+/**
+ * Issue #150: `profileId` is now required at mint time -- this table
+ * shipped with no owner column at all, so every token was visible to and
+ * revocable by every signed-in user. `null` is only for the pre-fix
+ * OAuth-token-mint path (issue #151 closes that gap too); every caller
+ * below this file passes a real profile id.
+ */
 export async function createMcpToken(input: {
   label: string;
   scope: McpScope;
   workspaceId: string | null;
+  profileId: string | null;
 }): Promise<{ id: string; token: string }> {
   const token = generateToken();
   const id = randomUUID();
@@ -49,13 +57,14 @@ export async function createMcpToken(input: {
     scope: input.scope,
     workspaceId: input.workspaceId,
     label: input.label,
+    profileId: input.profileId,
   });
   return { id, token };
 }
 
-/** Metadata only -- never the hash, and never revoked tokens (they're gone, not just marked). */
-export async function listMcpTokens(): Promise<McpTokenMeta[]> {
-  const rows = await listActiveMcpTokenRows();
+/** Metadata only -- never the hash, and never revoked tokens (they're gone, not just marked). Scoped to `profileId` (issue #150). */
+export async function listMcpTokens(profileId: string): Promise<McpTokenMeta[]> {
+  const rows = await listActiveMcpTokenRows(profileId);
   return rows.map((row) => ({
     id: row.id,
     label: row.label ?? "Untitled token",
@@ -66,8 +75,9 @@ export async function listMcpTokens(): Promise<McpTokenMeta[]> {
   }));
 }
 
-export async function revokeMcpToken(id: string): Promise<boolean> {
-  return revokeMcpTokenRow(id);
+/** Issue #150: only revokes a token owned by `profileId`. */
+export async function revokeMcpToken(id: string, profileId: string): Promise<boolean> {
+  return revokeMcpTokenRow(id, profileId);
 }
 
 /**

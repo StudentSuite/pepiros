@@ -36,6 +36,18 @@ describe("tokenSetRatio", () => {
     const b = "light exposure increased because sleep improved";
     expect(tokenSetRatio(a, b)).toBe(1);
   });
+
+  it("scores an empty or purely-punctuation quote at 0 against any chunk, never 1 (issue #152)", () => {
+    // Previously: an empty a.tokens made core === combinedA === "" trivially
+    // (both the intersection and a's leftover are empty), and the
+    // lengthCeiling(0,0)/levenshteinRatio("","") special cases to 1 both
+    // fired on that degenerate pair -- scoring a blank claim quote as a
+    // perfect match against literally anything, the worst possible failure
+    // this product defines (a claim tiered quote_located when it isn't).
+    expect(tokenSetRatio("", "Participants were randomized 1:1 to receive bright light.")).toBe(0);
+    expect(tokenSetRatio("...---...", "Participants were randomized 1:1.")).toBe(0);
+    expect(tokenSetRatio("Participants were randomized 1:1.", "")).toBe(0);
+  });
 });
 
 describe("tokenSetRatioUpperBound", () => {

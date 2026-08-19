@@ -14,6 +14,8 @@ import { createMcpToken, listMcpTokens, resolveMcpToken, revokeMcpToken } from "
  * cascades to every mcp_tokens row this suite minted against it.
  */
 const TEST_WORKSPACE_ID = `mcp-tokens-test-${randomUUID().slice(0, 8)}`;
+const OWNER_A = `mcp-tokens-test-owner-a-${randomUUID().slice(0, 8)}`;
+const OWNER_B = `mcp-tokens-test-owner-b-${randomUUID().slice(0, 8)}`;
 
 beforeAll(async () => {
   await db.insert(workspaces).values({ id: TEST_WORKSPACE_ID, name: "mcpTokens test workspace" });
@@ -25,7 +27,12 @@ afterAll(async () => {
 
 describe("mcpTokens", () => {
   it("mints a token whose raw value resolves back to its own record", async () => {
-    const { id, token } = await createMcpToken({ label: "Test", scope: "write", workspaceId: TEST_WORKSPACE_ID });
+    const { id, token } = await createMcpToken({
+      label: "Test",
+      scope: "write",
+      workspaceId: TEST_WORKSPACE_ID,
+      profileId: OWNER_A,
+    });
 
     const record = await resolveMcpToken(token);
     expect(record).toBeDefined();
@@ -36,8 +43,8 @@ describe("mcpTokens", () => {
   });
 
   it("never exposes the raw token or its hash from listMcpTokens", async () => {
-    await createMcpToken({ label: "List me", scope: "read", workspaceId: null });
-    const tokens = await listMcpTokens();
+    await createMcpToken({ label: "List me", scope: "read", workspaceId: null, profileId: OWNER_A });
+    const tokens = await listMcpTokens(OWNER_A);
     for (const t of tokens) {
       expect(t).not.toHaveProperty("tokenHash");
       expect(t).not.toHaveProperty("token");
@@ -49,13 +56,18 @@ describe("mcpTokens", () => {
   });
 
   it("stops resolving a token once revoked, and drops it from the list", async () => {
-    const { id, token } = await createMcpToken({ label: "Revoke me", scope: "read", workspaceId: null });
-    expect((await listMcpTokens()).some((t) => t.id === id)).toBe(true);
+    const { id, token } = await createMcpToken({
+      label: "Revoke me",
+      scope: "read",
+      workspaceId: null,
+      profileId: OWNER_A,
+    });
+    expect((await listMcpTokens(OWNER_A)).some((t) => t.id === id)).toBe(true);
 
-    const revoked = await revokeMcpToken(id);
+    const revoked = await revokeMcpToken(id, OWNER_A);
     expect(revoked).toBe(true);
 
-    expect((await listMcpTokens()).some((t) => t.id === id)).toBe(false);
+    expect((await listMcpTokens(OWNER_A)).some((t) => t.id === id)).toBe(false);
     // resolveMcpToken still finds the record (it's a real, minted token) --
     // checkToken() is what turns "revoked" into a rejection, same contract
     // as an unrevoked token: resolution and authorization are separate steps.
@@ -65,6 +77,42 @@ describe("mcpTokens", () => {
   });
 
   it("revoking an already-revoked or unknown id is a no-op, not a throw", async () => {
-    expect(await revokeMcpToken("no-such-id")).toBe(false);
+    expect(await revokeMcpToken("no-such-id", OWNER_A)).toBe(false);
+  });
+
+  // Issue #150: this table shipped with no owner column at all -- any
+  // signed-in user could list and revoke any other user's tokens.
+  it("does not list another owner's token", async () => {
+    const { id } = await createMcpToken({
+      label: "Owner A's token",
+      scope: "read",
+      workspaceId: null,
+      profileId: OWNER_A,
+    });
+
+    const asOwnerB = await listMcpTokens(OWNER_B);
+    expect(asOwnerB.some((t) => t.id === id)).toBe(false);
+
+    const asOwnerA = await listMcpTokens(OWNER_A);
+    expect(asOwnerA.some((t) => t.id === id)).toBe(true);
+  });
+
+  it("does not let a different owner revoke someone else's token", async () => {
+    const { id, token } = await createMcpToken({
+      label: "Owner A's other token",
+      scope: "read",
+      workspaceId: null,
+      profileId: OWNER_A,
+    });
+
+    const revokedByB = await revokeMcpToken(id, OWNER_B);
+    expect(revokedByB).toBe(false);
+
+    // Still fully valid -- B's attempt had no effect.
+    const record = await resolveMcpToken(token);
+    expect(checkToken(record).ok).toBe(true);
+
+    const revokedByA = await revokeMcpToken(id, OWNER_A);
+    expect(revokedByA).toBe(true);
   });
 });

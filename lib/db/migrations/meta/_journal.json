@@ -22,6 +22,13 @@
       "when": 1787056311824,
       "tag": "0002_slow_scream",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1787159630788,
+      "tag": "0003_gifted_nico_minoru",
+      "breakpoints": true
     }
   ]
 }

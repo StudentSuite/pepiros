@@ -364,6 +364,17 @@ export const mcpTokens = pgTable("mcp_tokens", {
   tokenHash: text("token_hash").notNull().unique(),
   scope: mcpTokenScope("scope").notNull().default("read"),
   workspaceId: text("workspace_id").references(() => workspaces.id, { onDelete: "cascade" }),
+  /**
+   * Issues #150/#151: nullable, no Drizzle FK -- `profiles` is a Supabase-
+   * managed table this schema doesn't know about, same cross-system
+   * reference pattern as mcpOAuthCodes.profileId below. Nullable for
+   * migration safety against any token row that predates this column (a
+   * pre-existing gap: this table shipped with no owner column at all, so
+   * every signed-in user could list and revoke every other user's tokens).
+   * A null-owner row is simply never returned to anyone rather than
+   * attributed to the wrong account.
+   */
+  profileId: text("profile_id"),
   label: text("label"),
   lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),

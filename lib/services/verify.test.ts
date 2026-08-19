@@ -43,6 +43,44 @@ describe("verifyAndBindClaims", () => {
     expect(bodyMd).not.toContain("[C1]");
     expect(bodyMd).toContain(`[^${evidence[0]!.id}]`);
   });
+
+  it("does not let a ref containing regex metacharacters corrupt the bare-ref search (issue #154)", () => {
+    // A model can emit the full header instead of the bare token
+    // (normalizeRef's own doc comment) -- if that string reached the
+    // RegExp unescaped, "|" would become alternation and "." a wildcard.
+    const { bodyMd, evidence } = verifyAndBindClaims({
+      nodeId: "n1",
+      bodyMd: "Participants were randomized 1:1 [C1].",
+      claims: [{ refs: ["C1 | Methods | p.4"], quote: "Participants were randomized 1:1 to receive bright light exposure." }],
+      chunks: CHUNKS,
+      numerics: [],
+      idPrefix: "n1-e",
+    });
+
+    expect(bodyMd).not.toContain("[C1]");
+    expect(bodyMd).toContain(`[^${evidence[0]!.id}]`);
+  });
+
+  it("recovers both claims when they share a ref and the model wrote only one bare mention (issue #155)", () => {
+    const { bodyMd, evidence } = verifyAndBindClaims({
+      nodeId: "n1",
+      bodyMd: "Participants were randomized 1:1 to receive bright light exposure [C1].",
+      claims: [
+        { refs: ["C1"], quote: "Participants were randomized 1:1" },
+        { refs: ["C1"], quote: "receive bright light exposure" },
+      ],
+      chunks: CHUNKS,
+      numerics: [],
+      idPrefix: "n1-e",
+    });
+
+    expect(bodyMd).not.toContain("[C1]");
+    // Neither claim's evidence row is missing its marker -- both got bound
+    // at the one shared occurrence, rather than the first claim consuming
+    // it and the second silently losing its citation.
+    expect(bodyMd).toContain(`[^${evidence[0]!.id}]`);
+    expect(bodyMd).toContain(`[^${evidence[1]!.id}]`);
+  });
 });
 
 describe("reverifyNodeEvidence", () => {

@@ -93,26 +93,68 @@ export interface VerifyAndBindInput {
  * twice done incompletely (chat's Promote button, the synthesis pass) before
  * this was pulled out into one function.
  */
+/** Standard MDN-recommended escape so a ref containing regex metacharacters can't reshape the pattern it's interpolated into. */
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 /**
  * A model is told to mark each claim with a notional "[^n{i}]" marker, but
  * this exact slip was observed live from visionModel()'s free OpenRouter
  * model (issue #59): it cited the bare ref directly ("[C7]") instead,
  * leaving nothing for bindEvidenceMarkers to find below -- the final body
  * would keep the raw, unlinked "[C7]" text forever with no citation chip.
- * Recovers by rewriting the first bare "[refId]" occurrence (for any ref
- * that claim already cites) into the expected notional marker before
- * binding. Same "a prompt is a request, not a guarantee" class as
- * normalizeRef above.
+ * Recovers by rewriting a bare "[refId]" occurrence into the expected
+ * notional marker(s) before binding. Same "a prompt is a request, not a
+ * guarantee" class as normalizeRef above.
+ *
+ * Issues #154/#155, both found in this function after it shipped:
+ * - The ref was interpolated into the RegExp unescaped. `claim.refs` here
+ *   is the raw, pre-normalizeRef string -- exactly the field normalizeRef
+ *   exists to defend against a model emitting the full header
+ *   ("C7 | Methods | p.4") instead of the bare token. If that happened
+ *   here, "|" becomes alternation and "." becomes wildcard: a broken,
+ *   overly-loose search instead of a literal bracket match. Now run
+ *   through normalizeRef first, matching flatClaims' own handling below,
+ *   and escaped regardless.
+ * - Recovery used to consume the first matching bare-ref occurrence per
+ *   claim, in claim order. If two claims cite the same ref and the model
+ *   wrote only one bare mention, claim 0 consumed it and claim 1 found
+ *   nothing left -- its Evidence row was still created and verified, but
+ *   with no [^eN] marker anywhere in the body, so a legitimately grounded
+ *   citation silently vanished from the rendered text. Fixed by grouping
+ *   claims by which ref they'd recover from: when N claims share one bare
+ *   occurrence, all N notional markers are inserted together at that one
+ *   spot ("[^n0][^n1]") rather than the first claim winning outright.
  */
 function recoverMissingNotionalMarkers(bodyMd: string, claims: Array<{ refs: string[] }>): string {
-  return claims.reduce((body, claim, i) => {
-    if (new RegExp(`\\[\\^n${i}\\]|\\^\\[n${i}\\]`).test(body)) return body;
+  const needsRecovery = claims
+    .map((claim, i) => ({ claim, i }))
+    .filter(({ i }) => !new RegExp(`\\[\\^n${i}\\]|\\^\\[n${i}\\]`).test(bodyMd));
+  if (needsRecovery.length === 0) return bodyMd;
+
+  const claimIndicesByRef = new Map<string, number[]>();
+  for (const { claim, i } of needsRecovery) {
     for (const ref of claim.refs) {
-      const bare = new RegExp(`\\[${ref}\\]`);
-      if (bare.test(body)) return body.replace(bare, `[^n${i}]`);
+      const normalized = normalizeRef(ref);
+      const list = claimIndicesByRef.get(normalized) ?? [];
+      list.push(i);
+      claimIndicesByRef.set(normalized, list);
     }
-    return body;
-  }, bodyMd);
+  }
+
+  let body = bodyMd;
+  const recovered = new Set<number>();
+  for (const [ref, claimIndices] of claimIndicesByRef) {
+    const bare = new RegExp(`\\[${escapeRegExp(ref)}\\]`);
+    if (!bare.test(body)) continue;
+    const unrecovered = claimIndices.filter((i) => !recovered.has(i));
+    if (unrecovered.length === 0) continue;
+    body = body.replace(bare, unrecovered.map((i) => `[^n${i}]`).join(""));
+    for (const i of unrecovered) recovered.add(i);
+  }
+
+  return body;
 }
 
 export function verifyAndBindClaims(input: VerifyAndBindInput): { bodyMd: string; evidence: Evidence[] } {

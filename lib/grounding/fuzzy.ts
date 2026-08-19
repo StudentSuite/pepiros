@@ -144,6 +144,18 @@ export function tokenSetRatioUpperBound(a: PreparedText, b: PreparedText): numbe
  * cost of obviously-hopeless chunks.
  */
 export function tokenSetRatioAtLeast(a: PreparedText, b: PreparedText, floor: number): number {
+  // Issue #152: a blank/degenerate quote (empty token set -- "", or pure
+  // punctuation/whitespace that normalizes to nothing) used to score a
+  // perfect 1.0 against ANY chunk. Root cause: when a.tokens is empty,
+  // partition() makes core === combinedA === "" trivially (intersection
+  // and diffA both empty), and lengthCeiling(0,0)/levenshteinRatio("","")
+  // both special-case to 1 -- that candidate wins outright before ever
+  // comparing anything real against b. Real fuzzywuzzy's
+  // token_set_ratio("", x) is 0, not 1; this is CLAUDE.md's own words for
+  // what this would otherwise cause: "the worst possible failure this
+  // product has" (a claim tiered quote_located when it isn't).
+  if (a.tokens.size === 0 || b.tokens.size === 0) return 0;
+
   const p = partition(a, b);
 
   const candidates = [

@@ -1,0 +1,1 @@
+ALTER TABLE "mcp_tokens" ADD COLUMN "profile_id" text;

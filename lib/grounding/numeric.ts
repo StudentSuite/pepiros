@@ -71,6 +71,42 @@ function unitsCompatible(token: NumericToken, row: Numeric): boolean {
   return token.unit.toLowerCase() === row.unit.toLowerCase();
 }
 
+interface Interval {
+  lo: number;
+  hi: number;
+}
+
+/**
+ * Every comparator (claim-side or row-side) is really an interval of values
+ * consistent with it -- "=" (or unset) a tight point interval, "<"/">" a
+ * half-open ray, "~" a tolerance band. Issue #153's fix depends on building
+ * this for the *row* too, not just the claim.
+ */
+function intervalFor(value: number, comparator: NumericComparator | null | undefined): Interval {
+  switch (comparator) {
+    case "<":
+      return { lo: -Infinity, hi: value - VALUE_EPSILON };
+    case "<=":
+      return { lo: -Infinity, hi: value + VALUE_EPSILON };
+    case ">":
+      return { lo: value + VALUE_EPSILON, hi: Infinity };
+    case ">=":
+      return { lo: value - VALUE_EPSILON, hi: Infinity };
+    case "~": {
+      const tolerance = Math.abs(value) * APPROX_TOLERANCE;
+      return { lo: value - tolerance, hi: value + tolerance };
+    }
+    case "=":
+    case null:
+    case undefined:
+      return { lo: value - VALUE_EPSILON, hi: value + VALUE_EPSILON };
+  }
+}
+
+function intervalsOverlap(a: Interval, b: Interval): boolean {
+  return a.lo <= b.hi && b.lo <= a.hi;
+}
+
 /**
  * A claim may assert a bound rather than a value. "p < 0.05" is satisfied by a
  * numerics row of 0.003, so comparing values for equality would demote an
@@ -78,27 +114,20 @@ function unitsCompatible(token: NumericToken, row: Numeric): boolean {
  * the biomedical corpus this runs on. The comparator was already being parsed
  * out in extractNumericTokens; this is where it earns its keep.
  *
- * Direction is claim-relative: the token is what the claim asserts, the row is
- * what the source actually reports, so `<` asks "is the reported value inside
- * the bound the claim drew?".
+ * Issue #153: the row can *itself* be reported as a bound, not just an exact
+ * value -- a source chunk saying "p > 0.05" (not significant) is not the same
+ * claim as one saying "p = 0.003". The old version only ever read
+ * `token.comparator` and compared the claim's bound against `row.value` as if
+ * it were always an exact point, so a claim of "p < 0.05" against a row of
+ * `{value: 0.05, comparator: ">"}` (the source reporting the *opposite*
+ * direction) evaluated `0.05 < 0.05+epsilon` and passed -- exactly the
+ * "genuine quote attached to a reversed conclusion" failure this floor
+ * exists to catch. Both sides are now treated as intervals of values
+ * consistent with what was said, and the claim only entails the source if
+ * those intervals actually overlap -- there exists some value both are
+ * simultaneously compatible with.
  */
 export function numericTokenMatchesRow(token: NumericToken, row: Numeric): boolean {
   if (!unitsCompatible(token, row)) return false;
-
-  switch (token.comparator) {
-    case "<":
-      return row.value < token.value + VALUE_EPSILON;
-    case "<=":
-      return row.value <= token.value + VALUE_EPSILON;
-    case ">":
-      return row.value > token.value - VALUE_EPSILON;
-    case ">=":
-      return row.value >= token.value - VALUE_EPSILON;
-    case "~":
-      return Math.abs(token.value - row.value) <= Math.abs(token.value) * APPROX_TOLERANCE;
-    case "=":
-    case null:
-    case undefined:
-      return Math.abs(token.value - row.value) <= VALUE_EPSILON;
-  }
+  return intervalsOverlap(intervalFor(token.value, token.comparator), intervalFor(row.value, row.comparator));
 }

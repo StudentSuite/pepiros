@@ -71,6 +71,24 @@ describe("numericTokenMatchesRow", () => {
     const [token] = extractNumericTokens("34%");
     expect(numericTokenMatchesRow(token!, row({ value: 34, unit: "d" }))).toBe(false);
   });
+
+  // Issue #153: the row can itself be reported as a bound, not just an exact
+  // value -- previously only token.comparator was ever consulted, so a
+  // source reporting the *opposite* direction from the claim still passed.
+  it("rejects a claim of 'p < 0.05' against a source reporting 'p > 0.05' at the same value -- a reversed conclusion, not a match", () => {
+    const [token] = extractNumericTokens("p < 0.05");
+    expect(numericTokenMatchesRow(token!, row({ value: 0.05, comparator: ">" }))).toBe(false);
+  });
+
+  it("rejects a claim of 'p < 0.05' against a source reporting 'p > 0.1' (clearly incompatible ranges)", () => {
+    const [token] = extractNumericTokens("p < 0.05");
+    expect(numericTokenMatchesRow(token!, row({ value: 0.1, comparator: ">" }))).toBe(false);
+  });
+
+  it("accepts a claim of 'p < 0.05' against a source reporting 'p > 0.02' -- genuinely overlapping ranges (e.g. p=0.03 satisfies both)", () => {
+    const [token] = extractNumericTokens("p < 0.05");
+    expect(numericTokenMatchesRow(token!, row({ value: 0.02, comparator: ">" }))).toBe(true);
+  });
 });
 
 describe("checkEntailmentFloor", () => {
