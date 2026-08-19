@@ -40,6 +40,12 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
+      # Node 22's bundled npm (10.x) hard-fails `npm ci` with EBADPLATFORM on
+      # a properly `optional: true`-marked platform package nested under
+      # tsx's own esbuild (verified live: the exact same lockfile installs
+      # cleanly under npm 11 locally) -- a known class of npm bug around
+      # optionalDependencies resolution, fixed in later npm releases.
+      - run: npm install -g npm@latest
       - run: npm ci
       - run: npm run db:migrate
       - run: npm run typecheck
