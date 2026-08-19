@@ -125,7 +125,7 @@ const LAYOUT_DIMS: { name: string; value: string }[] = [
 // store dependency -- pure eyeball reference for both agents on this repo.
 export default function DesignTokensPage() {
   return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-10 px-6 py-16">
+    <main className="mx-auto flex max-w-3xl flex-col gap-s-5 p-s-5">
       <div>
         <h1 className="font-serif text-2xl text-ink">Design tokens</h1>
         <p className="mt-1 font-sans text-sm text-ink-muted">

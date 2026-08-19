@@ -180,7 +180,7 @@ export default function UploadPage() {
   }
 
   return (
-    <main className="pb-s-8">
+    <main className="pb-s-5">
       <ReadingColumn>
         <header className="py-s-7">
           <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">

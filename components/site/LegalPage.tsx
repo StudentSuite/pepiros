@@ -21,7 +21,7 @@ export function LegalPage({
   children: ReactNode;
 }) {
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-s-8">
+    <main className="mx-auto w-full max-w-3xl p-s-5">
       <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">
         {kicker}
       </p>

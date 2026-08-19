@@ -193,8 +193,8 @@ const STEPS: Step[] = [
 
 export default function HowToUsePage() {
   return (
-    <main className="pb-s-8">
-      <div className="mx-auto w-full max-w-[46rem] px-6">
+    <main className="pb-s-5">
+      <div className="mx-auto w-full max-w-[46rem] px-s-5">
         <header className="py-s-7">
           <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
             Guide

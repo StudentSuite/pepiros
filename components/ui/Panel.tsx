@@ -3,7 +3,7 @@ import type { HTMLAttributes } from "react";
 
 /**
  * Shared raised-surface container -- app chrome, not the reading surface.
- * `padded` adds the p-4 every hand-rolled `border-border bg-surface-raised`
+ * `padded` adds the p-s-4 every hand-rolled `border-border bg-surface-raised`
  * div in the app (ReaderClient's inspector wrapper, etc.) was repeating
  * instead of reaching for this.
  */
@@ -16,7 +16,7 @@ export function Panel({
     <div
       className={clsx(
         "rounded border border-border bg-surface-raised shadow-e-1 transition-shadow duration-base ease-out hover:shadow-e-2",
-        padded && "p-4",
+        padded && "p-s-4",
         className,
       )}
       {...props}

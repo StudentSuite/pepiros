@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <main className="pb-s-8">
+    <main className="pb-s-5">
       <ReadingColumn>
         <ArticleHeader
           kicker="About"

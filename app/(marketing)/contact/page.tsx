@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <main className="pb-s-8">
+    <main className="pb-s-5">
       <ReadingColumn>
         <ArticleHeader
           kicker="Contact"

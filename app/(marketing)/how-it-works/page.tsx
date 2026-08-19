@@ -52,7 +52,7 @@ function Step({
   return (
     <Reveal>
       <section className="border-t border-border">
-        <div className="mx-auto grid w-full max-w-6xl items-center gap-s-7 px-6 py-s-8 lg:grid-cols-2">
+        <div className="mx-auto grid w-full max-w-6xl items-center gap-s-7 p-s-5 lg:grid-cols-2">
           <div className={flip ? "lg:order-2" : undefined}>
             <div className="flex items-center gap-s-3">
               <span className="grid size-7 shrink-0 place-items-center rounded-full border border-border font-mono text-[11px] text-ink-faint">
@@ -80,7 +80,7 @@ export default function HowItWorksPage() {
   return (
     <main className="flex flex-col">
       {/* Hero */}
-      <section className="mx-auto w-full max-w-3xl px-6 pb-s-7 pt-s-8 text-center">
+      <section className="mx-auto w-full max-w-3xl p-s-5 text-center">
         <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">
           How it works
         </p>
@@ -149,7 +149,7 @@ export default function HowItWorksPage() {
       {/* Worked example */}
       <Reveal>
         <section className="border-t border-border bg-surface-sunken/40">
-          <div className="mx-auto w-full max-w-3xl px-6 py-s-8">
+          <div className="mx-auto w-full max-w-3xl p-s-5">
             <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">
               Worked example
             </p>
@@ -233,7 +233,7 @@ export default function HowItWorksPage() {
       {/* Limits */}
       <Reveal>
         <section className="border-t border-border">
-          <div className="mx-auto w-full max-w-3xl px-6 py-s-8">
+          <div className="mx-auto w-full max-w-3xl p-s-5">
             <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">
               Said on stage, not just in the docs
             </p>
@@ -264,7 +264,7 @@ export default function HowItWorksPage() {
 
       {/* CTA */}
       <section className="border-t border-border">
-        <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-center gap-s-3 px-6 py-s-8">
+        <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-center gap-s-3 p-s-5">
           <Link href="/w/ws-1" className={buttonClassName("primary")}>
             Try the demo workspace
           </Link>

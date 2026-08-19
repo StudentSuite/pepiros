@@ -23,7 +23,7 @@ export default async function SettingsLayout({
   if (!profile) redirect("/login");
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-6 py-s-7">
+    <div className="mx-auto w-full max-w-4xl p-s-5">
       <header>
         <h1 className="font-serif text-2xl leading-tight text-ink">Settings</h1>
         <p className="mt-s-2 font-sans text-sm text-ink-muted">

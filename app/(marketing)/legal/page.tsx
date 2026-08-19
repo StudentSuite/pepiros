@@ -38,7 +38,7 @@ SOFTWARE.`;
 
 export default function LegalPage() {
   return (
-    <main className="pb-s-8">
+    <main className="pb-s-5">
       <ReadingColumn>
         <ArticleHeader
           kicker="Legal"

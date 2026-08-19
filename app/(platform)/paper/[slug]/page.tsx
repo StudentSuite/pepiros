@@ -61,7 +61,7 @@ export default async function PaperPage({
   const likeState = post ? await adapter.getLikeState(post.id, viewer?.id ?? null) : null;
 
   return (
-    <main className="pb-s-8">
+    <main className="pb-s-5">
       <ReadingColumn>
         <ArticleHeader kicker={paper.field} title={paper.title} dek={article.dek}>
           <Byline

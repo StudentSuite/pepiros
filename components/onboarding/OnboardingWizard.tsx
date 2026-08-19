@@ -148,7 +148,7 @@ export function OnboardingWizard({
   const canAdvance = true;
 
   return (
-    <div className="mx-auto flex min-h-[80vh] w-full max-w-xl flex-col justify-center px-6 py-s-8">
+    <div className="mx-auto flex min-h-[80vh] w-full max-w-xl flex-col justify-center p-s-5">
       <Logo size="md" />
 
       <div className="mt-s-5 flex items-center gap-s-3">

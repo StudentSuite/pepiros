@@ -60,7 +60,7 @@ export default function ResetPasswordConfirmPage() {
   }
 
   return (
-    <main className="flex justify-center px-6 pb-24 pt-20 sm:pt-28">
+    <main className="mx-auto flex min-h-[70vh] w-full flex-col justify-center p-s-5">
       <div className="surface-reading paper-grain w-full max-w-sm rounded-lg p-s-6">
         <Logo variant="paper" />
 

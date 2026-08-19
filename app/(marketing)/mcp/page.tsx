@@ -30,7 +30,7 @@ const TOOLS = GROUPS.map((group) => ({
 
 export default function McpPage() {
   return (
-    <main className="pb-s-8">
+    <main className="pb-s-5">
       <ReadingColumn>
         <ArticleHeader
           kicker="For agents"

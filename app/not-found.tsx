@@ -26,7 +26,7 @@ import { LogoMark } from "@/components/ui/Logo";
  */
 export default function NotFound() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-surface px-6 text-center">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-surface p-s-5 text-center">
       <LogoMark size="md" />
       <p className="mt-s-2 font-mono text-xs uppercase tracking-widest text-ink-faint">404</p>
       <h1 className="font-serif text-2xl text-ink">This page has no source.</h1>

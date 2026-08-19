@@ -103,10 +103,10 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
     return (
       <div className="flex min-h-screen" role="status" aria-label="Loading workspace">
         <Skeleton className="h-screen w-60 shrink-0" />
-        <div className="flex-1 px-6 py-6">
+        <div className="flex-1 p-s-5">
           <Skeleton className="h-6 w-80" />
-          <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_280px]">
-            <div className="flex flex-col gap-4">
+          <div className="mt-s-5 grid gap-s-5 lg:grid-cols-[1fr_280px]">
+            <div className="flex flex-col gap-s-4">
               <Skeleton className="aspect-[612/792] w-full max-w-xl" />
               <SkeletonText lines={4} />
             </div>
@@ -223,7 +223,7 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
         {/* Reading first: the paper column gets the room, and the rail is
             secondary. The previous 1fr/280px split at a full-bleed width put
             the page image and the node body on an uncomfortably wide measure. */}
-        <div className="mx-auto grid w-full max-w-6xl gap-s-6 px-s-5 py-s-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <div className="mx-auto grid w-full max-w-6xl gap-s-6 p-s-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
           <main className="flex min-w-0 flex-col gap-s-5">
             {activeChunk ? (
               <PdfPane chunk={activeChunk} pdfUrl={activePdfUrl} highlights={highlights} />

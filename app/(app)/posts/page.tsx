@@ -17,7 +17,7 @@ export default async function PostsPage() {
   const posts = await getAdapter().listPosts(profile.id);
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-6 py-s-7">
+    <div className="mx-auto w-full max-w-3xl p-s-5">
       <header className="flex flex-wrap items-start justify-between gap-s-4 pb-s-5">
         <div>
           <h1 className="font-serif text-2xl leading-tight text-ink">Posts</h1>

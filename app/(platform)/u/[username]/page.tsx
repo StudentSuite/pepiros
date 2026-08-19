@@ -119,7 +119,7 @@ export default async function ProfilePage({
   }
 
   return (
-    <main className="pb-s-8">
+    <main className="pb-s-5">
       <ReadingColumn wide>
         {/* Publication header */}
         <header className="border-b border-border py-s-7 text-center">

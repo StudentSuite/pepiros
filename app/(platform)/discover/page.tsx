@@ -14,7 +14,7 @@ export default async function DiscoverPage() {
   }));
 
   return (
-    <main className="pb-s-8">
+    <main className="pb-s-5">
       <ReadingColumn wide>
         <header className="border-b border-border py-s-7 text-center">
           <h1 className="font-serif text-[2rem] leading-tight text-ink sm:text-[2.4rem]">

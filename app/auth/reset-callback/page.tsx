@@ -57,7 +57,7 @@ export default function ResetCallbackPage() {
   }, [failed, router]);
 
   return (
-    <main className="flex min-h-[50vh] items-center justify-center px-6">
+    <main className="flex min-h-[50vh] items-center justify-center p-s-5">
       <p className="font-sans text-sm text-ink-muted">Confirming your reset link…</p>
     </main>
   );

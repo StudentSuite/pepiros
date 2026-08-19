@@ -62,7 +62,7 @@ export function AuditClient({ workspaceId }: { workspaceId: string }) {
   });
 
   return (
-    <main className="mx-auto max-w-6xl px-s-5 py-s-6">
+    <main className="mx-auto max-w-6xl p-s-5">
       <header className="mb-s-5 flex flex-wrap items-center justify-between gap-2">
         <h1 className="font-serif text-2xl text-ink">Audit</h1>
         <ReaderTabsNav workspaceId={workspaceId} active="audit" />

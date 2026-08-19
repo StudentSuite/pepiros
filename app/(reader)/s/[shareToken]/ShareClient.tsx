@@ -74,19 +74,19 @@ export function ShareClient({ shareToken, workspaceId }: { shareToken: string; w
     <div className="min-h-screen">
       <SiteNav />
 
-      <div className="border-b border-border bg-surface-sunken px-6 py-2 text-center font-sans text-xs text-ink-faint">
+      <div className="border-b border-border bg-surface-sunken px-s-5 py-s-3 text-center font-sans text-xs text-ink-faint">
         Shared read-only view (token {shareToken}) -- no editing, no chat.
       </div>
 
-      <header className="border-b border-border px-6 py-4">
+      <header className="border-b border-border px-s-5 py-s-4">
         <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
           {workspace.name}
         </p>
         <h1 className="font-serif text-xl text-ink">{firstPaper.title}</h1>
       </header>
 
-      <div className="grid gap-6 px-6 py-6 lg:grid-cols-[200px_1fr]">
-        <aside className="flex flex-col gap-4">
+      <div className="grid gap-s-5 p-s-5 lg:grid-cols-[200px_1fr]">
+        <aside className="flex flex-col gap-s-4">
           <SectionNav
             chunks={paperChunks}
             activeSectionId={activeChunk?.sectionId ?? null}
@@ -115,9 +115,9 @@ export function ShareClient({ shareToken, workspaceId }: { shareToken: string; w
           </ul>
         </aside>
 
-        <main className="flex flex-col gap-4">
+        <main className="flex flex-col gap-s-4">
           {activeChunk && <PdfPane chunk={activeChunk} pdfUrl={activePdfUrl} highlights={highlights} />}
-          <div className="rounded border border-border bg-surface-raised p-4">
+          <div className="rounded border border-border bg-surface-raised p-s-4">
             <NodeInspector readOnly />
           </div>
         </main>
@@ -137,11 +137,11 @@ export function ShareClient({ shareToken, workspaceId }: { shareToken: string; w
  */
 function SiteNav() {
   return (
-    <nav className="flex items-center justify-between border-b border-border px-6 py-3">
+    <nav className="flex items-center justify-between border-b border-border px-s-5 py-s-3">
       <Link href="/" aria-label="Pepiros home">
         <Logo />
       </Link>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-s-4">
         <Link href="/how-it-works" className="font-sans text-sm text-ink-muted hover:text-ink">
           What is this?
         </Link>

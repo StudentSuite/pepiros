@@ -66,7 +66,7 @@ export default async function AuthorizePage({
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
+    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center p-s-5">
       <div className="rounded-lg border border-border bg-surface-raised p-6">
         <h1 className="font-serif text-xl text-ink">Authorize access</h1>
         <p className="mt-2 font-sans text-sm leading-relaxed text-ink-muted">
@@ -115,7 +115,7 @@ function firstValue(value: string | string[] | undefined): string | undefined {
 
 function ErrorScreen({ title, detail }: { title: string; detail: string }) {
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
+    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center p-s-5">
       <div className="rounded-lg border border-unsupported/40 bg-surface-raised p-6">
         <h1 className="font-serif text-lg text-unsupported">{title}</h1>
         <p className="mt-2 font-sans text-sm text-ink-muted">{detail}</p>

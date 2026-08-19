@@ -17,7 +17,7 @@ export default async function SharePage({
     // likely dead-end a stranger with zero context hits -- this used to
     // have no way off the page at all besides the browser back button.
     return (
-      <main className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col items-center justify-center px-6 text-center">
+      <main className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col items-center justify-center p-s-5 text-center">
         <Link href="/" aria-label="Pepiros home" className="mb-s-6">
           <Logo />
         </Link>
