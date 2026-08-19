@@ -25,27 +25,38 @@ export default function DocsPage() {
     >
       <Section title="Connect an agent over MCP">
         <p>
-          The server speaks stdio. Clone the repository, install, and point your
-          client at the stdio script.
-        </p>
-        <Code>{`npm install
-npm run mcp:stdio`}</Code>
-        <p>
-          For Claude Desktop, add an entry to your MCP config pointing at that
-          command, with the repository as the working directory.
+          Published on npm as <code className="font-mono text-xs">pepiros-mcp</code>. No
+          clone required -- point your client at it directly.
         </p>
         <Code>{`{
   "mcpServers": {
     "pepiros": {
-      "command": "npm",
-      "args": ["run", "mcp:stdio"],
+      "command": "npx",
+      "args": ["-y", "pepiros-mcp"]
+    }
+  }
+}`}</Code>
+        <p>
+          Working from a clone instead (e.g. to test a local change to{" "}
+          <code className="font-mono text-xs">mcp/*</code> before it&apos;s published):
+        </p>
+        <Code>{`npm install
+npm run mcp:stdio`}</Code>
+        <Code>{`{
+  "mcpServers": {
+    "pepiros": {
+      "command": "npx",
+      "args": ["tsx", "mcp/stdio.ts"],
       "cwd": "/path/to/pepiros"
     }
   }
 }`}</Code>
         <p>
-          There is no published npm package yet, so <code className="font-mono text-xs">npx pepiros-mcp</code>{" "}
-          will not resolve. Remote HTTP with OAuth is designed but not built.
+          A remote streamable-HTTP transport with OAuth 2.1 (dynamic client
+          registration, PKCE) is also live now, for clients that can only
+          reach a hosted connector rather than spawning a local process --
+          see <Link href="/mcp">the agents page</Link> for the connector URL
+          and setup flow.
         </p>
       </Section>
 

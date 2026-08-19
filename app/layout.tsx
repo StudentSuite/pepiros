@@ -66,6 +66,17 @@ export default function RootLayout({
       className={`${sourceSerif.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body>
+        {/* Issue #120 (WCAG 2.4.1 Bypass Blocks): the first focusable element
+            on every page, so a keyboard/screen-reader user doesn't have to
+            tab through the header's nav links, theme toggle, and auth
+            buttons before reaching content. Every route group's layout
+            gives its content wrapper id="main-content" to match. */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-s-4 focus:top-s-4 focus:z-50 focus:rounded-md focus:bg-ink focus:px-s-4 focus:py-s-2 focus:font-sans focus:text-sm focus:text-surface focus:shadow-lg"
+        >
+          Skip to content
+        </a>
         <ThemeProvider>
           <OfflineBanner />
           {children}

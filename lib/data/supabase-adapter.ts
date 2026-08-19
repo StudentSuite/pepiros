@@ -177,6 +177,29 @@ export const supabaseAdapter: DataAdapter = {
       console.error(`[createAccount] confirmation email send failed for ${normalized}:`, resendError.message);
     }
 
+    // Issue #115: this account was created via the service-role admin
+    // client, which never establishes a real Supabase Auth session/cookie
+    // for the new user -- only this app's own pepiros_session cookie gets
+    // set afterward (app/api/auth/signup/route.ts). A fresh signup session
+    // passed getSession()/middleware fine but had no Supabase session, so
+    // sb.auth.updateUser({ password }) (change-password) failed with "Auth
+    // session missing!" until the user explicitly logged out and back in --
+    // which is exactly what signInWithPassword does here, immediately,
+    // through the same cookie-bound client verifyCredentials() (login) uses.
+    // Best-effort: a failure here (e.g. email confirmation required before
+    // sign-in, per this project's own Supabase setting) doesn't undo an
+    // otherwise-valid account, same reasoning as the confirmation email
+    // above -- change-password would then fail once, with the existing
+    // honest error telling them to sign in first, rather than never at all.
+    const serverClient = await createSupabaseServerClient();
+    const { error: signInError } = await serverClient.auth.signInWithPassword({
+      email: normalizedEmail,
+      password,
+    });
+    if (signInError) {
+      console.error(`[createAccount] post-signup session sign-in failed for ${normalized}:`, signInError.message);
+    }
+
     const profile = await this.getProfile(created.user.id);
     if (!profile) return { error: "Account was created but the profile could not be read back." };
     return { profile };

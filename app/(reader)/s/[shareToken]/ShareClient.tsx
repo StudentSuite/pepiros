@@ -115,7 +115,7 @@ export function ShareClient({ shareToken, workspaceId }: { shareToken: string; w
           </ul>
         </aside>
 
-        <main className="flex flex-col gap-s-4">
+        <main id="main-content" className="flex flex-col gap-s-4">
           {activeChunk && <PdfPane chunk={activeChunk} pdfUrl={activePdfUrl} highlights={highlights} />}
           <div className="rounded border border-border bg-surface-raised p-s-4">
             <NodeInspector readOnly />

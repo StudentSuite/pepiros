@@ -32,7 +32,7 @@ export default async function CanvasPage({
         <ReaderTabsNav workspaceId={workspaceId} active="canvas" />
       </header>
 
-      <div className="relative min-h-0 flex-1">
+      <div id="main-content" className="relative min-h-0 flex-1">
         <GraphCanvas workspaceId={workspaceId} />
       </div>
     </div>

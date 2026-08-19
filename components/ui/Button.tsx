@@ -12,6 +12,9 @@ const VARIANT_CLASS = {
 const SIZE_CLASS = {
   sm: "h-8 gap-1.5 px-3 text-xs",
   md: "h-9 gap-2 px-4 text-sm",
+  // h-11 = 44px, the WCAG 2.5.5/2.5.8 touch-target minimum -- for a primary
+  // CTA on a form-heavy mobile flow (issue #132), not a general default.
+  lg: "h-11 gap-2 px-5 text-sm",
 } as const;
 
 export type ButtonVariant = keyof typeof VARIANT_CLASS;

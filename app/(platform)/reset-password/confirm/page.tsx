@@ -4,12 +4,13 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
-import { Input } from "@/components/ui/Input";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { FormField } from "@/components/ui/FormField";
 import { Button } from "@/components/ui/Button";
 import { Logo } from "@/components/ui/Logo";
 import { Icon } from "@/components/ui/Icon";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { Card } from "@/components/shadcn/card";
 
 /**
  * Where app/auth/reset-callback/route.ts sends the browser after a real
@@ -23,6 +24,13 @@ import { ErrorBanner } from "@/components/ui/ErrorBanner";
  * shown as the same error banner every other failure here uses, not a
  * special-cased state, since the fix is the same either way: request a new
  * link.
+ *
+ * Issue #126: migrated off `.surface-reading paper-grain` onto the same
+ * Card login/signup/reset-password use -- see reset-password/page.tsx's doc
+ * comment for why. Issue #131: the 2-second auto-redirect on success had no
+ * manual continue and no way to cancel; a manual link now sits alongside it,
+ * so hitting back mid-countdown isn't the only way to control what happens
+ * next.
  */
 export default function ResetPasswordConfirmPage() {
   const router = useRouter();
@@ -60,37 +68,39 @@ export default function ResetPasswordConfirmPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-[70vh] w-full flex-col justify-center p-s-5">
-      <div className="surface-reading paper-grain w-full max-w-sm rounded-lg p-s-6">
-        <Logo variant="paper" />
+    <div className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col justify-center p-s-5">
+      <Card className="border-border bg-card p-s-6">
+        <Logo size="md" />
 
         {done ? (
-          <div className="mt-6 flex flex-col items-start gap-3">
+          <div className="mt-s-5 flex flex-col items-start gap-s-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-full border border-located/40 bg-located/10 text-located">
               <Icon icon={CheckCircle2} size="md" />
             </span>
-            <h1 className="font-serif text-2xl text-[#1c1a15]">Password updated</h1>
-            <p className="font-sans text-sm text-[#1c1a15]/70">
+            <h1 className="font-serif text-2xl text-ink">Password updated</h1>
+            <p className="font-sans text-sm text-ink-muted">
               Taking you to sign in with your new password…
             </p>
+            <Link href="/login" className="mt-s-1 font-sans text-xs text-ink-faint underline underline-offset-2 hover:text-accent-text">
+              Continue now
+            </Link>
           </div>
         ) : (
           <>
-            <h1 className="mt-6 font-serif text-2xl text-[#1c1a15]">Set a new password</h1>
-            <p className="mt-1 font-sans text-sm text-[#1c1a15]/70">
+            <h1 className="mt-s-5 font-serif text-2xl text-ink">Set a new password</h1>
+            <p className="mt-s-1 font-sans text-sm text-ink-muted">
               Choose a new password for your account.
             </p>
 
             {error && (
-              <div className="mt-4">
+              <div className="mt-s-4">
                 <ErrorBanner message={error} />
               </div>
             )}
 
-            <form onSubmit={handleSubmit} noValidate className="mt-6 flex flex-col gap-4">
+            <form onSubmit={handleSubmit} noValidate className="mt-s-5 flex flex-col gap-s-4">
               <FormField label="New password" required>
-                <Input
-                  type="password"
+                <PasswordInput
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   autoComplete="new-password"
@@ -100,8 +110,7 @@ export default function ResetPasswordConfirmPage() {
               </FormField>
 
               <FormField label="Confirm password" required>
-                <Input
-                  type="password"
+                <PasswordInput
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}
                   autoComplete="new-password"
@@ -110,19 +119,19 @@ export default function ResetPasswordConfirmPage() {
                 />
               </FormField>
 
-              <Button type="submit" variant="primary" className="mt-2 w-full" disabled={pending}>
+              <Button type="submit" size="lg" className="mt-s-1" disabled={pending}>
                 {pending ? "Updating…" : "Update password"}
               </Button>
             </form>
 
-            <p className="mt-6 font-sans text-xs text-[#1c1a15]/70">
-              <Link href="/reset-password" className="underline underline-offset-2 hover:text-accent">
+            <p className="mt-s-5 font-sans text-xs text-ink-faint">
+              <Link href="/reset-password" className="underline underline-offset-2 hover:text-accent-text">
                 Request a new link
               </Link>
             </p>
           </>
         )}
-      </div>
-    </main>
+      </Card>
+    </div>
   );
 }

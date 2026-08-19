@@ -44,9 +44,14 @@ import type { Profile } from "@/lib/data/types";
  */
 export function MobileNav({
   links,
+  secondaryLinks,
   session,
 }: {
   links: ReadonlyArray<{ href: string; label: string }>;
+  /** Issue #121: pages otherwise reachable only via a footer scroll below
+   *  the `lg` breakpoint the primary nav row is hidden under -- shown as a
+   *  smaller, secondary list so the sheet still reads primary-links-first. */
+  secondaryLinks?: ReadonlyArray<{ href: string; label: string }>;
   session?: Profile | null;
 }) {
   const [open, setOpen] = useState(false);
@@ -192,6 +197,31 @@ export function MobileNav({
                 );
               })}
             </nav>
+
+            {secondaryLinks && secondaryLinks.length > 0 && (
+              <nav
+                aria-label="More pages"
+                className="flex flex-wrap gap-x-s-4 gap-y-s-2 border-t border-border px-s-5 py-s-4"
+              >
+                {secondaryLinks.map((link) => {
+                  const active = pathname === link.href;
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={close}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "font-sans text-sm transition-colors duration-fast ease-out",
+                        active ? "text-ink" : "text-ink-muted hover:text-ink",
+                      )}
+                    >
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </nav>
+            )}
 
             <div className="flex flex-col gap-s-3 border-t border-border px-s-5 py-s-6">
               {session ? (

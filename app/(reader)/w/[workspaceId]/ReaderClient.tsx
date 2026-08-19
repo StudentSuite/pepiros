@@ -224,7 +224,7 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
             secondary. The previous 1fr/280px split at a full-bleed width put
             the page image and the node body on an uncomfortably wide measure. */}
         <div className="mx-auto grid w-full max-w-6xl gap-s-6 p-s-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
-          <main className="flex min-w-0 flex-col gap-s-5">
+          <main id="main-content" className="flex min-w-0 flex-col gap-s-5">
             {activeChunk ? (
               <PdfPane chunk={activeChunk} pdfUrl={activePdfUrl} highlights={highlights} />
             ) : (

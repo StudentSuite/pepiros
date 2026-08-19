@@ -268,7 +268,10 @@ export default function HowItWorksPage() {
           <Link href="/w/ws-1" className={buttonClassName("primary")}>
             Try the demo workspace
           </Link>
-          <Link href="/docs" className={buttonClassName("secondary")}>
+          <Link href="/how-to-use" className={buttonClassName("secondary")}>
+            See what to click
+          </Link>
+          <Link href="/docs" className={buttonClassName("ghost")}>
             Read the docs
           </Link>
         </div>

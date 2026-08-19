@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import { Logo } from "@/components/ui/Logo";
 import { buttonClassName } from "@/components/ui/Button";
@@ -15,6 +16,15 @@ const NAV_LINKS = [
   { href: "/mcp", label: "For agents" },
   { href: "/discover", label: "Discover" },
   { href: "/about", label: "About" },
+] as const;
+
+/** Issue #121: otherwise reachable only via a footer scroll below `lg`. */
+const SECONDARY_NAV_LINKS = [
+  { href: "/docs", label: "Docs" },
+  { href: "/faq", label: "FAQ" },
+  { href: "/status", label: "Status" },
+  { href: "/roadmap", label: "Roadmap" },
+  { href: "/changelog", label: "Changelog" },
 ] as const;
 
 /**
@@ -35,6 +45,11 @@ export function SiteHeader({ session = null }: { session?: Profile | null }) {
   // i.e. Tailwind's `top-7`) instead of letting the two overlap (review
   // finding, 2026-08-11).
   const [offline, setOffline] = useState(false);
+  const pathname = usePathname();
+  // Issue #128: a signed-out visitor already on /login saw a live "Sign in"
+  // link pointing at the page they're on, plus 5 nav links that only add
+  // distraction to a flow that should minimize it.
+  const isAuthPage = pathname === "/login" || pathname === "/signup";
 
   useEffect(() => {
     setOffline(!navigator.onLine);
@@ -64,22 +79,33 @@ export function SiteHeader({ session = null }: { session?: Profile | null }) {
           <Logo collapseWordmark />
         </Link>
 
-        <nav className="hidden items-center gap-6 lg:flex">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="font-sans text-sm text-ink-muted transition-colors duration-fast ease-out hover:text-ink"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
+        {!isAuthPage && (
+          <nav className="hidden items-center gap-6 lg:flex">
+            {NAV_LINKS.map((link) => {
+              const active = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  aria-current={active ? "page" : undefined}
+                  className={clsx(
+                    "font-sans text-sm transition-colors duration-fast ease-out",
+                    active ? "text-ink" : "text-ink-muted hover:text-ink",
+                  )}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
 
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <ThemeToggle />
-          <MobileNav links={NAV_LINKS} session={session} />
-          {session ? (
+          {!isAuthPage && (
+            <MobileNav links={NAV_LINKS} secondaryLinks={SECONDARY_NAV_LINKS} session={session} />
+          )}
+          {isAuthPage ? null : session ? (
             <div className="flex items-center gap-2">
               <Link
                 href="/settings"

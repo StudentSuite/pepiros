@@ -4,9 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Label } from "@/components/shadcn/label";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { PasswordInput } from "@/components/ui/PasswordInput";
+import { FormField } from "@/components/ui/FormField";
 import { Card } from "@/components/shadcn/card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 
@@ -28,47 +29,75 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * which meant an account created without one had no way to ever recover a
  * lost password, while /reset-password's UI still claimed success. Required
  * now, so every account has somewhere real for that flow to send to.
+ *
+ * Issue #126/#127: migrated onto components/ui/* to match login and
+ * reset-password, gaining FormField's aria-invalid/aria-describedby wiring
+ * and per-field errors (collected on submit, not one at a time). Issue
+ * #129: added a confirm-password field -- reset-password/confirm already
+ * had one; this was the screen most likely to need it (first attempt at a
+ * password, no existing value to compare a typo against) and the one
+ * missing it.
  */
+interface FieldErrors {
+  displayName?: string;
+  username?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+}
+
 export default function SignupPage() {
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [email, setEmail] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [formError, setFormError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+
+  function validate(): FieldErrors {
+    const errors: FieldErrors = {};
+    if (!displayName.trim()) errors.displayName = "Enter your name.";
+    if (!/^[a-z0-9_]{3,30}$/.test(username.trim().toLowerCase())) {
+      errors.username = "3-30 characters: lowercase letters, numbers, and underscores only.";
+    }
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      errors.email = "Enter an email address so you can recover your password later.";
+    } else if (!EMAIL_RE.test(trimmedEmail)) {
+      errors.email = "Enter a valid email address.";
+    }
+    if (password.length < 8) errors.password = "Must be at least 8 characters.";
+    if (confirmPassword !== password) errors.confirmPassword = "Passwords do not match.";
+    return errors;
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    setFormError(null);
 
-    if (!displayName.trim()) return setError("Enter your name.");
-    if (!/^[a-z0-9_]{3,30}$/.test(username.trim().toLowerCase())) {
-      return setError("Usernames are 3-30 characters: lowercase letters, numbers, and underscores only.");
-    }
-    if (password.length < 8) return setError("Password must be at least 8 characters.");
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail) return setError("Enter an email address so you can recover your password later.");
-    if (!EMAIL_RE.test(trimmedEmail)) {
-      return setError("Enter a valid email address.");
-    }
+    const errors = validate();
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
 
     setPending(true);
     try {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ username, password, displayName, email: trimmedEmail }),
+        body: JSON.stringify({ username, password, displayName, email: email.trim() }),
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as { error?: string } | null;
-        setError(body?.error ?? "Could not create an account.");
+        setFormError(body?.error ?? "Could not create an account.");
         return;
       }
       router.push("/onboarding/1");
       router.refresh();
     } catch {
-      setError("Could not reach the server. Check your connection and try again.");
+      setFormError("Could not reach the server. Check your connection and try again.");
     } finally {
       setPending(false);
     }
@@ -84,67 +113,72 @@ export default function SignupPage() {
           Read with every claim traced back to the sentence it came from.
         </p>
 
-        {error && (
+        {formError && (
           <div className="mt-s-4">
-            <ErrorBanner message={error} />
+            <ErrorBanner message={formError} />
           </div>
         )}
 
-        <form onSubmit={submit} className="mt-s-5 flex flex-col gap-s-4">
-          <div className="flex flex-col gap-s-2">
-            <Label htmlFor="displayName">Name</Label>
+        <form onSubmit={submit} noValidate className="mt-s-5 flex flex-col gap-s-4">
+          <FormField label="Name" error={fieldErrors.displayName}>
             <Input
-              id="displayName"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               autoComplete="name"
               placeholder="Ada Lovelace"
             />
-          </div>
+          </FormField>
 
-          <div className="flex flex-col gap-s-2">
-            <Label htmlFor="username">Username</Label>
+          <FormField
+            label="Username"
+            error={fieldErrors.username}
+            hint={fieldErrors.username ? undefined : "Lowercase letters, numbers, and underscores. 3-30 characters."}
+          >
             <Input
-              id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
               placeholder="ada"
             />
-            <p className="font-sans text-[13px] text-ink-faint">
-              Lowercase letters, numbers, and underscores. 3-30 characters.
-            </p>
-          </div>
+          </FormField>
 
-          <div className="flex flex-col gap-s-2">
-            <Label htmlFor="email">Email</Label>
+          <FormField
+            label="Email"
+            error={fieldErrors.email}
+            hint={fieldErrors.email ? undefined : "Used to recover your password if you forget it -- never shown to other users."}
+          >
             <Input
-              id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
               placeholder="ada@example.com"
             />
-            <p className="font-sans text-[13px] text-ink-faint">
-              Used to recover your password if you forget it -- never shown to other users.
-            </p>
-          </div>
+          </FormField>
 
-          <div className="flex flex-col gap-s-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
+          <FormField
+            label="Password"
+            error={fieldErrors.password}
+            hint={fieldErrors.password ? undefined : "At least 8 characters."}
+          >
+            <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
               placeholder="••••••••"
             />
-            <p className="font-sans text-[13px] text-ink-faint">At least 8 characters.</p>
-          </div>
+          </FormField>
 
-          <Button type="submit" disabled={pending}>
+          <FormField label="Confirm password" error={fieldErrors.confirmPassword}>
+            <PasswordInput
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              autoComplete="new-password"
+              placeholder="••••••••"
+            />
+          </FormField>
+
+          <Button type="submit" size="lg" className="mt-s-1" disabled={pending}>
             {pending ? "Creating account…" : "Create account"}
           </Button>
         </form>

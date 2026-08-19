@@ -18,7 +18,7 @@ export default async function MarketingLayout({
   return (
     <>
       <SiteHeader session={session} />
-      {children}
+      <main id="main-content">{children}</main>
       <SiteFooter />
     </>
   );

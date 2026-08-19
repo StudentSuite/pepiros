@@ -8,12 +8,15 @@ import clsx from "clsx";
  */
 export function FormField({
   label,
+  labelSuffix,
   hint,
   error,
   required,
   children,
 }: {
   label: string;
+  /** Extra content on the same row as the label, right-aligned (e.g. a "Forgot password?" link) -- not part of the label itself, so it doesn't join the input's accessible name. */
+  labelSuffix?: ReactElement;
   hint?: string;
   error?: string;
   required?: boolean;
@@ -25,10 +28,13 @@ export function FormField({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="font-sans text-xs font-medium text-ink-muted">
-        {label}
-        {required && <span className="text-unsupported"> *</span>}
-      </label>
+      <div className="flex items-center justify-between">
+        <label htmlFor={id} className="font-sans text-xs font-medium text-ink-muted">
+          {label}
+          {required && <span className="text-unsupported"> *</span>}
+        </label>
+        {labelSuffix}
+      </div>
       {cloneElement(children, {
         id,
         "aria-describedby": errorId ?? hintId,

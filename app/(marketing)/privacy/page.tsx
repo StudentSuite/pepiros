@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { LegalPage, Section } from "@/components/site/LegalPage";
 
 export const metadata: Metadata = {
@@ -60,8 +61,10 @@ export default function PrivacyPage() {
 
       <Section title="Contact">
         <p>
-          Privacy questions go to the same place as everything else: open an issue
-          on the repository, or use the security contact for anything sensitive.
+          Privacy questions go to the same place as everything else: open an
+          issue on the repository. For anything sensitive, follow the
+          disclosure process on <Link href="/security">the security page</Link>{" "}
+          instead of a normal issue.
         </p>
       </Section>
     </LegalPage>

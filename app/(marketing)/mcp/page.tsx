@@ -110,26 +110,25 @@ export default function McpPage() {
         <h2 className="font-serif text-[1.45rem] leading-snug text-ink">Install</h2>
         <ArticleBody className="mt-s-4">
           <p>
-            The server runs over stdio and works with Claude, Codex and Cursor
-            today. From a clone of the repository:
+            Published on npm as <code>pepiros-mcp</code> -- point Claude, Codex,
+            or Cursor at it directly, no clone required:
           </p>
           <pre className="overflow-x-auto rounded-md border border-border bg-surface-sunken/60 px-s-4 py-s-3">
-            <code className="font-mono text-[13px] text-ink">npm run mcp:stdio</code>
+            <code className="font-mono text-[13px] text-ink">npx -y pepiros-mcp</code>
           </pre>
           <p>
-            <code>package.json</code> now has a real <code>bin</code> entry (
-            <code>pepiros-mcp</code>) and a <code>build:mcp</code> script that
-            bundles the tool layer to a single standalone file with esbuild --
-            <code>npx pepiros-mcp</code> will work once the package is
-            published. It is not published yet, so that one-liner is not live
-            today. Remote HTTP with OAuth, for hosted connectors, is the next
-            step after that rather than a shipped feature.
+            A remote streamable-HTTP transport with OAuth 2.1 (dynamic client
+            registration, PKCE) is also live, for hosted connectors that can
+            only reach a URL rather than spawning a local process.
           </p>
           <p>
             Tokens are managed in{" "}
-            <Link href="/settings/mcp-tokens">settings</Link>, and the tiers the
+            <Link href="/settings/mcp-tokens">settings</Link>, the tiers the
             tools return are explained on{" "}
-            <Link href="/how-it-works">how it works</Link>.
+            <Link href="/how-it-works">how it works</Link>, and{" "}
+            <Link href="/docs">the docs page</Link> has the fuller setup
+            reference -- working from a clone, the exact config block for
+            each client, and the remote connector flow.
           </p>
         </ArticleBody>
       </ReadingColumn>

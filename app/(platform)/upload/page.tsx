@@ -104,8 +104,14 @@ function JobProgressView({ progress }: { progress: JobProgress }) {
  * (JobProgressView above) instead of a static "queued, nothing happens next"
  * notice.
  */
+const MODE_TABS = [
+  ["file", "Upload a PDF"],
+  ["url", "Paste a link"],
+] as const;
+
 export default function UploadPage() {
   const [mode, setMode] = useState<"file" | "url">("file");
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState("");
   const [licensed, setLicensed] = useState(false);
@@ -214,23 +220,40 @@ export default function UploadPage() {
         </div>
 
         <form onSubmit={submit} className="mt-s-6 flex flex-col gap-s-5">
-          {/* Mode switch */}
+          {/* Mode switch. Issue #130: roving tabindex + arrow-key handling per
+              the ARIA APG tabs pattern -- only the selected tab was a
+              genuine tab stop before, and arrow keys did nothing, so
+              assistive tech announced a control that didn't behave like the
+              one it announced. */}
           <div
             role="tablist"
             aria-label="Paper source"
             className="flex gap-s-4 border-b border-border"
+            onKeyDown={(e) => {
+              if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
+              e.preventDefault();
+              const i = MODE_TABS.findIndex(([value]) => value === mode);
+              const next =
+                e.key === "Home"
+                  ? 0
+                  : e.key === "End"
+                    ? MODE_TABS.length - 1
+                    : (i + (e.key === "ArrowRight" ? 1 : -1) + MODE_TABS.length) % MODE_TABS.length;
+              setMode(MODE_TABS[next]![0]);
+              setError(null);
+              tabRefs.current[next]?.focus();
+            }}
           >
-            {(
-              [
-                ["file", "Upload a PDF"],
-                ["url", "Paste a link"],
-              ] as const
-            ).map(([value, label]) => (
+            {MODE_TABS.map(([value, label], i) => (
               <button
                 key={value}
+                ref={(el) => {
+                  tabRefs.current[i] = el;
+                }}
                 type="button"
                 role="tab"
                 aria-selected={mode === value}
+                tabIndex={mode === value ? 0 : -1}
                 onClick={() => {
                   setMode(value);
                   setError(null);
