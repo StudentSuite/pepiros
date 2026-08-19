@@ -8,7 +8,7 @@
     "url": "https://github.com/StudentSuite/pepiros.git"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "bin": {
     "pepiros-mcp": "dist/mcp/stdio.mjs"

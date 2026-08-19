@@ -6,8 +6,8 @@
 
 [![CI](https://github.com/StudentSuite/pepiros/actions/workflows/ci.yml/badge.svg)](https://github.com/StudentSuite/pepiros/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Node](https://img.shields.io/badge/node-%3E%3D20-5FA04E.svg)](.nvmrc)
-[![Next.js 15](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org)
+[![Node](https://img.shields.io/badge/node-%3E%3D22-5FA04E.svg)](.nvmrc)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg)](tsconfig.json)
 
 [Quick start](#quick-start) · [What works today](#what-works-today) · [Architecture](#architecture) · [MCP](#using-the-mcp-server) · [Design system](#design-system) · [Configuration](#configuration) · [Contributing](CONTRIBUTING.md)
