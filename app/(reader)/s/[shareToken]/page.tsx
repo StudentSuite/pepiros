@@ -32,5 +32,5 @@ export default async function SharePage({
     );
   }
 
-  return <ShareClient shareToken={shareToken} workspaceId={resolved.workspaceId} />;
+  return <ShareClient workspaceId={resolved.workspaceId} />;
 }

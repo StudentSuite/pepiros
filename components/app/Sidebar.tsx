@@ -79,7 +79,14 @@ export function Sidebar({
       <SidebarContent className="gap-6 px-4">
         <section className="flex flex-col gap-1">
           <h2 className="px-1 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-            Library &middot; {papers.length}
+            {/* Issue #144: was always papers.length (the unfiltered total)
+                even though the list below renders filteredPapers -- typing
+                a query that matched 2 of 12 still showed "Library · 12"
+                above a 2-item list. */}
+            Library &middot;{" "}
+            {filteredPapers.length === papers.length
+              ? papers.length
+              : `${filteredPapers.length} of ${papers.length}`}
           </h2>
           <ul className="flex flex-col gap-0.5">
             {filteredPapers.map((paper) => (
@@ -122,7 +129,10 @@ export function Sidebar({
 
         <section className="flex flex-1 flex-col gap-1 overflow-y-auto">
           <h2 className="px-1 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-            Nodes &middot; {leafNodes.length}
+            Nodes &middot;{" "}
+            {filteredNodes.length === leafNodes.length
+              ? leafNodes.length
+              : `${filteredNodes.length} of ${leafNodes.length}`}
           </h2>
           <ul className="flex flex-col gap-0.5">
             {filteredNodes.map((node) => (

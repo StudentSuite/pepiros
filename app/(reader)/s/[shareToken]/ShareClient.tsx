@@ -19,7 +19,7 @@ import type { Highlight } from "@/components/reader/HighlightLayer";
  * not a hardcoded fixture id. No ChatDock, no NodeEditor access
  * (NodeInspector is mounted with readOnly).
  */
-export function ShareClient({ shareToken, workspaceId }: { shareToken: string; workspaceId: string }) {
+export function ShareClient({ workspaceId }: { workspaceId: string }) {
   const workspace = useWorkspaceStore((s) => s.workspace);
   const loadWorkspace = useWorkspaceStore((s) => s.loadWorkspace);
   const selectedNodeId = useWorkspaceStore((s) => s.selectedNodeId);
@@ -30,18 +30,32 @@ export function ShareClient({ shareToken, workspaceId }: { shareToken: string; w
   }, [workspaceId, loadWorkspace]);
 
   const [activeChunkId, setActiveChunkId] = useState<string | null>(null);
+  // Issue #145: used to hardcode to workspace.papers[0] with no way to
+  // reach the rest -- a stranger opening a share link to a multi-paper
+  // workspace had no way to know other papers existed, let alone select
+  // one. Defaults to the first paper, same starting point as before.
+  const [activePaperId, setActivePaperId] = useState<string | null>(null);
 
-  const firstPaper = workspace?.papers[0];
+  useEffect(() => {
+    if (workspace && !activePaperId && workspace.papers.length > 0) {
+      setActivePaperId(workspace.papers[0]!.id);
+    }
+  }, [workspace, activePaperId]);
+
+  const activePaper = workspace?.papers.find((p) => p.id === activePaperId);
   const paperChunks = useMemo(
-    () => (workspace && firstPaper ? workspace.chunks.filter((c) => c.paperId === firstPaper.id) : []),
-    [workspace, firstPaper],
+    () => (workspace && activePaper ? workspace.chunks.filter((c) => c.paperId === activePaper.id) : []),
+    [workspace, activePaper],
   );
 
   useEffect(() => {
-    if (paperChunks.length > 0 && !activeChunkId) {
+    if (paperChunks.length > 0) {
       setActiveChunkId(paperChunks[0]!.id);
     }
-  }, [paperChunks, activeChunkId]);
+    // Resets to this paper's own first chunk whenever the selected paper
+    // changes, rather than only filling in an empty activeChunkId once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activePaperId]);
 
   useEffect(() => {
     if (!workspace || !selectedNodeId) return;
@@ -49,7 +63,7 @@ export function ShareClient({ shareToken, workspaceId }: { shareToken: string; w
     if (anchored?.anchor) setActiveChunkId(anchored.anchor.chunkId);
   }, [workspace, selectedNodeId]);
 
-  if (!workspace || !firstPaper) {
+  if (!workspace || !activePaper) {
     return (
       <div className="min-h-screen">
         <SiteNav />
@@ -59,8 +73,8 @@ export function ShareClient({ shareToken, workspaceId }: { shareToken: string; w
   }
 
   const activeChunk = workspace.chunks.find((c) => c.id === activeChunkId) ?? paperChunks[0];
-  const activePdfUrl = firstPaper.pdfStoragePath
-    ? `/api/papers/${firstPaper.id}/pdf?workspaceId=${encodeURIComponent(workspaceId)}`
+  const activePdfUrl = activePaper.pdfStoragePath
+    ? `/api/papers/${activePaper.id}/pdf?workspaceId=${encodeURIComponent(workspaceId)}`
     : null;
   const highlights: Highlight[] = activeChunk
     ? workspace.evidence
@@ -68,25 +82,56 @@ export function ShareClient({ shareToken, workspaceId }: { shareToken: string; w
         .map((e) => ({ id: e.id, spans: e.anchor!.spans, tier: e.tier }))
     : [];
 
-  const leafNodes = workspace.nodes.filter((n) => n.type === "leaf" && n.paperId === firstPaper.id);
+  const leafNodes = workspace.nodes.filter((n) => n.type === "leaf" && n.paperId === activePaper.id);
 
   return (
     <div className="min-h-screen">
       <SiteNav />
 
       <div className="border-b border-border bg-surface-sunken px-s-5 py-s-3 text-center font-sans text-xs text-ink-faint">
-        Shared read-only view (token {shareToken}) -- no editing, no chat.
+        {/* Issue #146: used to print the raw opaque token into visitor-
+            facing copy -- a stranger's very first banner showed a
+            meaningless hash string, reading as leaked debug output. It's
+            already in the URL if they ever need to hand the link off. */}
+        Shared read-only view -- no editing, no chat.
       </div>
 
       <header className="border-b border-border px-s-5 py-s-4">
         <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
           {workspace.name}
         </p>
-        <h1 className="font-serif text-xl text-ink">{firstPaper.title}</h1>
+        <h1 className="font-serif text-xl text-ink">{activePaper.title}</h1>
       </header>
 
       <div className="grid gap-s-5 p-s-5 lg:grid-cols-[200px_1fr]">
         <aside className="flex flex-col gap-s-4">
+          {workspace.papers.length > 1 && (
+            <div className="flex flex-col gap-1">
+              <h2 className="px-1 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+                Papers &middot; {workspace.papers.length}
+              </h2>
+              <ul className="flex flex-col gap-0.5">
+                {workspace.papers.map((paper) => (
+                  <li key={paper.id}>
+                    <button
+                      type="button"
+                      onClick={() => setActivePaperId(paper.id)}
+                      className={clsx(
+                        "w-full truncate rounded px-2 py-1.5 text-left font-serif text-sm transition duration-fast ease-out",
+                        paper.id === activePaper.id
+                          ? "bg-surface-sunken text-ink"
+                          : "text-ink-muted hover:bg-surface-sunken hover:text-ink",
+                      )}
+                      title={paper.title}
+                    >
+                      {paper.title}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <SectionNav
             chunks={paperChunks}
             activeSectionId={activeChunk?.sectionId ?? null}

@@ -163,8 +163,15 @@ export default function MarketingPage() {
           related work, then metadata, then the summary and pillars, then the
           rest of the generators.
         </p>
+        {/* Issue #116: variant="full" adds a full sentence per stop, which
+            at 5 columns wraps badly at every width under ~1400px -- and is
+            largely redundant with the paragraph just above, which already
+            narrates the same sequence. "teaser" (label + timing, the
+            component's own documented intent for this page) reads cleaner
+            and sidesteps the layout problem entirely rather than fixing
+            breakpoints for content that repeats itself. */}
         <div className="mt-s-5 rounded-lg border border-border p-s-5">
-          <PacingStrip variant="full" />
+          <PacingStrip />
         </div>
       </Section>
 

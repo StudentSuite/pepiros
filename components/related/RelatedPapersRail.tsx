@@ -46,7 +46,11 @@ export function RelatedPapersRail({ workspaceId, paperId }: { workspaceId: strin
   useEffect(() => load(), [load]);
 
   return (
-    <div className="flex flex-col gap-2">
+    // Issue #149: was a bare div with no outer card at all -- only per-item
+    // Panels below -- while GraphPreviewCard.tsx wraps its whole widget in
+    // one <Panel padded>. Matched that so the rail reads as one system
+    // instead of three different card idioms bolted together.
+    <Panel padded className="flex flex-col gap-2">
       <h3 className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
         Related papers
       </h3>
@@ -72,20 +76,23 @@ export function RelatedPapersRail({ workspaceId, paperId }: { workspaceId: strin
       )}
 
       {state.phase === "done" && state.result.status === "ok" && (
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col gap-3">
           {state.result.papers.map((paper) => (
             <RelatedPaperCard key={paper.url} paper={paper} />
           ))}
         </ul>
       )}
-    </div>
+    </Panel>
   );
 }
 
 function RelatedPaperCard({ paper }: { paper: RelatedPaper }) {
   return (
-    <li>
-      <Panel className="p-3">
+    // Plain list item, not a nested Panel -- the rail itself is the one
+    // Panel now (issue #149); a full bordered/shadowed card per item inside
+    // that would just be a panel nested in a panel.
+    <li className="border-t border-border pt-3 first:border-t-0 first:pt-0">
+      <div>
         <a
           href={paper.url}
           target="_blank"
@@ -96,7 +103,7 @@ function RelatedPaperCard({ paper }: { paper: RelatedPaper }) {
         </a>
         {paper.tldr && <p className="mt-1 font-sans text-xs text-ink-muted">{paper.tldr}</p>}
         <p className="mt-1.5 font-mono text-[10px] text-ink-faint">{paper.citationCount} citations</p>
-      </Panel>
+      </div>
     </li>
   );
 }

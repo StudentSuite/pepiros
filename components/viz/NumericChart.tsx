@@ -11,6 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import { useWorkspaceStore } from "@/lib/store/workspace";
+import { Panel } from "@/components/ui/Panel";
 import type { Chunk, Numeric, Paper } from "@/types/anchor";
 
 // Fixed categorical order, pulled from the design system's own pillar ramp
@@ -75,7 +76,7 @@ export function NumericChart() {
           const data = dataForRole(role);
           const color = ROLE_COLORS[i % ROLE_COLORS.length]!;
           return (
-            <div key={role} className="rounded border border-border bg-surface-raised p-3">
+            <Panel key={role} padded>
               <h4 className="mb-2 font-sans text-xs uppercase tracking-wide text-ink-faint">
                 {role.replace(/_/g, " ")}
               </h4>
@@ -117,7 +118,7 @@ export function NumericChart() {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-            </div>
+            </Panel>
           );
         })}
       </div>

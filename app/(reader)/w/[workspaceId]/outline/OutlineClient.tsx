@@ -88,7 +88,11 @@ export function OutlineClient({ workspaceId }: { workspaceId: string }) {
   return (
     <main id="main-content" className="mx-auto max-w-6xl p-s-5">
       <header className="mb-s-5 flex flex-wrap items-center justify-between gap-2">
-        <h1 className="font-serif text-2xl text-ink">Outline</h1>
+        <div>
+          <h1 className="font-serif text-2xl text-ink">Outline</h1>
+          {/* Issue #147: see AuditClient.tsx's identical fix. */}
+          <p className="mt-1 font-sans text-xs text-ink-faint">{workspace.name}</p>
+        </div>
         <ReaderTabsNav workspaceId={workspaceId} active="outline" />
       </header>
 

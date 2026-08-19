@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { useWorkspaceStore } from "@/lib/store/workspace";
-import { useToastStore } from "@/lib/store/toast";
 import { Sidebar } from "@/components/app/Sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/shadcn/sidebar";
 import { ReaderTabsNav } from "@/components/reader/ReaderTabsNav";
@@ -38,30 +37,9 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
     loadWorkspace(workspaceId);
   }, [workspaceId, loadWorkspace]);
 
-  const pushToast = useToastStore((s) => s.push);
   const [activePaperId, setActivePaperId] = useState<string | null>(null);
   const [activeChunkId, setActiveChunkId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [sharing, setSharing] = useState(false);
-
-  async function shareWorkspace() {
-    setSharing(true);
-    try {
-      const res = await fetch("/api/share", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ workspaceId }),
-      });
-      if (!res.ok) throw new Error(`Share failed (${res.status}).`);
-      const { url } = (await res.json()) as { url: string };
-      await navigator.clipboard.writeText(url);
-      pushToast("Read-only share link copied to clipboard.", "success");
-    } catch (err) {
-      pushToast(err instanceof Error ? err.message : "Could not create a share link.", "error");
-    } finally {
-      setSharing(false);
-    }
-  }
 
   const paperChunks = useMemo(
     () =>
@@ -195,29 +173,9 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
             </span>
           </nav>
 
-          <div className="flex min-w-0 flex-wrap items-center gap-s-4 font-sans text-[13px] text-ink-faint">
-            <ReaderTabsNav workspaceId={workspaceId} active="reader" />
-            <button
-              type="button"
-              onClick={() => void shareWorkspace()}
-              disabled={sharing}
-              className="rounded-full border border-border px-s-3 py-1 transition-colors duration-fast ease-out hover:border-border-strong hover:text-ink disabled:opacity-50"
-            >
-              {sharing ? "Sharing…" : "Share"}
-            </button>
-            <a
-              href={`/api/export?workspaceId=${encodeURIComponent(workspaceId)}&format=md`}
-              className="rounded-full border border-border px-s-3 py-1 transition-colors duration-fast ease-out hover:border-border-strong hover:text-ink"
-            >
-              Export .md
-            </a>
-            <a
-              href={`/api/export?workspaceId=${encodeURIComponent(workspaceId)}&format=bibtex`}
-              className="rounded-full border border-border px-s-3 py-1 transition-colors duration-fast ease-out hover:border-border-strong hover:text-ink"
-            >
-              Export .bib
-            </a>
-          </div>
+          {/* Issue #143: Share/Export now live inside ReaderTabsNav itself,
+              so every reader route gets them, not just this one. */}
+          <ReaderTabsNav workspaceId={workspaceId} active="reader" />
         </header>
 
         {/* Reading first: the paper column gets the room, and the rail is

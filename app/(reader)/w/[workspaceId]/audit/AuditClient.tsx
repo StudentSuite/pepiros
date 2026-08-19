@@ -64,7 +64,13 @@ export function AuditClient({ workspaceId }: { workspaceId: string }) {
   return (
     <main id="main-content" className="mx-auto max-w-6xl p-s-5">
       <header className="mb-s-5 flex flex-wrap items-center justify-between gap-2">
-        <h1 className="font-serif text-2xl text-ink">Audit</h1>
+        <div>
+          <h1 className="font-serif text-2xl text-ink">Audit</h1>
+          {/* Issue #147: no workspace/paper identity anywhere on this page
+              -- a user with two workspaces open in different tabs had no
+              way to tell them apart. */}
+          <p className="mt-1 font-sans text-xs text-ink-faint">{workspace.name}</p>
+        </div>
         <ReaderTabsNav workspaceId={workspaceId} active="audit" />
       </header>
 
