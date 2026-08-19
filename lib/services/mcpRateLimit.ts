@@ -1,22 +1,21 @@
 import "server-only";
+import { incrementRateLimitWindow } from "@/lib/db/queries";
 
 /**
  * Per-token rate limiting (docs/PLAN-V1.md §13.4: "Rate limit per token...
- * add_paper is the expensive one, cap it hard"). In-memory, process-local --
- * the same acceptable-for-now shape as jobs.ts: a real defense against one
- * client hammering the server, even though a multi-instance deployment
- * would need a shared store (Redis, or the DB itself) for the limit to be
- * global rather than per warm serverless instance. Only ever consulted for
- * a real token (mcp/tools/index.ts's `session`) -- the unrestricted local-
- * dev path (no token configured) was never in scope for this.
+ * add_paper is the expensive one, cap it hard"). Real Postgres (issue
+ * #159) -- this used to be a process-local in-memory Map, the same class
+ * of bug #109 already fixed for mcp_tokens: on a serverless deployment,
+ * two concurrent calls on the same token routed to two different warm
+ * instances each see an empty/fresh window and each pass the check
+ * independently, so the "cap it hard" limit was bypassed by nothing more
+ * than normal request distribution, not an attacker exploit. The
+ * increment-and-check is one atomic UPSERT (lib/db/queries's
+ * incrementRateLimitWindow) so two concurrent requests can't both read a
+ * stale count before either commits. Only ever consulted for a real token
+ * (mcp/tools/index.ts's `session`) -- the unrestricted local-dev path (no
+ * token configured) was never in scope for this.
  */
-
-interface Window {
-  count: number;
-  windowStart: number;
-}
-
-const windows = new Map<string, Window>();
 
 export interface RateLimitConfig {
   limit: number;
@@ -31,22 +30,17 @@ export const RATE_LIMITS: Record<string, RateLimitConfig> = {
 
 export type RateLimitResult = { ok: true } | { ok: false; retryAfterMs: number };
 
-export function checkRateLimit(tokenId: string, toolName: string): RateLimitResult {
+export async function checkRateLimit(tokenId: string, toolName: string): Promise<RateLimitResult> {
   const bucket = toolName in RATE_LIMITS ? toolName : "default";
   const config = RATE_LIMITS[bucket]!;
   const key = `${tokenId}:${bucket}`;
-  const now = Date.now();
-  const existing = windows.get(key);
 
-  if (!existing || now - existing.windowStart >= config.windowMs) {
-    windows.set(key, { count: 1, windowStart: now });
-    return { ok: true };
+  const { count, windowStart } = await incrementRateLimitWindow(key, config.windowMs);
+
+  if (count > config.limit) {
+    const retryAfterMs = config.windowMs - (Date.now() - windowStart.getTime());
+    return { ok: false, retryAfterMs: Math.max(retryAfterMs, 0) };
   }
 
-  if (existing.count >= config.limit) {
-    return { ok: false, retryAfterMs: config.windowMs - (now - existing.windowStart) };
-  }
-
-  existing.count += 1;
   return { ok: true };
 }

@@ -77,10 +77,14 @@ export async function setIngestedWorkspace(workspace: Workspace, expectedVersion
 /**
  * Real removal, not an upsert -- see lib/db/queries/index.ts's
  * deleteNodeCascade() for why this can't just be another setIngestedWorkspace()
- * call. `staleNodeIds` are marked stale in the same transaction as the delete.
+ * call. `staleNodeIds` are marked stale in the same transaction as the
+ * delete. Issue #161: deliberately no `expectedVersion` param -- see
+ * deleteNodeCascade's own doc comment for why a version *check* doesn't
+ * belong on this precise, targeted mutation the way it does on
+ * setIngestedWorkspace's full-snapshot upsert.
  */
-export async function deleteIngestedNode(nodeId: string, staleNodeIds: string[]): Promise<void> {
-  await guardedWrite(`deleteNodeCascade(${nodeId})`, () => deleteNodeCascade(nodeId, staleNodeIds));
+export async function deleteIngestedNode(workspaceId: string, nodeId: string, staleNodeIds: string[]): Promise<void> {
+  await guardedWrite(`deleteNodeCascade(${nodeId})`, () => deleteNodeCascade(workspaceId, nodeId, staleNodeIds));
 }
 
 /** Records the body being superseded by an inspector edit -- see lib/db/queries's createNodeVersion() doc comment. */

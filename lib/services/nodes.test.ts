@@ -1,13 +1,36 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import type { Workspace } from "@/types/anchor";
 import workspaceFixture from "@/fixtures/workspace.json";
 import { db } from "@/lib/db/client";
 import { nodeVersions, workspaces } from "@/lib/db/schema";
-import { getIngestedWorkspace } from "./ingestStore";
+import { mockTextModel } from "@/lib/testing/mockLanguageModel";
+import { getIngestedWorkspace, setIngestedWorkspace } from "./ingestStore";
+
+// expandNode's `custom` generator calls fastModel() -- mocked at the
+// LanguageModelV2 level (same pattern as synthesis.test.ts/chat.test.ts) so
+// this runs with no API key or network. None of this file's other tests
+// (createNode/deleteNode/promoteToThread/updateNodeBody) invoke an LLM at
+// all, so mocking this here doesn't affect them.
+vi.mock("@/lib/ai/client", () => ({
+  fastModel: () =>
+    mockTextModel(
+      JSON.stringify({
+        title: "Followup answer",
+        body_md: "Participants were randomized 1:1 to receive bright light exposure.[^n0]",
+        evidence: [{ refs: ["C1"], quote: "Participants were randomized 1:1 to receive bright light exposure." }],
+        confidence: "high",
+        followups: [],
+      }),
+    ),
+  strongModel: () => mockTextModel("{}"),
+  visionModel: () => mockTextModel("{}"),
+}));
+
 import {
   createNode,
   deleteNode,
+  expandNode,
   findContradictions,
   getNode,
   getOutline,
@@ -226,6 +249,32 @@ describe("updateNodeBody", () => {
   });
 });
 
+describe("expandNode", () => {
+  // Issue #160: expandNode used to read via bare fetchWorkspace() and never
+  // persist its result at all -- a followup-chip node only ever lived in
+  // the client's optimistic zustand state and vanished on refresh, the
+  // same P0 class of bug #51 already fixed for createNode/promoteToThread.
+  it("persists the expanded node, its derived_from edge, and its evidence", async () => {
+    const result = await expandNode({
+      workspaceId: WS,
+      nodeId: "n-p1-methods-leaf-1",
+      question: "How was randomization actually implemented?",
+    });
+
+    expect(result.evidence.some((e) => e.tier === "quote_located")).toBe(true);
+
+    const after = await getIngestedWorkspace(WS);
+    expect(after).not.toBeUndefined();
+    expect(after!.workspace.nodes.some((n) => n.id === result.node.id)).toBe(true);
+    expect(
+      after!.workspace.edges.some(
+        (e) => e.id === result.edge.id && e.sourceId === result.node.id && e.targetId === "n-p1-methods-leaf-1",
+      ),
+    ).toBe(true);
+    expect(after!.workspace.evidence.some((e) => e.nodeId === result.node.id)).toBe(true);
+  });
+});
+
 describe("deleteNode", () => {
   it("cascades the node's own evidence/edges and marks a content-dependent referencer stale, but not a purely structural contains parent", async () => {
     // n-p1-key-finding-leaf-1 has two edges pointing at it in the static
@@ -264,6 +313,30 @@ describe("deleteNode", () => {
 
   it("rejects a nodeId that does not exist", async () => {
     await expect(deleteNode({ workspaceId: WS, nodeId: "not-a-real-node" })).rejects.toThrow("does not exist");
+  });
+
+  // Issue #161: deleteNode used to always resave the unmodified base first
+  // (a separate version-checked write) then delete as a second, unversioned
+  // step -- two unrelated concurrent deletes on an already-ingested
+  // workspace could spuriously conflict, since whichever resave committed
+  // first bumped the version out from under the other's in-flight resave.
+  it("lets two concurrent deletes of unrelated nodes both succeed once the workspace is already ingested", async () => {
+    // Force a real ingested row to exist first -- the race this guards
+    // against only happens on an *already*-ingested workspace, not the
+    // one-time fixture-to-real-row transition.
+    await setIngestedWorkspace(workspace);
+
+    const [a, b] = await Promise.all([
+      deleteNode({ workspaceId: WS, nodeId: "n-p2-key-finding-leaf-2" }),
+      deleteNode({ workspaceId: WS, nodeId: "n-p3-methods-leaf-1" }),
+    ]);
+
+    expect(a).toBeDefined();
+    expect(b).toBeDefined();
+
+    const after = await getIngestedWorkspace(WS);
+    expect(after!.workspace.nodes.some((n) => n.id === "n-p2-key-finding-leaf-2")).toBe(false);
+    expect(after!.workspace.nodes.some((n) => n.id === "n-p3-methods-leaf-1")).toBe(false);
   });
 });
 

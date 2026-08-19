@@ -490,14 +490,24 @@ export async function deleteNode(input: { workspaceId: string; nodeId: string })
 
   // A workspace that's never been ingested before (still pure fixture) has no
   // real row for deleteIngestedNode() to act on yet -- this upserts the whole
-  // base first so the DELETE below always has something real to remove.
-  // Passing `ingested?.version` (issue #103) is what makes this safe when a
-  // real row *does* already exist: a plain "re-save the unmodified base" used
-  // to silently clobber anything another request wrote to it in the window
-  // since this function's own read above -- now a stale version throws
-  // instead of overwriting.
-  await setIngestedWorkspace(base, ingested?.version);
-  await deleteIngestedNode(input.nodeId, dependentNodeIds);
+  // base once so the delete below always has something real to remove. Only
+  // runs on that genuine first-ever write; an already-ingested workspace
+  // (the common case) skips straight to the delete below.
+  //
+  // Issue #161: this used to *always* resave the unmodified base first with
+  // a version check (issue #103's pattern, meant for saveWorkspace's
+  // full-snapshot upsert) and then delete as a second step -- two unrelated
+  // concurrent deletes on an already-ingested workspace could spuriously
+  // conflict on that shared version counter even though neither touched
+  // what the other did. deleteIngestedNode's delete is a precise, targeted
+  // mutation (mark *these* ids stale, remove *this* one), not vulnerable to
+  // the lost-update problem a version check defends against, so it no
+  // longer takes or checks one at all -- see deleteNodeCascade's own doc
+  // comment.
+  if (!ingested) {
+    await setIngestedWorkspace(base);
+  }
+  await deleteIngestedNode(input.workspaceId, input.nodeId, dependentNodeIds);
 
   return { staleNodeIds: dependentNodeIds };
 }
@@ -529,18 +539,27 @@ export interface ExpandNodeResult {
  * the result exactly like create_node does -- this is the same "verify
  * before persisting" contract as every other node-creating path, just with
  * an LLM call in front of it instead of a caller-supplied bodyMd.
+ *
+ * Issue #160: this used to read via bare fetchWorkspace() and never
+ * persisted the result at all -- the same P0 bug issue #51 fixed for
+ * createNode/promoteToThread (a node only living in the client's
+ * optimistic zustand state, gone on refresh), left unfixed here. Now reads
+ * via the same getIngestedWorkspace/base pattern and persists through
+ * setIngestedWorkspace with the same optimistic-concurrency version check
+ * (issue #103) createNode/promoteToThread/updateNodeBody all use.
  */
 export async function expandNode(input: ExpandNodeInput): Promise<ExpandNodeResult> {
-  const workspace = await fetchWorkspace(input.workspaceId);
+  const ingested = await getIngestedWorkspace(input.workspaceId);
+  const base = ingested?.workspace ?? (await fetchWorkspace(input.workspaceId));
 
-  const parent = workspace.nodes.find((n) => n.id === input.nodeId);
+  const parent = base.nodes.find((n) => n.id === input.nodeId);
   if (!parent) throw new UserFacingError(`node ${input.nodeId} does not exist in workspace ${input.workspaceId}`);
   if (!parent.paperId) throw new UserFacingError(`node ${input.nodeId} has no associated paper to expand from`);
 
-  const paper = workspace.papers.find((p) => p.id === parent.paperId);
+  const paper = base.papers.find((p) => p.id === parent.paperId);
   if (!paper) throw new UserFacingError(`paper ${parent.paperId} not found in workspace ${input.workspaceId}`);
 
-  const contextBlock = buildContextBlock(parent.paperId, workspace.chunks, workspace.numerics);
+  const contextBlock = buildContextBlock(parent.paperId, base.chunks, base.numerics);
   const output = await runGenerator(GENERATORS.custom!, {
     paperTitle: paper.title,
     // A best-effort default for a paper whose archetype hasn't been
@@ -556,8 +575,8 @@ export async function expandNode(input: ExpandNodeInput): Promise<ExpandNodeResu
     nodeId,
     bodyMd: output.body_md,
     claims: output.evidence,
-    chunks: workspace.chunks,
-    numerics: workspace.numerics,
+    chunks: base.chunks,
+    numerics: base.numerics,
     idPrefix: `${nodeId}-e`,
   });
 
@@ -582,6 +601,14 @@ export async function expandNode(input: ExpandNodeInput): Promise<ExpandNodeResu
     sourceId: nodeId,
     targetId: parent.id,
   };
+
+  const merged: Workspace = {
+    ...base,
+    nodes: [...base.nodes, node],
+    edges: [...base.edges, edge],
+    evidence: [...base.evidence, ...evidence],
+  };
+  await setIngestedWorkspace(merged, ingested?.version);
 
   const droppedRefs = evidence.filter((e) => e.tier === "unsupported");
 

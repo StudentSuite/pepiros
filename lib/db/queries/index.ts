@@ -384,9 +384,32 @@ export async function saveWorkspace(workspace: Workspace, expectedVersion?: numb
  * remove the deleted node's own edges/evidence -- lib/services/nodes.ts's
  * deleteNode() only needs to tell this which *other* nodes to mark stale
  * first (edges pointing at the deleted node from a content-dependent kind).
+ *
+ * Issue #161: no `expectedVersion` check here, on purpose, unlike
+ * saveWorkspace() above. That check exists because saveWorkspace() upserts
+ * a *whole in-memory snapshot* -- two concurrent callers each holding a
+ * stale copy of "everything else" could silently clobber each other's
+ * unrelated changes to it, the real lost-update risk issue #103 fixed.
+ * This function does the opposite: two precise, targeted mutations
+ * (mark *these* ids stale, delete *this* one id) that can't lose a
+ * concurrent update to different rows no matter what version the
+ * workspace is at. An earlier version of this fix added the same
+ * expectedVersion gate here anyway "for consistency" -- which promptly
+ * reintroduced the exact bug it was meant to close: two unrelated
+ * concurrent deletes, each reading the same starting version, made the
+ * second one fail with a spurious conflict, since both were still racing
+ * on one shared counter for operations that never actually overlapped.
+ * The version bump below is unconditional (still real, for anything that
+ * polls `workspace.version` to know something changed) but never blocks
+ * this function's own delete on it.
  */
-export async function deleteNodeCascade(nodeId: string, staleNodeIds: string[]): Promise<void> {
+export async function deleteNodeCascade(workspaceId: string, nodeId: string, staleNodeIds: string[]): Promise<void> {
   await db.transaction(async (tx) => {
+    await tx
+      .update(schema.workspaces)
+      .set({ version: sql`${schema.workspaces.version} + 1` })
+      .where(eq(schema.workspaces.id, workspaceId));
+
     if (staleNodeIds.length > 0) {
       await tx.update(schema.nodes).set({ stale: true }).where(inArray(schema.nodes.id, staleNodeIds));
     }
@@ -550,4 +573,43 @@ export async function markMcpOAuthCodeUsed(id: string): Promise<boolean> {
     .where(and(eq(schema.mcpOAuthCodes.id, id), isNull(schema.mcpOAuthCodes.usedAt)))
     .returning({ id: schema.mcpOAuthCodes.id });
   return rows.length > 0;
+}
+
+/**
+ * Issue #159: one atomic UPSERT does the increment-or-reset-and-check in a
+ * single statement, so two concurrent requests on the same key can't both
+ * read a stale count before either commits (the lost-update shape a plain
+ * SELECT-then-UPDATE would have). If the existing window has expired
+ * (its window_start is older than windowMs ago), this resets to a fresh
+ * window of 1; otherwise it increments the existing window's count.
+ * Returns the row as it stands *after* this call's own increment, so the
+ * caller compares against its limit post-increment.
+ */
+export async function incrementRateLimitWindow(
+  key: string,
+  windowMs: number,
+): Promise<{ count: number; windowStart: Date }> {
+  // The postgres-js driver's raw `sql` template needs a plain string/number,
+  // not a Date instance, for its parameter binding -- drizzle's fluent
+  // builders (.set({ col: new Date() })) handle that conversion themselves,
+  // but this raw UPSERT doesn't go through them.
+  const nowIso = new Date().toISOString();
+  const rows = await db.execute<{ count: number; window_start: string }>(sql`
+    INSERT INTO mcp_rate_limit_windows (key, count, window_start)
+    VALUES (${key}, 1, ${nowIso}::timestamptz)
+    ON CONFLICT (key) DO UPDATE SET
+      count = CASE
+        WHEN mcp_rate_limit_windows.window_start <= ${nowIso}::timestamptz - make_interval(secs => ${windowMs / 1000})
+          THEN 1
+        ELSE mcp_rate_limit_windows.count + 1
+      END,
+      window_start = CASE
+        WHEN mcp_rate_limit_windows.window_start <= ${nowIso}::timestamptz - make_interval(secs => ${windowMs / 1000})
+          THEN ${nowIso}::timestamptz
+        ELSE mcp_rate_limit_windows.window_start
+      END
+    RETURNING count, window_start
+  `);
+  const row = rows[0]!;
+  return { count: row.count, windowStart: new Date(row.window_start) };
 }

@@ -425,6 +425,23 @@ export const mcpOAuthCodes = pgTable("mcp_oauth_codes", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * Issue #159: per-token MCP rate limiting used to live in a process-local
+ * `Map`, the same class of bug #109 already fixed for mcp_tokens -- on a
+ * serverless deployment, two concurrent calls on the same token routed to
+ * two different warm instances each see an empty/fresh window and each
+ * pass independently, so the "cap it hard" per-token limit
+ * (docs/PLAN-V1.md §13.4) is bypassed by nothing more than normal request
+ * distribution. `key` is `${tokenId}:${bucket}` (lib/services/mcpRateLimit.ts);
+ * the increment-and-check is one atomic UPSERT so two concurrent requests
+ * can't both read a stale count before either commits.
+ */
+export const mcpRateLimitWindows = pgTable("mcp_rate_limit_windows", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull(),
+  windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+});
+
 // --- Relations ------------------------------------------------------------
 
 export const workspacesRelations = relations(workspaces, ({ many }) => ({
