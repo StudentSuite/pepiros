@@ -65,11 +65,6 @@ export function SiteFooter() {
 
       <div className="border-t border-border">
         <div className="mx-auto flex max-w-6xl flex-col gap-1 px-6 py-6 font-sans text-xs text-ink-faint">
-          {/* Hackathon-origin note: plan.md's header ("Hackathon: Aug 7-19,
-              2026 ... Team: Anay + Yash") plus README.md's own "Early build,
-              moving fast" framing and SECURITY.md's "small, active hackathon
-              project" line -- no wording invented beyond what those already say. */}
-          <p>Pepiros started as a hackathon project and is still an early build, moving fast.</p>
           {/* Open-access-only data note: docs/PLAN-V1.md §22.2 -- uploads
               stay private to the uploader's workspace unless the license
               permits listing them in the public catalog. */}

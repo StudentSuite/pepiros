@@ -45,6 +45,16 @@ export interface OutlinePaper {
   nodeId: string;
   title: string;
   pillars: OutlinePillar[];
+  /**
+   * Leaf nodes `contains`-parented directly to this paper, with no pillar in
+   * between (issue #173) -- synthesis.ts's pairwise relation leaves are the
+   * only current producer of this shape (a "paper A vs paper B" claim isn't
+   * about any one pillar). Without this bucket they were invisible to both
+   * this outline and the `pepiros://workspace/{id}/outline` MCP resource,
+   * which renders straight from `text` below, even though they exist and
+   * back real `agrees`/`contradicts` edges a client might ask to see.
+   */
+  otherLeaves: OutlineLeaf[];
 }
 
 export interface Outline {
@@ -76,25 +86,36 @@ export async function getOutline(workspaceId: string): Promise<Outline> {
 
   const papers: OutlinePaper[] = workspace.nodes
     .filter((n) => n.type === "paper")
-    .map((paperNode) => ({
-      paperId: paperNode.paperId,
-      nodeId: paperNode.id,
-      title: paperNode.title,
-      pillars: containedChildren(workspace, paperNode.id)
-        .filter((n) => n.type === "pillar")
-        .map((pillarNode) => ({
-          nodeId: pillarNode.id,
-          title: pillarNode.title,
-          leaves: containedChildren(workspace, pillarNode.id)
-            .filter((n) => n.type === "leaf")
-            .map((leafNode) => ({
-              nodeId: leafNode.id,
-              title: leafNode.title,
-              evidenceCount: countEvidence(workspace, leafNode.id),
-              deepLink: nodeDeepLink(workspaceId, leafNode.id),
-            })),
-        })),
-    }));
+    .map((paperNode) => {
+      const directChildren = containedChildren(workspace, paperNode.id);
+      return {
+        paperId: paperNode.paperId,
+        nodeId: paperNode.id,
+        title: paperNode.title,
+        pillars: directChildren
+          .filter((n) => n.type === "pillar")
+          .map((pillarNode) => ({
+            nodeId: pillarNode.id,
+            title: pillarNode.title,
+            leaves: containedChildren(workspace, pillarNode.id)
+              .filter((n) => n.type === "leaf")
+              .map((leafNode) => ({
+                nodeId: leafNode.id,
+                title: leafNode.title,
+                evidenceCount: countEvidence(workspace, leafNode.id),
+                deepLink: nodeDeepLink(workspaceId, leafNode.id),
+              })),
+          })),
+        otherLeaves: directChildren
+          .filter((n) => n.type === "leaf")
+          .map((leafNode) => ({
+            nodeId: leafNode.id,
+            title: leafNode.title,
+            evidenceCount: countEvidence(workspace, leafNode.id),
+            deepLink: nodeDeepLink(workspaceId, leafNode.id),
+          })),
+      };
+    });
 
   // synthesis/thread nodes hang off derived_from/relates, not contains, so
   // they are not reachable from any paper's subtree -- they belong to the
@@ -116,6 +137,9 @@ export async function getOutline(workspaceId: string): Promise<Outline> {
       for (const leaf of pillar.leaves) {
         lines.push(`    ${leaf.title} (${leaf.evidenceCount} evidence)`);
       }
+    }
+    for (const leaf of paper.otherLeaves) {
+      lines.push(`  ${leaf.title} (${leaf.evidenceCount} evidence)`);
     }
   }
   if (crossPaper.length > 0) {
@@ -216,6 +240,24 @@ export interface CreateNodeInput {
   title: string;
   bodyMd: string;
   claims: CreateNodeClaim[];
+  /**
+   * Deterministic id override (issue #175). Omit for the normal
+   * random-id path (chat Promote, the MCP `create_node` tool); a caller
+   * that needs a repeat call to update the same node in place rather than
+   * insert a duplicate (synthesis.ts's pairwise leaves, re-run on every
+   * POST /api/compare) passes a stable id here -- `setIngestedWorkspace`'s
+   * node upsert is an UPDATE on a re-used id, not a fresh insert.
+   */
+  nodeId?: string;
+  /**
+   * Explicit paperId override (issue #172). Without a `parentId`, this used
+   * to always default to `base.papers[0]?.id` -- the workspace's *first*
+   * paper, never the paper a caller actually meant, for any node created
+   * with no parent. synthesis.ts's pairwise leaves are the case that
+   * surfaced this: neither side had a parentId, so both silently landed on
+   * the first paper regardless of which side they were actually about.
+   */
+  paperId?: string;
 }
 
 export interface CreateNodeResult {
@@ -271,7 +313,7 @@ export async function createNode(input: CreateNodeInput): Promise<CreateNodeResu
     }
   }
 
-  const nodeId = `mcp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const nodeId = input.nodeId ?? `mcp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
   const { bodyMd, evidence } = verifyAndBindClaims({
     nodeId,
@@ -293,14 +335,23 @@ export async function createNode(input: CreateNodeInput): Promise<CreateNodeResu
     pillarIndex: parent?.pillarIndex ?? null,
     x: 0,
     y: 0,
-    paperId: parent?.paperId ?? base.papers[0]?.id ?? null,
+    paperId: input.paperId ?? parent?.paperId ?? base.papers[0]?.id ?? null,
     stale: false,
   };
 
+  // Issue #175: a caller-supplied nodeId (synthesis.ts's deterministic
+  // pairwise-leaf ids, so a repeat compare run updates the same node
+  // instead of duplicating it) means `base.nodes`/`base.evidence` can
+  // already contain the row(s) from a prior run of this exact call. Filter
+  // those out before appending the freshly-verified copy, rather than
+  // pushing a second in-memory object with the same id -- saveWorkspace's
+  // single multi-row INSERT would otherwise try to ON CONFLICT DO UPDATE
+  // the same row twice in one statement, which Postgres rejects outright.
+  const newEvidenceIds = new Set(evidence.map((e) => e.id));
   const merged: Workspace = {
     ...base,
-    nodes: [...base.nodes, node],
-    evidence: [...base.evidence, ...evidence],
+    nodes: [...base.nodes.filter((n) => n.id !== nodeId), node],
+    evidence: [...base.evidence.filter((e) => !newEvidenceIds.has(e.id)), ...evidence],
   };
   await setIngestedWorkspace(merged, ingested?.version);
 

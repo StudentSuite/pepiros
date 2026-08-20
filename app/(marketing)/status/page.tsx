@@ -89,7 +89,7 @@ export default function StatusPage() {
     <LegalPage
       kicker="Status"
       title="What actually works today"
-      intro="Pepiros is an early build and some of it is scaffolding. This page is the honest inventory, kept here so nobody has to find out by clicking."
+      intro="A feature-by-feature breakdown of what's live, in progress, or planned, kept here so nobody has to find out by clicking."
       updated="17 August 2026"
     >
       <div className="overflow-hidden rounded-md border border-border">

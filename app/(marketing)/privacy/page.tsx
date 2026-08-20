@@ -13,7 +13,7 @@ export default function PrivacyPage() {
     <LegalPage
       kicker="Privacy"
       title="What we store, and what we do not"
-      intro="Pepiros is a small, early build. This page describes what it actually does today rather than what a mature product might do."
+      intro="This page describes what Pepiros actually does today, not aspirational policy."
       updated="15 August 2026"
     >
       <Section title="Papers you upload">

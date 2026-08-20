@@ -332,7 +332,22 @@ export async function saveWorkspace(workspace: Workspace, expectedVersion?: numb
             targetId: e.targetId,
           })),
         )
-        .onConflictDoNothing({ target: schema.edges.id });
+        // Issue #175: onConflictDoUpdate on `kind`, not onConflictDoNothing --
+        // lib/services/synthesis.ts's pairwise relation edges now use a
+        // deterministic id per paper pair so a repeat compare run updates
+        // the same edge instead of duplicating it, but the classified
+        // relation (agrees/contradicts/...) can legitimately come back
+        // different across two runs of the same non-deterministic
+        // generateObject call. onConflictDoNothing would silently keep the
+        // *first* run's kind forever even after the nodes it connects have
+        // already been updated to the new one, which is exactly the kind of
+        // node-vs-edge drift this app works hard to avoid elsewhere. Every
+        // other edge writer's ids are effectively unique on each call
+        // (random suffixes), so this is a no-op for them either way.
+        .onConflictDoUpdate({
+          target: schema.edges.id,
+          set: { kind: sql`excluded.kind` },
+        });
     }
 
     if (workspace.evidence.length > 0) {

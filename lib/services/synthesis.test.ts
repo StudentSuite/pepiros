@@ -32,6 +32,7 @@ afterEach(async () => {
 
 import { runSynthesis } from "./synthesis";
 import { getIngestedWorkspace } from "./ingestStore";
+import { getOutline } from "./nodes";
 
 const workspace = workspaceFixture as unknown as Workspace;
 const p1Chunk = workspace.chunks.find((c) => c.paperId === "p1")!;
@@ -178,4 +179,126 @@ describe("runSynthesis", () => {
     expect(divergence!.bodyMd).toContain("Systematic review");
     expect(divergence!.bodyMd).toContain("Cohort study");
   }, 15000);
+
+  // Issue #172: without a parentId, createNode() used to default every
+  // pairwise leaf's paperId to base.papers[0]?.id -- the workspace's *first*
+  // paper, regardless of which side it actually was. Loop order visits
+  // (p1,p2), (p1,p3), (p2,p3) in that sequence, so the p2-vs-p3 pair (the
+  // third comparison) is the one that would have been wrong under the old
+  // code: neither side is p1, so both would have collapsed onto it.
+  it("gives each pairwise leaf the paperId of the side it's actually about, not always the workspace's first paper", async () => {
+    strongQueue = [
+      relationResponse({ relation: "none", summaryA: "", refA: `C${p1Chunk.ordinal}`, quoteA: p1Chunk.text, summaryB: "", refB: `C${p2Chunk.ordinal}`, quoteB: p2Chunk.text }),
+      relationResponse({ relation: "none", summaryA: "", refA: `C${p1Chunk.ordinal}`, quoteA: p1Chunk.text, summaryB: "", refB: `C${p3Chunk.ordinal}`, quoteB: p3Chunk.text }),
+      relationResponse({
+        relation: "contradicts",
+        summaryA: "Paper 2's position.",
+        refA: `C${p2Chunk.ordinal}`,
+        quoteA: p2Chunk.text,
+        summaryB: "Paper 3's position.",
+        refB: `C${p3Chunk.ordinal}`,
+        quoteB: p3Chunk.text,
+      }),
+    ];
+
+    const result = await runSynthesis("ws-1");
+
+    const edge = result.edgesWritten.find((e) => e.kind === "contradicts");
+    expect(edge).toBeDefined();
+    const merged = (await getIngestedWorkspace("ws-1"))!.workspace;
+    const nodeA = merged.nodes.find((n) => n.id === edge!.sourceId)!;
+    const nodeB = merged.nodes.find((n) => n.id === edge!.targetId)!;
+    expect(nodeA.paperId).toBe("p2");
+    expect(nodeB.paperId).toBe("p3");
+  }, 15000);
+
+  // Issue #174: verification only ever checked that a claim's quote
+  // fuzzy-matches *some* chunk with the cited ref -- never that the chunk
+  // belongs to the paper the side is supposed to be about. Here side A
+  // cites paper B's own chunk/ref while claiming to be paper A's position, a
+  // stand-in for a generator mislabeling which side supports which claim.
+  it("rejects a pair when a side's quote resolves to a chunk from the wrong paper", async () => {
+    strongQueue = [
+      relationResponse({
+        relation: "contradicts",
+        summaryA: "Mislabeled: actually paper B's text.",
+        refA: `C${p2Chunk.ordinal}`,
+        quoteA: p2Chunk.text,
+        summaryB: "Paper B's real position.",
+        refB: `C${p2Chunk.ordinal}`,
+        quoteB: p2Chunk.text,
+      }),
+      relationResponse({ relation: "none", summaryA: "", refA: `C${p1Chunk.ordinal}`, quoteA: p1Chunk.text, summaryB: "", refB: `C${p3Chunk.ordinal}`, quoteB: p3Chunk.text }),
+      relationResponse({ relation: "none", summaryA: "", refA: `C${p2Chunk.ordinal}`, quoteA: p2Chunk.text, summaryB: "", refB: `C${p3Chunk.ordinal}`, quoteB: p3Chunk.text }),
+    ];
+
+    const result = await runSynthesis("ws-1");
+
+    expect(result.edgesWritten.filter((e) => e.kind === "contradicts")).toHaveLength(0);
+    expect(result.rejected.some((r) => r.reason.includes("different paper"))).toBe(true);
+  }, 15000);
+
+  // Issue #173: a pairwise leaf's `contains` edge lands directly on its
+  // paper node, skipping the pillar level entirely -- getOutline() used to
+  // only descend paper -> pillar -> leaf, so these nodes never appeared in
+  // the outline (or the pepiros://workspace/{id}/outline MCP resource, which
+  // renders straight from this same text) despite backing a real edge.
+  it("surfaces a pairwise leaf under its paper's otherLeaves in getOutline, not just as a dangling node", async () => {
+    strongQueue = [
+      relationResponse({
+        relation: "contradicts",
+        summaryA: "Paper A's position.",
+        refA: `C${p1Chunk.ordinal}`,
+        quoteA: p1Chunk.text,
+        summaryB: "Paper B's position.",
+        refB: `C${p2Chunk.ordinal}`,
+        quoteB: p2Chunk.text,
+      }),
+      relationResponse({ relation: "none", summaryA: "", refA: `C${p1Chunk.ordinal}`, quoteA: p1Chunk.text, summaryB: "", refB: `C${p3Chunk.ordinal}`, quoteB: p3Chunk.text }),
+      relationResponse({ relation: "none", summaryA: "", refA: `C${p2Chunk.ordinal}`, quoteA: p2Chunk.text, summaryB: "", refB: `C${p3Chunk.ordinal}`, quoteB: p3Chunk.text }),
+    ];
+
+    await runSynthesis("ws-1");
+    const outline = await getOutline("ws-1");
+
+    const paperA = outline.papers.find((p) => p.paperId === "p1")!;
+    const paperB = outline.papers.find((p) => p.paperId === "p2")!;
+    expect(paperA.otherLeaves.some((l) => l.title.includes("contradicts position"))).toBe(true);
+    expect(paperB.otherLeaves.some((l) => l.title.includes("contradicts position"))).toBe(true);
+    expect(outline.text).toContain("contradicts position");
+  }, 15000);
+
+  // Issue #175: node/edge ids used to be randomUUID()-based, so a second
+  // POST /api/compare on an already-synthesized workspace duplicated every
+  // pairwise leaf and relation edge instead of updating them in place.
+  it("does not duplicate nodes or edges when run twice on the same workspace", async () => {
+    const responses = () => [
+      relationResponse({
+        relation: "contradicts",
+        summaryA: "Paper A's position.",
+        refA: `C${p1Chunk.ordinal}`,
+        quoteA: p1Chunk.text,
+        summaryB: "Paper B's position.",
+        refB: `C${p2Chunk.ordinal}`,
+        quoteB: p2Chunk.text,
+      }),
+      relationResponse({ relation: "none", summaryA: "", refA: `C${p1Chunk.ordinal}`, quoteA: p1Chunk.text, summaryB: "", refB: `C${p3Chunk.ordinal}`, quoteB: p3Chunk.text }),
+      relationResponse({ relation: "none", summaryA: "", refA: `C${p2Chunk.ordinal}`, quoteA: p2Chunk.text, summaryB: "", refB: `C${p3Chunk.ordinal}`, quoteB: p3Chunk.text }),
+    ];
+
+    strongQueue = responses();
+    await runSynthesis("ws-1");
+    strongQueue = responses();
+    await runSynthesis("ws-1");
+
+    const merged = (await getIngestedWorkspace("ws-1"))!.workspace;
+    const pairwiseLeaves = merged.nodes.filter((n) => n.title.includes("contradicts position"));
+    // Scoped to this pair's own deterministic id, not `kind === "contradicts"`
+    // generally: the fixture itself already ships one unrelated planted
+    // contradiction edge ("e-20", p2 vs p3's key findings), so a raw
+    // kind-only count would be off by one regardless of duplication.
+    const thisRelationEdge = merged.edges.filter((e) => e.id === "synth-r-p1-p2");
+    expect(pairwiseLeaves).toHaveLength(2);
+    expect(thisRelationEdge).toHaveLength(1);
+  }, 20000);
 });

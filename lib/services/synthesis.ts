@@ -1,10 +1,9 @@
 import "server-only";
-import { randomUUID } from "node:crypto";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { strongModel } from "@/lib/ai/client";
 import { buildContextBlock } from "@/lib/prompts/contextBlock";
-import type { EdgeKind, GraphEdge, GraphNode, PaperArchetype, Workspace } from "@/types/anchor";
+import type { Chunk, EdgeKind, Evidence, GraphEdge, GraphNode, PaperArchetype, Workspace } from "@/types/anchor";
 import { fetchWorkspace } from "./workspace";
 import { getIngestedWorkspace, setIngestedWorkspace } from "./ingestStore";
 import { createNode } from "./nodes";
@@ -92,6 +91,28 @@ function synthesisNodeId(workspaceId: string, kind: string): string {
   return `synth-${kind}-${workspaceId}`;
 }
 
+/**
+ * Issue #174: `createNode()`'s verification only confirms a claim's quote
+ * fuzzy-matches *some* chunk in the workspace with the cited ref id -- it
+ * never checks that chunk belongs to the paper the claim is supposed to be
+ * about. This is the cross-paper check `runSynthesis` needs on top of that,
+ * specific to a pairwise comparison where each side has a real, known
+ * intended paper. An unanchored (`unsupported`) row has nothing to
+ * misattribute, so it passes trivially -- `lowConfidence` already rejects
+ * the pair for that case.
+ */
+function evidenceMatchesPaper(
+  evidence: Array<Omit<Evidence, "id"> & { id: string }>,
+  chunks: Chunk[],
+  paperId: string,
+): boolean {
+  const chunkById = new Map(chunks.map((c) => [c.id, c] as const));
+  return evidence.every((e) => {
+    if (!e.anchor) return true;
+    return chunkById.get(e.anchor.chunkId)?.paperId === paperId;
+  });
+}
+
 export async function runSynthesis(workspaceId: string): Promise<SynthesisResult> {
   const ingested = await getIngestedWorkspace(workspaceId);
   const workspace = ingested?.workspace ?? (await fetchWorkspace(workspaceId));
@@ -129,7 +150,13 @@ export async function runSynthesis(workspaceId: string): Promise<SynthesisResult
         continue;
       }
 
-      const pairId = randomUUID().slice(0, 8);
+      // Issue #175: deterministic, not randomUUID(), so a repeat
+      // POST /api/compare on the same workspace updates this pair's
+      // existing nodes/edges in place instead of writing a fresh, duplicate
+      // set every time. Paper order is stable (workspace.papers doesn't
+      // reorder between runs), so (paperA, paperB) always produces the same
+      // key for the same pair.
+      const pairId = `${paperA.id}-${paperB.id}`;
       // Sequential, not Promise.all (issue #103's optimistic concurrency check
       // made this a real bug, not just a latent one): both createNode() calls
       // write to the same workspace, so running them concurrently means each
@@ -139,12 +166,20 @@ export async function runSynthesis(workspaceId: string): Promise<SynthesisResult
       // external conflict.
       const sideA = await createNode({
         workspaceId,
+        nodeId: `synth-leaf-${workspaceId}-${pairId}-a`,
+        // Issue #172: without this, createNode() (no parentId given here)
+        // fell back to base.papers[0]?.id for every pairwise leaf -- the
+        // workspace's first paper, regardless of which side this actually
+        // is.
+        paperId: paperA.id,
         title: `${paperA.title}: ${object.relation} position`,
         bodyMd: `${object.summaryA} [^n0]`,
         claims: [{ refs: [object.refA], quote: object.quoteA }],
       });
       const sideB = await createNode({
         workspaceId,
+        nodeId: `synth-leaf-${workspaceId}-${pairId}-b`,
+        paperId: paperB.id,
         title: `${paperB.title}: ${object.relation} position`,
         bodyMd: `${object.summaryB} [^n0]`,
         claims: [{ refs: [object.refB], quote: object.quoteB }],
@@ -157,6 +192,31 @@ export async function runSynthesis(workspaceId: string): Promise<SynthesisResult
           paperAId: paperA.id,
           paperBId: paperB.id,
           reason: `claimed ${object.relation} but at least one side's quote did not verify against its source`,
+        });
+        continue;
+      }
+
+      // Issue #174: verifyAndBindClaims (inside createNode) only checks that
+      // a claim's quote fuzzy-matches *some* chunk in the workspace with the
+      // cited ref id -- it never checks that chunk actually belongs to the
+      // paper this side is supposed to be about. A mislabeled generateObject
+      // response (a real, plausible failure mode per this codebase's own
+      // documented Groq quirks) could otherwise pass verification while
+      // citing the *other* paper's text, misattributing the claim's real
+      // source.
+      if (!evidenceMatchesPaper(sideA.evidence, workspace.chunks, paperA.id)) {
+        rejected.push({
+          paperAId: paperA.id,
+          paperBId: paperB.id,
+          reason: `paper A's claimed quote resolved to a chunk from a different paper, likely a mislabeled side`,
+        });
+        continue;
+      }
+      if (!evidenceMatchesPaper(sideB.evidence, workspace.chunks, paperB.id)) {
+        rejected.push({
+          paperAId: paperA.id,
+          paperBId: paperB.id,
+          reason: `paper B's claimed quote resolved to a chunk from a different paper, likely a mislabeled side`,
         });
         continue;
       }
@@ -310,13 +370,20 @@ export async function runSynthesis(workspaceId: string): Promise<SynthesisResult
   // createNode() itself and still need writing here.
   const latest = await getIngestedWorkspace(workspaceId);
   const latestWorkspace = latest?.workspace ?? workspace;
+  // Issue #175: edgesWritten's ids are now deterministic per paper pair, so
+  // a repeat run's edgesWritten can collide with rows latestWorkspace
+  // already carries from a prior run -- filtered out here for the same
+  // reason createNode() now filters its own node/evidence arrays before a
+  // re-used id: a single multi-row INSERT can't ON CONFLICT DO UPDATE the
+  // same row twice.
+  const edgeIdsWritten = new Set(edgesWritten.map((e) => e.id));
   const merged: Workspace = {
     ...latestWorkspace,
     nodes: [
       ...latestWorkspace.nodes.filter((n) => !synthesisNodesWritten.some((s) => s.id === n.id)),
       ...synthesisNodesWritten,
     ],
-    edges: [...latestWorkspace.edges, ...edgesWritten],
+    edges: [...latestWorkspace.edges.filter((e) => !edgeIdsWritten.has(e.id)), ...edgesWritten],
   };
   // Issue #103: a stale write here fails loudly instead of silently
   // clobbering a manual edit that landed while this pass was running.

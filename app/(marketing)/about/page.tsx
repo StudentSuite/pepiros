@@ -78,9 +78,8 @@ export default function AboutPage() {
             >
               StudentSuite
             </a>{" "}
-            org. It started as a hackathon project and is still an early build,
-            moving quickly. The <Link href="/roadmap">roadmap</Link> says what is
-            real today and what is not, without rounding up.
+            org, under active development. The <Link href="/roadmap">roadmap</Link> says
+            what is real today and what is not, without rounding up.
           </p>
         </ArticleBody>
       </ReadingColumn>

@@ -48,7 +48,7 @@ export default function TermsPage() {
 
       <Section title="Availability">
         <p>
-          This is an early build with no uptime guarantee. Features can change or
+          We offer no uptime guarantee. Features can change or
           disappear. See <Link href="/status" className="text-accent-text underline underline-offset-2">status</Link>{" "}
           for what is working right now.
         </p>

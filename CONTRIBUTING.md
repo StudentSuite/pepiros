@@ -19,11 +19,12 @@ Node 20+. There's no live database or model provider wired up by default. See [`
 ```bash
 npm run typecheck
 npm run lint
+npm run check:no-em-dashes
 npm test
 npm run build
 ```
 
-All four should pass, and CI runs exactly these. `npm test` is Vitest over `lib/**/*.test.ts` (218 cases: the grounding spine, layout, graph visibility, citation parsing, the service layer, and the LLM/chat agents against a mock model); it is not the same thing as `evals/`, which is reserved for golden-paper generator eval cases per plan.md §9 and is still a stub. Anything touching `lib/grounding/*` should arrive with a test, since that code is the product.
+All five should pass, and CI runs exactly these. `npm test` is Vitest over `lib/**/*.test.ts` (322 cases: the grounding spine, layout, graph visibility, citation parsing, the service layer, and the LLM/chat agents against a mock model); it is not the same thing as `evals/`, which is reserved for golden-paper generator eval cases per plan.md §9 and is still a stub. Anything touching `lib/grounding/*` should arrive with a test, since that code is the product.
 
 Two habits this repo has earned the hard way:
 
@@ -38,6 +39,7 @@ Two habits this repo has earned the hard way:
 - Use the existing design tokens (`app/globals.css`, `tailwind.config.ts`): no new colors, no light theme.
 - TypeScript strict mode is on; keep it passing rather than reaching for `any` or `@ts-ignore`.
 - Match the existing comment style: none by default, one line only when it explains a non-obvious constraint or invariant (see any file under `lib/grounding/` for the tone).
+- No em dashes (Unicode U+2014) anywhere in this project's own authored text: comments, docs, UI copy. Use a comma, colon, semicolon, or a double-hyphen (" -- ", this codebase's own convention throughout) instead. `npm run check:no-em-dashes` (`scripts/check-no-em-dashes.ts`) enforces this in CI.
 
 ## Ownership
 
