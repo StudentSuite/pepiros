@@ -22,13 +22,40 @@ export interface RateLimitConfig {
   windowMs: number;
 }
 
-/** `add_paper` capped hardest per §13.4's own wording; everything else gets one shared, generous default. */
+/**
+ * `add_paper` capped hardest per §13.4's own wording; everything else gets
+ * one shared, generous default.
+ *
+ * `mcp_oauth_register`/`mcp_oauth_token` (issue #222): the OAuth
+ * registration and token endpoints are unauthenticated by RFC 7591/6749
+ * design -- there's no token id to key a per-caller bucket on yet, so these
+ * two are keyed by client IP instead (see the two route handlers) rather
+ * than left with no cap at all, which let an anonymous caller insert
+ * unbounded rows into mcp_oauth_clients or brute-force code/client_secret
+ * guesses with zero backoff.
+ */
 export const RATE_LIMITS: Record<string, RateLimitConfig> = {
   add_paper: { limit: 5, windowMs: 10 * 60 * 1000 },
+  mcp_oauth_register: { limit: 10, windowMs: 60 * 60 * 1000 },
+  mcp_oauth_token: { limit: 20, windowMs: 60 * 1000 },
   default: { limit: 60, windowMs: 60 * 1000 },
 };
 
 export type RateLimitResult = { ok: true } | { ok: false; retryAfterMs: number };
+
+/**
+ * Best-effort caller IP for the two unauthenticated OAuth routes (issue
+ * #222) -- there's no token id to key on before a credential exists, so this
+ * is the only per-caller signal available. `x-forwarded-for` is
+ * client-settable and thus spoofable by a direct, unproxied caller, but
+ * behind the reverse proxy every real deployment of this app runs behind,
+ * the proxy overwrites/appends its own trusted value, so this is the
+ * standard "good enough" signal for a rate-limit bucket (not an
+ * authorization decision).
+ */
+export function clientIpFrom(request: Request): string {
+  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+}
 
 export async function checkRateLimit(tokenId: string, toolName: string): Promise<RateLimitResult> {
   const bucket = toolName in RATE_LIMITS ? toolName : "default";

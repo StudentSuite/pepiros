@@ -44,7 +44,14 @@ async function handle(request: Request): Promise<Response> {
   const record = await resolveMcpToken(token);
   const check = checkToken(record);
   if (!check.ok) {
-    return unauthorized(check.reason === "revoked" ? "This token has been revoked." : "This token is not recognized.");
+    // Issue #223: this used to return a distinct "revoked" message vs.
+    // "not recognized" over the public network transport, letting a caller
+    // holding a leaked-then-rotated bearer token confirm it was once genuine
+    // (vs. a pure guess) -- exactly the oracle RFC 6750-style bearer-token
+    // error responses are meant to avoid leaking. One generic message here;
+    // the real reason (still distinguished) only ever reaches server logs.
+    console.error(`mcp http: rejected bearer token (${check.reason})`);
+    return unauthorized("This token is not valid.");
   }
 
   const server = createMcpServer(check.token);

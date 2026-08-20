@@ -25,7 +25,13 @@ const PREFS = [
   },
 ] as const;
 
-export function NotificationPrefs({ initial }: { initial: NotificationPrefsValue }) {
+export function NotificationPrefs({
+  initial,
+  readOnly = false,
+}: {
+  initial: NotificationPrefsValue;
+  readOnly?: boolean;
+}) {
   const [on, setOn] = useState<NotificationPrefsValue>(initial);
 
   async function toggle(key: keyof NotificationPrefsValue, value: boolean) {
@@ -60,6 +66,7 @@ export function NotificationPrefs({ initial }: { initial: NotificationPrefsValue
             <Switch
               id={`pref-${p.key}`}
               checked={on[p.key] ?? false}
+              disabled={readOnly}
               onCheckedChange={(v) => void toggle(p.key, v)}
             />
           </div>

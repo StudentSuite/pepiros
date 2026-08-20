@@ -3,24 +3,29 @@
 import { useRef, useState } from "react";
 import { RefChip } from "@/components/ui/RefChip";
 import { SourcePopover } from "./SourcePopover";
-import { useWorkspaceStore } from "@/lib/store/workspace";
+import type { ChatMessageCitation } from "./MessageList";
 
 const HOVER_DELAY_MS = 140;
 
 /**
  * Inline clickable chip for a citation id inside chat prose. Hovering opens
  * the SourcePopover after a 140ms delay (docs/PLAN-V1.md §9.3) so a mouse
- * passing over prose doesn't pop every chip it crosses; clicking opens it
- * immediately and also selects the owning node so an inspector elsewhere on
- * the page picks it up.
+ * passing over prose doesn't pop every chip it crosses.
+ *
+ * Issue #210: this used to look up "evidence" by scanning the *global* graph
+ * workspace.evidence array for the first entry whose refId string matched --
+ * a different data source than what actually backs this answer, and
+ * ambiguous besides (the same refId can legitimately appear on multiple
+ * nodes with different tiers). `citation` is this message's own re-verified
+ * citation for this refId (message.citations from /api/chat), the only
+ * source of truth for what this specific answer actually cited. Dropped the
+ * old click-to-selectNode side effect along with it: a chat citation isn't
+ * reliably tied to any existing graph node (that only happens via "Promote
+ * to node"), so there's no node id here to select in the first place.
  */
-export function CitationChip({ refId }: { refId: string }) {
+export function CitationChip({ refId, citation }: { refId: string; citation: ChatMessageCitation | undefined }) {
   const [open, setOpen] = useState(false);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const workspace = useWorkspaceStore((s) => s.workspace);
-  const selectNode = useWorkspaceStore((s) => s.selectNode);
-
-  const evidence = workspace?.evidence.find((e) => e.refId === refId);
 
   function handleMouseEnter() {
     hoverTimer.current = setTimeout(() => setOpen(true), HOVER_DELAY_MS);
@@ -32,19 +37,10 @@ export function CitationChip({ refId }: { refId: string }) {
 
   return (
     <span className="relative inline-block" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
-      <button
-        type="button"
-        onClick={() => {
-          if (evidence) selectNode(evidence.nodeId);
-          setOpen((o) => !o);
-        }}
-        className="align-baseline"
-      >
+      <button type="button" onClick={() => setOpen((o) => !o)} className="align-baseline">
         <RefChip refId={refId} className="cursor-pointer hover:border-ink-muted hover:text-ink" />
       </button>
-      {open && evidence && (
-        <SourcePopover evidence={evidence} onClose={() => setOpen(false)} />
-      )}
+      {open && citation && <SourcePopover citation={citation} onClose={() => setOpen(false)} />}
     </span>
   );
 }

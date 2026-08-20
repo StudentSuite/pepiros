@@ -40,7 +40,7 @@ import type { McpScope } from "@/lib/services/mcpAuth";
  * screen or a screenshot -- and this one genuinely can't be re-read, because
  * only its hash is stored.
  */
-export function McpTokens({ initial }: { initial: McpTokenMeta[] }) {
+export function McpTokens({ initial, readOnly = false }: { initial: McpTokenMeta[]; readOnly?: boolean }) {
   const [tokens, setTokens] = useState(initial);
   const [label, setLabel] = useState("");
   const [scope, setScope] = useState<McpScope>("read");
@@ -100,8 +100,17 @@ export function McpTokens({ initial }: { initial: McpTokenMeta[] }) {
               variant="outline"
               className="gap-1.5"
               onClick={async () => {
-                await navigator.clipboard.writeText(revealed);
-                toast.success("Copied to clipboard");
+                // Issue #216: writeText throws on an insecure context, in an
+                // iframe, or when clipboard permission is denied -- unguarded,
+                // that left the user with neither a success nor an error
+                // toast, no feedback at all, for a token they can never see
+                // again.
+                try {
+                  await navigator.clipboard.writeText(revealed);
+                  toast.success("Copied to clipboard");
+                } catch {
+                  toast.error("Could not copy -- select and copy the token manually.");
+                }
               }}
             >
               <Copy className="size-3.5" />
@@ -165,6 +174,7 @@ export function McpTokens({ initial }: { initial: McpTokenMeta[] }) {
                     <IconButton
                       icon={Trash2}
                       label={`Revoke ${t.label}`}
+                      disabled={readOnly}
                       onClick={() => setRevoking(t)}
                     />
                   </TableCell>
@@ -183,6 +193,7 @@ export function McpTokens({ initial }: { initial: McpTokenMeta[] }) {
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder="Claude Desktop"
+            disabled={readOnly}
             className="mt-s-2"
           />
         </div>
@@ -192,13 +203,14 @@ export function McpTokens({ initial }: { initial: McpTokenMeta[] }) {
             id="tokenScope"
             value={scope}
             onChange={(e) => setScope(e.target.value as McpScope)}
+            disabled={readOnly}
             className="h-9 rounded border border-border bg-surface-sunken px-s-3 font-sans text-sm text-ink"
           >
             <option value="read">Read-only</option>
             <option value="write">Read + write</option>
           </select>
         </div>
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending || readOnly}>
           {pending ? "Generating…" : "Generate token"}
         </Button>
       </form>
@@ -214,7 +226,9 @@ export function McpTokens({ initial }: { initial: McpTokenMeta[] }) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmRevoke}>Revoke</AlertDialogAction>
+            <AlertDialogAction variant="destructive" onClick={confirmRevoke}>
+              Revoke
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

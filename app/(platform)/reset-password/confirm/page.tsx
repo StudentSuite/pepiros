@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
@@ -51,6 +51,25 @@ export default function ResetPasswordConfirmPage() {
   const [formError, setFormError] = useState<string | undefined>();
   const [pending, setPending] = useState(false);
   const [done, setDone] = useState(false);
+  const successHeadingRef = useRef<HTMLHeadingElement>(null);
+
+  // Issue #220: focus the success heading so a screen-reader/keyboard user
+  // gets real feedback that the submit actually succeeded, instead of focus
+  // silently falling back to <body> when the submit button is removed.
+  useEffect(() => {
+    if (done) successHeadingRef.current?.focus();
+  }, [done]);
+
+  // Issue #218: this setTimeout used to have no cleanup -- if the user
+  // clicked "Continue now" (or navigated anywhere else) inside the 2s
+  // window, the page unmounted but the timer kept running and force-
+  // navigated back to /login moments later, silently overriding whatever
+  // the user had just done.
+  useEffect(() => {
+    if (!done) return;
+    const id = setTimeout(() => router.push("/login"), 2000);
+    return () => clearTimeout(id);
+  }, [done, router]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -75,7 +94,6 @@ export default function ResetPasswordConfirmPage() {
         return;
       }
       setDone(true);
-      setTimeout(() => router.push("/login"), 2000);
     } catch {
       setFormError("Could not reach the server. Check your connection and try again.");
     } finally {
@@ -89,11 +107,13 @@ export default function ResetPasswordConfirmPage() {
         <Logo size="md" />
 
         {done ? (
-          <div className="mt-s-5 flex flex-col items-start gap-s-3">
+          <div className="mt-s-5 flex flex-col items-start gap-s-3" role="status">
             <span className="flex h-10 w-10 items-center justify-center rounded-full border border-located/40 bg-located/10 text-located">
               <Icon icon={CheckCircle2} size="md" />
             </span>
-            <h1 className="font-serif text-2xl text-ink">Password updated</h1>
+            <h1 ref={successHeadingRef} tabIndex={-1} className="font-serif text-2xl text-ink outline-none">
+              Password updated
+            </h1>
             <p className="font-sans text-sm text-ink-muted">
               Taking you to sign in with your new password…
             </p>

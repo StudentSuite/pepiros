@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth/session";
 import { getAdapter } from "@/lib/data/adapter";
+import { isDemoAccount } from "@/lib/data/demo";
 import type { OnboardingResponse } from "@/lib/data/types";
 import { createMcpToken, revokeMcpToken } from "@/lib/services/mcpTokens";
 import type { McpScope } from "@/lib/services/mcpAuth";
@@ -69,6 +70,13 @@ export async function updateProfileAction(input: { displayName: string; bio: str
 export async function createMcpTokenAction(input: { label: string; scope: McpScope }) {
   const profile = await getSession();
   if (!profile) throw new Error("Not signed in.");
+  // Issue #214: the create form is now disabled client-side for the demo
+  // account, but this is the real write path -- a stale/re-enabled client
+  // shouldn't be able to mint a real token that could be used to read/write
+  // the shared demo workspace on behalf of every other demo visitor.
+  if (isDemoAccount(profile)) {
+    throw new Error("The shared demo account can't create MCP tokens -- everyone who tries Pepiros shares it.");
+  }
 
   const label = input.label.trim() || "Untitled token";
   const result = await createMcpToken({ label, scope: input.scope, workspaceId: null, profileId: profile.id });
@@ -79,6 +87,9 @@ export async function createMcpTokenAction(input: { label: string; scope: McpSco
 export async function revokeMcpTokenAction(id: string) {
   const profile = await getSession();
   if (!profile) throw new Error("Not signed in.");
+  if (isDemoAccount(profile)) {
+    throw new Error("The shared demo account can't revoke MCP tokens -- that would break every other demo visitor's session.");
+  }
 
   await revokeMcpToken(id, profile.id);
   revalidatePath("/settings/mcp-tokens");

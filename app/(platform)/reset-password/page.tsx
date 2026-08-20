@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, type FormEvent } from "react";
+import { Suspense, useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { MailCheck } from "lucide-react";
@@ -44,6 +44,16 @@ function ResetPasswordForm() {
   const [error, setError] = useState<string | undefined>(linkError ?? undefined);
   const [pending, setPending] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const successHeadingRef = useRef<HTMLHeadingElement>(null);
+
+  // Issue #220: the success state replaced the whole form with a new
+  // heading, but nothing moved focus there and it wasn't a live region --
+  // the previously-focused submit button is removed from the DOM, so a
+  // screen-reader/keyboard user's focus silently fell back to <body> with
+  // no announcement the request had succeeded.
+  useEffect(() => {
+    if (submitted) successHeadingRef.current?.focus();
+  }, [submitted]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -80,11 +90,13 @@ function ResetPasswordForm() {
         <Logo size="md" />
 
         {submitted ? (
-          <div className="mt-s-5 flex flex-col items-start gap-s-3">
+          <div className="mt-s-5 flex flex-col items-start gap-s-3" role="status">
             <span className="flex h-10 w-10 items-center justify-center rounded-full border border-located/40 bg-located/10 text-located">
               <Icon icon={MailCheck} size="md" />
             </span>
-            <h1 className="font-serif text-2xl text-ink">Check your email</h1>
+            <h1 ref={successHeadingRef} tabIndex={-1} className="font-serif text-2xl text-ink outline-none">
+              Check your email
+            </h1>
             <p className="font-sans text-sm text-ink-muted">
               If <span className="font-medium text-ink">{username.trim()}</span> is an account with a
               recovery email on file, a reset link is on its way there.

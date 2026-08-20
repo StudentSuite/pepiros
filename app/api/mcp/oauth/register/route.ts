@@ -5,8 +5,20 @@
 import { NextResponse } from "next/server";
 import { OAuthClientMetadataSchema } from "@modelcontextprotocol/sdk/shared/auth.js";
 import { registerOAuthClient } from "@/lib/services/mcpOAuth";
+import { checkRateLimit, clientIpFrom } from "@/lib/services/mcpRateLimit";
 
 export async function POST(request: Request) {
+  // Issue #222: unauthenticated by RFC 7591 design, so this had no cap at
+  // all -- an anonymous caller could loop this indefinitely, inserting
+  // unbounded rows into mcp_oauth_clients.
+  const rate = await checkRateLimit(clientIpFrom(request), "mcp_oauth_register");
+  if (!rate.ok) {
+    return NextResponse.json(
+      { error: "rate_limited", error_description: `Try again in ${Math.ceil(rate.retryAfterMs / 1000)}s.` },
+      { status: 429 },
+    );
+  }
+
   const parsed = OAuthClientMetadataSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json(

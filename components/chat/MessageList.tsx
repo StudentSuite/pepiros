@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import type { EvidenceTier } from "@/types/anchor";
 import { CitationChip } from "./CitationChip";
 import { PromoteButton } from "./PromoteButton";
 
@@ -6,8 +7,10 @@ export type ChatSegment = { kind: "text"; text: string } | { kind: "citation"; r
 
 export interface ChatMessageCitation {
   refId: string;
-  tier: string;
+  tier: EvidenceTier;
   quote: string | null;
+  matchScore: number;
+  page: number | null;
 }
 
 export interface ChatMessage {
@@ -31,6 +34,12 @@ export function MessageList({ messages }: { messages: ChatMessage[] }) {
       {messages.map((message) => {
         const isUser = message.role === "user";
         const ungrounded = !isUser && message.ungrounded;
+        // Issue #210: this used to be looked up per-chip from the global
+        // workspace.evidence array (keyed by node, and ambiguous -- the same
+        // refId string can legitimately appear on multiple nodes with
+        // different tiers). This message's own citations array is the
+        // actually re-verified evidence for *this* answer.
+        const citationsByRefId = new Map(message.citations?.map((c) => [c.refId, c]));
         return (
           <li key={message.id} className={clsx("flex", isUser ? "justify-end" : "justify-start")}>
             <div
@@ -56,7 +65,7 @@ export function MessageList({ messages }: { messages: ChatMessage[] }) {
                   seg.kind === "text" ? (
                     <span key={i}>{seg.text}</span>
                   ) : (
-                    <CitationChip key={i} refId={seg.refId} />
+                    <CitationChip key={i} refId={seg.refId} citation={citationsByRefId.get(seg.refId)} />
                   ),
                 )}
               </div>

@@ -13,10 +13,11 @@ export default async function McpTokensPage() {
   if (!profile) redirect("/login");
 
   const tokens = await listMcpTokens(profile.id);
+  const demo = isDemoAccount(profile);
 
   return (
     <div>
-      {isDemoAccount(profile) && <DemoNotice />}
+      {demo && <DemoNotice />}
 
       <header className="pb-s-5">
         <h2 className="font-serif text-lg text-ink">MCP tokens</h2>
@@ -26,7 +27,7 @@ export default async function McpTokensPage() {
         </p>
       </header>
 
-      <McpTokens initial={tokens} />
+      <McpTokens initial={tokens} readOnly={demo} />
     </div>
   );
 }

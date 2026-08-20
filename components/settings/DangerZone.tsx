@@ -99,7 +99,7 @@ export function DangerZone({ username }: { username: string }) {
 
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction disabled={!canConfirm} onClick={confirm}>
+            <AlertDialogAction variant="destructive" disabled={!canConfirm} onClick={confirm}>
               {deleting ? "Deleting…" : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>

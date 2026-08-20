@@ -13,10 +13,11 @@ export default async function NotificationsPage() {
   if (!profile) redirect("/login");
 
   const prefs = await getAdapter().getNotificationPrefs(profile.id);
+  const demo = isDemoAccount(profile);
 
   return (
     <div>
-      {isDemoAccount(profile) && <DemoNotice />}
+      {demo && <DemoNotice />}
 
       {/* Issue #142: same reasoning as settings/profile/page.tsx's header. */}
       <header className="pb-s-5">
@@ -26,7 +27,7 @@ export default async function NotificationsPage() {
         </p>
       </header>
 
-      <NotificationPrefs initial={prefs} />
+      <NotificationPrefs initial={prefs} readOnly={demo} />
     </div>
   );
 }

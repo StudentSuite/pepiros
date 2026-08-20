@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { EvidenceTier } from "@/types/anchor";
 import { MessageList, type ChatMessage } from "./MessageList";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -13,7 +14,7 @@ type Scope = "all" | "paper" | "node";
 
 interface ChatApiResponse {
   answer: string;
-  citations: Array<{ refId: string; tier: string; quote: string | null; matchScore: number; page: number | null }>;
+  citations: Array<{ refId: string; tier: EvidenceTier; quote: string | null; matchScore: number; page: number | null }>;
   ungrounded: boolean;
   refused: boolean;
 }
@@ -33,6 +34,15 @@ export function ChatDock({ activePaperId }: { activePaperId?: string }) {
   // question was ever asked. One click on "Expand" still gets you there.
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Issue #212: nothing scrolled this container as messages grew, so a new
+  // answer could land below the visible fold of this small fixed-height dock
+  // with no visual cue it had arrived.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages.length]);
   const [draft, setDraft] = useState("");
   const [scope, setScope] = useState<Scope>("all");
   // Issue #166: "This node" used to silently fall back to paper-scope (or
@@ -160,7 +170,12 @@ export function ChatDock({ activePaperId }: { activePaperId?: string }) {
 
         {open && (
           <>
-            <div className="max-h-72 overflow-y-auto px-3 py-3">
+            {/* Issue #211: new replies were never announced to screen reader
+                users -- the only role="status" was the transient "Reading
+                the papers..." line, gone the instant the real answer lands.
+                role="log" + aria-live="polite" here announces each new
+                message as it's appended. */}
+            <div ref={scrollRef} role="log" aria-live="polite" className="max-h-72 overflow-y-auto px-3 py-3">
               {messages.length === 0 ? (
                 <div className="flex flex-col gap-2">
                   <p className="font-sans text-xs text-ink-faint">Try asking:</p>
@@ -219,7 +234,11 @@ export function ChatDock({ activePaperId }: { activePaperId?: string }) {
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSend();
+                  // Issue #213: without the isComposing guard, the Enter
+                  // keystroke a CJK/IME user presses to confirm a composed
+                  // candidate also fired this handler, sending the message
+                  // mid-composition.
+                  if (e.key === "Enter" && !e.nativeEvent.isComposing) handleSend();
                 }}
                 placeholder="Ask about this workspace..."
                 disabled={pending}

@@ -54,6 +54,12 @@ export function ShareClient({ workspaceId }: { workspaceId: string }) {
     // the newly-selected paper has none of its own yet (e.g. still
     // processing). Explicitly null it out instead of leaving it stale.
     setActiveChunkId(paperChunks.length > 0 ? paperChunks[0]!.id : null);
+    // Issue #219: selectedNodeId was never reset here, so a node selected
+    // while viewing paper A stayed selected (and rendered in the inspector,
+    // by id, across the whole workspace) after switching to paper B --
+    // showing evidence/anchors from a paper no longer shown in the PDF pane
+    // next to it.
+    selectNode(null);
     // Resets to this paper's own first chunk whenever the selected paper
     // changes, rather than only filling in an empty activeChunkId once.
     // eslint-disable-next-line react-hooks/exhaustive-deps

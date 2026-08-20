@@ -21,6 +21,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Dot } from "@/components/reading/Article";
 import { cn } from "@/lib/utils";
 import type { Post, PostStatus } from "@/lib/data/types";
+import { CATALOG_BY_ID } from "@/lib/data/papers";
 
 type StatusTab = "all" | PostStatus;
 
@@ -31,12 +32,18 @@ const TABS: { value: StatusTab; label: string }[] = [
   { value: "archived", label: "Archived" },
 ];
 
-const slugify = (title: string) =>
-  title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 60);
+// Issue #221: this used to recompute a slug from post.title and link
+// straight to /paper/{that}, but /paper/[slug] resolves by exact match
+// against CatalogPaper.slug (lib/data/papers.ts), which is hand-authored and
+// doesn't always match a mechanical slugify() of the title -- 8 of the 14
+// seeded papers 404'd this way (e.g. "Deep Residual Learning for Image
+// Recognition" slugifies to deep-residual-learning-for-image-recognition,
+// but the real catalog slug is deep-residual-learning). Resolve through the
+// paper's own id instead, the same real slug FeedClient/u/[username] use.
+function paperHref(paperId: string): string | null {
+  const paper = CATALOG_BY_ID.get(paperId);
+  return paper ? `/paper/${paper.slug}` : null;
+}
 
 /**
  * The author's own posts, as a list rather than a data grid.
@@ -224,12 +231,16 @@ export function PostsList({
                   </div>
 
                   <h3 className="mt-1 font-serif text-lg leading-snug text-ink">
-                    <Link
-                      href={`/paper/${slugify(post.title)}`}
-                      className="hover:text-accent-text"
-                    >
-                      {post.title}
-                    </Link>
+                    {(() => {
+                      const href = paperHref(post.paperId);
+                      return href ? (
+                        <Link href={href} className="hover:text-accent-text">
+                          {post.title}
+                        </Link>
+                      ) : (
+                        post.title
+                      );
+                    })()}
                   </h3>
 
                   <p className="mt-1 truncate font-sans text-[13px] text-ink-faint">

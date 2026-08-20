@@ -5,12 +5,20 @@
 // every real OAuth token endpoint.
 import { NextResponse } from "next/server";
 import { clientSecretMatches, exchangeAuthorizationCode, getOAuthClient } from "@/lib/services/mcpOAuth";
+import { checkRateLimit, clientIpFrom } from "@/lib/services/mcpRateLimit";
 
 function errorResponse(error: string, description: string, status: number) {
   return NextResponse.json({ error, error_description: description }, { status });
 }
 
 export async function POST(request: Request) {
+  // Issue #222: this had no cap at all -- a caller could hammer this route
+  // with code/client_secret guesses with zero backoff.
+  const rate = await checkRateLimit(clientIpFrom(request), "mcp_oauth_token");
+  if (!rate.ok) {
+    return errorResponse("rate_limited", `Try again in ${Math.ceil(rate.retryAfterMs / 1000)}s.`, 429);
+  }
+
   const contentType = request.headers.get("content-type") ?? "";
   if (!contentType.includes("application/x-www-form-urlencoded")) {
     return errorResponse("invalid_request", "Expected application/x-www-form-urlencoded.", 400);
