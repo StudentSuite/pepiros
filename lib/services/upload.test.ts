@@ -199,4 +199,21 @@ describe("findDuplicate", () => {
   it("returns null against an empty workspace", () => {
     expect(findDuplicate({ title: "Anything", doi: "10.1/x" }, [])).toBeNull();
   });
+
+  // Issue #177: bare .includes() false-positived when one DOI is a literal
+  // prefix of another already-ingested one.
+  it("does not false-positive when the candidate DOI is a strict prefix of an existing paper's DOI", () => {
+    const withNumericDoi: Paper[] = [
+      { ...existing[0]!, id: "p2", sourceUrl: "https://doi.org/10.1000/1820" },
+    ];
+    expect(findDuplicate({ title: "A genuinely different paper", doi: "10.1000/182" }, withNumericDoi)).toBeNull();
+  });
+
+  it("still matches when the DOI is followed only by a non-alphanumeric boundary (trailing slash)", () => {
+    const withTrailingSlash: Paper[] = [
+      { ...existing[0]!, id: "p3", sourceUrl: "https://doi.org/10.1000/182/" },
+    ];
+    const match = findDuplicate({ title: "Something else", doi: "10.1000/182" }, withTrailingSlash);
+    expect(match).toMatchObject({ paperId: "p3", reason: "doi" });
+  });
 });

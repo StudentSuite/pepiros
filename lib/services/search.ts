@@ -1,7 +1,7 @@
 import type { Chunk } from "@/types/anchor";
 import { formatChunkLine } from "@/lib/prompts/contextBlock";
 import { tokenize } from "@/lib/grounding/fuzzy";
-import { fetchWorkspace } from "./workspace";
+import { fetchWorkspaceData } from "./workspace";
 
 /**
  * `search_paper` (docs/PLAN-V1.md §13.2), backing both the MCP tool and any
@@ -55,7 +55,7 @@ export async function searchPaper({
   paperId,
   k = DEFAULT_K,
 }: SearchPaperInput): Promise<SearchHit[]> {
-  const workspace = await fetchWorkspace(workspaceId);
+  const workspace = await fetchWorkspaceData(workspaceId);
   const queryTerms = [...new Set(tokenize(query))];
   if (queryTerms.length === 0) return [];
 
@@ -88,7 +88,7 @@ export async function searchPaper({
  * MCP is a read, not new extraction.
  */
 export async function paperNumericLedger(workspaceId: string, paperId: string) {
-  const workspace = await fetchWorkspace(workspaceId);
+  const workspace = await fetchWorkspaceData(workspaceId);
   const paperChunkIds = new Set(
     workspace.chunks.filter((c) => c.paperId === paperId).map((c) => c.id),
   );
@@ -114,7 +114,7 @@ export async function paperNumericLedger(workspaceId: string, paperId: string) {
  * correctly does not count as coverage here.
  */
 export async function paperCoverage(workspaceId: string, paperId: string) {
-  const workspace = await fetchWorkspace(workspaceId);
+  const workspace = await fetchWorkspaceData(workspaceId);
   const paperChunks = workspace.chunks.filter((c) => c.paperId === paperId);
   const paperChunkIds = new Set(paperChunks.map((c) => c.id));
 

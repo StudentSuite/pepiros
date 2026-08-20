@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { fetchWorkspace } from "@/lib/services/workspace";
+import { fetchWorkspaceData } from "@/lib/services/workspace";
 import { verifyClaimsAgainstCorpus } from "@/lib/services/verify";
 import { paperCoverage, paperNumericLedger, searchPaper } from "@/lib/services/search";
 import {
@@ -10,7 +10,7 @@ import {
   getOutline,
   nodeDeepLink,
 } from "@/lib/services/nodes";
-import { queueUrlIngest } from "@/lib/services/ingest";
+import { isPdfIngestSupportedHere, queueUrlIngest } from "@/lib/services/ingest";
 import { createWorkspace, listWorkspaces } from "@/lib/services/workspaces";
 import { getJob, stageProgress } from "@/lib/services/jobs";
 import { LIVE_TOOL_NAMES, toolDescription } from "@/lib/mcp/registry";
@@ -86,7 +86,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
       const denial = await authorize(workspace_id, false, "list_papers");
       if (denial) return errorText(denial);
 
-      const workspace = await fetchWorkspace(workspace_id);
+      const workspace = await fetchWorkspaceData(workspace_id);
       return json(
         workspace.papers.map((p) => ({
           paper_id: p.id,
@@ -148,7 +148,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
       const denial = await authorize(workspace_id, false, "verify_claim");
       if (denial) return errorText(denial);
 
-      const workspace = await fetchWorkspace(workspace_id);
+      const workspace = await fetchWorkspaceData(workspace_id);
       const [result] = verifyClaimsAgainstCorpus({
         chunks: workspace.chunks,
         numerics: workspace.numerics,
@@ -368,6 +368,18 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
     async ({ workspace_id, url }) => {
       const denial = await authorize(workspace_id, true, "add_paper");
       if (denial) return errorText(denial);
+
+      // Issue #176: this checked authorization/scope but skipped the same
+      // Vercel guard app/api/ingest/route.ts runs first -- on a deployment
+      // with no local Python interpreter, this used to proceed straight
+      // into queueUrlIngest() and eventually fail with a raw ENOENT/spawn
+      // error instead of the same honest, named limitation the HTTP route
+      // already gives.
+      if (!isPdfIngestSupportedHere()) {
+        return errorText(
+          "PDF ingestion needs a local Python interpreter (PyMuPDF) that this hosted deployment doesn't have. Run Pepiros locally with `npm run dev` to ingest your own papers.",
+        );
+      }
 
       const result = await queueUrlIngest(workspace_id, url);
       if ("error" in result) return errorText(result.detail);

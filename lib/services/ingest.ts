@@ -8,7 +8,16 @@ import { runOrchestrator } from "@/lib/agents/orchestrator";
 import { fetchWorkspace } from "./workspace";
 import { getIngestedWorkspace, setIngestedWorkspace } from "./ingestStore";
 import { appendEvent, createJob, failJob } from "./jobs";
-import { findDuplicate, resolveSourceUrl, reserveIngest, releaseIngest, type DuplicateMatch, type ResolvedSource } from "./upload";
+import { UserFacingError } from "@/lib/errors";
+import {
+  findDuplicate,
+  resolveSourceUrl,
+  reserveIngest,
+  releaseIngest,
+  validateUpload,
+  type DuplicateMatch,
+  type ResolvedSource,
+} from "./upload";
 import { runPythonScript } from "./pythonRunner";
 
 /**
@@ -299,16 +308,18 @@ export async function runIngest(input: IngestInput): Promise<void> {
       });
     }
 
-    const merged: Workspace = {
-      id: workspaceId,
-      name: base.name,
-      papers: [...base.papers, paper],
-      chunks: [...base.chunks, ...allChunks],
-      numerics: [...base.numerics, ...numerics],
-      nodes: [...base.nodes, paperNode, ...result.pillarNodes, ...okLeaves.map((l) => l.node)],
-      edges: [...base.edges, ...edges],
-      evidence: [...base.evidence, ...okLeaves.flatMap((l) => l.evidence)],
-    };
+    function buildMerged(intoBase: Workspace, chunksToMerge: Chunk[], numericsToMerge: Numeric[]): Workspace {
+      return {
+        id: workspaceId,
+        name: intoBase.name,
+        papers: [...intoBase.papers, paper],
+        chunks: [...intoBase.chunks, ...chunksToMerge],
+        numerics: [...intoBase.numerics, ...numericsToMerge],
+        nodes: [...intoBase.nodes, paperNode, ...result.pillarNodes, ...okLeaves.map((l) => l.node)],
+        edges: [...intoBase.edges, ...edges],
+        evidence: [...intoBase.evidence, ...okLeaves.flatMap((l) => l.evidence)],
+      };
+    }
 
     // Issue #103: this is the widest window of them all -- `rawBase` was read
     // before the PyMuPDF parse and the full generator fan-out, 15-45s per
@@ -316,7 +327,41 @@ export async function runIngest(input: IngestInput): Promise<void> {
     // most likely to land in. `ingested?.version` (undefined only when there
     // was no real row yet to race against) makes a stale write here fail
     // loudly instead of silently discarding whatever landed in that window.
-    await setIngestedWorkspace(merged, ingested?.version);
+    try {
+      await setIngestedWorkspace(buildMerged(base, allChunks, numerics), ingested?.version);
+    } catch (err) {
+      if (!(err instanceof UserFacingError)) throw err;
+
+      // Issue #178: this used to just fail the whole job here -- discarding
+      // an already-completed 15-45s generator run (real LLM calls) purely
+      // because a *different, unrelated* paper committed to this workspace
+      // first. The two papers don't actually conflict (different paperIds,
+      // purely additive), so this retries the merge once against the
+      // now-current workspace instead of throwing the finished work away.
+      // Chunk/numeric ordinals are shifted by the gap between what this run
+      // started from and where the workspace's ordinals actually are now,
+      // so this paper's chunks can't collide with whatever the other
+      // ingest just added -- ordinals are a global, never-per-paper-reset
+      // counter this whole citation system depends on staying unique. The
+      // shift can leave an already-verified evidence row's displayed ref
+      // (e.g. "C23", baked in during the generator pass above) cosmetically
+      // out of step with that chunk's new ordinal number; the citation
+      // itself still resolves correctly since anchoring is by the chunk's
+      // stable id, never by ordinal, at read time.
+      const retryIngested = await getIngestedWorkspace(workspaceId);
+      const retryBase = retryIngested?.workspace ?? (await fetchWorkspace(workspaceId));
+      const priorMaxChunkOrdinal = base.chunks.reduce((max, c) => Math.max(max, c.ordinal), 0);
+      const priorMaxNumericOrdinal = base.numerics.reduce((max, n) => Math.max(max, n.ordinal), 0);
+      const newMaxChunkOrdinal = retryBase.chunks.reduce((max, c) => Math.max(max, c.ordinal), 0);
+      const newMaxNumericOrdinal = retryBase.numerics.reduce((max, n) => Math.max(max, n.ordinal), 0);
+      const chunkShift = newMaxChunkOrdinal - priorMaxChunkOrdinal;
+      const numericShift = newMaxNumericOrdinal - priorMaxNumericOrdinal;
+
+      const shiftedChunks = allChunks.map((c) => ({ ...c, ordinal: c.ordinal + chunkShift }));
+      const shiftedNumerics = numerics.map((n) => ({ ...n, ordinal: n.ordinal + numericShift }));
+
+      await setIngestedWorkspace(buildMerged(retryBase, shiftedChunks, shiftedNumerics), retryIngested?.version);
+    }
     appendEvent(
       input.jobId,
       "Ready",
@@ -400,6 +445,20 @@ export async function queueUrlIngest(workspaceId: string, url: string): Promise<
       const res = await fetch(resolved.pdfUrl!);
       if (!res.ok) throw new Error(`Fetching the PDF failed (${res.status}).`);
       const bytes = new Uint8Array(await res.arrayBuffer());
+
+      // Issue #170: this path used to skip validateUpload() entirely -- the
+      // multipart upload route runs it, but a pasted URL went straight into
+      // runIngest with no size/magic-bytes/page-count/text-layer check at
+      // all. A 500MB or 1000-page URL got fetched in full into memory and
+      // piped straight into scripts/parse.py, which then failed with a raw
+      // Python OOM/stderr crash instead of the clean, named rejection §6
+      // requires everywhere else.
+      const validation = validateUpload(bytes);
+      if (!validation.ok) {
+        failJob(job.id, validation.message ?? "That file can't be processed.");
+        return;
+      }
+
       await runIngest({ jobId: job.id, workspaceId, paperTitle: url, sourceUrl: resolved.pdfUrl ?? url, bytes });
     } catch (err) {
       failJob(job.id, err instanceof Error ? err.message : String(err));

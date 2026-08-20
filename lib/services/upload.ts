@@ -235,8 +235,21 @@ export function findDuplicate(
       // sourceUrl is where a DOI would currently live -- there is no doi column
       // on Paper yet (types/anchor.ts is a frozen contract; adding one needs a
       // coordinated change), so this checks for containment rather than equality.
-      if (paper.sourceUrl?.toLowerCase().includes(needle)) {
-        return { paperId: paper.id, title: paper.title, reason: "doi", score: 1 };
+      //
+      // Issue #177: bare .includes() false-positives when one DOI is a
+      // literal prefix of another -- an existing paper's sourceUrl of
+      // ".../10.1000/1820" would "contain" a genuinely different new DOI of
+      // "10.1000/182", incorrectly blocking it as a duplicate. Requiring the
+      // match not be immediately followed by another alphanumeric character
+      // rejects that false-extension case while still matching the DOI
+      // followed by nothing, a slash, a query string, etc.
+      const haystack = paper.sourceUrl?.toLowerCase();
+      if (haystack) {
+        const index = haystack.indexOf(needle);
+        const nextChar = index >= 0 ? haystack[index + needle.length] : undefined;
+        if (index >= 0 && !(nextChar && /[a-z0-9]/i.test(nextChar))) {
+          return { paperId: paper.id, title: paper.title, reason: "doi", score: 1 };
+        }
       }
     }
   }

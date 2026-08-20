@@ -28,10 +28,14 @@ function summarize(workspace: Workspace): WorkspaceSummary {
  * The fixture is always listed unless something has been ingested under its
  * own id, in which case that (now-merged) entry supersedes it rather than
  * showing up twice.
+ *
+ * Issue #179: listIngestedWorkspaces() now returns this same summary shape
+ * directly (one grouped-count query), rather than a full per-workspace
+ * assemble this used to reduce down to just `.papers.length` anyway.
  */
 export async function listWorkspaces(): Promise<WorkspaceSummary[]> {
   const ingested = await listIngestedWorkspaces();
-  const summaries = ingested.map(summarize);
+  const summaries: WorkspaceSummary[] = [...ingested];
   if (!ingested.some((w) => w.id === FIXTURE_ID)) {
     summaries.unshift(summarize(workspaceFixture as unknown as Workspace));
   }

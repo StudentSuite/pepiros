@@ -28,8 +28,21 @@ import { getIngestedWorkspace } from "./ingestStore";
  * never been ingested into keeps today's behaviour exactly: the fixture,
  * regardless of the id passed in.
  */
-export async function fetchWorkspace(workspaceId: string): Promise<Workspace> {
+/**
+ * Issue #180: the data read, with no layout pass -- for a caller that never
+ * renders a canvas and doesn't touch node.x/node.y at all (every MCP tool;
+ * see lib/services/nodes.ts's getOutline/getNode, lib/services/search.ts's
+ * searchPaper/paperCoverage/paperNumericLedger, lib/services/nodes.ts's
+ * findContradictions -- none of their response shapes carry a position).
+ * fetchWorkspace() below is unchanged and still the one every UI-facing
+ * caller should use.
+ */
+export async function fetchWorkspaceData(workspaceId: string): Promise<Workspace> {
   const ingested = await getIngestedWorkspace(workspaceId);
-  const workspace = ingested?.workspace ?? (workspaceFixture as unknown as Workspace);
+  return ingested?.workspace ?? (workspaceFixture as unknown as Workspace);
+}
+
+export async function fetchWorkspace(workspaceId: string): Promise<Workspace> {
+  const workspace = await fetchWorkspaceData(workspaceId);
   return { ...workspace, nodes: computeLayout(workspace) };
 }

@@ -1,7 +1,7 @@
 import "server-only";
 import type { Evidence, GraphEdge, GraphNode, Workspace } from "@/types/anchor";
 import { verifyAndBindClaims, reverifyNodeEvidence } from "./verify";
-import { fetchWorkspace } from "./workspace";
+import { fetchWorkspace, fetchWorkspaceData } from "./workspace";
 import { deleteIngestedNode, getIngestedWorkspace, recordNodeVersion, setIngestedWorkspace } from "./ingestStore";
 import { buildContextBlock } from "@/lib/prompts/contextBlock";
 import { GENERATORS, runGenerator } from "@/lib/agents/generators";
@@ -69,7 +69,10 @@ function countEvidence(workspace: Workspace, nodeId: string): number {
 }
 
 export async function getOutline(workspaceId: string): Promise<Outline> {
-  const workspace = await fetchWorkspace(workspaceId);
+  // Issue #180: no field in Outline/OutlinePaper/OutlinePillar/OutlineLeaf
+  // carries a position, so the layout pass fetchWorkspace() would otherwise
+  // run is pure waste here.
+  const workspace = await fetchWorkspaceData(workspaceId);
 
   const papers: OutlinePaper[] = workspace.nodes
     .filter((n) => n.type === "paper")
@@ -194,7 +197,9 @@ export function resolveNodeFromWorkspace(workspace: Workspace, nodeId: string): 
 }
 
 export async function getNode(workspaceId: string, nodeId: string): Promise<ResolvedNode | null> {
-  const workspace = await fetchWorkspace(workspaceId);
+  // Issue #180: ResolvedNode carries no x/y, so the layout pass
+  // fetchWorkspace() would otherwise run is pure waste here.
+  const workspace = await fetchWorkspaceData(workspaceId);
   return resolveNodeFromWorkspace(workspace, nodeId);
 }
 
@@ -345,7 +350,10 @@ export async function findContradictions(
   workspaceId: string,
   concept?: string,
 ): Promise<ContradictionPair[]> {
-  const workspace = await fetchWorkspace(workspaceId);
+  // Issue #180: no field in ContradictionPair/ContradictionSide carries a
+  // position, so the layout pass fetchWorkspace() would otherwise run is
+  // pure waste here.
+  const workspace = await fetchWorkspaceData(workspaceId);
   const nodeById = new Map(workspace.nodes.map((n) => [n.id, n] as const));
   const chunkById = new Map(workspace.chunks.map((c) => [c.id, c] as const));
 

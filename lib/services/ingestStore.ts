@@ -1,6 +1,14 @@
 import "server-only";
 import type { Workspace } from "@/types/anchor";
-import { getWorkspace, saveWorkspace, listWorkspaceSummaries, deleteNodeCascade, createNodeVersion, type VersionedWorkspace } from "@/lib/db/queries";
+import {
+  getWorkspace,
+  saveWorkspace,
+  listWorkspaceSummaries,
+  deleteNodeCascade,
+  createNodeVersion,
+  type VersionedWorkspace,
+  type WorkspaceSummaryRow,
+} from "@/lib/db/queries";
 import { UserFacingError } from "@/lib/errors";
 
 /**
@@ -92,15 +100,22 @@ export async function recordNodeVersion(nodeId: string, bodyMd: string): Promise
   await guardedWrite(`createNodeVersion(${nodeId})`, () => createNodeVersion(nodeId, bodyMd));
 }
 
-/** Every workspace real ingest has actually written -- no fixture here; lib/services/workspaces.ts's listWorkspaces() adds that. */
-export async function listIngestedWorkspaces(): Promise<Workspace[]> {
-  let summaries;
+/**
+ * Every workspace real ingest has actually written -- no fixture here;
+ * lib/services/workspaces.ts's listWorkspaces() adds that.
+ *
+ * Issue #179: this used to call getWorkspace() (5-7 queries: papers,
+ * nodes, edges, chunks, numerics, evidence) for *every* workspace just to
+ * read back `.papers.length` -- N workspaces meant 1 + 7N queries pulling
+ * every chunk/node/evidence row in the whole account to compute a count a
+ * single grouped-count query (listWorkspaceSummaries) already produces.
+ * Only caller (listWorkspaces()) ever needed the summary shape.
+ */
+export async function listIngestedWorkspaces(): Promise<WorkspaceSummaryRow[]> {
   try {
-    summaries = await listWorkspaceSummaries();
+    return await listWorkspaceSummaries();
   } catch (err) {
     console.error("[ingestStore] listWorkspaceSummaries() unavailable:", err);
     return [];
   }
-  const real = await Promise.all(summaries.map((s) => getWorkspace(s.id)));
-  return real.filter((w): w is VersionedWorkspace => Boolean(w)).map((w) => w.workspace);
 }
