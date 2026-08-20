@@ -162,14 +162,26 @@ function decodeInlineProfile(subject: string): Profile | null {
 }
 
 async function verifySignature(payload: string, sig: string): Promise<boolean> {
-  // crypto.subtle.verify is constant-time, so this does not leak the signature
-  // through timing the way a string compare would.
-  return crypto.subtle.verify(
-    "HMAC",
-    await hmacKey(),
-    fromBase64Url(sig) as unknown as BufferSource,
-    new TextEncoder().encode(payload),
-  );
+  // Issue #169: fromBase64Url()'s atob() throws InvalidCharacterError on a
+  // cookie segment that's garbled rather than just wrong (confirmed live:
+  // atob("!!!not-base64$$$") throws) -- that used to propagate uncaught out
+  // of parseSessionFull()/getSession(), 500ing any route that calls
+  // getSession() directly without its own try/catch (middleware.ts wraps
+  // parseSession(), but most API routes/pages call getSession() bare). A
+  // signature that can't even be decoded is exactly as invalid as one that
+  // decodes but doesn't verify -- both mean "not signed in," not a crash.
+  try {
+    // crypto.subtle.verify is constant-time, so this does not leak the
+    // signature through timing the way a string compare would.
+    return await crypto.subtle.verify(
+      "HMAC",
+      await hmacKey(),
+      fromBase64Url(sig) as unknown as BufferSource,
+      new TextEncoder().encode(payload),
+    );
+  } catch {
+    return false;
+  }
 }
 
 function stillFresh(issued: string): boolean {

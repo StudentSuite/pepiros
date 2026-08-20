@@ -111,4 +111,18 @@ describe("parseSessionFull (issue #85)", () => {
     expect(parsed?.sessionId).toBeNull();
     expect(parsed?.subject.startsWith("g~")).toBe(true);
   });
+
+  // Issue #169: fromBase64Url()'s atob() throws InvalidCharacterError on a
+  // garbled (not just wrong) segment -- confirmed live before this fix --
+  // which propagated uncaught out of parseSessionFull()/getSession() and
+  // 500'd any route that calls getSession() without its own try/catch.
+  it("returns null rather than throwing on a cookie with invalid base64url characters", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    delete process.env.SESSION_SECRET;
+    const { parseSessionFull } = await import("./session");
+    await expect(parseSessionFull("subject.1700000000000.!!!not-base64$$$")).resolves.toBeNull();
+    await expect(
+      parseSessionFull("profile-123.session-abc.1700000000000.!!!not-base64$$$"),
+    ).resolves.toBeNull();
+  });
 });

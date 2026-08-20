@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { profileFromGoogle, type GoogleIdentityInput } from "@/lib/auth/google";
-import { SESSION_COOKIE, SESSION_MAX_AGE, isSessionSigningConfigured, serializeInlineSession } from "@/lib/auth/session";
+import type { GoogleIdentityInput } from "@/lib/auth/google";
+import {
+  SESSION_COOKIE,
+  SESSION_MAX_AGE,
+  isSessionSigningConfigured,
+  serializeInlineSession,
+  serializeSession,
+} from "@/lib/auth/session";
+import { getAdapter } from "@/lib/data/adapter";
 
 /**
  * Finishes Google sign-in.
@@ -65,8 +72,21 @@ export async function GET(req: Request) {
   const requested = url.searchParams.get("next") ?? "/home";
   const next = requested.startsWith("/") && !requested.startsWith("//") ? requested : "/home";
 
+  // Issues #167/#171: on the Supabase-backed platform, ensureGoogleProfile()
+  // now gives this identity a real `profiles` row (linking to an existing
+  // password account by email if one exists) -- so it gets a real,
+  // adapter-backed, revocable session here, exactly like password login,
+  // instead of the inline-cookie-only path. The seed adapter has no row to
+  // reference (ensureGoogleProfile() just returns the same derived Profile
+  // it always did there), so it keeps the original inline behavior --
+  // still correct for that adapter specifically, never true for Supabase's.
+  const adapter = getAdapter();
+  const profile = await adapter.ensureGoogleProfile({ googleId: identity.id, email: identity.email, name: identity.name });
+  const sessionCookie =
+    adapter.kind === "supabase" ? await serializeSession(profile.id) : await serializeInlineSession(profile);
+
   const res = NextResponse.redirect(new URL(next, origin));
-  res.cookies.set(SESSION_COOKIE, await serializeInlineSession(profileFromGoogle(identity)), {
+  res.cookies.set(SESSION_COOKIE, sessionCookie, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

@@ -149,8 +149,14 @@ export interface ResolvedNode {
   evidence: ResolvedEvidence[];
 }
 
-export async function getNode(workspaceId: string, nodeId: string): Promise<ResolvedNode | null> {
-  const workspace = await fetchWorkspace(workspaceId);
+/**
+ * Issue #181: split out of getNode() below so a caller that already has a
+ * fetched Workspace in hand (mcp/resources.ts's node resource) can resolve
+ * a node from it directly, instead of calling fetchWorkspace() a second
+ * time just to get an id it already had -- a full data read plus a full
+ * computeLayout() pass, twice, to serve one node lookup.
+ */
+export function resolveNodeFromWorkspace(workspace: Workspace, nodeId: string): ResolvedNode | null {
   const node = workspace.nodes.find((n) => n.id === nodeId);
   if (!node) return null;
 
@@ -171,7 +177,7 @@ export async function getNode(workspaceId: string, nodeId: string): Promise<Reso
         // honest answer; inventing the chunk's page would imply a located
         // quote where the verifier decided there wasn't one.
         page: chunk?.page ?? null,
-        deepLink: nodeDeepLink(workspaceId, nodeId),
+        deepLink: nodeDeepLink(workspace.id, nodeId),
       };
     });
 
@@ -182,9 +188,14 @@ export async function getNode(workspaceId: string, nodeId: string): Promise<Reso
     bodyMd: node.bodyMd,
     paperId: node.paperId,
     stale: node.stale,
-    deepLink: nodeDeepLink(workspaceId, node.id),
+    deepLink: nodeDeepLink(workspace.id, node.id),
     evidence,
   };
+}
+
+export async function getNode(workspaceId: string, nodeId: string): Promise<ResolvedNode | null> {
+  const workspace = await fetchWorkspace(workspaceId);
+  return resolveNodeFromWorkspace(workspace, nodeId);
 }
 
 // --- create_node ----------------------------------------------------------

@@ -1,7 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { fetchWorkspace } from "@/lib/services/workspace";
-import { getNode, getOutline } from "@/lib/services/nodes";
+import { getOutline, resolveNodeFromWorkspace } from "@/lib/services/nodes";
+import { canAccessWorkspace, type McpTokenRecord } from "@/lib/services/mcpAuth";
 
 /**
  * A URI template variable arrives as `string | string[]` depending on whether
@@ -14,6 +15,18 @@ function firstValue(value: string | string[] | undefined, label: string): string
   return resolved;
 }
 
+function accessDenied(uri: { href: string }, workspaceId: string) {
+  return {
+    contents: [
+      {
+        uri: uri.href,
+        mimeType: "text/plain",
+        text: `This MCP token is pinned to a different workspace and cannot reach "${workspaceId}".`,
+      },
+    ],
+  };
+}
+
 /**
  * MCP resources (docs/PLAN-V1.md §13.3), so a user can `@`-mention a paper or
  * node in Claude rather than describing it.
@@ -21,8 +34,17 @@ function firstValue(value: string | string[] | undefined, label: string): string
  * Scheme is `pepiros://`. §13.3 says `researchsumm://`, which predates the
  * project rename -- the package, repo, and every other identifier say
  * pepiros, so the doc is the stale one here.
+ *
+ * Issue #168: `session` used to not be threaded in here at all --
+ * mcp/server.ts's createMcpServer() passes it to registerTools() but never
+ * to registerResources(), so a token pinned to workspace A could request
+ * `pepiros://workspace/{workspaceB}/outline` (or any paper/node resource)
+ * and get workspace B's content served with zero authorization check, the
+ * exact IDOR class already fixed for tools (canAccessWorkspace, used by
+ * every tool's `authorize()`). `undefined`/`null` (no token configured)
+ * still means unrestricted local-dev access, same as the tool layer.
  */
-export function registerResources(server: McpServer): void {
+export function registerResources(server: McpServer, session?: McpTokenRecord | null): void {
   server.registerResource(
     "workspace-outline",
     new ResourceTemplate("pepiros://workspace/{workspaceId}/outline", { list: undefined }),
@@ -33,6 +55,7 @@ export function registerResources(server: McpServer): void {
     },
     async (uri, { workspaceId }) => {
       const id = firstValue(workspaceId, "workspaceId");
+      if (session && !canAccessWorkspace(session, id)) return accessDenied(uri, id);
       const outline = await getOutline(id);
       return { contents: [{ uri: uri.href, mimeType: "text/plain", text: outline.text }] };
     },
@@ -52,6 +75,7 @@ export function registerResources(server: McpServer): void {
       // data seam), so a paper is reachable without knowing its workspace.
       // Once that resolves to a real read this needs a workspace id in the URI.
       const workspace = await fetchWorkspace("");
+      if (session && !canAccessWorkspace(session, workspace.id)) return accessDenied(uri, workspace.id);
       const paper = workspace.papers.find((p) => p.id === id);
       if (!paper) {
         return { contents: [{ uri: uri.href, mimeType: "text/plain", text: `No paper ${id}.` }] };
@@ -89,8 +113,12 @@ export function registerResources(server: McpServer): void {
     },
     async (uri, { nodeId }) => {
       const id = firstValue(nodeId, "nodeId");
+      // Issue #181: resolved from the one fetchWorkspace() call below instead
+      // of getNode(), which would fetch (and lay out) the whole workspace a
+      // second time just to look up an id already in hand.
       const workspace = await fetchWorkspace("");
-      const node = await getNode(workspace.id, id);
+      if (session && !canAccessWorkspace(session, workspace.id)) return accessDenied(uri, workspace.id);
+      const node = resolveNodeFromWorkspace(workspace, id);
       if (!node) {
         return { contents: [{ uri: uri.href, mimeType: "text/plain", text: `No node ${id}.` }] };
       }

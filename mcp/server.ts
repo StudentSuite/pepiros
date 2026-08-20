@@ -64,7 +64,7 @@ export function createMcpServer(session?: McpTokenRecord | null): McpServer {
   );
 
   registerTools(server, session);
-  registerResources(server);
+  registerResources(server, session);
   registerPrompts(server);
 
   return server;

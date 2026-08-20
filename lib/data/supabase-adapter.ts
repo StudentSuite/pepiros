@@ -14,6 +14,7 @@ import {
   createSupabaseServerClient,
   createSupabaseServiceClient,
 } from "@/lib/supabase/server";
+import { initialsFor, usernameFor } from "@/lib/auth/google";
 
 /** Matches components/settings/NotificationPrefs.tsx's previous hardcoded client-only defaults (issue #70). */
 const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
@@ -151,6 +152,10 @@ export const supabaseAdapter: DataAdapter = {
       username: normalized,
       display_name: displayName.trim() || normalized,
       avatar_initials: initialsFrom(displayName || normalized),
+      // Issues #167/#171: a read-model copy so a later Google sign-in with
+      // this same email can find and link to this account instead of
+      // creating a disconnected second one -- see ensureGoogleProfile below.
+      email: normalizedEmail,
     });
     if (profileError) {
       // Don't leave an auth user with no profile behind -- exactly the
@@ -203,6 +208,48 @@ export const supabaseAdapter: DataAdapter = {
     const profile = await this.getProfile(created.user.id);
     if (!profile) return { error: "Account was created but the profile could not be read back." };
     return { profile };
+  },
+
+  async ensureGoogleProfile({ googleId, email, name }) {
+    const sb = createSupabaseServiceClient();
+
+    // Already linked -- a returning Google user for whom this exact row
+    // was created (by this same branch) on a prior sign-in.
+    const { data: byId } = await sb.from("profiles").select("*").eq("id", googleId).maybeSingle();
+    if (byId) return asProfile(byId);
+
+    // An existing password account with this same (Google-verified) email
+    // -- sign in as that profile instead of creating a second, disconnected
+    // one. Google only ever hands back a verified email, so this is a
+    // real, checked identity match, not a caller-asserted claim.
+    const normalizedEmail = email?.trim().toLowerCase();
+    if (normalizedEmail) {
+      const { data: byEmail } = await sb.from("profiles").select("*").eq("email", normalizedEmail).maybeSingle();
+      if (byEmail) return asProfile(byEmail);
+    }
+
+    // Neither exists: this is a genuinely new account. Same derivation
+    // lib/auth/google.ts's profileFromGoogle() always used (username from
+    // the email local-part + an id-derived suffix, initials from
+    // name/email), so a user's visible identity doesn't change depending
+    // on which adapter happens to be active.
+    const identity = { id: googleId, email: email ?? null, name };
+    const username = usernameFor(identity);
+    const displayName = name?.trim() || email?.split("@")[0] || "Reader";
+
+    const { data: created, error } = await sb
+      .from("profiles")
+      .insert({
+        id: googleId,
+        username,
+        display_name: displayName,
+        avatar_initials: initialsFor(name, email ?? null),
+        email: normalizedEmail ?? null,
+      })
+      .select("*")
+      .single();
+    if (error || !created) throw new Error(error?.message ?? "Could not create a profile for this Google account.");
+    return asProfile(created);
   },
 
   async verifyCredentials(username, password) {

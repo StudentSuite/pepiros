@@ -10,6 +10,7 @@ import {
   seedReach,
 } from "./seed";
 import { supabaseAdapter } from "./supabase-adapter";
+import { profileFromGoogle } from "@/lib/auth/google";
 import type {
   Comment,
   NotificationPrefs,
@@ -98,6 +99,34 @@ export interface DataAdapter {
     displayName: string;
     email: string;
   }): Promise<CreateAccountResult>;
+
+  /**
+   * Issues #167/#171: Google sign-in used to never call the adapter at
+   * all -- app/auth/callback/route.ts built a Profile purely from Google
+   * metadata and carried it inline in the session cookie, on the (only
+   * true-for-the-seed-adapter) assumption that "a Google account has no
+   * row to reference." On the Supabase adapter this was two real bugs:
+   * no `profiles` row ever existed for a Google-only user at all (every
+   * FK-referencing write -- posts, comments, likes, follows, sessions,
+   * onboarding -- 500'd), and a user who signs up with password+email
+   * then later uses Google with that same email got a second,
+   * disconnected identity instead of being recognized as the same
+   * account.
+   *
+   * `googleId` is this sign-in's own `auth.users.id` (from
+   * `exchangeCodeForSession`); `email`/`name` are what Google reported.
+   * Resolution order: an existing profile already linked to this exact
+   * googleId wins first (a returning Google user); failing that, an
+   * existing profile with a matching email (an existing password
+   * account) is reused -- signing into *that* profile is what makes this
+   * "the same account" rather than two -- failing that, a new profile is
+   * created for this googleId. The seed adapter has nowhere to persist
+   * any of this, so it returns the same derived-from-Google Profile it
+   * always did; the caller distinguishes the two cases by `kind` to
+   * decide whether the resulting session can be a real, revocable one
+   * (Supabase) or must stay inline (seed).
+   */
+  ensureGoogleProfile(identity: { googleId: string; email: string | null; name: string | null }): Promise<Profile>;
 
   /**
    * Issue #45 collected an optional real email so this would have somewhere
@@ -252,6 +281,16 @@ const seedAdapter: DataAdapter = {
       error:
         "Sign-up needs the Supabase-backed platform, which isn't enabled on this deployment. Sign in as guest/guest instead.",
     };
+  },
+
+  async ensureGoogleProfile(identity) {
+    // No persistence to create or look up a row in, same reasoning as
+    // createAccount() above -- this is the exact pre-#167 behavior,
+    // correct here specifically because it always was for this adapter:
+    // the caller (app/auth/callback/route.ts) still carries this inline
+    // in the signed cookie rather than trying to serialize a real,
+    // adapter-backed session for a profile that has no row anywhere.
+    return profileFromGoogle({ id: identity.googleId, email: identity.email, name: identity.name });
   },
 
   async requestPasswordReset() {
