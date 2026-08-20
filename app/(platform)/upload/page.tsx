@@ -116,6 +116,11 @@ export default function UploadPage() {
   const [url, setUrl] = useState("");
   const [licensed, setLicensed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Issue #202: lib/services/upload.ts genuinely populates body.warnings on
+  // the 202 success path (e.g. "This paper may not be in English..."), but
+  // submit() only ever read body.jobId -- the field was dead in the UI, so a
+  // real server-side warning never reached the user.
+  const [warnings, setWarnings] = useState<string[]>([]);
   const [jobId, setJobId] = useState<string | null>(null);
   const [progress, setProgress] = useState<JobProgress | null>(null);
   const [pending, setPending] = useState(false);
@@ -153,6 +158,7 @@ export default function UploadPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setWarnings([]);
     setJobId(null);
     setProgress(null);
 
@@ -195,6 +201,7 @@ export default function UploadPage() {
         return;
       }
       setJobId(body.jobId);
+      setWarnings(body.warnings ?? []);
       setFile(null);
       setUrl("");
       if (inputRef.current) inputRef.current.value = "";
@@ -272,6 +279,8 @@ export default function UploadPage() {
                 }}
                 type="button"
                 role="tab"
+                id={`upload-tab-${value}`}
+                aria-controls={`upload-panel-${value}`}
                 aria-selected={mode === value}
                 tabIndex={mode === value ? 0 : -1}
                 onClick={() => {
@@ -291,7 +300,7 @@ export default function UploadPage() {
           </div>
 
           {mode === "file" ? (
-            <div>
+            <div id="upload-panel-file" role="tabpanel" aria-labelledby="upload-tab-file" tabIndex={0}>
               <button
                 type="button"
                 onClick={() => inputRef.current?.click()}
@@ -345,7 +354,13 @@ export default function UploadPage() {
               />
             </div>
           ) : (
-            <div className="flex flex-col gap-s-2">
+            <div
+              id="upload-panel-url"
+              role="tabpanel"
+              aria-labelledby="upload-tab-url"
+              tabIndex={0}
+              className="flex flex-col gap-s-2"
+            >
               <Label htmlFor="paperUrl">Paper link</Label>
               <Input
                 id="paperUrl"
@@ -373,6 +388,9 @@ export default function UploadPage() {
           </label>
 
           {error && <ErrorBanner message={error} />}
+          {warnings.map((w) => (
+            <ErrorBanner key={w} message={w} variant="warn" />
+          ))}
           {progress && <JobProgressView progress={progress} />}
 
           <div>

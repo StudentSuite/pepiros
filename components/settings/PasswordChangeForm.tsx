@@ -4,6 +4,12 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
+import { FormField } from "@/components/ui/FormField";
+
+interface FieldErrors {
+  password?: string;
+  confirmPassword?: string;
+}
 
 /**
  * Real password change (POST /api/auth/change-password) for the currently
@@ -14,22 +20,27 @@ import { Input } from "@/components/shadcn/input";
  * current password, I just want a new one" path a settings page should
  * also offer, and needs no recovery email at all since the active session
  * is itself the proof of authentication.
+ *
+ * Issue #204: validation used to be a toast.error() call only, unlike every
+ * other password form in the app (login, signup, reset-password/confirm),
+ * which use FormField's persistent inline error + aria-invalid/
+ * aria-describedby. A toast auto-dismisses in a few seconds, leaving two
+ * populated fields with no visible indication of what was wrong or which
+ * field to fix.
  */
 export function PasswordChangeForm() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    if (password.length < 8) {
-      toast.error("Password must be at least 8 characters.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      toast.error("Passwords do not match.");
-      return;
-    }
+    const errors: FieldErrors = {};
+    if (password.length < 8) errors.password = "Must be at least 8 characters.";
+    if (password !== confirmPassword) errors.confirmPassword = "Passwords do not match.";
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
 
     setSaving(true);
     try {
@@ -45,6 +56,7 @@ export function PasswordChangeForm() {
       }
       setPassword("");
       setConfirmPassword("");
+      setFieldErrors({});
       toast.success("Password updated");
     } catch {
       toast.error("Could not reach the server. Check your connection and try again.");
@@ -54,23 +66,25 @@ export function PasswordChangeForm() {
   }
 
   return (
-    <form onSubmit={save} className="flex flex-col gap-s-3">
-      <Input
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        autoComplete="new-password"
-        placeholder="New password"
-        aria-label="New password"
-      />
-      <Input
-        type="password"
-        value={confirmPassword}
-        onChange={(e) => setConfirmPassword(e.target.value)}
-        autoComplete="new-password"
-        placeholder="Confirm new password"
-        aria-label="Confirm new password"
-      />
+    <form onSubmit={save} noValidate className="flex flex-col gap-s-3">
+      <FormField label="New password" error={fieldErrors.password}>
+        <Input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="new-password"
+          placeholder="New password"
+        />
+      </FormField>
+      <FormField label="Confirm new password" error={fieldErrors.confirmPassword}>
+        <Input
+          type="password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          autoComplete="new-password"
+          placeholder="Confirm new password"
+        />
+      </FormField>
       <Button type="submit" size="sm" disabled={saving || !password || !confirmPassword} className="self-start">
         {saving ? "Updating…" : "Update password"}
       </Button>

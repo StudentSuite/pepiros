@@ -126,16 +126,37 @@ export function OnboardingWizard({
     });
   }
 
+  // Issue #201: this used to only persist via onComplete() on the final
+  // step -- every earlier step was a bare router.push with the draft held
+  // only in this component's local state. Since /onboarding/N is a fresh
+  // server-rendered page that re-fetches the (still-empty) saved answers as
+  // `initial`, a refresh or back/forward navigation on any step before the
+  // last silently discarded every prior answer, contradicting this file's
+  // own doc comment that "a half-finished wizard can be linked to or
+  // resumed." Now every step-advancing/back action saves the draft so-far.
   async function next() {
-    if (step < STEP_COUNT) {
-      router.push(`/onboarding/${step + 1}`);
-      return;
-    }
     setSaving(true);
     try {
-      await onComplete({ ...draft, completedAt: new Date().toISOString().slice(0, 10) });
-      router.push("/home");
-      router.refresh();
+      const isFinal = step === STEP_COUNT;
+      await onComplete(isFinal ? { ...draft, completedAt: new Date().toISOString().slice(0, 10) } : draft);
+      if (isFinal) {
+        router.push("/home");
+        router.refresh();
+      } else {
+        router.push(`/onboarding/${step + 1}`);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save your answers. Try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function back() {
+    setSaving(true);
+    try {
+      await onComplete(draft);
+      router.push(`/onboarding/${step - 1}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save your answers. Try again.");
     } finally {
@@ -279,7 +300,8 @@ export function OnboardingWizard({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => router.push(`/onboarding/${step - 1}`)}
+              disabled={saving}
+              onClick={() => void back()}
               className="gap-1.5"
             >
               <ArrowLeft className="size-3.5" />
