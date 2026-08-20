@@ -46,10 +46,14 @@ export function CoverageOverlay({
               key={page}
               title={`page ${page}${groundedPages.has(page) ? " -- has grounded evidence" : " -- no grounded evidence"}`}
               className={clsx(
-                "flex h-4 w-4 items-center justify-center rounded-[3px] font-mono text-[9px]",
+                // Issue #196: border-style (solid vs dashed), not just the
+                // color/opacity wash, so a colorblind user can still tell
+                // grounded pages apart from ungrounded ones -- same pattern
+                // as HighlightLayer's tier fix (issue #183).
+                "flex h-4 w-4 items-center justify-center rounded-[3px] border-2 font-mono text-[9px]",
                 groundedPages.has(page)
-                  ? "bg-located/25 text-located ring-1 ring-located/60"
-                  : "bg-surface-sunken text-ink-faint ring-1 ring-border",
+                  ? "border-solid border-located/60 bg-located/25 text-located"
+                  : "border-dashed border-border bg-surface-sunken text-ink-faint",
               )}
             >
               {page}

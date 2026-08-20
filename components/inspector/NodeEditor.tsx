@@ -1,6 +1,6 @@
 "use client";
 
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, useEditorState, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import clsx from "clsx";
 
@@ -34,21 +34,41 @@ export function NodeEditor({
     },
   });
 
+  // Issue #195: `editor.isActive(...)` alone never re-renders this component
+  // on a selection/transaction change (Tiptap mutates its own ProseMirror
+  // state outside React), so the toolbar never reflected whether the format
+  // at the cursor was actually active. useEditorState subscribes to the
+  // editor's transactions and returns a fresh selector result on every one.
+  const activeMarks = useEditorState({
+    editor,
+    selector: ({ editor: e }) => ({
+      bold: e?.isActive("bold") ?? false,
+      italic: e?.isActive("italic") ?? false,
+      bulletList: e?.isActive("bulletList") ?? false,
+    }),
+  });
+
   return (
     <div className="rounded border border-border-strong bg-surface-sunken p-3">
       <div className="mb-2 flex gap-1 border-b border-border pb-2">
         {(
           [
-            ["Bold", () => editor?.chain().focus().toggleBold().run()],
-            ["Italic", () => editor?.chain().focus().toggleItalic().run()],
-            ["List", () => editor?.chain().focus().toggleBulletList().run()],
+            ["Bold", "bold", () => editor?.chain().focus().toggleBold().run()],
+            ["Italic", "italic", () => editor?.chain().focus().toggleItalic().run()],
+            ["List", "bulletList", () => editor?.chain().focus().toggleBulletList().run()],
           ] as const
-        ).map(([label, action]) => (
+        ).map(([label, markKey, action]) => (
           <button
             key={label}
             type="button"
             onClick={action}
-            className="rounded px-2 py-0.5 font-sans text-xs text-ink-muted hover:bg-surface-raised hover:text-ink"
+            aria-pressed={activeMarks?.[markKey] ?? false}
+            className={clsx(
+              "rounded px-2 py-0.5 font-sans text-xs transition-colors",
+              activeMarks?.[markKey]
+                ? "bg-pillar-4/25 text-ink"
+                : "text-ink-muted hover:bg-surface-raised hover:text-ink",
+            )}
           >
             {label}
           </button>

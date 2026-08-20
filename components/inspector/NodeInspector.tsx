@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import clsx from "clsx";
 import { Loader2 } from "lucide-react";
 import { useWorkspaceStore } from "@/lib/store/workspace";
@@ -109,6 +109,25 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
   const [followupError, setFollowupError] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+
+  // Issue #191: this used to only ever be set to true/false by explicit user
+  // action, never reset on selection change. Clicking a different node while
+  // `editing` was still true left NodeEditor's Tiptap instance mounted with
+  // the *previous* node's stale content (useEditor only applies its initial
+  // content once), so hitting Save then PATCHed the new node's id with the
+  // old node's text -- silent cross-node data corruption. Also covers
+  // issue #193: the panel swapping to a new subject (a followup click, or
+  // any other selection change) moves focus to the new node's title instead
+  // of leaving it stranded on an unmounted trigger button.
+  useEffect(() => {
+    setEditing(false);
+    setSaving(false);
+    setConfirmingDelete(false);
+    setPendingFollowup(null);
+    setFollowupError(null);
+    titleRef.current?.focus();
+  }, [selectedNodeId]);
 
   if (!workspace) {
     return <p className="font-sans text-xs text-ink-faint">Loading workspace...</p>;
@@ -186,7 +205,9 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
         )}
       </div>
 
-      <h2 className="font-serif text-xl leading-snug text-ink">{node.title}</h2>
+      <h2 ref={titleRef} tabIndex={-1} className="font-serif text-xl leading-snug text-ink outline-none">
+        {node.title}
+      </h2>
 
       <Tabs
         tabs={[
@@ -196,19 +217,25 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
         value={tab}
         onChange={(v) => setTab(v as Tab)}
         trailing={
-          !readOnly && tab === "content" && !editing ? (
+          !readOnly && tab === "content" ? (
+            // Issue #194: the Edit/Cancel-edit toggle is now the *same*
+            // Button element at the same position in both states (only its
+            // label/onClick differ), with Delete as a sibling that appears
+            // only alongside it. Previously the !editing state wrapped two
+            // buttons in a <div> while editing rendered one standalone
+            // <Button> in the same JSX slot -- a different element shape at
+            // the same position, so React unmounted/remounted the whole
+            // subtree on every toggle and dropped focus to <body>.
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="sm" disabled={saving} onClick={() => setEditing(true)}>
-                Edit
+              <Button variant="ghost" size="sm" disabled={saving} onClick={() => setEditing((e) => !e)}>
+                {editing ? "Cancel edit" : "Edit"}
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => setConfirmingDelete(true)}>
-                Delete
-              </Button>
+              {!editing && (
+                <Button variant="ghost" size="sm" onClick={() => setConfirmingDelete(true)}>
+                  Delete
+                </Button>
+              )}
             </div>
-          ) : !readOnly && tab === "content" ? (
-            <Button variant="ghost" size="sm" disabled={saving} onClick={() => setEditing(false)}>
-              Cancel edit
-            </Button>
           ) : undefined
         }
       />
@@ -216,6 +243,7 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
       {tab === "content" &&
         (editing ? (
           <NodeEditor
+            key={node.id}
             initialContent={node.bodyMd}
             saving={saving}
             onCancel={() => setEditing(false)}

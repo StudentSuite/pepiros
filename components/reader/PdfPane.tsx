@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { pdfjs } from "react-pdf";
 import type { Chunk } from "@/types/anchor";
@@ -45,6 +45,16 @@ export function PdfPane({
 }) {
   const [pageSize, setPageSize] = useState({ width: PAGE_WIDTH, height: PAGE_HEIGHT });
   const [failed, setFailed] = useState(false);
+
+  // Issue #192: neither state was ever reset on a paper switch (ReaderClient
+  // doesn't key/remount this component by pdfUrl). Once one paper's PDF
+  // 404s, `failed` stayed true for the rest of the session -- every
+  // subsequently viewed paper fell back to MockPdfPane even with a
+  // perfectly valid PDF.
+  useEffect(() => {
+    setFailed(false);
+    setPageSize({ width: PAGE_WIDTH, height: PAGE_HEIGHT });
+  }, [pdfUrl]);
 
   if (!pdfUrl || failed) {
     return <MockPdfPane chunk={chunk} highlights={highlights} />;

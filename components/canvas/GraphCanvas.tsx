@@ -29,6 +29,7 @@ import { Controls } from "./Controls";
 import { Drawer } from "@/components/ui/Drawer";
 import { NodeInspector } from "@/components/inspector/NodeInspector";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import type { PepirosNode, PepirosEdge, GhostCitationNodeType } from "./types";
 
 type AnyPepirosNode = PepirosNode | GhostCitationNodeType;
@@ -137,6 +138,13 @@ const NODE_TYPE_MAP: Record<GraphNode["type"], keyof typeof NODE_TYPES> = {
  *  those two node types (see SynthesisNode/ThreadNode + types.ts's `spannedPapers`). */
 function computeSpannedPapers(workspace: Workspace): Map<string, { id: string; label: string }[]> {
   const nodeById = new Map(workspace.nodes.map((n) => [n.id, n]));
+  // Issue #187: a paper node's own id (e.g. "n-p1") is never the same string
+  // as the `paperId` other nodes carry (e.g. "p1") -- resolve through this
+  // map so "jump to paper" targets a real, selectable node id instead of a
+  // paperId that never matches anything in nodeById.
+  const paperNodeByPaperId = new Map(
+    workspace.nodes.filter((n) => n.type === "paper" && n.paperId).map((n) => [n.paperId!, n]),
+  );
   const spanned = new Map<string, { id: string; label: string }[]>();
 
   for (const edge of workspace.edges) {
@@ -145,10 +153,12 @@ function computeSpannedPapers(workspace: Workspace): Map<string, { id: string; l
     if (!source || (source.type !== "synthesis" && source.type !== "thread")) continue;
     const target = nodeById.get(edge.targetId);
     if (!target?.paperId) continue;
+    const paperNode = paperNodeByPaperId.get(target.paperId);
+    if (!paperNode) continue;
 
     const list = spanned.get(source.id) ?? [];
-    if (!list.some((p) => p.id === target.paperId)) {
-      list.push({ id: target.paperId, label: target.paperId.toUpperCase() });
+    if (!list.some((p) => p.id === paperNode.id)) {
+      list.push({ id: paperNode.id, label: target.paperId.toUpperCase() });
     }
     spanned.set(source.id, list);
   }
@@ -228,6 +238,7 @@ function buildEdges(workspace: Workspace, visibleNodeIds: Set<string>): PepirosE
 
 function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
   const workspace = useWorkspaceStore((s) => s.workspace);
+  const loadError = useWorkspaceStore((s) => s.loadError);
   const loadWorkspace = useWorkspaceStore((s) => s.loadWorkspace);
   const selectNode = useWorkspaceStore((s) => s.selectNode);
   const selectedNodeId = useWorkspaceStore((s) => s.selectedNodeId);
@@ -271,7 +282,13 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
       });
     });
     return () => cancelAnimationFrame(id);
-  }, [legendOpen, workspace, fitView]);
+    // Issue #189: keyed on workspace.id, not the workspace object -- every
+    // addNode/updateNodeBody/removeNode in lib/store/workspace.ts spreads a
+    // new workspace object on every edit, which used to re-run this (and
+    // re-zoom the viewport) on every save from the inspector, not just an
+    // actual workspace switch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [legendOpen, workspace?.id, fitView]);
 
   // All pillars start collapsed: the first thing a reader should see is the
   // shape of the argument, not every leaf's body at once (docs/PLAN-V1.md
@@ -290,11 +307,16 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
   }, [workspace, workspaceId, loadWorkspace]);
 
   // Seed the collapsed set once per workspace, then leave it to the user.
+  // Issue #189: keyed on workspace.id, not the workspace object reference --
+  // see the fitView effect above for why an object-reference dependency here
+  // wrongly re-collapses every pillar and drops shown ghost citations on
+  // every unrelated node edit/save.
   useEffect(() => {
     if (!workspace) return;
     setCollapsedPillarIds(allPillarIds(workspace));
     setGhostsByPaper(new Map());
-  }, [workspace]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspace?.id]);
 
   const handleToggleCollapse = useCallback((pillarId: string) => {
     setCollapsedPillarIds((prev) => {
@@ -414,6 +436,17 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
     },
     [selectNode],
   );
+
+  if (!workspace && loadError) {
+    // Issue #188: loadError was never read here -- a real fetch failure left
+    // the skeleton below spinning forever with no way to tell it apart from
+    // "still loading".
+    return (
+      <div className="flex h-full w-full items-center justify-center p-6">
+        <ErrorBanner message={loadError} onRetry={() => void loadWorkspace(workspaceId)} className="max-w-sm" />
+      </div>
+    );
+  }
 
   if (!workspace) {
     // Skeleton graph, not a bare spinner (docs/PLAN-V1.md §14.5, §6): a

@@ -41,7 +41,16 @@ export function GhostCitationNode({ data }: NodeProps<GhostCitationNodeType>) {
         setState("error");
       }
     });
-    source.addEventListener("error", () => source.close());
+    // Issue #190: this used to just close the stream on any transport-level
+    // error (dropped connection, non-2xx) with no state change -- since the
+    // "Add to workspace" button is hidden for state "queued", that left the
+    // user stuck on "Parsing this paper..." forever with no way to know it
+    // failed or retry.
+    source.addEventListener("error", () => {
+      source.close();
+      setError("Lost connection while checking this job -- try again.");
+      setState("error");
+    });
     return () => source.close();
   }, [jobId]);
 
