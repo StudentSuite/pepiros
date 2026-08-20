@@ -69,7 +69,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
     if (requireWrite && !hasScope(session, "write")) {
       return "This MCP token is read-only. Create a token with write scope in settings to use this tool.";
     }
-    if (workspaceId && !canAccessWorkspace(session, workspaceId)) {
+    if (workspaceId !== null && !canAccessWorkspace(session, workspaceId)) {
       return `This MCP token is pinned to a different workspace and cannot reach "${workspaceId}".`;
     }
     return null;
@@ -80,7 +80,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
     {
       title: "List papers",
       description: toolDescription("list_papers"),
-      inputSchema: { workspace_id: z.string().describe("Workspace id, e.g. ws-1") },
+      inputSchema: { workspace_id: z.string().min(1).describe("Workspace id, e.g. ws-1") },
     },
     async ({ workspace_id }) => {
       const denial = await authorize(workspace_id, false, "list_papers");
@@ -105,7 +105,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
       title: "Search paper text",
       description: toolDescription("search_paper"),
       inputSchema: {
-        workspace_id: z.string(),
+        workspace_id: z.string().min(1),
         query: z.string(),
         paper_id: z.string().optional().describe("Restrict to one paper"),
         k: z.number().int().min(1).max(20).optional(),
@@ -138,7 +138,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
       title: "Verify a claim against the source",
       description: toolDescription("verify_claim"),
       inputSchema: {
-        workspace_id: z.string(),
+        workspace_id: z.string().min(1),
         ref_id: z.string().describe("Stable citation id from search_paper, e.g. C7"),
         quote: z.string().describe("The quote to check, as close to verbatim as possible"),
         claim: z.string().optional().describe("The claim the quote is being used to support"),
@@ -185,7 +185,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
     {
       title: "Get workspace outline",
       description: toolDescription("get_outline"),
-      inputSchema: { workspace_id: z.string() },
+      inputSchema: { workspace_id: z.string().min(1) },
     },
     async ({ workspace_id }) => {
       const denial = await authorize(workspace_id, false, "get_outline");
@@ -201,7 +201,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
     {
       title: "Get a node",
       description: toolDescription("get_node"),
-      inputSchema: { workspace_id: z.string(), node_id: z.string() },
+      inputSchema: { workspace_id: z.string().min(1), node_id: z.string().min(1) },
     },
     async ({ workspace_id, node_id }) => {
       const denial = await authorize(workspace_id, false, "get_node");
@@ -219,7 +219,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
       title: "Create a node",
       description: toolDescription("create_node"),
       inputSchema: {
-        workspace_id: z.string(),
+        workspace_id: z.string().min(1),
         parent_id: z.string().optional(),
         title: z.string(),
         body_md: z.string().describe("Markdown body; mark each claim with [^n0], [^n1], ... in order"),
@@ -274,7 +274,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
     {
       title: "Find contradictions",
       description: toolDescription("find_contradictions"),
-      inputSchema: { workspace_id: z.string(), concept: z.string().optional() },
+      inputSchema: { workspace_id: z.string().min(1), concept: z.string().optional() },
     },
     async ({ workspace_id, concept }) => {
       const denial = await authorize(workspace_id, false, "find_contradictions");
@@ -299,7 +299,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
       title: "Get paper facts",
       description: toolDescription("paper_facts"),
       inputSchema: {
-        workspace_id: z.string(),
+        workspace_id: z.string().min(1),
         paper_id: z.string(),
         kind: z.enum(["numeric_ledger", "coverage"]),
       },
@@ -323,6 +323,12 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
       inputSchema: {},
     },
     async () => {
+      // No workspace to pin-check yet -- authorize(null, ...) here is purely
+      // for its rate-limit side effect, the same pattern create_workspace
+      // uses, so this tool isn't the one uncapped call on the whole surface.
+      const denial = await authorize(null, false, "list_workspaces");
+      if (denial) return errorText(denial);
+
       // A pinned token only ever sees its own workspace in this list -- listing
       // every workspace on the server would leak names/paper counts a pinned
       // token has no other way to reach.
@@ -361,7 +367,7 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
       title: "Add a paper",
       description: toolDescription("add_paper"),
       inputSchema: {
-        workspace_id: z.string(),
+        workspace_id: z.string().min(1),
         url: z.string().describe("An arXiv, PMC, or direct PDF link. DOI links aren't resolvable yet."),
       },
     },

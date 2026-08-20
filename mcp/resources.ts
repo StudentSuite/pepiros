@@ -1,8 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { fetchWorkspace } from "@/lib/services/workspace";
+import { fetchWorkspaceData } from "@/lib/services/workspace";
 import { getOutline, resolveNodeFromWorkspace } from "@/lib/services/nodes";
 import { canAccessWorkspace, type McpTokenRecord } from "@/lib/services/mcpAuth";
+import { checkRateLimit } from "@/lib/services/mcpRateLimit";
 
 /**
  * A URI template variable arrives as `string | string[]` depending on whether
@@ -25,6 +26,31 @@ function accessDenied(uri: { href: string }, workspaceId: string) {
       },
     ],
   };
+}
+
+function rateLimitDenied(uri: { href: string }, retryAfterMs: number) {
+  return {
+    contents: [
+      {
+        uri: uri.href,
+        mimeType: "text/plain",
+        text: `Rate limit exceeded for this resource on this token. Try again in ${Math.ceil(retryAfterMs / 1000)}s.`,
+      },
+    ],
+  };
+}
+
+/**
+ * Issue #207: resource reads had no analogue of registerTools()'s
+ * authorize()-driven checkRateLimit -- only the access-pin check ran, so a
+ * client could `@`-mention/fetch a resource an unlimited number of times per
+ * minute. `resourceName` doubles as the rate-limit bucket key, same as a
+ * tool name does in mcp/tools/index.ts.
+ */
+async function rateLimited(session: McpTokenRecord | null | undefined, resourceName: string) {
+  if (!session) return null;
+  const rate = await checkRateLimit(session.id, resourceName);
+  return rate.ok ? null : rate.retryAfterMs;
 }
 
 /**
@@ -55,6 +81,8 @@ export function registerResources(server: McpServer, session?: McpTokenRecord | 
     },
     async (uri, { workspaceId }) => {
       const id = firstValue(workspaceId, "workspaceId");
+      const retryAfterMs = await rateLimited(session, "workspace-outline");
+      if (retryAfterMs !== null) return rateLimitDenied(uri, retryAfterMs);
       if (session && !canAccessWorkspace(session, id)) return accessDenied(uri, id);
       const outline = await getOutline(id);
       return { contents: [{ uri: uri.href, mimeType: "text/plain", text: outline.text }] };
@@ -71,10 +99,14 @@ export function registerResources(server: McpServer, session?: McpTokenRecord | 
     },
     async (uri, { paperId }) => {
       const id = firstValue(paperId, "paperId");
-      // fetchWorkspace ignores its argument while fixture-backed (CLAUDE.md's
-      // data seam), so a paper is reachable without knowing its workspace.
-      // Once that resolves to a real read this needs a workspace id in the URI.
-      const workspace = await fetchWorkspace("");
+      const retryAfterMs = await rateLimited(session, "paper");
+      if (retryAfterMs !== null) return rateLimitDenied(uri, retryAfterMs);
+      // fetchWorkspaceData ignores its argument while fixture-backed
+      // (CLAUDE.md's data seam), so a paper is reachable without knowing its
+      // workspace. Once that resolves to a real read this needs a workspace
+      // id in the URI. Issue #208: this used to be the layout-computing
+      // fetchWorkspace -- nothing here reads node.x/node.y.
+      const workspace = await fetchWorkspaceData("");
       if (session && !canAccessWorkspace(session, workspace.id)) return accessDenied(uri, workspace.id);
       const paper = workspace.papers.find((p) => p.id === id);
       if (!paper) {
@@ -113,10 +145,14 @@ export function registerResources(server: McpServer, session?: McpTokenRecord | 
     },
     async (uri, { nodeId }) => {
       const id = firstValue(nodeId, "nodeId");
-      // Issue #181: resolved from the one fetchWorkspace() call below instead
-      // of getNode(), which would fetch (and lay out) the whole workspace a
-      // second time just to look up an id already in hand.
-      const workspace = await fetchWorkspace("");
+      const retryAfterMs = await rateLimited(session, "node");
+      if (retryAfterMs !== null) return rateLimitDenied(uri, retryAfterMs);
+      // Issue #181: resolved from the one fetchWorkspaceData() call below
+      // instead of getNode(), which would fetch (and lay out) the whole
+      // workspace a second time just to look up an id already in hand.
+      // Issue #208: fetchWorkspaceData, not the layout-computing
+      // fetchWorkspace -- nothing here reads node.x/node.y either.
+      const workspace = await fetchWorkspaceData("");
       if (session && !canAccessWorkspace(session, workspace.id)) return accessDenied(uri, workspace.id);
       const node = resolveNodeFromWorkspace(workspace, id);
       if (!node) {
