@@ -15,10 +15,10 @@ npm run db:generate        # drizzle-kit generate, needs DATABASE_URL
 npm run db:migrate
 npm run db:studio
 npm run seed                # scripts/seed.ts -- still a stub
-npm run mcp:stdio           # mcp/stdio.ts -- still a stub
+npm run mcp:stdio           # mcp/stdio.ts -- a real server, see below, not a stub
 ```
 
-`npm test` is Vitest over `lib/**/*.test.ts` (218 cases): the grounding spine, layout, graph visibility, citation parsing, the service layer, and the LLM/chat agents, the last two mocked at the model level, so no API key is needed. It is a different thing from `evals/`, which is reserved for golden-paper generator evals per plan.md §9 and is still a stub. `npm run typecheck` plus `npm test` is the correctness bar. Run both after every change to `lib/`.
+`npm test` is Vitest over `lib/**/*.test.ts` (318 cases): the grounding spine, layout, graph visibility, citation parsing, the service layer, and the LLM/chat agents, the last two mocked at the model level, so no API key is needed. It is a different thing from `evals/`, which is reserved for golden-paper generator evals per plan.md §9 and is still a stub. `npm run typecheck` plus `npm test` is the correctness bar. Run both after every change to `lib/`.
 
 Vitest only collects `lib/**`, so **pure logic worth testing belongs in `lib/`, not `components/`** -- that's why the canvas's collapse/visibility rules live in `lib/graph/visibility.ts` rather than inside `GraphCanvas.tsx`.
 
@@ -57,6 +57,7 @@ It lives under `lib/services/` rather than `lib/store/` because server routes mu
 - **Pillar color is structural, not decorative.** A node, its edges, and any chip referencing the same pillar all pull from `pillarColor()` in `components/ui/PillarChip.tsx`.
 - **Cut list (plan.md §11), do not rebuild these**: pgvector/embeddings/BM25, elkjs/auto-layout (nodes carry deterministic `x`/`y` already), a deployed Python service (PyMuPDF/PaddleOCR run as local scripts only), `role="application"` on the canvas (breaks screen readers), minimap, light theme, SM-2 spaced repetition / adaptive quiz difficulty.
 - **Multi-span anchors are required, not optional.** `Evidence.anchor.spans` is always an array; aggregate claims can have 2+ rects. Never assume `spans.length === 1`.
+- **Any settings write path must check `isDemoAccount()` (`lib/data/demo.ts`), not just the UI.** `ProfileForm`/`DangerZone`/logout-everywhere/delete-account already gate this way; `McpTokens`/`NotificationPrefs` shipped without it (issue #214) and the shared demo account could mint a real MCP token or make a notification-pref write actually persist, contradicting `DemoNotice`'s own promise that "changes are not saved." The client-side `readOnly` prop disabling controls is not enough on its own -- the server action/route is the one that actually has to refuse.
 - TypeScript strict mode is on (`tsconfig.json`). Any component using hooks/state/React Flow/zustand needs `"use client"`.
 
 ## Ownership
