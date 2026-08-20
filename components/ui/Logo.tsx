@@ -1,16 +1,10 @@
 import clsx from "clsx";
 import Image from "next/image";
-import glyphInkDark from "@/design/PEPIROS-BRAND/glyph/monochrome/glyph-mono-dark.svg";
-import glyphInkLight from "@/design/PEPIROS-BRAND/glyph/monochrome/glyph-mono-light.svg";
+import androidGlyph from "@/design/PEPIROS-BRAND/app-icons/android-foreground-512-trimmed.png";
 
 /**
  * Brand marks, sourced from design/PEPIROS-BRAND (the 2026-08-14 kit, which
  * replaced design/brand entirely).
- *
- * A note on the kit's filenames, because they read backwards at first glance:
- * `-dark` means dark INK (#16181B), i.e. the mark for a LIGHT surface, and
- * `-light` means light ink (#FAF8F4), the mark for a DARK surface. So the day
- * theme uses the `-dark` files.
  *
  * WHY THE WORDMARK IS NOT THE KIT'S SVG. The kit ships wordmark-{dark,light}
  * .svg, each a single <text> element in 'Source Serif 4'. Rendered through
@@ -26,11 +20,11 @@ import glyphInkLight from "@/design/PEPIROS-BRAND/glyph/monochrome/glyph-mono-li
  * pair to keep in sync. Tracking is carried over from the kit verbatim
  * (letter-spacing 18 at font-size 62 = 0.29em).
  *
- * THEME HANDLING for the glyph: both ink variants render and CSS picks one,
- * rather than selecting a `src` from `useTheme()`. The server does not know
- * the theme, so a conditional render is a guaranteed hydration mismatch.
- * `dark:` variants work because next-themes sets the `dark` class on <html>
- * and tailwind.config.ts runs `darkMode: ["class"]`.
+ * GLYPH: android-foreground-512.png (the Android adaptive-icon foreground
+ * layer) trimmed to its opaque bounds -- source ships on a 512x512 canvas
+ * with a huge transparent safe-zone margin, so used untrimmed it renders as
+ * a near-invisible speck at nav/footer sizes. It's a flat raster (not an ink
+ * pair), so unlike the old kit glyph it does not swap per theme.
  */
 type LogoVariant = "auto" | "chrome" | "paper";
 type LogoSize = "sm" | "md" | "lg";
@@ -47,25 +41,10 @@ const WORDMARK_SIZE: Record<LogoSize, string> = {
   lg: "text-[28px]",
 };
 
-/** Which ink variants to render for a given surface. */
-function inkPlan(variant: LogoVariant) {
-  return {
-    darkInk: variant === "auto" ? "dark:hidden" : variant === "paper" ? "" : "hidden",
-    lightInk:
-      variant === "auto" ? "hidden dark:block" : variant === "chrome" ? "" : "hidden",
-  };
-}
-
 /**
  * Icon-only mark.
- *
- * The kit also ships glyph/svg/glyph-simple-small.svg, a 3-heavy-line variant
- * for sizes below ~24px where the 6-line mark fills in. It is not wired here
- * because every in-app render is >= 28px; the favicon and app-icon sizes come
- * from the kit's own pre-rendered PNG/ICO exports.
  */
 export function LogoMark({
-  variant = "auto",
   size = "sm",
   className,
 }: {
@@ -73,24 +52,8 @@ export function LogoMark({
   size?: LogoSize;
   className?: string;
 }) {
-  const ink = inkPlan(variant);
   const base = clsx(GLYPH_SIZE[size], "w-auto object-contain");
-  return (
-    <>
-      <Image
-        src={glyphInkDark}
-        alt=""
-        aria-hidden="true"
-        className={clsx(base, ink.darkInk, className)}
-      />
-      <Image
-        src={glyphInkLight}
-        alt=""
-        aria-hidden="true"
-        className={clsx(base, ink.lightInk, className)}
-      />
-    </>
-  );
+  return <Image src={androidGlyph} alt="" aria-hidden="true" className={clsx(base, className)} />;
 }
 
 /**
