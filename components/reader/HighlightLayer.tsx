@@ -1,10 +1,20 @@
 import clsx from "clsx";
 import type { AnchorRect, EvidenceTier } from "@/types/anchor";
 
+// Issue #183: color alone (hue) was the only signal distinguishing tiers,
+// invisible to colorblind users. Border *style* -- solid/dashed/dotted -- is
+// an orthogonal, non-color channel layered on top of the same tokens rather
+// than a new color, so a monochrome view still tells the tiers apart.
 const TIER_BG: Record<EvidenceTier, string> = {
-  quote_located: "bg-located/30 ring-1 ring-located/70",
-  paraphrase: "bg-paraphrase/25 ring-1 ring-paraphrase/70",
-  unsupported: "bg-unsupported/25 ring-1 ring-unsupported/70",
+  quote_located: "bg-located/30 border-2 border-solid border-located/70",
+  paraphrase: "bg-paraphrase/25 border-2 border-dashed border-paraphrase/70",
+  unsupported: "bg-unsupported/25 border-2 border-dotted border-unsupported/70",
+};
+
+const TIER_LABEL: Record<EvidenceTier, string> = {
+  quote_located: "quote located",
+  paraphrase: "paraphrase",
+  unsupported: "unsupported",
 };
 
 export interface Highlight {
@@ -44,6 +54,7 @@ export function HighlightLayer({
           .map((span, i) => (
             <div
               key={`${h.id}-${i}`}
+              title={TIER_LABEL[h.tier]}
               className={clsx(
                 "absolute animate-[highlight-pulse_var(--dur-slow)_var(--ease-out)] rounded-sm",
                 TIER_BG[h.tier],

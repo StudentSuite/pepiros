@@ -51,6 +51,7 @@ export function SectionNav({
               <button
                 type="button"
                 onClick={() => onSelect?.(sectionId)}
+                aria-current={active ? "true" : undefined}
                 className={clsx(
                   "w-full rounded px-2 py-1 text-left font-sans text-sm transition-colors",
                   active

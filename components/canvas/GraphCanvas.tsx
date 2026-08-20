@@ -396,6 +396,25 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
     [selectNode],
   );
 
+  // React Flow makes each node focusable and handles Enter/Space itself, but
+  // only to toggle its own internal selection visuals -- it never calls
+  // onNodeClick from a keyboard event (issue #182). Delegating one keydown
+  // listener here (rather than wiring onKeyDown into all 6 node components)
+  // opens the same inspector a mouse click does, keyed off the `data-id`
+  // React Flow already stamps onto each node's wrapper element.
+  const handleCanvasKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const nodeEl = (event.target as HTMLElement).closest<HTMLElement>(".react-flow__node[data-id]");
+      if (!nodeEl) return;
+      const nodeId = nodeEl.dataset.id;
+      if (!nodeId) return;
+      event.preventDefault();
+      selectNode(nodeId);
+    },
+    [selectNode],
+  );
+
   if (!workspace) {
     // Skeleton graph, not a bare spinner (docs/PLAN-V1.md §14.5, §6): a
     // paper node with ghost pillars pulsing around it, in under 300ms, is
@@ -434,7 +453,7 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
       {/* Level-of-detail is applied as one attribute here rather than as a
           prop on every node: it affects all cards identically, so a CSS rule
           on an ancestor beats rebuilding 20+ node objects on every zoom. */}
-      <div className="h-full w-full" data-canvas-detail={detail}>
+      <div className="h-full w-full" data-canvas-detail={detail} onKeyDown={handleCanvasKeyDown}>
         <ReactFlow
           nodes={nodes}
           edges={edges}

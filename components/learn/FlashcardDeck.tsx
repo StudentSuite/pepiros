@@ -69,11 +69,16 @@ export function FlashcardDeck() {
             setFlipped((f) => !f);
           }
         }}
+        aria-pressed={flipped}
+        aria-label={flipped ? "Card back, press to flip to front" : "Card front, press to flip to back"}
         className={clsx(
           "surface-reading paper-grain flex min-h-[160px] w-full max-w-md items-center justify-center rounded p-6 text-center shadow-lg",
         )}
       >
-        <p className={clsx("font-serif text-base leading-snug text-[#1c1a15]", flipped && "italic")}>
+        <p
+          aria-live="polite"
+          className={clsx("font-serif text-base leading-snug text-[#1c1a15]", flipped && "italic")}
+        >
           {flipped ? card.back : card.front}
         </p>
       </button>

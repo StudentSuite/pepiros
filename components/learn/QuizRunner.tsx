@@ -155,6 +155,8 @@ export function QuizRunner({ workspaceId }: { workspaceId: string }) {
                 )}
               >
                 {opt}
+                {revealed && isCorrect && <span className="sr-only"> -- correct answer</span>}
+                {revealed && isSelected && !isCorrect && <span className="sr-only"> -- your answer, incorrect</span>}
               </button>
             </li>
           );
