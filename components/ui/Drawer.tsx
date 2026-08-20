@@ -17,12 +17,22 @@ export function Drawer({
   open,
   onClose,
   title,
+  labelledBy,
   children,
   className,
 }: {
   open: boolean;
   onClose: () => void;
   title?: string;
+  /**
+   * Issue #197: id of a heading already rendered inside `children`, for a
+   * caller (e.g. GraphCanvas wrapping NodeInspector) whose title text is only
+   * known to the child, not the caller -- an alternative to `title` rather
+   * than requiring content be duplicated up into this component just to name
+   * the dialog. Without either, the drawer opens with no accessible name at
+   * all: a screen reader announces only "dialog".
+   */
+  labelledBy?: string;
   children: ReactNode;
   className?: string;
 }) {
@@ -42,7 +52,7 @@ export function Drawer({
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={title ? "drawer-title" : undefined}
+        aria-labelledby={title ? "drawer-title" : labelledBy}
         className={clsx(
           "absolute right-0 top-0 flex h-full w-inspector flex-col gap-4 border-l border-border-strong bg-surface-raised p-5 shadow-e-3",
           "animate-[expand-in_var(--dur-canvas)_var(--ease-out)]",

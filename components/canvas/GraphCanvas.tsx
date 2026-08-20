@@ -511,7 +511,7 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
       {/* Canvas is full-bleed (unlike the reader's static split-view inspector
           panel, PLAN-V1.md §9.3), so a selected node needs an overlay, not a
           pushed column -- the shared Drawer primitive from Stage B. */}
-      <Drawer open={selectedNodeId !== null} onClose={() => selectNode(null)}>
+      <Drawer open={selectedNodeId !== null} onClose={() => selectNode(null)} labelledBy="node-inspector-title">
         <NodeInspector />
       </Drawer>
     </>

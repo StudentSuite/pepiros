@@ -19,7 +19,7 @@ export function SourcePopover({
   onClose: () => void;
 }) {
   return (
-    <Popover open onClose={onClose}>
+    <Popover open onClose={onClose} label={`Source for citation ${evidence.refId}`}>
       <div className="mb-2 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
           <RefChip refId={evidence.refId} />

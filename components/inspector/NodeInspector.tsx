@@ -205,7 +205,12 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
         )}
       </div>
 
-      <h2 ref={titleRef} tabIndex={-1} className="font-serif text-xl leading-snug text-ink outline-none">
+      <h2
+        ref={titleRef}
+        id="node-inspector-title"
+        tabIndex={-1}
+        className="font-serif text-xl leading-snug text-ink outline-none"
+      >
         {node.title}
       </h2>
 
