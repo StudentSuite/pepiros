@@ -34,7 +34,8 @@
     "build:mcp": "esbuild mcp/stdio.ts --bundle --platform=node --format=esm --conditions=react-server --external:@modelcontextprotocol/sdk --external:ai --external:zod --external:p-queue --external:@ai-sdk/groq --external:@ai-sdk/openai-compatible --outfile=dist/mcp/stdio.mjs",
     "prepublishOnly": "npm run build:mcp",
     "generate:llms": "tsx scripts/generate-llms-txt.ts",
-    "check:no-em-dashes": "tsx scripts/check-no-em-dashes.ts"
+    "check:no-em-dashes": "tsx scripts/check-no-em-dashes.ts",
+    "check:generator-count": "tsx scripts/check-generator-count.ts"
   },
   "dependencies": {
     "@ai-sdk/groq": "^2.0.47",

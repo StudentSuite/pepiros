@@ -50,7 +50,12 @@ export async function POST(request: Request) {
       {
         error: "ingest_unavailable_here",
         detail:
-          "PDF ingestion needs a local Python interpreter (PyMuPDF) that this hosted deployment doesn't have. Run Pepiros locally with `npm run dev` to ingest your own papers -- the demo workspace here already has real ingested content to explore.",
+          // Issue #230: this used to end "the demo workspace here already has
+          // real ingested content to explore." It serves the bundled fixture
+          // (fixtures/workspace.json), which is hand-authored, not pipeline
+          // output, so that sentence claimed the one thing this error is
+          // admitting the deployment cannot do.
+          "PDF ingestion needs a local Python interpreter (PyMuPDF) that this hosted deployment doesn't have. Run Pepiros locally with `npm run dev` to ingest your own papers. The demo workspace here is a bundled sample you can explore in the meantime.",
       },
       { status: 501 },
     );

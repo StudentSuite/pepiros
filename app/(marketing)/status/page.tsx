@@ -52,8 +52,14 @@ const ROWS: { area: string; state: State; note: string }[] = [
   },
   {
     area: "PDF ingest",
-    state: "live",
-    note: "Upload validation and parsing a PDF (or arXiv link) into the graph are both real.",
+    state: "partial",
+    // Issues #230/#295: this read "live" with "both real", which is false of
+    // the deployed site. Upload validation is real everywhere; the parse
+    // pipeline shells out to scripts/parse.py and Vercel's Node runtime has
+    // no Python interpreter, so POST /api/ingest returns 501 here. That is a
+    // runtime limitation, not a configuration one, so the honest move is to
+    // label it rather than imply a fix is pending.
+    note: "Upload validation is real. Parsing is local-only: the pipeline shells out to Python (PyMuPDF), which the hosted Node runtime has no interpreter for, so ingesting a new paper needs a local `npm run dev`. A paper ingested locally is readable here.",
   },
   {
     area: "Cross-paper synthesis",

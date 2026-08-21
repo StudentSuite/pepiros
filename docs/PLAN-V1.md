@@ -734,12 +734,13 @@ Dark only for v1. Light theme is cut (§20).
 - MCP connector pre-added on a second account as the fallback, so a failed live connector add can be skipped.
 - Judge-supplied PDFs are a Q&A flourish, never part of the scripted run.
 - Drop-rate numbers measured on 10 real PDFs. Never quote an unmeasured figure.
+- **Say the ingest limitation out loud, do not route around it** (issue #295). The demo runs against a local dev server precisely because parsing shells out to Python and the hosted Node runtime has no interpreter, so `POST /api/ingest` returns 501 there. That is an architectural boundary, not a bug being hidden: if a judge uploads a paper to the deployed site it will refuse, and the run should have already said so. State it once, in one sentence, at the point the local setup is first visible. A volunteered limitation reads as rigour; the same limitation discovered by a judge mid-demo reads as overclaiming, and this is a product whose entire pitch is not overclaiming.
 
 ### 16.2 The 90-second script
 
 | Time | Beat |
 |---|---|
-| 0:00-0:10 | "Two papers on the same question, opposite conclusions, and nothing tells you." Pre-seeded workspace already loaded. |
+| 0:00-0:10 | "Two papers on the same question, opposite conclusions, and nothing tells you." Pre-seeded workspace already loaded, running locally: parsing needs Python, so ingest is local-only and the hosted site says so rather than failing at you. Said once, in passing, then move on. |
 | 0:10-0:25 | Two papers side by side, visibly different pillar sets. "These categories came from the papers, not from a menu. An RCT and a CNN paper get different ones." |
 | 0:25-0:45 | Open a node. Claim and quote adjacent. Click a chip: PDF snaps to page 4, rects light up on the exact sentence. **Pause here.** |
 | 0:45-1:00 | "We verify quotation deterministically, no LLM judging itself. Inference is labelled separately. 41 anchors, 1 dropped, and here is the coverage map showing which parts of the paper the graph actually cites." |

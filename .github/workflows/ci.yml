@@ -51,5 +51,6 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run check:no-em-dashes
+      - run: npm run check:generator-count
       - run: npm test
       - run: npm run build
