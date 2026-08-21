@@ -420,8 +420,8 @@ export const supabaseAdapter: DataAdapter = {
       sourceUrl: data.source_url ?? "",
       status: data.status,
       publishedAt: (data.published_at ?? data.created_at).slice(0, 10),
-      groundingCoverage: Number(data.grounding_coverage ?? 0),
-      dropRate: Number(data.drop_rate ?? 0),
+      groundingCoverage: data.grounding_coverage == null ? null : Number(data.grounding_coverage),
+      dropRate: data.drop_rate == null ? null : Number(data.drop_rate),
     };
   },
 
@@ -659,8 +659,8 @@ export const supabaseAdapter: DataAdapter = {
         sourceUrl: row.source_url ?? "",
         status: row.status,
         publishedAt: (row.published_at ?? row.created_at).slice(0, 10),
-        groundingCoverage: Number(row.grounding_coverage ?? 0),
-        dropRate: Number(row.drop_rate ?? 0),
+        groundingCoverage: row.grounding_coverage == null ? null : Number(row.grounding_coverage),
+        dropRate: row.drop_rate == null ? null : Number(row.drop_rate),
       }),
     );
   },

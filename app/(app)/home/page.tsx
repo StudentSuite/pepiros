@@ -95,10 +95,16 @@ export default async function HomePage() {
                   {post.authors.length > 1 ? " et al." : ""} · {post.year}
                 </p>
                 <div className="mt-auto flex items-center gap-s-3 pt-s-3 font-mono text-[10px] text-ink-faint">
-                  <span className="flex items-center gap-1">
-                    <BookOpen className="size-3" />
-                    {Math.round(post.groundingCoverage * 100)}% grounded
-                  </span>
+                  {/* Issue #282: shown only when the verifier actually
+                      produced a figure. A post that has never been through
+                      the pipeline has no coverage to report, and rendering
+                      one anyway is what made a seeded number look measured. */}
+                  {post.groundingCoverage !== null && (
+                    <span className="flex items-center gap-1">
+                      <BookOpen className="size-3" />
+                      {Math.round(post.groundingCoverage * 100)}% grounded
+                    </span>
+                  )}
                   <span className="flex items-center gap-1">
                     <Clock className="size-3" />
                     {post.publishedAt}

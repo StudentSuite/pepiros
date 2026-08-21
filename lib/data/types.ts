@@ -106,9 +106,18 @@ export interface Post {
   sourceUrl: string;
   status: PostStatus;
   publishedAt: string;
-  /** Grounding stats, the honest ones: these come from the verifier. */
-  groundingCoverage: number;
-  dropRate: number;
+  /**
+   * Grounding stats, the honest ones: these come from the verifier.
+   *
+   * Issue #282: null means "not measured", and is the correct value for any
+   * post that has not been through the pipeline. The comment above was true
+   * of a real ingested post and false of every seeded one on the site, which
+   * is how a fabricated percentage ended up rendering as a measurement.
+   * Callers must not coerce null to 0: a post with no measurement is not a
+   * post that scored zero.
+   */
+  groundingCoverage: number | null;
+  dropRate: number | null;
 }
 
 export interface PostMetrics {

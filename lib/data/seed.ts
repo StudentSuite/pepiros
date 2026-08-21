@@ -127,8 +127,11 @@ export function seedPosts(authorId = GUEST_ID): Post[] {
       sourceUrl: paper.sourceUrl,
       status,
       publishedAt: daysAgo(intBetween(r, 3, 160)),
-      groundingCoverage: Math.round((0.62 + r() * 0.35) * 100) / 100,
-      dropRate: Math.round(r() * 0.11 * 100) / 100,
+      // Issue #282: these are verifier outputs. A seeded post has never been
+      // through the verifier, so it has no value to report and says so with
+      // null rather than an invented one.
+      groundingCoverage: null,
+      dropRate: null,
     };
   });
 }
@@ -244,7 +247,6 @@ export interface CatalogStats {
   score: number;
   comments: number;
   readers: number;
-  groundingCoverage: number;
   postedDaysAgo: number;
   postedBy: string;
 }
@@ -279,7 +281,6 @@ export function seedCatalogStats(paperId: string, year: number): CatalogStats {
     score,
     comments: Math.round(score * (0.04 + r() * 0.09)),
     readers: Math.round(score * (2.1 + r() * 3.4)),
-    groundingCoverage: Math.round((0.6 + r() * 0.38) * 100) / 100,
     postedDaysAgo: intBetween(r, 0, 210),
     postedBy: pick(r, POSTERS),
   };

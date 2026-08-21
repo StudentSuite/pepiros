@@ -7,7 +7,7 @@ import { Button } from "@/components/shadcn/button";
 import { Dot, FeedItem } from "@/components/reading/Article";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { RESEARCH_FIELDS } from "@/lib/data/types";
-import { articleFor } from "@/lib/data/paperContent";
+import { paperDek } from "@/lib/data/paperContent";
 import type { CatalogPaper } from "@/lib/data/papers";
 import type { CatalogStats } from "@/lib/data/seed";
 import { cn } from "@/lib/utils";
@@ -171,13 +171,12 @@ export function FeedClient({ items }: { items: FeedEntry[] }) {
       ) : (
         <div className="border-t border-border pt-s-6">
           {shown.map((p) => {
-            const article = articleFor(p);
             return (
               <FeedItem
                 key={p.id}
                 href={`/paper/${p.slug}`}
                 title={p.title}
-                dek={article.dek}
+                dek={paperDek(p)}
                 tags={
                   <>
                     <span className="font-mono text-[10px] uppercase tracking-wider text-ink-faint">
@@ -196,10 +195,9 @@ export function FeedClient({ items }: { items: FeedEntry[] }) {
                     <Dot />
                     <span>{ago(p.stats.postedDaysAgo)}</span>
                     <Dot />
-                    <span>{article.readingMinutes} min</span>
-                    <Dot />
-                    <span>{Math.round(p.stats.groundingCoverage * 100)}% grounded</span>
-                    <Dot />
+                    {/* Issues #253/#259: reading time and "% grounded" were
+                        both fabricated here (a hash, and lib/data/seed.ts
+                        respectively), not measured by the verifier. */}
                     <span>{p.stats.comments} comments</span>
                   </>
                 }

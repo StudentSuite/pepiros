@@ -1,46 +1,44 @@
 import type { CatalogPaper } from "./papers";
 
 /**
- * The grounded write-up shown on a paper's page.
+ * The one-line description shown for a catalog paper.
  *
- * Generated deterministically from the paper's own metadata rather than stored,
- * because no PDF has been through the ingest pipeline yet. It is shaped exactly
- * like the real output will be (a standfirst, pillars, and claims that each
- * carry an evidence tier and a located quote) so the reading surface is being
- * designed against the right structure, not a placeholder that will need
- * rebuilding when ingest lands.
+ * WHAT THIS FILE USED TO DO, AND WHY IT DOESN'T (issue #253). It procedurally
+ * generated a whole "grounded read" for every /paper/[slug] page: three
+ * pillars of claims, each with an evidence tier picked by arithmetic on a hash
+ * of the paper id, a quote drawn from a five-item pool, a page number of
+ * `(hash % 11) + 2`, and a match score of `0.92 + (hash % 8) / 100`.
  *
- * Every claim here is deliberately generic about the paper's *content*. Putting
- * invented specifics into the mouth of a real, citable paper would be the exact
- * failure this product exists to prevent.
+ * The catalog those pages render is real, checkable papers: AlphaFold, CRISPR,
+ * Attention Is All You Need, ResNet. So /paper/highly-accurate-protein-
+ * structure-prediction showed a claim cited to "Participants were randomly
+ * assigned in a 1:1 ratio, with allocation concealed until after enrolment",
+ * quote located, 0.97, p.7. AlphaFold has no participants and no
+ * randomisation, that sentence is not in the paper, and the page number and
+ * score were arithmetic. The standfirst directly above it promised "each claim
+ * below is either bound to a quoted sentence from the source... Nothing here
+ * is a summary you are asked to take on trust."
+ *
+ * For a product whose entire premise is that a claim is bound to a real
+ * sentence, on its most linked-to public surface, that was the most damaging
+ * thing in the repo. Anyone who knew one of these papers would see a quote
+ * that is not in it.
+ *
+ * So there is no synthetic article any more. A paper page renders the metadata
+ * that is actually true (title, authors, venue, year, source link) and an
+ * explicit not-yet-indexed state. The real write-up arrives when the catalog
+ * is genuinely put through the pipeline (issue #279), read from the same nodes
+ * and evidence rows the reader reads (issue #283) rather than regenerated
+ * here.
+ *
+ * What survives is this: a description that describes the *page*, not the
+ * paper's findings. It asserts nothing about what any paper says.
  */
 
-export type Tier = "quote_located" | "paraphrase" | "inference";
-
-export interface Claim {
-  id: string;
-  text: string;
-  tier: Tier;
-  /** Present only for the two grounded tiers. */
-  quote?: string;
-  page?: number;
-  score?: number;
-}
-
-export interface Pillar {
-  title: string;
-  summary: string;
-  claims: Claim[];
-}
-
-export interface PaperArticle {
-  dek: string;
-  readingMinutes: number;
-  standfirst: string;
-  pillars: Pillar[];
-  doesNotEstablish: string[];
-}
-
+/**
+ * Deterministic so the same paper gets the same line on the server and on the
+ * client, and the feed does not reshuffle between renders.
+ */
 function hash(str: string): number {
   let h = 2166136261;
   for (let i = 0; i < str.length; i++) {
@@ -50,104 +48,18 @@ function hash(str: string): number {
   return h >>> 0;
 }
 
-const pick = <T>(arr: readonly T[], seed: number): T =>
-  arr[seed % arr.length] as T;
-
+/**
+ * Every line here is about provenance and process, never about a finding.
+ * That is the constraint: nothing in this file has read the paper, so nothing
+ * in this file may characterise it.
+ */
 const DEKS = [
-  "What the paper establishes, what it only suggests, and where the two get confused.",
-  "The method, the headline result, and the caveat the abstract leaves out.",
-  "A grounded read: every claim below sits next to the sentence it came from.",
-  "What this changes, what it does not, and which numbers survive a close look.",
+  "Indexed from the open-access source. Open it to read the original.",
+  "Catalogued with its source link. A grounded write-up follows once it is indexed.",
+  "Listed from its open-access record, not yet put through the verifier.",
+  "In the library, with the original one click away.",
 ] as const;
 
-const METHOD_CLAIMS = [
-  "The design is stated explicitly in the Methods section, including how participants or samples were assigned.",
-  "Sample size and its justification are reported, which makes the headline effect interpretable rather than merely large.",
-  "The primary outcome is pre-specified, so the reported result is not one of many that could have been chosen after the fact.",
-] as const;
-
-const RESULT_CLAIMS = [
-  "The headline effect is reported with an interval, not as a bare point estimate.",
-  "The direction of the effect is consistent across the reported subgroups.",
-  "The comparison condition is described in enough detail to know what the effect is relative to.",
-] as const;
-
-const LIMIT_CLAIMS = [
-  "The authors name the population the result may not generalise to.",
-  "At least one confound is acknowledged in the discussion rather than left to the reader.",
-  "The follow-up window is stated, which bounds any claim about durability.",
-] as const;
-
-const QUOTES = [
-  "Participants were randomly assigned in a 1:1 ratio, with allocation concealed until after enrolment.",
-  "The primary outcome was specified in the protocol before any data were analysed.",
-  "Effects were estimated with 95% confidence intervals; no adjustment was made for multiple comparisons.",
-  "These findings should be interpreted in light of the limited follow-up period.",
-  "The cohort was drawn from a single centre, which constrains external validity.",
-] as const;
-
-const NOT_ESTABLISHED = [
-  "That the effect holds outside the population studied here.",
-  "That the mechanism proposed in the discussion is the operative one.",
-  "That the result would survive a longer follow-up window.",
-  "That the comparison condition represents current standard practice everywhere.",
-] as const;
-
-function claimsFor(
-  kind: "method" | "result" | "limit",
-  seed: number,
-  prefix: string,
-): Claim[] {
-  const source =
-    kind === "method" ? METHOD_CLAIMS : kind === "result" ? RESULT_CLAIMS : LIMIT_CLAIMS;
-
-  return source.map((text, i) => {
-    const s = seed + i * 7919;
-    // Most claims are grounded; roughly one in five is left as inference, which
-    // is what the real verifier produces and what the UI has to handle.
-    const tier: Tier = s % 5 === 0 ? "inference" : s % 3 === 0 ? "paraphrase" : "quote_located";
-    const claim: Claim = { id: `${prefix}${i + 1}`, text, tier };
-    if (tier !== "inference") {
-      claim.quote = pick(QUOTES, s);
-      claim.page = (s % 11) + 2;
-      claim.score =
-        tier === "quote_located"
-          ? Number((0.92 + (s % 8) / 100).toFixed(2))
-          : Number((0.75 + (s % 16) / 100).toFixed(2));
-    }
-    return claim;
-  });
-}
-
-export function articleFor(paper: CatalogPaper): PaperArticle {
-  const seed = hash(paper.id);
-  const first = paper.authors[0] ?? "The authors";
-  const etAl = paper.authors.length > 1 ? " et al." : "";
-
-  return {
-    dek: pick(DEKS, seed),
-    readingMinutes: 4 + (seed % 7),
-    standfirst: `${first}${etAl} published this in ${paper.venue} in ${paper.year}. What follows is a grounded read of it: each claim below is either bound to a quoted sentence from the source, or labelled as inference and left uncited. Nothing here is a summary you are asked to take on trust.`,
-    pillars: [
-      {
-        title: "How the study was run",
-        summary:
-          "The parts of the method a reader needs before deciding how much weight the result can carry.",
-        claims: claimsFor("method", seed, "C"),
-      },
-      {
-        title: "What it found",
-        summary:
-          "The headline result, stated plainly, with the numbers that qualify it.",
-        claims: claimsFor("result", seed + 31, "C"),
-      },
-      {
-        title: "What the authors flag",
-        summary:
-          "Limitations the paper raises itself, which are easy to lose between the abstract and the citation.",
-        claims: claimsFor("limit", seed + 67, "C"),
-      },
-    ],
-    doesNotEstablish: NOT_ESTABLISHED.filter((_, i) => (seed + i) % 3 !== 0).slice(0, 3),
-  };
+export function paperDek(paper: CatalogPaper): string {
+  return DEKS[hash(paper.id) % DEKS.length] as string;
 }

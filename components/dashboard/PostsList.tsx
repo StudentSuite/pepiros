@@ -250,10 +250,21 @@ export function PostsList({
                   </p>
 
                   <div className="mt-s-2 flex flex-wrap items-center gap-x-s-3 gap-y-1 font-sans text-[13px] text-ink-faint">
-                    <span>{Math.round(post.groundingCoverage * 100)}% grounded</span>
-                    <Dot />
-                    <span>{Math.round(post.dropRate * 100)}% dropped</span>
-                    <Dot />
+                    {/* Issue #282: both are verifier outputs, so both are
+                        omitted rather than invented when there is no
+                        measurement behind them. */}
+                    {post.groundingCoverage !== null && (
+                      <>
+                        <span>{Math.round(post.groundingCoverage * 100)}% grounded</span>
+                        <Dot />
+                      </>
+                    )}
+                    {post.dropRate !== null && (
+                      <>
+                        <span>{Math.round(post.dropRate * 100)}% dropped</span>
+                        <Dot />
+                      </>
+                    )}
                     <span>{post.publishedAt}</span>
                   </div>
                 </div>

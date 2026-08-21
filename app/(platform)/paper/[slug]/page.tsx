@@ -5,7 +5,7 @@ import { ArrowUpRight, MessageSquare } from "lucide-react";
 import { getAdapter } from "@/lib/data/adapter";
 import { getSession } from "@/lib/auth/session";
 import { seedCatalogStats, seedPaperComments } from "@/lib/data/seed";
-import { articleFor } from "@/lib/data/paperContent";
+import { paperDek } from "@/lib/data/paperContent";
 import {
   ArticleBody,
   ArticleHeader,
@@ -14,7 +14,6 @@ import {
   Dot,
   ReadingColumn,
 } from "@/components/reading/Article";
-import { ClaimBlock } from "@/components/reading/ClaimBlock";
 import { PaperEngagement } from "./PaperEngagement";
 import { CommentForm } from "./CommentForm";
 import { Avatar, AvatarFallback } from "@/components/shadcn/avatar";
@@ -35,11 +34,11 @@ export async function generateMetadata({
   // checkers read the status, not the heading.
   if (!paper) notFound();
 
-  const article = articleFor(paper);
+  const dek = paperDek(paper);
   return {
     title: paper.title,
-    description: article.dek,
-    openGraph: { title: paper.title, description: article.dek, type: "article" },
+    description: dek,
+    openGraph: { title: paper.title, description: dek, type: "article" },
   };
 }
 
@@ -53,7 +52,6 @@ export default async function PaperPage({
   if (!paper) notFound();
 
   const stats = seedCatalogStats(paper.id, paper.year);
-  const article = articleFor(paper);
   const byline = paper.authors.slice(0, 3).join(", ") + (paper.authors.length > 3 ? ", et al." : "");
 
   // A real `posts` row (matched by paper_id) means this paper has actually
@@ -70,18 +68,18 @@ export default async function PaperPage({
   return (
     <main className="pb-s-5">
       <ReadingColumn>
-        <ArticleHeader kicker={paper.field} title={paper.title} dek={article.dek}>
+        <ArticleHeader kicker={paper.field} title={paper.title} dek={paperDek(paper)}>
           <Byline
             name={`@${stats.postedBy}`}
             href={`/u/${stats.postedBy}`}
             initials={stats.postedBy.slice(0, 2).toUpperCase()}
-            meta={
-              [
-                `${article.readingMinutes} min read`,
-                `${Math.round(stats.groundingCoverage * 100)}% grounded`,
-                paper.openAccess ? "Open access" : "Paywalled source",
-              ].join(" · ")
-            }
+            /* Issues #253/#259: this used to read "N min read - N% grounded".
+               Both were fabricated -- reading time was `4 + (hash % 7)` and
+               the grounding percentage came from lib/data/seed.ts, not from
+               the verifier, on a page whose whole claim is that its numbers
+               are measured. A grounded percentage returns when there are real
+               evidence rows to compute it from (issues #279, #282). */
+            meta={paper.openAccess ? "Open access" : "Paywalled source"}
             action={
               <PaperEngagement
                 initialScore={likeState ? likeState.count : stats.score}
@@ -144,39 +142,71 @@ export default async function PaperPage({
           </p>
         )}
 
-        <ArticleBody className="mt-s-6">
-          <p>{article.standfirst}</p>
-        </ArticleBody>
+        {/* Issue #253: a procedurally generated "grounded read" used to sit
+            here -- three pillars of claims, each with a tier chosen by
+            arithmetic on a hash of the paper id, a quote from a five-item
+            pool, a page number of (hash % 11) + 2, and a match score of
+            0.92 + (hash % 8) / 100. Attached to real, checkable papers, that
+            put sentences into AlphaFold and Attention Is All You Need that are
+            not in them, under a standfirst promising every claim was bound to
+            a quoted sentence from the source.
 
-        {article.pillars.map((pillar) => (
-          <section key={pillar.title} className="mt-s-7">
-            <h2 className="font-serif text-[1.45rem] leading-snug text-ink">
-              {pillar.title}
-            </h2>
-            <p className="mt-s-2 font-sans text-[15px] leading-relaxed text-ink-faint">
-              {pillar.summary}
-            </p>
-            <div className="mt-s-5 flex flex-col gap-s-6">
-              {pillar.claims.map((claim) => (
-                <ClaimBlock key={claim.id} claim={claim} />
-              ))}
-            </div>
-          </section>
-        ))}
-
-        <ArticleRule />
-
-        <section>
-          <h2 className="font-serif text-[1.45rem] leading-snug text-ink">
-            What this does not establish
+            Nothing stands in for it. The write-up appears when the paper has
+            actually been through the pipeline (issue #279) and can be read
+            from the same nodes and evidence rows the reader reads (issue
+            #283). Until then this page is the paper's real record and a link
+            to the original, which is worth more than a convincing fake. */}
+        <section className="mt-s-6 rounded-md border border-dashed border-border px-s-5 py-s-5">
+          <h2 className="font-serif text-[1.2rem] leading-snug text-ink">
+            No grounded write-up yet
           </h2>
-          <ArticleBody className="mt-s-4">
-            <ul>
-              {article.doesNotEstablish.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
+          <ArticleBody className="mt-s-3">
+            <p>
+              This paper is catalogued but has not been through the verifier, so
+              there is nothing here we can show you a source sentence for. Rather
+              than generate a summary you would have to take on trust, which is
+              the exact thing Pepiros exists to avoid, the page stops here.
+            </p>
+            <p>
+              What is on this page is what we can actually stand behind: the
+              paper&rsquo;s own record, and a link to the original.
+            </p>
           </ArticleBody>
+
+          <dl className="mt-s-5 grid gap-s-3 sm:grid-cols-2">
+            <div>
+              <dt className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+                Authors
+              </dt>
+              <dd className="mt-1 font-sans text-[15px] leading-relaxed text-ink">
+                {paper.authors.join(", ")}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+                Published in
+              </dt>
+              <dd className="mt-1 font-sans text-[15px] leading-relaxed text-ink">
+                {paper.venue}, {paper.year}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+                Field
+              </dt>
+              <dd className="mt-1 font-sans text-[15px] leading-relaxed text-ink">
+                {paper.field}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+                Access
+              </dt>
+              <dd className="mt-1 font-sans text-[15px] leading-relaxed text-ink">
+                {paper.openAccess ? "Open access" : "Paywalled source"}
+              </dd>
+            </div>
+          </dl>
         </section>
 
         <ArticleRule />

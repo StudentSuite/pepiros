@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getAdapter } from "@/lib/data/adapter";
 import { getSession } from "@/lib/auth/session";
 import { seedCatalogStats } from "@/lib/data/seed";
-import { articleFor } from "@/lib/data/paperContent";
+import { paperDek } from "@/lib/data/paperContent";
 import { CATALOG } from "@/lib/data/papers";
 import {
   Dot,
@@ -166,13 +166,12 @@ export default async function ProfilePage({
         ) : (
           <div className="pt-s-6">
             {papers.map((p) => {
-              const article = articleFor(p);
               return (
                 <FeedItem
                   key={p.id}
                   href={`/paper/${p.slug}`}
                   title={p.title}
-                  dek={article.dek}
+                  dek={paperDek(p)}
                   tags={
                     <span className="font-mono text-[10px] uppercase tracking-wider text-ink-faint">
                       {p.field}
@@ -184,11 +183,8 @@ export default async function ProfilePage({
                       <Dot />
                       <span>{p.year}</span>
                       <Dot />
-                      <span>{article.readingMinutes} min</span>
-                      <Dot />
-                      <span>
-                        {Math.round(p.stats.groundingCoverage * 100)}% grounded
-                      </span>
+                      {/* Issues #253/#259: reading time and "% grounded" were
+                          fabricated, not measured. */}
                     </>
                   }
                 />
