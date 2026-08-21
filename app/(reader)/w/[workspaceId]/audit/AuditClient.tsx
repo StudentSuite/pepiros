@@ -1,14 +1,36 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import clsx from "clsx";
 import { useWorkspaceStore } from "@/lib/store/workspace";
-import type { Evidence } from "@/types/anchor";
+import type { Evidence, Workspace } from "@/types/anchor";
 import { RefChip } from "@/components/ui/RefChip";
 import { EvidenceBadge } from "@/components/ui/EvidenceBadge";
 import { ReaderTabsNav } from "@/components/reader/ReaderTabsNav";
+import { SummaryAudit } from "./SummaryAudit";
 
 type EvidenceWithTesting = Evidence & { claimedQuoteForTesting?: string };
+
+/**
+ * The Audit tab answers two different questions and used to render only one
+ * of them.
+ *
+ * "Workspace evidence" is the original view: every Evidence row our own
+ * generators produced, its tier, and the drop rate -- "plant one
+ * misattribution, measure drop rate" (plan.md §9) made visible. It audits us.
+ *
+ * "Summary audit" is the reverse audit, and it audits somebody else's text
+ * against these papers. `POST /api/audit` has backed it since the reverse
+ * audit landed and no UI ever called it, so the feature existed end to end
+ * except for the part a person could reach. It leads, because it is the
+ * question a visitor actually arrives with.
+ */
+type Mode = "summary" | "evidence";
+
+const MODES: ReadonlyArray<[Mode, string]> = [
+  ["summary", "Summary audit"],
+  ["evidence", "Workspace evidence"],
+];
 
 function Stat({
   label,
@@ -28,25 +50,13 @@ function Stat({
 }
 
 /**
- * Reverse audit view (plan.md §9): every Evidence row across the workspace,
- * its tier, and the computed drop rate (unsupported / total) -- "plant one
- * misattribution, measure drop rate" made visible. The fixture's planted
- * case is evidence "e6" on n-p2-limitations-leaf-1: tier unsupported,
- * anchor null, and its owning node's bodyMd still carries the [^e6] marker
- * -- that stale-marker case gets its own callout below, not just a table row.
+ * Every Evidence row in the workspace, its tier, and the computed drop rate
+ * (unsupported / total). The fixture's planted case is evidence "e6" on
+ * n-p2-limitations-leaf-1: tier unsupported, anchor null, and its owning
+ * node's bodyMd still carries the [^e6] marker -- that stale-marker case gets
+ * its own callout below, not just a table row.
  */
-export function AuditClient({ workspaceId }: { workspaceId: string }) {
-  const workspace = useWorkspaceStore((s) => s.workspace);
-  const loadWorkspace = useWorkspaceStore((s) => s.loadWorkspace);
-
-  useEffect(() => {
-    loadWorkspace(workspaceId);
-  }, [workspaceId, loadWorkspace]);
-
-  if (!workspace) {
-    return <p className="p-8 font-sans text-sm text-ink-faint">Loading workspace...</p>;
-  }
-
+function WorkspaceEvidence({ workspace }: { workspace: Workspace }) {
   const nodeById = new Map(workspace.nodes.map((n) => [n.id, n]));
 
   const total = workspace.evidence.length;
@@ -62,18 +72,7 @@ export function AuditClient({ workspaceId }: { workspaceId: string }) {
   });
 
   return (
-    <main id="main-content" className="mx-auto max-w-6xl p-s-5">
-      <header className="mb-s-5 flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="font-serif text-2xl text-ink">Audit</h1>
-          {/* Issue #147: no workspace/paper identity anywhere on this page
-              -- a user with two workspaces open in different tabs had no
-              way to tell them apart. */}
-          <p className="mt-1 font-sans text-xs text-ink-faint">{workspace.name}</p>
-        </div>
-        <ReaderTabsNav workspaceId={workspaceId} active="audit" />
-      </header>
-
+    <>
       <section className="mb-s-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Total evidence" value={total} />
         <Stat label="Quote located" value={locatedCount} accentClassName="text-located" />
@@ -170,6 +169,68 @@ export function AuditClient({ workspaceId }: { workspaceId: string }) {
           </tbody>
         </table>
       </div>
+    </>
+  );
+}
+
+export function AuditClient({ workspaceId }: { workspaceId: string }) {
+  const workspace = useWorkspaceStore((s) => s.workspace);
+  const loadWorkspace = useWorkspaceStore((s) => s.loadWorkspace);
+  const [mode, setMode] = useState<Mode>("summary");
+
+  useEffect(() => {
+    loadWorkspace(workspaceId);
+  }, [workspaceId, loadWorkspace]);
+
+  if (!workspace) {
+    return <p className="p-8 font-sans text-sm text-ink-faint">Loading workspace...</p>;
+  }
+
+  return (
+    <main id="main-content" className="mx-auto max-w-6xl p-s-5">
+      <header className="mb-s-5 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h1 className="font-serif text-2xl text-ink">Audit</h1>
+          {/* Issue #147: no workspace/paper identity anywhere on this page
+              -- a user with two workspaces open in different tabs had no
+              way to tell them apart. */}
+          <p className="mt-1 font-sans text-xs text-ink-faint">{workspace.name}</p>
+        </div>
+        <ReaderTabsNav workspaceId={workspaceId} active="audit" />
+      </header>
+
+      <div
+        role="tablist"
+        aria-label="Audit view"
+        className="mb-s-5 flex flex-wrap items-center gap-s-2"
+      >
+        {MODES.map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={mode === value}
+            onClick={() => setMode(value)}
+            className={clsx(
+              "rounded-full border px-s-3 py-1 font-sans text-[13px]",
+              "transition-colors duration-fast ease-out",
+              mode === value
+                ? "border-border-strong font-medium text-ink"
+                : "border-border text-ink-faint hover:border-border-strong hover:text-ink",
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {mode === "summary" ? (
+        <div className="overflow-hidden rounded-lg border border-border">
+          <SummaryAudit workspace={workspace} />
+        </div>
+      ) : (
+        <WorkspaceEvidence workspace={workspace} />
+      )}
     </main>
   );
 }

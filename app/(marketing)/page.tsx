@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Hero } from "@/components/site/Hero";
-import { VerificationDemo } from "@/components/site/VerificationDemo";
+import { MechanismDemo } from "@/components/site/MechanismDemo";
 import { PacingStrip } from "@/components/site/PacingStrip";
 import { Reveal } from "@/components/ui/Reveal";
 import { buttonClassName } from "@/components/ui/Button";
@@ -37,8 +37,14 @@ function Section({
   /** "side-by-side" puts text and media in a two-column grid on larger
    *  screens instead of stacking media below -- a deliberate break from the
    *  repeating stack, used once (the mechanism section) rather than as a
-   *  second copy-pasted template. */
-  layout?: "stack" | "side-by-side";
+   *  second copy-pasted template.
+   *
+   *  "media-wide" stacks like the default but lets the media break out past
+   *  the reading column. The reading column is sized for prose, and a piece
+   *  of media that is itself laid out in columns cannot also fit inside a
+   *  measure meant for one. Used by the mechanism demo, which needs to put a
+   *  claim and its source beside each other. */
+  layout?: "stack" | "side-by-side" | "media-wide";
   revealVariant?: "lift" | "slide";
 }) {
   const text = (
@@ -69,10 +75,16 @@ function Section({
           ) : (
             <>
               {text}
-              {media && <div className="mt-s-6">{media}</div>}
+              {media && layout !== "media-wide" && <div className="mt-s-6">{media}</div>}
             </>
           )}
         </ReadingColumn>
+
+        {/* Outside ReadingColumn, so it is measured against the section rather
+            than the prose measure. See the `layout` doc comment above. */}
+        {layout === "media-wide" && media && (
+          <div className="mx-auto mt-s-6 w-full max-w-4xl px-s-5">{media}</div>
+        )}
       </section>
     </Reveal>
   );
@@ -122,8 +134,8 @@ export default function MarketingPage() {
       <Section
         kicker="The mechanism"
         title="Every claim is matched against its source sentence and scored."
-        media={<VerificationDemo />}
-        layout="side-by-side"
+        media={<MechanismDemo />}
+        layout="media-wide"
         revealVariant="slide"
       >
         <p>
