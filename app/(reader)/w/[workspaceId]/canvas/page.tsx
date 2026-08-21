@@ -1,5 +1,5 @@
 import { GraphCanvas } from "@/components/canvas/GraphCanvas";
-import { ReaderTabsNav } from "@/components/reader/ReaderTabsNav";
+import { CanvasHeader } from "@/components/canvas/CanvasHeader";
 import { getSession } from "@/lib/auth/session";
 import { GuestBanner } from "@/components/auth/GuestBanner";
 
@@ -12,6 +12,12 @@ import { GuestBanner } from "@/components/auth/GuestBanner";
  * The bar exists because this route has no layout of its own: previously the
  * canvas filled the viewport with no title and no way back, so the only exit
  * was the browser's back button -- and a reader who arrived by link had none.
+ *
+ * Issue #293: that bar used to be a bare <h1>Graph</h1>, with no breadcrumb,
+ * paper title, or way to reach the papers/nodes list short of the browser
+ * back button -- drift from the reader shell that #90 already fixed for
+ * Audit/Outline/Learn. CanvasHeader restores the reader's exact breadcrumb
+ * plus a sheet-based papers/nodes list.
  */
 export default async function CanvasPage({
   params,
@@ -25,12 +31,7 @@ export default async function CanvasPage({
     <div className="flex h-dvh w-full flex-col bg-surface">
       {!session && <GuestBanner next={`/w/${workspaceId}/canvas`} />}
 
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-s-3 border-b border-border px-s-5 py-s-3">
-        <h1 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
-          Graph
-        </h1>
-        <ReaderTabsNav workspaceId={workspaceId} active="canvas" />
-      </header>
+      <CanvasHeader workspaceId={workspaceId} isGuest={!session} />
 
       <div id="main-content" className="relative min-h-0 flex-1">
         <GraphCanvas workspaceId={workspaceId} />
