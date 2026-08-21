@@ -41,6 +41,7 @@ export default async function OnboardingStepPage({
     fieldFreetext: null,
     weeklyTrigger: null,
     completedAt: null,
+    furthestStep: 0,
   };
 
   return (

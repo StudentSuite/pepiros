@@ -119,6 +119,15 @@ export interface OnboardingResponse {
   fieldFreetext: string | null;
   weeklyTrigger: string | null;
   completedAt: string | null;
+  /**
+   * Issue #252: the highest step number (1-10) this profile has ever
+   * reached, saved on every step-advance/back regardless of whether that
+   * step's own field was actually filled in (every field is independently
+   * skippable, so a non-null field cannot be used as a proxy for "reached
+   * this step" -- a user can skip every question and still walk to step
+   * 10). 0 for a profile that has never opened the wizard.
+   */
+  furthestStep: number;
 }
 
 export const VERIFY_METHODS = [

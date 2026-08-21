@@ -109,6 +109,7 @@ export const GUEST_ONBOARDING: OnboardingResponse = {
   fieldFreetext: "sleep and circadian neuroscience",
   weeklyTrigger: "If it caught a bad citation before I sent a draft to my supervisor.",
   completedAt: "2026-03-02",
+  furthestStep: 10,
 };
 
 // ---------------------------------------------------------------------------

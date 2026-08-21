@@ -601,6 +601,7 @@ export const supabaseAdapter: DataAdapter = {
       fieldFreetext: data.field_freetext ?? null,
       weeklyTrigger: data.weekly_trigger ?? null,
       completedAt: data.completed_at,
+      furthestStep: data.furthest_step ?? 0,
     };
   },
 
@@ -623,6 +624,7 @@ export const supabaseAdapter: DataAdapter = {
       field_freetext: response.fieldFreetext,
       weekly_trigger: response.weeklyTrigger,
       completed_at: response.completedAt,
+      furthest_step: response.furthestStep,
     });
     await sb.from("profiles").update({ onboarded: true }).eq("id", response.profileId);
   },
@@ -666,6 +668,7 @@ export const supabaseAdapter: DataAdapter = {
         fieldFreetext: row.field_freetext ?? null,
         weeklyTrigger: row.weekly_trigger ?? null,
         completedAt: row.completed_at,
+        furthestStep: row.furthest_step ?? 0,
         username: profile.username,
         displayName: profile.display_name,
         email: profile.email,

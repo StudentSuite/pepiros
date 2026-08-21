@@ -19,6 +19,9 @@ import { Button } from "@/components/ui/Button";
  * easier to keep correct than two in different places.
  */
 
+/** Matches OnboardingWizard.tsx's own STEP_COUNT. */
+const ONBOARDING_STEP_COUNT = 10;
+
 function countBy<T extends string | null>(
   rows: OnboardingResponseWithProfile[],
   pick: (row: OnboardingResponseWithProfile) => T | T[],
@@ -96,6 +99,38 @@ export function OnboardingTable({
     [responses],
   );
 
+  // Issue #252: "per-step completion so drop-off is visible". Every field
+  // above is independently skippable, so this reads furthestStep (issue
+  // #252's own migration column) rather than treating a non-null field as a
+  // stand-in for "reached this step". Ordered by step number, not by count
+  // like the Breakdowns above -- a funnel reads by sequence, not frequency.
+  const stepFunnel = useMemo(() => {
+    const counts = new Map<number, number>();
+    for (const r of responses) counts.set(r.furthestStep, (counts.get(r.furthestStep) ?? 0) + 1);
+    // 1-10: a saved row implies at least one next()/back() call, so a real
+    // row's furthestStep is always >= 1 -- step 0 (never opened the wizard
+    // at all) would always read zero here and isn't worth a row.
+    return Array.from({ length: ONBOARDING_STEP_COUNT }, (_, i) => {
+      const step = i + 1;
+      return [`Step ${step}`, counts.get(step) ?? 0] as [string, number];
+    });
+  }, [responses]);
+
+  type SortKey = "newest" | "furthestStep" | "role";
+  const [sort, setSort] = useState<SortKey>("newest");
+  const sortedResponses = useMemo(() => {
+    const copy = [...responses];
+    switch (sort) {
+      case "furthestStep":
+        return copy.sort((a, b) => b.furthestStep - a.furthestStep);
+      case "role":
+        return copy.sort((a, b) => (a.role ?? "").localeCompare(b.role ?? ""));
+      case "newest":
+      default:
+        return copy.sort((a, b) => b.joinedAt.localeCompare(a.joinedAt));
+    }
+  }, [responses, sort]);
+
   const optInCount = responses.filter((r) => r.contactOptIn).length;
   const completedCount = responses.filter((r) => r.completedAt !== null).length;
   const storyCount = responses.filter((r) => (r.wrongSummaryStory ?? "").trim() !== "").length;
@@ -120,11 +155,12 @@ export function OnboardingTable({
       "verify_method_other",
       "weekly_trigger",
       "contact_opt_in",
+      "furthest_step",
       "completed_at",
     ];
     const lines = [
       header.join(","),
-      ...responses.map((r) =>
+      ...sortedResponses.map((r) =>
         [
           r.username,
           r.displayName,
@@ -144,6 +180,7 @@ export function OnboardingTable({
           r.verifyMethodOther,
           r.weeklyTrigger,
           r.contactOptIn,
+          r.furthestStep,
           r.completedAt,
         ]
           .map(csvCell)
@@ -197,18 +234,33 @@ export function OnboardingTable({
         <Breakdown title="Referral" rows={aggregates.referral} total={total} />
         <Breakdown title="Agent tools" rows={aggregates.agentTools} total={total} />
         <Breakdown title="How they verify today" rows={aggregates.verifyMethod} total={total} />
+        <Breakdown title="Step reached (drop-off)" rows={stepFunnel} total={total} />
       </section>
 
       <section>
         <div className="mb-s-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-serif text-xl text-ink">Responses</h2>
-          <Button variant="secondary" size="sm" onClick={() => void copyCsv()}>
-            {copied ? "Copied" : "Copy as CSV"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <label className="font-sans text-xs text-ink-faint">
+              Sort{" "}
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortKey)}
+                className="rounded border border-border bg-surface-sunken px-1.5 py-1 font-sans text-xs text-ink-muted"
+              >
+                <option value="newest">Newest first</option>
+                <option value="furthestStep">Furthest step</option>
+                <option value="role">Role</option>
+              </select>
+            </label>
+            <Button variant="secondary" size="sm" onClick={() => void copyCsv()}>
+              {copied ? "Copied" : "Copy as CSV"}
+            </Button>
+          </div>
         </div>
 
         <div className="flex flex-col gap-3">
-          {responses.map((r) => (
+          {sortedResponses.map((r) => (
             <Panel key={r.profileId} padded>
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <p className="font-sans text-sm text-ink">
@@ -217,7 +269,9 @@ export function OnboardingTable({
                 </p>
                 <p className="font-mono text-[11px] text-ink-faint">
                   joined {r.joinedAt}
-                  {r.completedAt ? ` · completed ${r.completedAt}` : " · incomplete"}
+                  {r.completedAt
+                    ? ` · completed ${r.completedAt}`
+                    : ` · reached step ${r.furthestStep} of ${ONBOARDING_STEP_COUNT}`}
                   {r.contactOptIn ? " · opted in" : ""}
                 </p>
               </div>

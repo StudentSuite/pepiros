@@ -171,7 +171,16 @@ export function OnboardingWizard({
     setSaving(true);
     try {
       const isFinal = step === STEP_COUNT;
-      await onComplete(isFinal ? { ...draft, completedAt: new Date().toISOString().slice(0, 10) } : draft);
+      // Issue #252: saved regardless of whether this step's own field got
+      // filled in (every question is skippable), so drop-off is measured by
+      // how far someone actually walked, not by which fields happen to be
+      // non-null.
+      const furthestStep = Math.max(draft.furthestStep, step);
+      await onComplete(
+        isFinal
+          ? { ...draft, furthestStep, completedAt: new Date().toISOString().slice(0, 10) }
+          : { ...draft, furthestStep },
+      );
       if (isFinal) {
         // Issue #256: this always finished on /home, so somebody who followed
         // a link to a protected page, created an account, and completed
@@ -198,7 +207,7 @@ export function OnboardingWizard({
   async function back() {
     setSaving(true);
     try {
-      await onComplete(draft);
+      await onComplete({ ...draft, furthestStep: Math.max(draft.furthestStep, step) });
       router.push(`/onboarding/${step - 1}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save your answers. Try again.");
