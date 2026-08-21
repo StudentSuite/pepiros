@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -30,6 +31,8 @@ import { Drawer } from "@/components/ui/Drawer";
 import { NodeInspector } from "@/components/inspector/NodeInspector";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { buttonClassName } from "@/components/ui/Button";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { PepirosNode, PepirosEdge, GhostCitationNodeType } from "./types";
 
 type AnyPepirosNode = PepirosNode | GhostCitationNodeType;
@@ -560,8 +563,37 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
  * converts it into React Flow's Node[]/Edge[] shape, and registers the custom
  * node/edge types. Wrapped in ReactFlowProvider so `useReactFlow` works inside
  * `Controls` (plan.md's canvas spec, task 5).
+ *
+ * Issue #292: no `sm:`/`md:`/`lg:` variant exists anywhere under
+ * components/canvas/* -- the canvas was built for one viewport width, and at
+ * narrow widths the legend covers the graph it explains, controls overlap,
+ * and cards render below legible size. Building real touch-friendly
+ * breakpoints (bottom-bar controls, a legend sheet, verified pinch-zoom/pan)
+ * needs interaction testing this sandbox has no way to do -- no browser
+ * automation tool exists here to confirm a touch gesture actually works.
+ * Takes the issue's own explicitly-sanctioned fallback instead: a narrow
+ * viewport gets a short, honest panel pointing back to the reader. A stated
+ * limitation costs less than shipping (and claiming to have verified) a
+ * graph that cannot be used.
  */
 export function GraphCanvas({ workspaceId }: { workspaceId: string }) {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-s-4 p-s-5 text-center">
+        <p className="font-serif text-lg text-ink">The graph needs more room than this screen has.</p>
+        <p className="max-w-xs font-sans text-sm text-ink-muted">
+          The citation graph isn&rsquo;t usable at this width yet. Read the paper instead -- every claim
+          still shows its source.
+        </p>
+        <Link href={`/w/${workspaceId}`} className={buttonClassName("secondary", "md")}>
+          Back to reader
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <ReactFlowProvider>
       <GraphCanvasInner workspaceId={workspaceId} />
