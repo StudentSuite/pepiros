@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { Hero } from "@/components/site/Hero";
+import { StatsCounters } from "@/components/site/StatsCounters";
+import { CatalogMarquee } from "@/components/site/CatalogMarquee";
+import { CapabilityCards } from "@/components/site/CapabilityCards";
+import { StickyDemoPanel } from "@/components/site/StickyDemoPanel";
 import { MechanismDemo } from "@/components/site/MechanismDemo";
 import { PacingStrip } from "@/components/site/PacingStrip";
 import { Reveal } from "@/components/ui/Reveal";
@@ -7,19 +11,22 @@ import { buttonClassName } from "@/components/ui/Button";
 import { ReadingColumn } from "@/components/reading/Article";
 import { ReaderMock, AgentMock } from "@/components/mockups/ReaderMock";
 import { LIVE_TOOLS } from "@/lib/mcp/registry";
+import { CATALOG } from "@/lib/data/papers";
+import { isPdfIngestSupportedHere } from "@/lib/services/ingest";
+import workspaceFixture from "@/fixtures/workspace.json";
+
+const CLAIMS_ANCHORED_IN_DEMO = workspaceFixture.evidence.filter((e) => e.anchor).length;
 
 /**
- * Landing page.
+ * Landing page (issue #296, superseding #246/#247).
  *
  * Editorial rather than marketing-grid: one measure, hairline section breaks,
- * and a single idea per section. The previous version stacked seven bordered
- * bands of roughly equal weight, which flattened the argument, so nothing read
- * as more important than anything else.
- *
- * The argument runs: here is the problem, here is the mechanism, here is what
- * it looks like, here is what it cannot do, here is what it means for agents.
- * The limits section is deliberately on the landing page rather than buried, on
- * the grounds that a product about not overclaiming should not overclaim first.
+ * and a single idea per section. The argument runs: here is the front door,
+ * here is the problem shown live (StickyDemoPanel), here is the mechanism in
+ * detail (MechanismDemo), here is what it looks like, here is what it cannot
+ * do, here is what it means for agents. The limits section is deliberately
+ * on the landing page rather than buried, on the grounds that a product
+ * about not overclaiming should not overclaim first.
  */
 
 function Section({
@@ -93,7 +100,23 @@ function Section({
 export default function MarketingPage() {
   return (
     <main className="flex flex-col">
-      <Hero />
+      <Hero ingestSupported={isPdfIngestSupportedHere()} papers={CATALOG} />
+
+      <Reveal>
+        <section className="border-t border-border py-s-6">
+          <ReadingColumn wide>
+            <StatsCounters
+              papersInCatalog={CATALOG.length}
+              claimsAnchored={CLAIMS_ANCHORED_IN_DEMO}
+              mcpToolsLive={LIVE_TOOLS.length}
+            />
+          </ReadingColumn>
+        </section>
+      </Reveal>
+
+      <div className="border-t border-border py-s-4">
+        <CatalogMarquee papers={CATALOG} />
+      </div>
 
       <Section kicker="What it is" title="Two things, in one place.">
         <p>
@@ -113,23 +136,37 @@ export default function MarketingPage() {
           AI summaries nobody can check is just a faster way to spread a
           misreading.
         </p>
+
+        <div className="mt-s-6">
+          <CapabilityCards />
+        </div>
       </Section>
 
-      <Section
-        kicker="The problem"
-        title="You can't tell if a summary is accurate by reading it."
-      >
-        <p>
-          Ask a model to summarise a paper and you get fluent prose that sounds
-          exactly like the paper. Whether it is faithful is invisible from the
-          output. The only way to check is to read the source, which is the work
-          the summary was supposed to save.
-        </p>
-        <p>
-          Pepiros does not ask you to trust its output. It shows you the sentence
-          each claim came from, and tells you when there is no such sentence.
-        </p>
-      </Section>
+      {/* Issue #296: the sticky demo panel -- the problem shown live rather
+          than only argued in prose. Three stages (locate a quote, show its
+          tier, show a claim that fails) advance as the copy beside it
+          scrolls past, using the same real ws-1 demo evidence the rest of
+          the site draws on. */}
+      <Reveal>
+        <section className="border-t border-border py-s-6">
+          <ReadingColumn wide>
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+              The problem
+            </p>
+            <h2 className="mt-s-3 max-w-2xl font-serif text-[1.75rem] font-semibold leading-snug tracking-[-0.01em] text-ink sm:text-[2.1rem]">
+              You can&apos;t tell if a summary is accurate by reading it.
+            </h2>
+            <p className="mt-s-4 max-w-2xl font-sans text-[1.0625rem] leading-[1.75] text-ink-muted">
+              Ask a model to summarise a paper and you get fluent prose that sounds exactly like
+              the paper. Whether it is faithful is invisible from the output. Scroll to watch what
+              Pepiros shows instead.
+            </p>
+            <div className="mt-s-8">
+              <StickyDemoPanel />
+            </div>
+          </ReadingColumn>
+        </section>
+      </Reveal>
 
       <Section
         kicker="The mechanism"

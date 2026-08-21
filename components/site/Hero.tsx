@@ -1,22 +1,28 @@
-import Link from "next/link";
-import { buttonClassName } from "@/components/ui/Button";
-import { HeroGroundingMoment } from "@/components/site/HeroGroundingMoment";
+import { FrontDoorField } from "@/components/site/FrontDoorField";
+import { CatalogBrowser } from "@/components/site/CatalogBrowser";
+import type { CatalogPaper } from "@/lib/data/papers";
 
 /**
- * Landing hero.
+ * Landing hero -- the front door (issue #296, superseding #246/#247).
  *
- * Issue #246: used to be a full-bleed generated illustration of a library,
- * which carried no information about what the product does and didn't match
- * the locked visual direction. Replaced with HeroGroundingMoment -- the
- * product doing its one trick (a real claim, ref, quote and match score, in
- * one short sequence on load) instead of an image standing in for it.
+ * JSTOR reference point: the page opens on the product's first real action,
+ * not a picture of one. A wide paste-or-drop field (FrontDoorField) is the
+ * literal "start here", with discipline chips and a strip of real catalog
+ * papers (CatalogBrowser) underneath so there's always something to click
+ * regardless of whether ingest is available on this deployment.
  *
- * Also drops the previous min-h-[92vh] full-viewport sizing, which existed
- * to give the generated art room -- with a real content card instead of a
- * background image, the section sizes to its content (issue #247's "cut the
- * height" also benefits from this).
+ * Honesty gate (issue #295): hosted ingest 501s here, so `ingestSupported`
+ * (passed down from the server, the same isPdfIngestSupportedHere() check
+ * /upload's real form gates on) makes "Open a paper someone has read" the
+ * primary action rather than the paste field, until ingest actually works.
  */
-export function Hero() {
+export function Hero({
+  ingestSupported,
+  papers,
+}: {
+  ingestSupported: boolean;
+  papers: CatalogPaper[];
+}) {
   return (
     <section className="flex flex-col items-center px-6 pb-s-9 pt-[10vh] text-center">
       {/* The wordmark IS the headline here. Tracking matches the brand kit
@@ -27,25 +33,14 @@ export function Hero() {
       </h1>
 
       {/* The locked tagline (plan.md section 10 / design/DIRECTIONS.md's
-          brand kit): "Every claim, one click from its source." A prior
-          rewrite led with "publishing platform for researchers", which
-          positioned Pepiros as a general publishing tool rather than
-          naming what it specifically does. */}
+          brand kit): "Every claim, one click from its source." */}
       <p className="mx-auto mt-s-5 max-w-xl font-sans text-base leading-relaxed text-ink-muted sm:text-lg">
         Every claim, one click from its source.
       </p>
 
-      <div className="mt-s-7 flex flex-wrap items-center justify-center gap-s-3">
-        <Link href="/w/ws-1" className={buttonClassName("primary")}>
-          Try the demo workspace
-        </Link>
-        <Link href="/how-it-works" className={buttonClassName("secondary")}>
-          See how verification works
-        </Link>
-      </div>
-
-      <div className="mt-s-9 w-full">
-        <HeroGroundingMoment />
+      <div className="mt-s-7 w-full">
+        <FrontDoorField ingestSupported={ingestSupported} />
+        <CatalogBrowser papers={papers} />
       </div>
     </section>
   );

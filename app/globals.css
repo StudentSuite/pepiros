@@ -554,6 +554,18 @@ button:focus-visible {
   }
 }
 
+/* CatalogMarquee (issue #296): slides exactly the width of one (undoubled)
+   copy of the track, so the doubled second copy lines up seamlessly at the
+   loop point instead of jumping. */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
 .motion-shimmer {
   background-image: linear-gradient(
     90deg,
