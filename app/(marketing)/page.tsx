@@ -59,7 +59,7 @@ function Section({
 
   return (
     <Reveal variant={revealVariant}>
-      <section className="border-t border-border py-s-8">
+      <section className="border-t border-border py-s-6">
         <ReadingColumn wide>
           {layout === "side-by-side" && media ? (
             <div className="grid gap-s-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-center">
@@ -140,6 +140,13 @@ export default function MarketingPage() {
         </p>
       </Section>
 
+      {/* Issue #247: still ReaderMock (grey skeleton bars) rather than a
+          real screenshot -- the issue itself gates the swap on #228
+          landing (real ingested papers replacing the fixture), which is
+          blocked in this environment (needs the production Supabase
+          project, IPv6-only and unreachable from this sandbox). Left as
+          the honest wireframe rather than faked with a mockup that
+          pretends to be a real capture. */}
       <Section
         kicker="What you read"
         title="The claim and its source, side by side."
@@ -214,7 +221,7 @@ export default function MarketingPage() {
       </Section>
 
       <Reveal>
-        <section className="border-t border-border py-s-8">
+        <section className="border-t border-border py-s-6">
           <ReadingColumn>
             <div className="text-center">
               <h2 className="font-serif text-[1.75rem] leading-snug text-ink">

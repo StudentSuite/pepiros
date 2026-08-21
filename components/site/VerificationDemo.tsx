@@ -106,10 +106,17 @@ export function VerificationDemo() {
         Grounding, live
       </p>
 
+      {/* Issue #247: this card sits in a ~380-450px column at the
+          "side-by-side" breakpoint (ReadingColumn wide's max-w-3xl split
+          roughly in half), and text-xl/2xl wrapped the longer claim
+          sentences to two or three words per line there. text-lg/xl wraps
+          to a clean two lines instead, which also keeps the beam below
+          aligned with where the chip actually ends up (its geometry
+          assumes a claim row of roughly this height). */}
       <div className="relative mt-4 flex flex-wrap items-start justify-between gap-4">
         <p
           className={clsx(
-            "font-serif text-xl leading-snug text-ink transition-all duration-slow ease-out sm:text-2xl",
+            "font-serif text-lg leading-snug text-ink transition-all duration-slow ease-out sm:text-xl",
             claimIn ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0",
           )}
         >
