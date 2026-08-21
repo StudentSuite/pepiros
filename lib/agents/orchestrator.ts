@@ -20,6 +20,44 @@ import { verifyAndBindClaims } from "@/lib/services/verify";
 
 const CONCURRENCY = 4;
 
+/**
+ * Issue #263: PillarPlanSchema only requires `key: z.string()`, no
+ * uniqueness constraint -- but every node id and the pillarIndexByKey Map
+ * below are derived straight from these LLM-chosen strings. Two pillars
+ * sharing a key would collide on one node id (the later one winning) and
+ * silently misattribute every leaf under the earlier duplicate to the
+ * wrong pillar index (Map last-write-wins); two leaves sharing a key under
+ * colliding pillars would collide the same way. The planner's own prompt
+ * only warns against restating the same *concept* under different titles,
+ * never about key identity, so this is enforced here instead of trusted.
+ */
+function dedupeKey(key: string, seen: Set<string>): string {
+  if (!seen.has(key)) {
+    seen.add(key);
+    return key;
+  }
+  let suffix = 2;
+  while (seen.has(`${key}-${suffix}`)) suffix++;
+  const deduped = `${key}-${suffix}`;
+  seen.add(deduped);
+  return deduped;
+}
+
+function dedupePillarPlanKeys(plan: PillarPlan): PillarPlan {
+  const seenPillarKeys = new Set<string>();
+  return {
+    ...plan,
+    pillars: plan.pillars.map((pillar) => {
+      const seenLeafKeys = new Set<string>();
+      return {
+        ...pillar,
+        key: dedupeKey(pillar.key, seenPillarKeys),
+        leaves: pillar.leaves.map((leaf) => ({ ...leaf, key: dedupeKey(leaf.key, seenLeafKeys) })),
+      };
+    }),
+  };
+}
+
 export interface OrchestratorInput {
   workspaceId: string;
   paperId: string;
@@ -140,13 +178,15 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Orchest
 
   const hasFigures = paperChunks.some((c) => c.kind === "figure_caption");
   const hasEquations = paperChunks.some((c) => c.kind === "equation");
-  const pillarPlan = await planPillars({
-    paperTitle: input.paperTitle,
-    archetype,
-    hasFigures,
-    hasEquations,
-    contextBlock,
-  });
+  const pillarPlan = dedupePillarPlanKeys(
+    await planPillars({
+      paperTitle: input.paperTitle,
+      archetype,
+      hasFigures,
+      hasEquations,
+      contextBlock,
+    }),
+  );
   input.onProgress?.({ type: "pillars", detail: `${pillarPlan.pillars.length} pillars planned` });
 
   const pillarNodes: GraphNode[] = pillarPlan.pillars.map((pillar, i) => ({
@@ -163,16 +203,32 @@ export async function runOrchestrator(input: OrchestratorInput): Promise<Orchest
   }));
   const pillarIndexByKey = new Map(pillarPlan.pillars.map((pillar, i) => [pillar.key, i + 1] as const));
 
+  // Issue #265: the figures generator's own prompt is written for "one or
+  // more" images discussed together in one node -- pillarPlanner's
+  // hasFigures gate is a single boolean ("skip figures if none are
+  // extractable"), so the intended shape is at most one figures leaf per
+  // paper. Nothing in the schema actually enforces that, though: if a plan
+  // ever did include two figures leaves, broadcasting the *entire*
+  // figureImages set to both (as this used to do unconditionally) would give
+  // them identical input with no way to tell which figure either is meant to
+  // discuss, likely duplicating the same content twice. Only the first
+  // figures-type leaf encountered gets the real images; any further one
+  // falls through to its generator's own existing "you were given no
+  // images, say so plainly" instruction instead of silently duplicating.
+  let figuresImagesClaimed = false;
+
   const queue = new PQueue({ concurrency: CONCURRENCY });
   const tasks = pillarPlan.pillars.flatMap((pillar) =>
     pillar.leaves.map((leaf) => {
       const nodeId = `${input.paperId}-leaf-${pillar.key}-${leaf.key}`;
+      const givesImages = leaf.generator === "figures" && !figuresImagesClaimed;
+      if (givesImages) figuresImagesClaimed = true;
       const ctx: GeneratorContext = {
         paperTitle: input.paperTitle,
         archetype,
         contextBlock,
         customPrompt: leaf.custom_prompt,
-        images: leaf.generator === "figures" ? input.figureImages : undefined,
+        images: givesImages ? input.figureImages : undefined,
       };
       return queue.add(() =>
         runLeaf(

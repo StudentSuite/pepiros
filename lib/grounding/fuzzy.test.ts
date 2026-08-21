@@ -15,6 +15,10 @@ describe("tokenSetRatio", () => {
     expect(tokenSetRatio(text, text)).toBe(1);
   });
 
+  // Also the regression guard for issue #260's fix below: this quote's 4
+  // distinct tokens (including the distinctive "1:1") sit right at
+  // MIN_SUBSTANTIVE_TOKENS, so this must keep passing alongside the new
+  // "short, generic quote" test that must NOT score highly.
   it("scores a verbatim subset of a longer chunk near 1", () => {
     const chunk =
       "Participants were randomized 1:1 to receive 30 minutes of bright light exposure " +
@@ -35,6 +39,20 @@ describe("tokenSetRatio", () => {
     const a = "sleep improved because light exposure increased";
     const b = "light exposure increased because sleep improved";
     expect(tokenSetRatio(a, b)).toBe(1);
+  });
+
+  it("does not score a short, generic quote near 1 against an unrelated chunk that merely contains the same common words (issue #260)", () => {
+    // Previously: token_set_ratio's subset shortcut (core === combinedA when
+    // a's whole token set is a subset of b's) scores 1.0 regardless of how
+    // few or generic those shared tokens are. A 3-distinct-token quote made
+    // of ordinary words can land inside almost any real chunk purely by
+    // chance, with no requirement it covers a meaningful fraction of what the
+    // chunk actually says -- checkEntailmentFloor gives no backstop for a
+    // non-numeric claim, so this used to be scored quote_located outright.
+    const unrelatedChunk =
+      "The intervention group received 30 minutes of bright light exposure each morning " +
+      "for four consecutive weeks, and patients improved significantly on the primary sleep outcome.";
+    expect(tokenSetRatio("patients improved significantly", unrelatedChunk)).toBeLessThan(0.92);
   });
 
   it("scores an empty or purely-punctuation quote at 0 against any chunk, never 1 (issue #152)", () => {

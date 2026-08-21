@@ -40,6 +40,18 @@ describe("extractNumericTokens", () => {
   it("returns nothing for prose with no statistics", () => {
     expect(extractNumericTokens("participants were randomized to two arms")).toEqual([]);
   });
+
+  // Issue #262: the Unicode <=/>= glyphs are common in real papers; without
+  // this, these extracted zero tokens, so the entailment floor silently
+  // skipped verification entirely instead of actually checking the claim.
+  it("pulls a p-value using the Unicode <=/>= glyphs, normalized to the ASCII comparator", () => {
+    expect(extractNumericTokens("significant (p ≤ 0.05)")).toEqual([
+      { raw: "p ≤ 0.05", value: 0.05, unit: null, comparator: "<=" },
+    ]);
+    expect(extractNumericTokens("not significant (p ≥ 0.1)")).toEqual([
+      { raw: "p ≥ 0.1", value: 0.1, unit: null, comparator: ">=" },
+    ]);
+  });
 });
 
 describe("numericTokenMatchesRow", () => {
@@ -70,6 +82,22 @@ describe("numericTokenMatchesRow", () => {
   it("rejects a value match across incompatible units", () => {
     const [token] = extractNumericTokens("34%");
     expect(numericTokenMatchesRow(token!, row({ value: 34, unit: "d" }))).toBe(false);
+  });
+
+  // Issue #261: a p-value token always has unit: null. This used to treat a
+  // null unit on *either* side as compatible with anything, so a p-value
+  // claim could match by bare value against any other unit-less numerics
+  // row -- an unrelated quantity, not a p-value.
+  it("rejects a p-value claim matching by bare value against a differently-typed unit-less row", () => {
+    const [token] = extractNumericTokens("p = 0.05");
+    // A row with no unit that is NOT itself a p-value (e.g. a raw sample
+    // size or count the ingest pipeline tagged with no unit).
+    expect(numericTokenMatchesRow(token!, row({ value: 0.05, unit: null, role: "n" }))).toBe(false);
+  });
+
+  it("still matches a p-value claim against a p-value row (both genuinely unit-less)", () => {
+    const [token] = extractNumericTokens("p = 0.05");
+    expect(numericTokenMatchesRow(token!, row({ value: 0.05, unit: null, role: "p" }))).toBe(true);
   });
 
   // Issue #153: the row can itself be reported as a bound, not just an exact

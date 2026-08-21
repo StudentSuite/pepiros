@@ -22,12 +22,27 @@ export interface NumericToken {
  * chunk was never given a matching `numerics` row for that incidental
  * number.
  */
-const P_VALUE_RE = /\bp\s*([<>]=?|~|=)\s*(\d+(?:\.\d+)?)/gi;
+// Issue #262: real papers routinely use the Unicode <=/>= glyphs (U+2264/
+// U+2265), not just ASCII "<="/">=" -- without them, a claim quoting
+// "p ≤ 0.05" extracted zero tokens, so checkEntailmentFloor returned
+// null ("nothing to check") and skipped verification entirely instead of
+// actually comparing it, rather than the claim just failing to parse loudly.
+const P_VALUE_RE = /\bp\s*([<>]=?|≤|≥|~|=)\s*(\d+(?:\.\d+)?)/gi;
 // Negative lookahead excludes the "95% CI ..." confidence-level annotation
 // itself -- it's boilerplate around a range, not a claimed statistic with
 // its own numerics-table row.
 const PERCENT_RE = /(\d+(?:\.\d+)?)\s*%(?!\s*ci\b)/gi;
 const EFFECT_SIZE_RE = /\b(d|r|or|hr|rr)\s*=\s*(-?\d+(?:\.\d+)?)/gi;
+
+// The Unicode <=/>= glyphs aren't valid NumericComparator values themselves
+// (types/anchor.ts's frozen enum only has the ASCII forms) -- normalized to
+// their ASCII equivalent here rather than widening that type for a purely
+// notational variant of the same comparator.
+const UNICODE_COMPARATOR_ALIASES: Record<string, NumericComparator> = { "≤": "<=", "≥": ">=" };
+
+function normalizeComparator(raw: string): NumericComparator {
+  return UNICODE_COMPARATOR_ALIASES[raw] ?? (raw as NumericComparator);
+}
 
 export function extractNumericTokens(text: string): NumericToken[] {
   const tokens: NumericToken[] = [];
@@ -37,7 +52,7 @@ export function extractNumericTokens(text: string): NumericToken[] {
       raw: match[0].trim(),
       value: Number.parseFloat(match[2]!),
       unit: null,
-      comparator: match[1] as NumericComparator ?? "=",
+      comparator: match[1] ? normalizeComparator(match[1]) : "=",
     });
   }
 
@@ -66,8 +81,26 @@ const VALUE_EPSILON = 1e-6;
 /** "p ~ 0.05" and friends: relative band around the claimed value. */
 const APPROX_TOLERANCE = 0.1;
 
+/**
+ * Issue #261: this used to return true whenever *either* side had no unit,
+ * not just when both did -- a p-value token always has unit: null
+ * (extractNumericTokens' only null-unit producer), so any other unit-less
+ * numerics row with the same bare value would match by pure coincidence,
+ * even though the two numbers represent unrelated quantities. That is
+ * exactly the "genuine quote attached to a reversed/overstated conclusion"
+ * class the entailment floor exists to catch.
+ *
+ * A bare null-vs-null check isn't enough to fix this: `unit: null` doesn't
+ * uniquely mean "this is a p-value" on the *row* side -- ingest can tag
+ * other unit-less numerics (a sample size, a raw count) the same way, and
+ * NumericToken carries no role of its own to disambiguate. `role: "p"` is
+ * this codebase's actual convention for a p-value row (confirmed against
+ * fixtures/workspace.json), so that's the real signal: a null-unit token
+ * only matches a row that is itself genuinely a p-value.
+ */
 function unitsCompatible(token: NumericToken, row: Numeric): boolean {
-  if (!token.unit || !row.unit) return true;
+  if (!token.unit) return row.unit === null && row.role === "p";
+  if (!row.unit) return false;
   return token.unit.toLowerCase() === row.unit.toLowerCase();
 }
 

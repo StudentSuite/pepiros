@@ -158,8 +158,25 @@ export function tokenSetRatioAtLeast(a: PreparedText, b: PreparedText, floor: nu
 
   const p = partition(a, b);
 
+  // Issue #260: the core-vs-combinedA candidate scores a perfect 1.0
+  // whenever `a`'s entire token set is a subset of `b`'s (diffA empty makes
+  // combinedA === core exactly) -- real fuzzywuzzy behavior, and correct for
+  // token_set_ratio's usual search/dedup use case, but exploitable here: a
+  // short, generic quote (a handful of common words) reaches quote_located
+  // against ANY chunk that happens to contain those same words scattered
+  // anywhere, with no requirement it actually covers a meaningful fraction of
+  // what the chunk says. checkEntailmentFloor provides no backstop for a
+  // non-numeric claim. Below MIN_SUBSTANTIVE_TOKENS, that candidate is
+  // dropped -- the remaining two still score highly for a real excerpt (whose
+  // extra content is genuinely small relative to the chunk) but no longer let
+  // a trivial subset shortcut to 1.0 regardless of size.
+  const MIN_SUBSTANTIVE_TOKENS = 4;
+  const trustSubsetShortcut = Math.min(a.tokens.size, b.tokens.size) >= MIN_SUBSTANTIVE_TOKENS;
+
   const candidates = [
-    { bound: lengthCeiling(p.coreLen, p.combinedALen), x: p.core, y: p.combinedA },
+    ...(trustSubsetShortcut
+      ? [{ bound: lengthCeiling(p.coreLen, p.combinedALen), x: p.core, y: p.combinedA }]
+      : []),
     { bound: lengthCeiling(p.coreLen, p.combinedBLen), x: p.core, y: p.combinedB },
     { bound: lengthCeiling(p.combinedALen, p.combinedBLen), x: p.combinedA, y: p.combinedB },
   ].sort((m, n) => n.bound - m.bound);
