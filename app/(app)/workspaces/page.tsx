@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { listWorkspaces } from "@/lib/services/workspaces";
+import { getSession } from "@/lib/auth/session";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Panel } from "@/components/ui/Panel";
 import { Icon } from "@/components/ui/Icon";
@@ -17,17 +18,26 @@ import { EmptyState } from "@/components/ui/EmptyState";
  * route group that never reflected real state. lib/services/workspaces.ts's
  * listWorkspaces() (already built for the MCP list_workspaces tool) is the
  * real thing to read instead -- every workspace real ingest has actually
- * built, plus the fixture. It's not yet scoped to the signed-in account
- * specifically: types/anchor.ts's Workspace has no ownerId field, and
- * there's no web-facing "create a workspace" route to attach one to in the
- * first place (the only creator today is MCP's create_workspace tool) --
- * the same gap #75's DangerZone fix and #78's own doc comment both already
- * flag as follow-up work once workspaces have a real owner to scope by.
- * Showing every real workspace instead of a hardcoded fake one is still
- * strictly more honest than what was here before.
+ * built, plus the fixture.
+ *
+ * Issue #231: scoped to the signed-in account. This page used to list every
+ * workspace on the deployment, because workspaces had no owner to filter on.
+ * They do now (supabase/migrations/0006_workspace_owner.sql), so the listing
+ * is the session's own. The demo fixture is still included: it is
+ * deliberately public and is the workspace a guest is invited into, so it is
+ * not somebody's private property to scope.
+ *
+ * middleware.ts guarantees a session before this renders, so getSession()
+ * cannot be null here; the fallback exists so a future routing change
+ * degrades to "your own workspaces, and none if we can't tell who you are"
+ * rather than to "everybody's".
  */
 export default async function WorkspacesPage() {
-  const workspaces = await listWorkspaces();
+  const session = await getSession();
+  // Explicitly branched rather than passing a falsy id: listWorkspaces()
+  // treats a missing ownerId as "unscoped, return everything", so `?? ""`
+  // here would quietly restore the exact bug this is fixing.
+  const workspaces = session ? await listWorkspaces(session.id) : [];
 
   return (
     <div className="mx-auto w-full max-w-6xl p-s-5">

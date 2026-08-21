@@ -15,9 +15,9 @@ async function callTool(server: McpServer, name: string, args: Record<string, un
   return tools[name]!.handler(args) as Promise<{ content: Array<{ text: string }>; isError?: boolean }>;
 }
 
-const readToken: McpTokenRecord = { id: "t-read", scope: "read", workspaceId: null, revokedAt: null };
-const writeToken: McpTokenRecord = { id: "t-write", scope: "write", workspaceId: null, revokedAt: null };
-const pinnedToken: McpTokenRecord = { id: "t-pinned", scope: "write", workspaceId: "ws-1", revokedAt: null };
+const readToken: McpTokenRecord = { id: "t-read", scope: "read", workspaceId: null, revokedAt: null, profileId: null };
+const writeToken: McpTokenRecord = { id: "t-write", scope: "write", workspaceId: null, revokedAt: null, profileId: null };
+const pinnedToken: McpTokenRecord = { id: "t-pinned", scope: "write", workspaceId: "ws-1", revokedAt: null, profileId: null };
 
 describe("mcp tool authorization", () => {
   it("no session (no token configured) leaves every tool unrestricted", async () => {

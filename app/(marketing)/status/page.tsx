@@ -68,7 +68,7 @@ const ROWS: { area: string; state: State; note: string }[] = [
   {
     area: "Accounts and publishing",
     state: "partial",
-    note: "Real sign-up persists to Supabase, with a required real email so password recovery and email confirmation both actually deliver. Sessions are server-side revocable (logout, or sign out everywhere), but a workspace still has no owner column, so \"my workspaces\" isn't scoped to who's signed in yet.",
+    note: "Real sign-up persists to Supabase, with a required real email so password recovery and email confirmation both actually deliver. Sessions are server-side revocable (logout, or sign out everywhere). Workspaces carry an owner, so \"my workspaces\" is scoped to the signed-in account and one account cannot write to another's. Workspaces created before that column exists are unowned and stay writable by any signed-in account, rather than being locked away from whoever built them.",
   },
 ];
 

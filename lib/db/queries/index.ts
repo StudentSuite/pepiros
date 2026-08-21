@@ -193,7 +193,16 @@ function placeholderSectionTitle(sectionId: string): string {
  * was no prior versioned read to guard against -- a workspace's first-ever
  * write, or a caller that degraded to the static fixture.
  */
-export async function saveWorkspace(workspace: Workspace, expectedVersion?: number): Promise<number> {
+export async function saveWorkspace(
+  workspace: Workspace,
+  expectedVersion?: number,
+  /**
+   * Issue #231: set only on the first insert of a workspace. A later write
+   * must never reassign ownership as a side effect of saving a node, so the
+   * update branch below deliberately does not touch owner_id.
+   */
+  ownerId?: string | null,
+): Promise<number> {
   // A real transaction, not just sequential awaits: without one, a concurrent
   // reader (another request mid-ingest, or -- how this was actually caught --
   // two test files hitting the same shared "ws-1" row in parallel) could
@@ -205,9 +214,11 @@ export async function saveWorkspace(workspace: Workspace, expectedVersion?: numb
     if (expectedVersion === undefined) {
       const [row] = await tx
         .insert(schema.workspaces)
-        .values({ id: workspace.id, name: workspace.name })
+        .values({ id: workspace.id, name: workspace.name, ownerId: ownerId ?? null })
         .onConflictDoUpdate({
           target: schema.workspaces.id,
+          // owner_id is absent here on purpose: this branch also runs for an
+          // existing row, and re-saving a workspace must not transfer it.
           set: { name: workspace.name, version: sql`${schema.workspaces.version} + 1` },
         })
         .returning({ version: schema.workspaces.version });
@@ -456,18 +467,46 @@ export interface WorkspaceSummaryRow {
   paperCount: number;
 }
 
-/** Every real workspace, cheaply (a grouped count, not a full assemble-per-workspace pass). */
-export async function listWorkspaceSummaries(): Promise<WorkspaceSummaryRow[]> {
-  const rows = await db
+/**
+ * Workspaces, cheaply (a grouped count, not a full assemble-per-workspace
+ * pass).
+ *
+ * Issue #231: `ownerId` scopes the result to one account. Passing undefined
+ * returns every row and is for the unscoped internal callers only (the MCP
+ * tool path, which authenticates by token rather than by web session). A
+ * NULL-owner row belongs to nobody and is never returned to an owner-scoped
+ * query, since attributing a legacy workspace to whoever happens to ask is
+ * the bug this column exists to prevent.
+ */
+export async function listWorkspaceSummaries(ownerId?: string): Promise<WorkspaceSummaryRow[]> {
+  const base = db
     .select({
       id: schema.workspaces.id,
       name: schema.workspaces.name,
       paperCount: sql<number>`count(${schema.papers.id})::int`,
     })
     .from(schema.workspaces)
-    .leftJoin(schema.papers, eq(schema.papers.workspaceId, schema.workspaces.id))
-    .groupBy(schema.workspaces.id, schema.workspaces.name);
+    .leftJoin(schema.papers, eq(schema.papers.workspaceId, schema.workspaces.id));
+
+  const rows = ownerId
+    ? await base
+        .where(eq(schema.workspaces.ownerId, ownerId))
+        .groupBy(schema.workspaces.id, schema.workspaces.name)
+    : await base.groupBy(schema.workspaces.id, schema.workspaces.name);
   return rows;
+}
+
+/**
+ * The owner of a workspace, or null when it has none (legacy row) or the
+ * workspace does not exist. Distinguishing those two is the caller's job:
+ * requireWorkspaceExists() already handles not-found separately.
+ */
+export async function getWorkspaceOwnerId(workspaceId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ ownerId: schema.workspaces.ownerId })
+    .from(schema.workspaces)
+    .where(eq(schema.workspaces.id, workspaceId));
+  return row?.ownerId ?? null;
 }
 
 export async function workspaceRowExists(workspaceId: string): Promise<boolean> {

@@ -78,8 +78,15 @@ async function guardedWrite<T>(label: string, fn: () => Promise<T>): Promise<T> 
  * of silently overwriting them. Omit only when there was no such prior read
  * (a workspace's first-ever write, or a caller that degraded to the fixture).
  */
-export async function setIngestedWorkspace(workspace: Workspace, expectedVersion?: number): Promise<number> {
-  return await guardedWrite(`saveWorkspace(${workspace.id})`, () => saveWorkspace(workspace, expectedVersion));
+export async function setIngestedWorkspace(
+  workspace: Workspace,
+  expectedVersion?: number,
+  /** Issue #231: applied on first insert only, see saveWorkspace(). */
+  ownerId?: string | null,
+): Promise<number> {
+  return await guardedWrite(`saveWorkspace(${workspace.id})`, () =>
+    saveWorkspace(workspace, expectedVersion, ownerId),
+  );
 }
 
 /**
@@ -111,9 +118,9 @@ export async function recordNodeVersion(nodeId: string, bodyMd: string): Promise
  * single grouped-count query (listWorkspaceSummaries) already produces.
  * Only caller (listWorkspaces()) ever needed the summary shape.
  */
-export async function listIngestedWorkspaces(): Promise<WorkspaceSummaryRow[]> {
+export async function listIngestedWorkspaces(ownerId?: string): Promise<WorkspaceSummaryRow[]> {
   try {
-    return await listWorkspaceSummaries();
+    return await listWorkspaceSummaries(ownerId);
   } catch (err) {
     console.error("[ingestStore] listWorkspaceSummaries() unavailable:", err);
     return [];

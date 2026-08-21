@@ -10,7 +10,7 @@ import {
 } from "./mcpAuth";
 
 function record(overrides: Partial<McpTokenRecord> = {}): McpTokenRecord {
-  return { id: "t1", scope: "read", workspaceId: null, revokedAt: null, ...overrides };
+  return { id: "t1", scope: "read", workspaceId: null, revokedAt: null, profileId: null, ...overrides };
 }
 
 describe("generateToken / hashToken", () => {

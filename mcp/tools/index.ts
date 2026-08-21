@@ -351,7 +351,11 @@ export function registerTools(server: McpServer, session?: McpTokenRecord | null
       const denial = await authorize(null, true, "create_workspace");
       if (denial) return errorText(denial);
 
-      const workspace = await createWorkspace(name);
+      // Issue #231: owned by the account that minted this token, so it is
+      // scoped like any other workspace instead of belonging to nobody. A
+      // local dev run with no token configured has no account to attribute
+      // to and creates an unowned workspace, same as before.
+      const workspace = await createWorkspace(name, session?.profileId ?? null);
       return json({
         workspace_id: workspace.id,
         name: workspace.name,

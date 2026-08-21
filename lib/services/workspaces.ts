@@ -33,8 +33,18 @@ function summarize(workspace: Workspace): WorkspaceSummary {
  * directly (one grouped-count query), rather than a full per-workspace
  * assemble this used to reduce down to just `.papers.length` anyway.
  */
-export async function listWorkspaces(): Promise<WorkspaceSummary[]> {
-  const ingested = await listIngestedWorkspaces();
+/**
+ * Issue #231: `ownerId` scopes the listing to one account. Omitted, this
+ * returns every workspace and is for the token-authenticated MCP path only;
+ * the web `/workspaces` page must always pass the session's profile id, or it
+ * shows one account every other account's workspaces.
+ *
+ * The demo fixture is listed either way. It is deliberately public (see
+ * middleware.ts: "sign-in buys persistence, not access") and is the workspace
+ * a guest is invited into, so it is not somebody's private property to scope.
+ */
+export async function listWorkspaces(ownerId?: string): Promise<WorkspaceSummary[]> {
+  const ingested = await listIngestedWorkspaces(ownerId);
   const summaries: WorkspaceSummary[] = [...ingested];
   if (!ingested.some((w) => w.id === FIXTURE_ID)) {
     summaries.unshift(summarize(workspaceFixture as unknown as Workspace));
@@ -42,7 +52,7 @@ export async function listWorkspaces(): Promise<WorkspaceSummary[]> {
   return summaries;
 }
 
-export async function createWorkspace(name: string): Promise<WorkspaceSummary> {
+export async function createWorkspace(name: string, ownerId?: string | null): Promise<WorkspaceSummary> {
   const workspace: Workspace = {
     id: `ws-${randomUUID().slice(0, 8)}`,
     name,
@@ -53,7 +63,7 @@ export async function createWorkspace(name: string): Promise<WorkspaceSummary> {
     edges: [],
     evidence: [],
   };
-  await setIngestedWorkspace(workspace);
+  await setIngestedWorkspace(workspace, undefined, ownerId);
   return summarize(workspace);
 }
 

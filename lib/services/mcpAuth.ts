@@ -42,6 +42,14 @@ export interface McpTokenRecord {
   scope: McpScope;
   workspaceId: string | null;
   revokedAt: Date | null;
+  /**
+   * Issue #231: the account a token was minted by, so a workspace created
+   * over MCP is owned by that account rather than by nobody. Nullable for the
+   * same reason mcp_tokens.profile_id is: a token row predating that column
+   * has no owner, and inventing one would attribute a workspace to the wrong
+   * account.
+   */
+  profileId: string | null;
 }
 
 export type TokenCheck =

@@ -2,6 +2,7 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { workspaceExists } from "@/lib/services/workspaces";
+import { getWorkspaceOwnerId } from "@/lib/db/queries";
 import workspaceFixture from "@/fixtures/workspace.json";
 import type { Workspace } from "@/types/anchor";
 
@@ -25,14 +26,13 @@ import type { Workspace } from "@/types/anchor";
  * by design -- that's an accepted cost of the guest model, not this issue's
  * "mutate/persist for free" hole.
  *
- * This is also NOT yet full per-owner scoping (one signed-in user blocked
- * from another's workspace): `Workspace` has no `ownerId` field, and there's
- * no web-facing "create a workspace" route to attach one to in the first
- * place -- the only creator today is MCP's `create_workspace` tool, which
- * has its own separate token-based auth and isn't tied to a web session's
- * profile at all. Closing the "fully anonymous mutation, no auth needed at
- * all" hole is the real, scoped fix here; real per-owner isolation is
- * follow-up work once workspaces have an owner to check against.
+ * Issue #231 completed the other half. Workspaces now carry an `owner_id`
+ * (supabase/migrations/0006_workspace_owner.sql), so requireWorkspaceSession()
+ * checks that the session owns the workspace rather than only that a session
+ * exists. A workspace with no owner -- one created before that column, or
+ * through a path that never set one -- keeps the old any-session behaviour
+ * rather than locking somebody out of work they already had; everything
+ * created since has an owner and gets the strict check.
  */
 const FIXTURE_ID = (workspaceFixture as unknown as Workspace).id;
 
@@ -49,6 +49,27 @@ export async function requireWorkspaceSession(workspaceId: string): Promise<Next
     return NextResponse.json(
       { error: "unauthorized", detail: "Sign in to access this workspace." },
       { status: 401 },
+    );
+  }
+
+  // Issue #231: this used to stop at "a session exists", which left one
+  // signed-in account able to mutate another's workspace. Workspaces now
+  // carry an owner, so the check can be the real one.
+  const ownerId = await getWorkspaceOwnerId(workspaceId);
+
+  // A null owner is a workspace created before owner_id existed, or through a
+  // path that never set one. It is not claimed by the asker: the pre-#231
+  // behaviour (any session may write) is preserved for those rows only, so
+  // this migration does not lock people out of work they already had. Every
+  // workspace created from here on has an owner and gets the strict check.
+  if (ownerId === null) return null;
+
+  if (ownerId !== session.id) {
+    // 404, not 403: a 403 confirms the workspace exists to somebody probing
+    // ids, which is a disclosure the id space is not random enough to afford.
+    return NextResponse.json(
+      { error: "not_found", detail: `No workspace ${workspaceId}.` },
+      { status: 404 },
     );
   }
   return null;

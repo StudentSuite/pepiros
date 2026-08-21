@@ -98,5 +98,6 @@ export async function resolveMcpToken(rawToken: string): Promise<McpTokenRecord 
     scope: row.scope,
     workspaceId: row.workspaceId,
     revokedAt: row.revokedAt,
+    profileId: row.profileId,
   };
 }
