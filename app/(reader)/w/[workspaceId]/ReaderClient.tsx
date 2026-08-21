@@ -2,13 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import clsx from "clsx";
 import { ChevronRight } from "lucide-react";
 import { useWorkspaceStore } from "@/lib/store/workspace";
 import { Sidebar } from "@/components/app/Sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/shadcn/sidebar";
 import { ReaderTabsNav } from "@/components/reader/ReaderTabsNav";
 import { PdfPane } from "@/components/reader/PdfPane";
+import { AnchorStepper } from "@/components/reader/AnchorStepper";
 import { CoverageOverlay } from "@/components/reader/CoverageOverlay";
+import { ClaimsList } from "@/components/reader/ClaimsList";
 import { GraphPreviewCard } from "@/components/reader/GraphPreviewCard";
 import { RelatedPapersRail } from "@/components/related/RelatedPapersRail";
 import { ChatDock } from "@/components/chat/ChatDock";
@@ -43,6 +46,10 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
   const [activePaperId, setActivePaperId] = useState<string | null>(null);
   const [activeChunkId, setActiveChunkId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  // Issue #242: GraphPreviewCard/RelatedPapersRail/NumericChart used to sit
+  // in a permanent 18rem column beside the source pane; that width is now
+  // the claims stack's, so those move behind this small in-pane toggle.
+  const [railTab, setRailTab] = useState<"claims" | "more">("claims");
 
   const paperChunks = useMemo(
     () =>
@@ -134,7 +141,7 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
   const highlights: Highlight[] = activeChunk
     ? workspace.evidence
         .filter((e) => e.anchor && e.anchor.chunkId === activeChunk.id)
-        .map((e) => ({ id: e.id, spans: e.anchor!.spans, tier: e.tier }))
+        .map((e) => ({ id: e.id, spans: e.anchor!.spans, tier: e.tier, nodeId: e.nodeId }))
     : [];
 
   const pillars = workspace.nodes.filter((n) => n.type === "pillar" && n.paperId === activePaper?.id);
@@ -207,13 +214,26 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
           <ReaderTabsNav workspaceId={workspaceId} active="reader" />
         </header>
 
-        {/* Reading first: the paper column gets the room, and the rail is
-            secondary. The previous 1fr/280px split at a full-bleed width put
-            the page image and the node body on an uncomfortably wide measure. */}
-        <div className="mx-auto grid w-full max-w-6xl gap-s-6 p-s-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
-          <main id="main-content" className="flex min-w-0 flex-col gap-s-5">
+        {/* Issue #242: split-column reader. Source pane left (continuous
+            reading measure), claims pane right (a scannable stack, not a
+            280px rail of secondary widgets) -- the homepage's own mechanism
+            copy already states this as the product's position: "the claim
+            and its source, side by side". */}
+        <div className="mx-auto grid w-full max-w-[92rem] gap-s-6 p-s-5 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+          <main id="main-content" className="flex min-w-0 flex-col gap-s-3">
+            <AnchorStepper
+              highlights={highlights}
+              activeNodeId={selectedNodeId}
+              onSelect={selectNode}
+            />
             {activeChunk ? (
-              <PdfPane chunk={activeChunk} pdfUrl={activePdfUrl} highlights={highlights} />
+              <PdfPane
+                chunk={activeChunk}
+                pdfUrl={activePdfUrl}
+                highlights={highlights}
+                activeNodeId={selectedNodeId}
+                onSelectHighlight={selectNode}
+              />
             ) : (
               // Page-shaped skeleton, not a blank gap, for the moment before a
               // paper/chunk is selected (docs/PLAN-V1.md §14.5).
@@ -222,15 +242,52 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
               </div>
             )}
             <CoverageOverlay chunks={paperChunks} evidence={workspace.evidence} />
-            <Panel padded>
-              <NodeInspector />
-            </Panel>
           </main>
 
           <aside className="flex min-w-0 flex-col gap-s-4">
-            <GraphPreviewCard workspaceId={workspaceId} nodeCount={workspace.nodes.length} />
-            <RelatedPapersRail workspaceId={workspaceId} paperId={activePaper?.id} />
-            <NumericChart />
+            <div
+              role="tablist"
+              aria-label="Reader side panel"
+              className="flex gap-1 rounded-full border border-border bg-surface-sunken p-0.5"
+            >
+              {(["claims", "more"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  role="tab"
+                  aria-selected={railTab === tab}
+                  onClick={() => setRailTab(tab)}
+                  className={clsx(
+                    "flex-1 rounded-full px-2 py-1 font-sans text-xs transition-colors duration-fast ease-out",
+                    railTab === tab
+                      ? "bg-surface-raised text-ink shadow-e-1"
+                      : "text-ink-faint hover:text-ink",
+                  )}
+                >
+                  {tab === "claims" ? "Claims" : "More"}
+                </button>
+              ))}
+            </div>
+
+            {railTab === "claims" ? (
+              <ClaimsList
+                leafNodes={leafNodes}
+                evidence={workspace.evidence}
+                chunks={paperChunks}
+                selectedNodeId={selectedNodeId}
+                onSelectNode={selectNode}
+              />
+            ) : (
+              <>
+                <GraphPreviewCard workspaceId={workspaceId} nodeCount={workspace.nodes.length} />
+                <RelatedPapersRail workspaceId={workspaceId} paperId={activePaper?.id} />
+                <NumericChart />
+              </>
+            )}
+
+            <Panel padded>
+              <NodeInspector />
+            </Panel>
           </aside>
         </div>
       </div>

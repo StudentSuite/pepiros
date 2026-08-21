@@ -91,7 +91,7 @@ export function ShareClient({ workspaceId }: { workspaceId: string }) {
   const highlights: Highlight[] = activeChunk
     ? workspace.evidence
         .filter((e) => e.anchor && e.anchor.chunkId === activeChunk.id)
-        .map((e) => ({ id: e.id, spans: e.anchor!.spans, tier: e.tier }))
+        .map((e) => ({ id: e.id, spans: e.anchor!.spans, tier: e.tier, nodeId: e.nodeId }))
     : [];
 
   const leafNodes = workspace.nodes.filter((n) => n.type === "leaf" && n.paperId === activePaper.id);

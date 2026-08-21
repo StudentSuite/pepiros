@@ -22,6 +22,8 @@ export interface Highlight {
   id: string;
   spans: AnchorRect[];
   tier: EvidenceTier;
+  /** Issue #243: which claim this evidence grounds, so a click can select it. */
+  nodeId: string;
 }
 
 /**
@@ -40,33 +42,48 @@ export function HighlightLayer({
   page,
   pageWidth = 612,
   pageHeight = 792,
+  activeNodeId = null,
+  onSelectHighlight,
 }: {
   highlights: Highlight[];
   page: number;
   pageWidth?: number;
   pageHeight?: number;
+  /** Issue #243: the currently-selected claim's own highlight(s) render brighter. */
+  activeNodeId?: string | null;
+  onSelectHighlight?: (nodeId: string) => void;
 }) {
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+    // The layer itself stays inert (a page's prose sits under it and still
+    // needs to be selectable/scrollable); only the individual boxes below
+    // opt back in to pointer events so a click can land on one.
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
       {highlights.flatMap((h) =>
         h.spans
           .filter((span) => span.page === page)
-          .map((span, i) => (
-            <div
-              key={`${h.id}-${i}`}
-              title={TIER_LABEL[h.tier]}
-              className={clsx(
-                "absolute animate-[highlight-pulse_var(--dur-slow)_var(--ease-out)] rounded-sm",
-                TIER_BG[h.tier],
-              )}
-              style={{
-                left: `${(span.x0 / pageWidth) * 100}%`,
-                top: `${(span.y0 / pageHeight) * 100}%`,
-                width: `${((span.x1 - span.x0) / pageWidth) * 100}%`,
-                height: `${((span.y1 - span.y0) / pageHeight) * 100}%`,
-              }}
-            />
-          )),
+          .map((span, i) => {
+            const active = activeNodeId != null && h.nodeId === activeNodeId;
+            return (
+              <button
+                key={`${h.id}-${i}`}
+                type="button"
+                title={TIER_LABEL[h.tier]}
+                aria-label={`${TIER_LABEL[h.tier]} quote, opens its claim`}
+                onClick={() => onSelectHighlight?.(h.nodeId)}
+                className={clsx(
+                  "pointer-events-auto absolute animate-[highlight-pulse_var(--dur-slow)_var(--ease-out)] rounded-sm transition-[filter,box-shadow] duration-fast ease-out",
+                  TIER_BG[h.tier],
+                  active && "shadow-e-2 brightness-125",
+                )}
+                style={{
+                  left: `${(span.x0 / pageWidth) * 100}%`,
+                  top: `${(span.y0 / pageHeight) * 100}%`,
+                  width: `${((span.x1 - span.x0) / pageWidth) * 100}%`,
+                  height: `${((span.y1 - span.y0) / pageHeight) * 100}%`,
+                }}
+              />
+            );
+          }),
       )}
     </div>
   );

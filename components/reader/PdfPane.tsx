@@ -38,10 +38,14 @@ export function PdfPane({
   chunk,
   pdfUrl,
   highlights = [],
+  activeNodeId = null,
+  onSelectHighlight,
 }: {
   chunk: Chunk;
   pdfUrl: string | null;
   highlights?: Highlight[];
+  activeNodeId?: string | null;
+  onSelectHighlight?: (nodeId: string) => void;
 }) {
   const [pageSize, setPageSize] = useState({ width: PAGE_WIDTH, height: PAGE_HEIGHT });
   const [failed, setFailed] = useState(false);
@@ -57,7 +61,14 @@ export function PdfPane({
   }, [pdfUrl]);
 
   if (!pdfUrl || failed) {
-    return <MockPdfPane chunk={chunk} highlights={highlights} />;
+    return (
+      <MockPdfPane
+        chunk={chunk}
+        highlights={highlights}
+        activeNodeId={activeNodeId}
+        onSelectHighlight={onSelectHighlight}
+      />
+    );
   }
 
   return (
@@ -88,6 +99,8 @@ export function PdfPane({
           page={chunk.page}
           pageWidth={pageSize.width}
           pageHeight={pageSize.height}
+          activeNodeId={activeNodeId}
+          onSelectHighlight={onSelectHighlight}
         />
       </div>
     </div>
@@ -100,7 +113,17 @@ export function PdfPane({
  * the chunk's plain text to look like a page, same as this component used
  * to do unconditionally before react-pdf was wired up.
  */
-function MockPdfPane({ chunk, highlights }: { chunk: Chunk; highlights: Highlight[] }) {
+function MockPdfPane({
+  chunk,
+  highlights,
+  activeNodeId = null,
+  onSelectHighlight,
+}: {
+  chunk: Chunk;
+  highlights: Highlight[];
+  activeNodeId?: string | null;
+  onSelectHighlight?: (nodeId: string) => void;
+}) {
   return (
     <div className="flex flex-col items-center gap-2">
       <div
@@ -118,6 +141,8 @@ function MockPdfPane({ chunk, highlights }: { chunk: Chunk; highlights: Highligh
           page={chunk.page}
           pageWidth={PAGE_WIDTH}
           pageHeight={PAGE_HEIGHT}
+          activeNodeId={activeNodeId}
+          onSelectHighlight={onSelectHighlight}
         />
       </div>
       <p className="font-sans text-[11px] text-ink-faint">
