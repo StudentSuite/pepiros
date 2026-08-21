@@ -10,7 +10,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/shadcn/sidebar";
 import { ReaderTabsNav } from "@/components/reader/ReaderTabsNav";
 import { PdfPane } from "@/components/reader/PdfPane";
 import { AnchorStepper } from "@/components/reader/AnchorStepper";
-import { CoverageOverlay } from "@/components/reader/CoverageOverlay";
+import { CoverageGutter } from "@/components/reader/CoverageGutter";
 import { ClaimsList } from "@/components/reader/ClaimsList";
 import { GraphPreviewCard } from "@/components/reader/GraphPreviewCard";
 import { RelatedPapersRail } from "@/components/related/RelatedPapersRail";
@@ -226,22 +226,37 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
               activeNodeId={selectedNodeId}
               onSelect={selectNode}
             />
-            {activeChunk ? (
-              <PdfPane
-                chunk={activeChunk}
-                pdfUrl={activePdfUrl}
-                highlights={highlights}
-                activeNodeId={selectedNodeId}
-                onSelectHighlight={selectNode}
-              />
-            ) : (
-              // Page-shaped skeleton, not a blank gap, for the moment before a
-              // paper/chunk is selected (docs/PLAN-V1.md §14.5).
-              <div className="mx-auto w-full max-w-xl" role="status" aria-label="Loading page">
-                <Skeleton className="aspect-[612/792] w-full rounded" />
+            <div className="flex min-w-0 gap-s-3">
+              <div className="min-w-0 flex-1">
+                {activeChunk ? (
+                  <PdfPane
+                    chunk={activeChunk}
+                    pdfUrl={activePdfUrl}
+                    highlights={highlights}
+                    activeNodeId={selectedNodeId}
+                    onSelectHighlight={selectNode}
+                  />
+                ) : (
+                  // Page-shaped skeleton, not a blank gap, for the moment before a
+                  // paper/chunk is selected (docs/PLAN-V1.md §14.5).
+                  <div className="mx-auto w-full max-w-xl" role="status" aria-label="Loading page">
+                    <Skeleton className="aspect-[612/792] w-full rounded" />
+                  </div>
+                )}
               </div>
-            )}
-            <CoverageOverlay chunks={paperChunks} evidence={workspace.evidence} />
+              {/* Issue #245: coverage as a thumbnail gutter down the source
+                  pane's edge, replacing the footer strip that used to clip
+                  behind the chat dock on narrow viewports. */}
+              <CoverageGutter
+                chunks={paperChunks}
+                evidence={workspace.evidence}
+                activePage={activeChunk?.page ?? null}
+                onSelectPage={(page) => {
+                  const chunk = paperChunks.find((c) => c.page === page);
+                  if (chunk) setActiveChunkId(chunk.id);
+                }}
+              />
+            </div>
           </main>
 
           <aside className="flex min-w-0 flex-col gap-s-4">
