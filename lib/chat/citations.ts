@@ -15,9 +15,22 @@
 
 const OPEN = "\\[\\uFF3B\\u3010"; // [ ［ 【
 const CLOSE = "\\]\\uFF3D\\u3011"; // ] ］ 】
+const REF = "[CNF]\\d+";
 
-/** One citation marker: an opening bracket variant, a C/N ref, a closing variant. */
-export const CITATION_PATTERN = new RegExp(`[${OPEN}]\\s*([CNF]\\d+)\\s*[${CLOSE}]`, "g");
+/**
+ * One citation marker: an opening bracket variant, one or more C/N/F refs
+ * (comma- and/or space-separated -- a model grouping several supporting
+ * excerpts in one bracket, e.g. "[C7, C12]" or "[C7 C12]", is a real,
+ * observed shape, the same class of "prompt is a request not a guarantee"
+ * gap as the CJK-bracket case above: an ASCII-only single-ref pattern would
+ * fail to match the bracket at all, silently dropping every ref inside it
+ * instead of just the ones it can't parse.
+ */
+export const CITATION_PATTERN = new RegExp(
+  `[${OPEN}]\\s*(${REF}(?:\\s*[,\\s]\\s*${REF})*)\\s*[${CLOSE}]`,
+  "g",
+);
+const REF_SPLIT = /[,\s]+/;
 
 export interface CitationMatch {
   refId: string;
@@ -28,11 +41,16 @@ export interface CitationMatch {
 }
 
 export function findCitations(text: string): CitationMatch[] {
-  return [...text.matchAll(CITATION_PATTERN)].map((m) => ({
-    refId: m[1]!,
-    start: m.index!,
-    end: m.index! + m[0].length,
-  }));
+  return [...text.matchAll(CITATION_PATTERN)].flatMap((m) => {
+    const refs = m[1]!.split(REF_SPLIT).filter(Boolean);
+    const start = m.index!;
+    const end = m.index! + m[0].length;
+    // Every ref inside one bracket shares that bracket's span -- there's no
+    // meaningful sub-position to assign a comma-separated ref within it, and
+    // toCitationSegments' cursor-advancing loop handles same-span matches
+    // correctly (each renders its own chip, with no gap text between them).
+    return refs.map((refId) => ({ refId, start, end }));
+  });
 }
 
 /** Distinct ref ids in first-appearance order. */

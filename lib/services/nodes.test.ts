@@ -315,6 +315,20 @@ describe("deleteNode", () => {
     await expect(deleteNode({ workspaceId: WS, nodeId: "not-a-real-node" })).rejects.toThrow("does not exist");
   });
 
+  // Issue #287: deleting a paper node used to fall through to the same
+  // generic cascade every other node type uses, which only walks edges
+  // pointing *at* the deleted node -- the paper's own outgoing contains
+  // edges to its pillars/leaves cascade-delete via the DB FK, but those
+  // pillar/leaf nodes themselves were never touched, orphaning them.
+  it("refuses to delete a paper node rather than orphaning its pillars and leaves", async () => {
+    await expect(deleteNode({ workspaceId: WS, nodeId: "n-p1" })).rejects.toThrow("Deleting a paper node");
+
+    // Confirm nothing was actually touched.
+    const after = await getIngestedWorkspace(WS);
+    const stillThere = after?.workspace.nodes ?? workspace.nodes;
+    expect(stillThere.some((n) => n.id === "n-p1")).toBe(true);
+  });
+
   // Issue #161: deleteNode used to always resave the unmodified base first
   // (a separate version-checked write) then delete as a second, unversioned
   // step -- two unrelated concurrent deletes on an already-ingested

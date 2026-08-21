@@ -79,6 +79,17 @@ export default async function AuthorizePage({
           <input type="hidden" name="client_id" value={clientId} />
           <input type="hidden" name="redirect_uri" value={redirectUri} />
           <input type="hidden" name="code_challenge" value={codeChallenge} />
+          {/* Issue #280: response_type/code_challenge_method never round-tripped
+              through this form. If the session check above redirects to /login
+              (session expired mid-consent) and the user signs back in,
+              decideAuthorization's !profile branch reconstructs this page's URL
+              from formData.entries() -- without these two fields in that data,
+              they came back missing, and this page's own validation above then
+              rejected the resumed request as "Unsupported response_type".
+              Both are already validated above by the time this form renders, so
+              hardcoding their one accepted value here is safe. */}
+          <input type="hidden" name="response_type" value="code" />
+          <input type="hidden" name="code_challenge_method" value="S256" />
           {state && <input type="hidden" name="state" value={state} />}
 
           <fieldset className="space-y-2">

@@ -267,6 +267,7 @@ export async function saveWorkspace(workspace: Workspace, expectedVersion?: numb
         .values(
           workspace.chunks.map((c) => ({
             id: c.id,
+            workspaceId: workspace.id,
             paperId: c.paperId,
             sectionId: c.sectionId,
             kind: c.kind,
@@ -285,6 +286,7 @@ export async function saveWorkspace(workspace: Workspace, expectedVersion?: numb
         .values(
           workspace.numerics.map((n) => ({
             id: n.id,
+            workspaceId: workspace.id,
             chunkId: n.chunkId,
             rawText: n.rawText,
             value: n.value,

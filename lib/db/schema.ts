@@ -23,6 +23,8 @@ import {
   jsonb,
   primaryKey,
   pgEnum,
+  index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import type { PaperArchetype } from "@/types/anchor";
@@ -110,19 +112,26 @@ export const workspaces = pgTable("workspaces", {
   version: integer("version").notNull().default(1),
 });
 
-export const papers = pgTable("papers", {
-  id: text("id").primaryKey(),
-  workspaceId: text("workspace_id")
-    .notNull()
-    .references(() => workspaces.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),
-  authors: jsonb("authors").$type<string[]>().notNull().default([]),
-  year: integer("year"),
-  archetype: paperArchetype("archetype"),
-  sourceUrl: text("source_url"),
-  pdfStoragePath: text("pdf_storage_path"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const papers = pgTable(
+  "papers",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    authors: jsonb("authors").$type<string[]>().notNull().default([]),
+    year: integer("year"),
+    archetype: paperArchetype("archetype"),
+    sourceUrl: text("source_url"),
+    pdfStoragePath: text("pdf_storage_path"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  // Issue #288: getWorkspace() runs WHERE workspace_id = ... against this
+  // table on literally every page load, API call, and MCP tool invocation
+  // for a workspace -- a full table scan with no index as data grows.
+  (table) => [index("papers_workspace_id_idx").on(table.workspaceId)],
+);
 
 export const sections = pgTable("sections", {
   id: text("id").primaryKey(),
@@ -133,28 +142,52 @@ export const sections = pgTable("sections", {
   order: integer("order").notNull(),
 });
 
-export const chunks = pgTable("chunks", {
-  id: text("id").primaryKey(),
-  paperId: text("paper_id")
-    .notNull()
-    .references(() => papers.id, { onDelete: "cascade" }),
-  sectionId: text("section_id").references(() => sections.id, {
-    onDelete: "set null",
-  }),
-  kind: chunkKind("kind").notNull().default("prose"),
-  page: integer("page").notNull(),
-  text: text("text").notNull(),
-  /**
-   * The n in the "C{n}" citation id a model is shown (plan.md §2 keeps stable
-   * citation ids precisely so there is no embedding layer). Assigned once at
-   * ingest, unique within the workspace, and never reused or renumbered:
-   * evidence rows store the rendered ref, so renumbering would silently
-   * re-point already-written citations at different text.
-   */
-  ordinal: integer("ordinal").notNull(),
-  /** AnchorRect[] (types/anchor.ts) -- the chunk's search window for anchoring. */
-  rects: jsonb("rects").$type<Array<{ page: number; x0: number; y0: number; x1: number; y1: number }>>().notNull(),
-});
+export const chunks = pgTable(
+  "chunks",
+  {
+    id: text("id").primaryKey(),
+    paperId: text("paper_id")
+      .notNull()
+      .references(() => papers.id, { onDelete: "cascade" }),
+    sectionId: text("section_id").references(() => sections.id, {
+      onDelete: "set null",
+    }),
+    /**
+     * Issue #289: denormalized from paperId (via papers.workspace_id), so
+     * the uniqueness constraint below can actually be expressed at the DB
+     * level -- chunks itself has no direct workspace relationship
+     * otherwise. Never read back into the app's own Chunk type
+     * (types/anchor.ts's frozen contract); this column exists purely so
+     * Postgres can enforce what the app already assumes.
+     */
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    kind: chunkKind("kind").notNull().default("prose"),
+    page: integer("page").notNull(),
+    text: text("text").notNull(),
+    /**
+     * The n in the "C{n}" citation id a model is shown (plan.md §2 keeps stable
+     * citation ids precisely so there is no embedding layer). Assigned once at
+     * ingest, unique within the workspace, and never reused or renumbered:
+     * evidence rows store the rendered ref, so renumbering would silently
+     * re-point already-written citations at different text.
+     */
+    ordinal: integer("ordinal").notNull(),
+    /** AnchorRect[] (types/anchor.ts) -- the chunk's search window for anchoring. */
+    rects: jsonb("rects").$type<Array<{ page: number; x0: number; y0: number; x1: number; y1: number }>>().notNull(),
+  },
+  (table) => [
+    index("chunks_paper_id_idx").on(table.paperId),
+    // Issue #289: this uniqueness was previously assumed, never enforced --
+    // lib/services/ingest.ts's max+increment logic (with a defensive
+    // re-shift on concurrent-ingest races) is the only thing that made it
+    // hold in practice. A write path that ever bypassed that logic (a
+    // script, a repair tool) could silently duplicate a C{n} token with no
+    // error, misdirecting citations onto the wrong chunk at read time.
+    uniqueIndex("chunks_workspace_id_ordinal_idx").on(table.workspaceId, table.ordinal),
+  ],
+);
 
 export const figures = pgTable("figures", {
   id: text("id").primaryKey(),
@@ -166,19 +199,27 @@ export const figures = pgTable("figures", {
   storagePath: text("storage_path").notNull(),
 });
 
-export const numerics = pgTable("numerics", {
-  id: text("id").primaryKey(),
-  chunkId: text("chunk_id")
-    .notNull()
-    .references(() => chunks.id, { onDelete: "cascade" }),
-  rawText: text("raw_text").notNull(),
-  value: real("value").notNull(),
-  unit: text("unit"),
-  comparator: text("comparator"),
-  role: text("role").notNull(),
-  /** The n in "N{n}". Same stability contract as chunks.ordinal. */
-  ordinal: integer("ordinal").notNull(),
-});
+export const numerics = pgTable(
+  "numerics",
+  {
+    id: text("id").primaryKey(),
+    chunkId: text("chunk_id")
+      .notNull()
+      .references(() => chunks.id, { onDelete: "cascade" }),
+    /** Issue #289: same denormalization reasoning as chunks.workspaceId above. */
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    rawText: text("raw_text").notNull(),
+    value: real("value").notNull(),
+    unit: text("unit"),
+    comparator: text("comparator"),
+    role: text("role").notNull(),
+    /** The n in "N{n}". Same stability contract as chunks.ordinal. */
+    ordinal: integer("ordinal").notNull(),
+  },
+  (table) => [uniqueIndex("numerics_workspace_id_ordinal_idx").on(table.workspaceId, table.ordinal)],
+);
 
 export const references_ = pgTable("references_", {
   id: text("id").primaryKey(),
@@ -192,21 +233,27 @@ export const references_ = pgTable("references_", {
 
 // --- Graph layer --------------------------------------------------------
 
-export const nodes = pgTable("nodes", {
-  id: text("id").primaryKey(),
-  workspaceId: text("workspace_id")
-    .notNull()
-    .references(() => workspaces.id, { onDelete: "cascade" }),
-  paperId: text("paper_id").references(() => papers.id, { onDelete: "cascade" }),
-  type: nodeType("type").notNull(),
-  title: text("title").notNull(),
-  bodyMd: text("body_md").notNull().default(""),
-  pillarIndex: integer("pillar_index"),
-  x: real("x").notNull().default(0),
-  y: real("y").notNull().default(0),
-  stale: boolean("stale").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const nodes = pgTable(
+  "nodes",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    paperId: text("paper_id").references(() => papers.id, { onDelete: "cascade" }),
+    type: nodeType("type").notNull(),
+    title: text("title").notNull(),
+    bodyMd: text("body_md").notNull().default(""),
+    pillarIndex: integer("pillar_index"),
+    x: real("x").notNull().default(0),
+    y: real("y").notNull().default(0),
+    stale: boolean("stale").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  // Issue #288: see papers' own index comment -- same "every read runs
+  // WHERE workspace_id = ... with no index" gap.
+  (table) => [index("nodes_workspace_id_idx").on(table.workspaceId)],
+);
 
 export const nodeVersions = pgTable("node_versions", {
   id: text("id").primaryKey(),
@@ -217,35 +264,46 @@ export const nodeVersions = pgTable("node_versions", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const edges = pgTable("edges", {
-  id: text("id").primaryKey(),
-  workspaceId: text("workspace_id")
-    .notNull()
-    .references(() => workspaces.id, { onDelete: "cascade" }),
-  kind: edgeKind("kind").notNull(),
-  sourceId: text("source_id")
-    .notNull()
-    .references(() => nodes.id, { onDelete: "cascade" }),
-  targetId: text("target_id")
-    .notNull()
-    .references(() => nodes.id, { onDelete: "cascade" }),
-});
+export const edges = pgTable(
+  "edges",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    kind: edgeKind("kind").notNull(),
+    sourceId: text("source_id")
+      .notNull()
+      .references(() => nodes.id, { onDelete: "cascade" }),
+    targetId: text("target_id")
+      .notNull()
+      .references(() => nodes.id, { onDelete: "cascade" }),
+  },
+  // Issue #288: same gap as papers/nodes above.
+  (table) => [index("edges_workspace_id_idx").on(table.workspaceId)],
+);
 
-export const evidence = pgTable("evidence", {
-  id: text("id").primaryKey(),
-  nodeId: text("node_id")
-    .notNull()
-    .references(() => nodes.id, { onDelete: "cascade" }),
-  chunkId: text("chunk_id").references(() => chunks.id, { onDelete: "set null" }),
-  /** Stable citation id as shown to the model, e.g. "C7", "F3", "N12". */
-  refId: text("ref_id").notNull(),
-  quote: text("quote"),
-  /** AnchorRect[] -- null once dropped by the verifier. */
-  spans: jsonb("spans").$type<Array<{ page: number; x0: number; y0: number; x1: number; y1: number }>>(),
-  tier: evidenceTier("tier").notNull(),
-  matchScore: real("match_score").notNull(),
-  numericOk: boolean("numeric_ok"),
-});
+export const evidence = pgTable(
+  "evidence",
+  {
+    id: text("id").primaryKey(),
+    nodeId: text("node_id")
+      .notNull()
+      .references(() => nodes.id, { onDelete: "cascade" }),
+    chunkId: text("chunk_id").references(() => chunks.id, { onDelete: "set null" }),
+    /** Stable citation id as shown to the model, e.g. "C7", "F3", "N12". */
+    refId: text("ref_id").notNull(),
+    quote: text("quote"),
+    /** AnchorRect[] -- null once dropped by the verifier. */
+    spans: jsonb("spans").$type<Array<{ page: number; x0: number; y0: number; x1: number; y1: number }>>(),
+    tier: evidenceTier("tier").notNull(),
+    matchScore: real("match_score").notNull(),
+    numericOk: boolean("numeric_ok"),
+  },
+  // Issue #288: getNode()/resolveNodeFromWorkspace's WHERE node_id = ...
+  // filter, and every claim re-verification path, had no index here either.
+  (table) => [index("evidence_node_id_idx").on(table.nodeId)],
+);
 
 // --- Conversation + learning ---------------------------------------------
 

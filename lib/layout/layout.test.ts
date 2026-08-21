@@ -107,6 +107,65 @@ describe("radialLayout", () => {
   });
 });
 
+/**
+ * A synthetic single-paper workspace with a controlled pillar/leaf count,
+ * since the fixture only ever has 2 pillars on any one paper -- issue #284
+ * needs 6 (the schema's real max, per plan.md's 7-hue pillar ceiling) to
+ * exercise the actual overlap.
+ */
+function syntheticPaper(pillarCount: number, leavesPerPillar: number): { workspace: Workspace; paperNode: GraphNode } {
+  const paperNode: GraphNode = {
+    id: "n-paper", workspaceId: "ws-test", type: "paper", title: "Paper",
+    bodyMd: "", pillarIndex: null, x: 0, y: 0, paperId: "p-test", stale: false,
+  };
+  const nodes: GraphNode[] = [paperNode];
+  const edges: Workspace["edges"] = [];
+
+  for (let i = 0; i < pillarCount; i++) {
+    const pillarId = `n-pillar-${i}`;
+    nodes.push({
+      id: pillarId, workspaceId: "ws-test", type: "pillar", title: `Pillar ${i}`,
+      bodyMd: "", pillarIndex: i + 1, x: 0, y: 0, paperId: "p-test", stale: false,
+    });
+    edges.push({ id: `e-p-${i}`, workspaceId: "ws-test", kind: "contains", sourceId: paperNode.id, targetId: pillarId });
+
+    for (let j = 0; j < leavesPerPillar; j++) {
+      const leafId = `n-leaf-${i}-${j}`;
+      nodes.push({
+        id: leafId, workspaceId: "ws-test", type: "leaf", title: `Leaf ${i}.${j}`,
+        bodyMd: "", pillarIndex: i + 1, x: 0, y: 0, paperId: "p-test", stale: false,
+      });
+      edges.push({ id: `e-l-${i}-${j}`, workspaceId: "ws-test", kind: "contains", sourceId: pillarId, targetId: leafId });
+    }
+  }
+
+  return {
+    workspace: { id: "ws-test", name: "Test", papers: [], chunks: [], numerics: [], nodes, edges, evidence: [] },
+    paperNode,
+  };
+}
+
+describe("radialLayout -- cross-pillar fan clearance (issue #284)", () => {
+  it("does not overlap leaves across neighbouring pillars at 6 pillars (the schema's real max)", () => {
+    const { workspace, paperNode } = syntheticPaper(6, 2);
+    const positioned = radialLayout(workspace, paperNode);
+    expect(overlappingPairs(positioned)).toEqual([]);
+  });
+
+  it("still fans leaves at the full spec'd ±35° when pillar count is low enough for it to be safe", () => {
+    const { workspace, paperNode } = syntheticPaper(3, 2);
+    const positioned = radialLayout(workspace, paperNode);
+    const pillar0 = positioned.find((n) => n.id === "n-pillar-0")!;
+    const pillarAngle = Math.atan2(pillar0.y, pillar0.x);
+    const leaves = positioned.filter((n) => n.id.startsWith("n-leaf-0-"));
+    const angles = leaves.map((l) => Math.atan2(l.y, l.x));
+    const spread = Math.max(...angles) - Math.min(...angles);
+    // 2 leaves split the full fan in half -- the full fan itself is 2x35=70deg.
+    expect(spread).toBeCloseTo((70 * Math.PI) / 180, 2);
+    expect(pillarAngle).toBeCloseTo((Math.min(...angles) + Math.max(...angles)) / 2, 2);
+  });
+});
+
 describe("layeredLayout", () => {
   const positioned = layeredLayout(fixture);
 

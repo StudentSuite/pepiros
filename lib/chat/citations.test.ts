@@ -53,6 +53,24 @@ describe("extractCitedRefs", () => {
   it("ignores bracketed text that is not a ref", () => {
     expect(extractCitedRefs("[TODO] and [note] and [123]")).toEqual([]);
   });
+
+  // Issue #286: the same "prompt is a request not a guarantee" class as the
+  // CJK-bracket case above -- a model grouping several supporting excerpts
+  // in one bracket (a real, plausible shape, though not live-confirmed
+  // against a real transcript the way the CJK case was) used to fail the
+  // whole bracket, dropping every ref inside it rather than just the ones
+  // it couldn't parse.
+  it("parses multiple comma-separated refs grouped in one bracket", () => {
+    expect(extractCitedRefs("Both studies agree [C7, C12].")).toEqual(["C7", "C12"]);
+  });
+
+  it("parses multiple space-separated refs grouped in one bracket", () => {
+    expect(extractCitedRefs("Both studies agree [C7 C12].")).toEqual(["C7", "C12"]);
+  });
+
+  it("still rejects a context-block header even with the wider multi-ref pattern", () => {
+    expect(extractCitedRefs("[C7 | Methods | p.4] is context, not a citation.")).toEqual([]);
+  });
 });
 
 describe("findCitations", () => {
@@ -67,6 +85,16 @@ describe("findCitations", () => {
     const text = "Fell 【C2】 sharply.";
     const [match] = findCitations(text);
     expect(text.slice(match!.start, match!.end)).toBe("【C2】");
+  });
+
+  it("reports one match per ref in a grouped bracket, all sharing that bracket's span", () => {
+    const text = "Both agree [C7, C12].";
+    const matches = findCitations(text);
+    expect(matches).toHaveLength(2);
+    expect(matches.map((m) => m.refId)).toEqual(["C7", "C12"]);
+    expect(matches[0]!.start).toBe(matches[1]!.start);
+    expect(matches[0]!.end).toBe(matches[1]!.end);
+    expect(text.slice(matches[0]!.start, matches[0]!.end)).toBe("[C7, C12]");
   });
 });
 
@@ -101,5 +129,14 @@ describe("toCitationSegments", () => {
 
   it("returns a text segment for empty input rather than an empty array", () => {
     expect(toCitationSegments("")).toEqual([{ kind: "text", text: "" }]);
+  });
+
+  it("renders two adjacent chips with no gap text for a grouped bracket (issue #286)", () => {
+    expect(toCitationSegments("Both agree [C7, C12] on this.")).toEqual([
+      { kind: "text", text: "Both agree " },
+      { kind: "citation", refId: "C7" },
+      { kind: "citation", refId: "C12" },
+      { kind: "text", text: " on this." },
+    ]);
   });
 });

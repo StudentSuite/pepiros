@@ -546,8 +546,25 @@ const CONTENT_DEPENDENT_EDGE_KINDS: ReadonlySet<GraphEdge["kind"]> = new Set([
 export async function deleteNode(input: { workspaceId: string; nodeId: string }): Promise<DeleteNodeResult> {
   const ingested = await getIngestedWorkspace(input.workspaceId);
   const base = ingested?.workspace ?? (await fetchWorkspace(input.workspaceId));
-  if (!base.nodes.some((n) => n.id === input.nodeId)) {
+  const target = base.nodes.find((n) => n.id === input.nodeId);
+  if (!target) {
     throw new UserFacingError(`node ${input.nodeId} does not exist in workspace ${input.workspaceId}`);
+  }
+
+  // Issue #287: this function's dependentNodeIds computation only looks at
+  // edges pointing *at* the deleted node with a content-dependent kind --
+  // for a "paper" node, its outgoing `contains` edges to its own pillar/leaf
+  // children cascade-delete via the edges table's FK (the deleted node is
+  // their source), but the pillar/leaf nodes themselves are never touched.
+  // They'd survive with paperId still pointing at the (still-alive, since
+  // the papers table row is never removed here either) paper, unreachable
+  // from getOutline()'s tree -- contradicting plan.md §4's cascade
+  // invariant ("deleting a paper cascades its nodes/chunks"). There's no
+  // dedicated "delete this whole paper" flow in this codebase (only
+  // single-node delete), so refusing outright is safer than a
+  // half-implemented cascade guessed at here.
+  if (target.type === "paper") {
+    throw new UserFacingError("Deleting a paper node isn't supported -- this would orphan its pillars and leaves.");
   }
 
   const dependentNodeIds = [
