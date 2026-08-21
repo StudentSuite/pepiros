@@ -50,6 +50,13 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
   // in a permanent 18rem column beside the source pane; that width is now
   // the claims stack's, so those move behind this small in-pane toggle.
   const [railTab, setRailTab] = useState<"claims" | "more">("claims");
+  // Issue #250: below lg, the source and claims panes stack in one long
+  // column (PdfPane + gutter, then the whole claims stack) instead of the
+  // reader's inherently single-column mobile view showing one thing at a
+  // time. This mirrors #242's split with a Source/Claims segmented control
+  // instead of a two-pane grid, matching the reader's own established
+  // pattern (rail already uses this exact segmented-control shape).
+  const [mobilePane, setMobilePane] = useState<"source" | "claims">("source");
 
   const paperChunks = useMemo(
     () =>
@@ -214,13 +221,48 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
           <ReaderTabsNav workspaceId={workspaceId} active="reader" />
         </header>
 
+        {/* Issue #250: below lg the two-pane grid stacks into one long
+            column (source pane, then the whole claims stack) instead of
+            showing one at a time. This segmented control toggles which
+            pane is visible below lg; at lg and up both always show, side
+            by side, and the control itself disappears. */}
+        <div
+          role="tablist"
+          aria-label="Reader pane"
+          className="mx-auto mt-s-5 flex w-full max-w-[92rem] gap-1 rounded-full border border-border bg-surface-sunken p-0.5 px-s-5 lg:hidden"
+        >
+          {(["source", "claims"] as const).map((pane) => (
+            <button
+              key={pane}
+              type="button"
+              role="tab"
+              aria-selected={mobilePane === pane}
+              onClick={() => setMobilePane(pane)}
+              className={clsx(
+                "flex-1 rounded-full px-3 py-1.5 font-sans text-sm transition-colors duration-fast ease-out",
+                mobilePane === pane
+                  ? "bg-surface-raised font-medium text-ink shadow-e-1"
+                  : "text-ink-faint hover:text-ink",
+              )}
+            >
+              {pane === "source" ? "Source" : "Claims"}
+            </button>
+          ))}
+        </div>
+
         {/* Issue #242: split-column reader. Source pane left (continuous
             reading measure), claims pane right (a scannable stack, not a
             280px rail of secondary widgets) -- the homepage's own mechanism
             copy already states this as the product's position: "the claim
             and its source, side by side". */}
         <div className="mx-auto grid w-full max-w-[92rem] gap-s-6 p-s-5 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-          <main id="main-content" className="flex min-w-0 flex-col gap-s-3">
+          <main
+            id="main-content"
+            className={clsx(
+              "min-w-0 flex-col gap-s-3",
+              mobilePane === "claims" ? "hidden lg:flex" : "flex",
+            )}
+          >
             <AnchorStepper
               highlights={highlights}
               activeNodeId={selectedNodeId}
@@ -259,7 +301,12 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
             </div>
           </main>
 
-          <aside className="flex min-w-0 flex-col gap-s-4">
+          <aside
+            className={clsx(
+              "min-w-0 flex-col gap-s-4",
+              mobilePane === "source" ? "hidden lg:flex" : "flex",
+            )}
+          >
             <div
               role="tablist"
               aria-label="Reader side panel"
