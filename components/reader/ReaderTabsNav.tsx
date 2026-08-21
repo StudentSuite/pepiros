@@ -2,8 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ChevronDown } from "lucide-react";
 import clsx from "clsx";
 import { useToastStore } from "@/lib/store/toast";
+import { buttonClassName } from "@/components/ui/Button";
+import { Menu } from "@/components/ui/Menu";
+import { Icon } from "@/components/ui/Icon";
 
 const TABS = [
   ["outline", "Outline"],
@@ -27,6 +31,14 @@ const TABS = [
  * separate layout) since every one of those routes already renders this
  * exact nav, so it's the one place a fix reaches all of them without
  * duplicating per-tab.
+ *
+ * Issue #291: Explore graph, Outline/Audit/Learn, Share, and both exports
+ * used to render as eight peer items at identical weight. Explore graph is
+ * the product centrepiece and export is a slip-list item; the row gave them
+ * the same visual weight (arguably more, since export was two items).
+ * Explore graph is now the one filled/primary action, Outline/Audit/Learn
+ * are grouped as a visually distinct secondary set, and both exports
+ * collapse into one overflow menu (components/ui/Menu.tsx).
  */
 export function ReaderTabsNav({
   workspaceId,
@@ -58,7 +70,7 @@ export function ReaderTabsNav({
   }
 
   return (
-    <nav className="flex min-w-0 flex-wrap items-center gap-s-4 font-sans text-[13px] text-ink-faint">
+    <nav className="flex min-w-0 flex-wrap items-center gap-s-3 font-sans text-[13px] text-ink-faint">
       <Link
         href={`/w/${workspaceId}`}
         aria-current={active === "reader" ? "page" : undefined}
@@ -69,26 +81,27 @@ export function ReaderTabsNav({
       >
         Reader
       </Link>
-      {TABS.map(([slug, label]) => (
-        <Link
-          key={slug}
-          href={`/w/${workspaceId}/${slug}`}
-          aria-current={active === slug ? "page" : undefined}
-          className={clsx(
-            "transition-colors duration-fast ease-out hover:text-ink",
-            active === slug && "font-medium text-ink",
-          )}
-        >
-          {label}
-        </Link>
-      ))}
+
+      <div className="flex items-center gap-1 rounded-full border border-border bg-surface-sunken p-0.5">
+        {TABS.map(([slug, label]) => (
+          <Link
+            key={slug}
+            href={`/w/${workspaceId}/${slug}`}
+            aria-current={active === slug ? "page" : undefined}
+            className={clsx(
+              "rounded-full px-2.5 py-1 text-xs transition-colors duration-fast ease-out",
+              active === slug ? "bg-surface-raised font-medium text-ink shadow-e-1" : "hover:text-ink",
+            )}
+          >
+            {label}
+          </Link>
+        ))}
+      </div>
+
       <Link
         href={`/w/${workspaceId}/canvas`}
         aria-current={active === "canvas" ? "page" : undefined}
-        className={clsx(
-          "rounded-full border border-border px-s-3 py-1 transition-colors duration-fast ease-out hover:border-border-strong hover:text-ink",
-          active === "canvas" && "border-border-strong font-medium text-ink",
-        )}
+        className={buttonClassName("primary", "sm")}
       >
         Explore graph
       </Link>
@@ -103,18 +116,29 @@ export function ReaderTabsNav({
       >
         {sharing ? "Sharing…" : "Share"}
       </button>
-      <a
-        href={`/api/export?workspaceId=${encodeURIComponent(workspaceId)}&format=md`}
-        className="rounded-full border border-border px-s-3 py-1 transition-colors duration-fast ease-out hover:border-border-strong hover:text-ink"
-      >
-        Export .md
-      </a>
-      <a
-        href={`/api/export?workspaceId=${encodeURIComponent(workspaceId)}&format=bibtex`}
-        className="rounded-full border border-border px-s-3 py-1 transition-colors duration-fast ease-out hover:border-border-strong hover:text-ink"
-      >
-        Export .bib
-      </a>
+
+      <Menu
+        trigger={
+          <span className="flex items-center gap-1 rounded-full border border-border px-s-3 py-1 text-[13px] text-ink-faint transition-colors duration-fast ease-out hover:border-border-strong hover:text-ink">
+            Export
+            <Icon icon={ChevronDown} size="xs" />
+          </span>
+        }
+        items={[
+          {
+            label: "Markdown (.md)",
+            onSelect: () => {
+              window.location.href = `/api/export?workspaceId=${encodeURIComponent(workspaceId)}&format=md`;
+            },
+          },
+          {
+            label: "BibTeX (.bib)",
+            onSelect: () => {
+              window.location.href = `/api/export?workspaceId=${encodeURIComponent(workspaceId)}&format=bibtex`;
+            },
+          },
+        ]}
+      />
     </nav>
   );
 }
