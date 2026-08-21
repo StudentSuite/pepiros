@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { writeFile, unlink, mkdir, copyFile, readFile } from "node:fs/promises";
+import { writeFile, unlink, mkdir, copyFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -20,6 +20,7 @@ import {
   type ResolvedSource,
 } from "./upload";
 import { runPythonScript } from "./pythonRunner";
+import { deletePdf, downloadPdf, resolveLocalPdfPath, uploadPdf } from "./pdfStorage";
 import { resolveDoiToPdfUrl } from "./unpaywall";
 
 /**
@@ -131,17 +132,17 @@ async function runParsePy(pdfPath: string): Promise<ParsedDocument> {
 }
 
 /**
- * Local disk, not Supabase Storage: ingest itself is already local-only
- * (isPdfIngestSupportedHere() below), so a real PDF only ever exists on the
- * machine that just parsed it. `pdfStoragePath` stores a filename relative
- * to this directory, resolved by app/api/papers/[paperId]/pdf/route.ts --
- * the only reader of this path, so the two must stay in sync.
+ * Issue #278: PDFs go to Supabase Storage, with local disk kept as the
+ * fallback for rows written before that and for a dev loop with no Supabase
+ * credentials. See lib/services/pdfStorage.ts for why: ingest being
+ * local-only is survivable, losing the file afterwards is not.
+ *
+ * Re-exported so app/api/papers/[paperId]/pdf/route.ts and anything else
+ * still importing resolvePdfStoragePath from here keeps working.
  */
-const PDF_STORAGE_DIR = path.join(process.cwd(), "data", "pdfs");
+export { resolveLocalPdfPath as resolvePdfStoragePath };
 
-export function resolvePdfStoragePath(relativePath: string): string {
-  return path.join(PDF_STORAGE_DIR, relativePath);
-}
+const PDF_STORAGE_DIR = path.join(process.cwd(), "data", "pdfs");
 
 /**
  * PDF ingest is deliberately local-only (plan.md's cut list: "a deployed
@@ -181,6 +182,8 @@ export async function runIngest(input: IngestInput): Promise<void> {
   // orphaned on disk forever, unreferenced by any paper record. Tracked
   // here (outside the try block) so the catch below can clean it up too.
   let copiedPdfPath: string | null = null;
+  /** Issue #278: the Storage equivalent, so a failed run cleans up there too. */
+  let storedPdfKey: string | null = null;
 
   try {
     await writeFile(tmpPath, input.bytes);
@@ -225,11 +228,22 @@ export async function runIngest(input: IngestInput): Promise<void> {
     // for it to load -- the tmp file used to just get unlink()'d below).
     // Copy rather than rename: tmpPath's cleanup in `finally` must still run
     // unconditionally regardless of which branch this try block takes.
-    const pdfFilename = `${paperId}.pdf`;
-    await mkdir(PDF_STORAGE_DIR, { recursive: true });
-    const permanentPdfPath = resolvePdfStoragePath(pdfFilename);
-    await copyFile(tmpPath, permanentPdfPath);
-    copiedPdfPath = permanentPdfPath;
+    // Issue #278: Storage first, so a paper ingested on a laptop is readable
+    // from production. The local copy is still written when Storage is not
+    // configured, which keeps a credential-free `npm run dev` working exactly
+    // as it did.
+    const uploadedKey = await uploadPdf(workspaceId, paperId, input.bytes);
+    let pdfFilename: string;
+    if (uploadedKey) {
+      pdfFilename = uploadedKey;
+      storedPdfKey = uploadedKey;
+    } else {
+      pdfFilename = `${paperId}.pdf`;
+      await mkdir(PDF_STORAGE_DIR, { recursive: true });
+      const permanentPdfPath = resolveLocalPdfPath(pdfFilename);
+      await copyFile(tmpPath, permanentPdfPath);
+      copiedPdfPath = permanentPdfPath;
+    }
 
     let chunkOrdinal = base.chunks.reduce((max, c) => Math.max(max, c.ordinal), 0);
     let numericOrdinal = base.numerics.reduce((max, n) => Math.max(max, n.ordinal), 0);
@@ -447,8 +461,10 @@ export async function runIngest(input: IngestInput): Promise<void> {
   } catch (err) {
     failJob(input.jobId, err instanceof Error ? err.message : String(err));
     // Issue #271: don't leave the permanent copy behind for a paper that
-    // never actually made it into the workspace.
+    // never actually made it into the workspace. Issue #278: the same is true
+    // of the Storage object.
     if (copiedPdfPath) await unlink(copiedPdfPath).catch(() => {});
+    if (storedPdfKey) await deletePdf(storedPdfKey);
   } finally {
     await unlink(tmpPath).catch(() => {});
   }
@@ -465,11 +481,10 @@ export async function getPaperPdfBytes(workspaceId: string, paperId: string): Pr
   const workspace = await fetchWorkspace(workspaceId);
   const paper = workspace.papers.find((p) => p.id === paperId);
   if (!paper?.pdfStoragePath) return null;
-  try {
-    return await readFile(resolvePdfStoragePath(paper.pdfStoragePath));
-  } catch {
-    return null;
-  }
+  // Issue #278: Storage first, local disk second -- see downloadPdf() for why
+  // trying both, in that order, serves pre- and post-migration rows from one
+  // code path with no backfill.
+  return await downloadPdf(paper.pdfStoragePath);
 }
 
 export type QueueUrlIngestResult =
