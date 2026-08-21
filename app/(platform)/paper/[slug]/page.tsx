@@ -84,9 +84,21 @@ export default async function PaperPage({
           />
         </ArticleHeader>
 
+        {/* Issue #258: the byline, like count and discussion below are all
+            lib/data/seed.ts fixtures until a real post exists for this
+            paper -- nothing on the page said so, and this product's whole
+            position is that a reader can tell what's real from what's
+            asserted. Fabricated discussion presented as discussion
+            undercuts that on the surface where it's most visible. */}
+        {!post && (
+          <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+            Sample author &amp; engagement, to show the format
+          </p>
+        )}
+
         {/* Source line. Kept immediately under the byline because the whole
             proposition is that the original is one click away. */}
-        <p className="font-sans text-[13px] leading-relaxed text-ink-faint">
+        <p className="mt-s-1 font-sans text-[13px] leading-relaxed text-ink-faint">
           {byline} &middot; <span className="italic">{paper.venue}</span> &middot;{" "}
           {paper.year}
           {" · "}
@@ -149,6 +161,12 @@ export default async function PaperPage({
               {comments.length}
             </span>
           </div>
+
+          {!post && (
+            <p className="mt-s-2 font-sans text-[13px] italic text-ink-faint">
+              Sample discussion, to show the format.
+            </p>
+          )}
 
           <ul className="mt-s-5 flex flex-col">
             {comments.map((c, i) => (

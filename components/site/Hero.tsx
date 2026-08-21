@@ -24,14 +24,13 @@ export function Hero() {
           Pepiros
         </h1>
 
-        {/* Say what it is before saying why it is good. The previous line led
-            with the mechanism (claims bound to quotes) and never named the
-            product category, so a first-time reader could not tell whether this
-            was a reader, a search engine, or a writing tool. */}
+        {/* The locked tagline (plan.md section 10 / design/DIRECTIONS.md's
+            brand kit): "Every claim, one click from its source." A prior
+            rewrite led with "publishing platform for researchers", which
+            positioned Pepiros as a general publishing tool rather than
+            naming what it specifically does. */}
         <p className="mx-auto mt-s-5 max-w-xl font-sans text-base leading-relaxed text-ink-muted sm:text-lg">
-          A publishing platform for researchers, with a summariser you can
-          actually check. Publish a paper you have read, and every claim in
-          the write-up stays bound to the sentence it came from.
+          Every claim, one click from its source.
         </p>
 
         <div className="mt-s-7 flex flex-wrap items-center justify-center gap-s-3">

@@ -62,7 +62,13 @@ export function Reveal({
     <div
       ref={ref}
       className={clsx(
-        "transition-all duration-slow ease-out",
+        // "slide" translates its hidden state past the inline edge before
+        // the IntersectionObserver fires, which otherwise widens the page's
+        // scrollWidth and shows a horizontal scrollbar on first paint --
+        // the frame that matters most, since it disappears once the reveal
+        // runs. Clipping here contains that overshoot without changing what
+        // "slide" looks like once visible.
+        "overflow-x-clip transition-all duration-slow ease-out",
         visible ? VISIBLE[variant] : HIDDEN[variant],
         className,
       )}

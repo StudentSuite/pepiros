@@ -5,10 +5,12 @@ import { ThemeProvider as NextThemesProvider } from "next-themes";
 /**
  * Theme root.
  *
- * `defaultTheme="light"` is deliberate: day mode is the intended first
- * impression, and the hero art is authored day-first. `enableSystem` is on so
- * a visitor whose OS is dark is not fought with, and the toggle exposes
- * "System" as an explicit third state rather than hiding it.
+ * `defaultTheme="dark"` is deliberate: the locked visual direction (plan.md
+ * section 11) is "Editorial Paper, lab notebook at night", dark-first, and
+ * first load should show that rather than the mode that was never
+ * art-directed. `enableSystem` is on so a visitor whose OS is light is not
+ * fought with, and the toggle exposes "System" as an explicit third state
+ * rather than hiding it.
  *
  * `disableTransitionOnChange` injects `* { transition: none !important }` for
  * a single frame during the swap. Without it every colour on the page lerps at
@@ -21,7 +23,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   return (
     <NextThemesProvider
       attribute="class"
-      defaultTheme="light"
+      defaultTheme="dark"
       enableSystem
       disableTransitionOnChange
     >

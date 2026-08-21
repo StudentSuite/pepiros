@@ -73,7 +73,23 @@ export function ReadingPath() {
 
       <p className="mb-3 font-sans text-xs text-ink-muted">{thread.bodyMd}</p>
 
-      <div className="flex items-center gap-2">
+      {/* The step title used to sit in the same row as Previous/Next, leaving
+          it only whatever width was left after two nav buttons in a ~256px
+          rail -- as little as ~65px, which wrapped a title like "Sleep onset
+          latency drop" across four lines. Giving it the full row width and
+          putting nav controls on their own row below fixes that directly. */}
+      <button
+        type="button"
+        onClick={() => selectNode(current.node.id)}
+        className={clsx(
+          "block w-full rounded border border-border-strong bg-surface-sunken px-2 py-1.5 text-left font-sans text-sm text-ink",
+          "hover:border-ink-muted",
+        )}
+      >
+        {current.node.title}
+      </button>
+
+      <div className="mt-2 flex items-center justify-between gap-2">
         <button
           type="button"
           disabled={position === 0}
@@ -81,16 +97,6 @@ export function ReadingPath() {
           className="rounded border border-border-strong px-2 py-1 font-sans text-xs text-ink-muted disabled:opacity-30"
         >
           Previous
-        </button>
-        <button
-          type="button"
-          onClick={() => selectNode(current.node.id)}
-          className={clsx(
-            "flex-1 rounded border border-border-strong bg-surface-sunken px-2 py-1.5 text-left font-sans text-sm text-ink",
-            "hover:border-ink-muted",
-          )}
-        >
-          {current.node.title}
         </button>
         <button
           type="button"

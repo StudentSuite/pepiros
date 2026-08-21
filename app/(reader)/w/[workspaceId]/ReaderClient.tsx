@@ -17,6 +17,8 @@ import { NumericChart } from "@/components/viz/NumericChart";
 import { Icon } from "@/components/ui/Icon";
 import { Panel } from "@/components/ui/Panel";
 import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
+import { Logo } from "@/components/ui/Logo";
+import { buttonClassName } from "@/components/ui/Button";
 import type { Highlight } from "@/components/reader/HighlightLayer";
 
 /**
@@ -30,6 +32,7 @@ import type { Highlight } from "@/components/reader/HighlightLayer";
 export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: string; isGuest?: boolean }) {
   const workspace = useWorkspaceStore((s) => s.workspace);
   const loadWorkspace = useWorkspaceStore((s) => s.loadWorkspace);
+  const loadError = useWorkspaceStore((s) => s.loadError);
   const selectedNodeId = useWorkspaceStore((s) => s.selectedNodeId);
   const selectNode = useWorkspaceStore((s) => s.selectNode);
 
@@ -75,6 +78,32 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
       }
     }
   }, [workspace, selectedNodeId]);
+
+  if (loadError) {
+    // Issue #254: GET /api/workspace/[workspaceId] 404s for a mistyped
+    // link, a stale bookmark, or a deleted workspace -- this used to hold
+    // the loading state forever instead of surfacing that, matching what
+    // /s/[shareToken] already does for an invalid share token.
+    return (
+      <main id="main-content" className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col items-center justify-center p-s-5 text-center">
+        <Link href="/" aria-label="Pepiros home" className="mb-s-6">
+          <Logo />
+        </Link>
+        <h1 className="font-serif text-xl text-ink">This workspace doesn&apos;t exist</h1>
+        <p className="mt-s-3 font-sans text-sm text-ink-muted">
+          The link you followed doesn&apos;t resolve to a workspace. It may have been mistyped, or the workspace may no longer exist.
+        </p>
+        <div className="mt-s-5 flex flex-wrap items-center justify-center gap-s-3">
+          <Link href="/discover" className={buttonClassName("secondary", "md")}>
+            Discover papers
+          </Link>
+          <Link href="/workspaces" className={buttonClassName("secondary", "md")}>
+            Your workspaces
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   if (!workspace) {
     // Skeleton shaped like the real layout below, not a bare spinner (§14.5).

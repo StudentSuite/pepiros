@@ -127,7 +127,13 @@ export function Sidebar({
           <SectionNav chunks={paperChunks} activeSectionId={activeSectionId} onSelect={onSelectSection} />
         </section>
 
-        <section className="flex flex-1 flex-col gap-1 overflow-y-auto">
+        {/* min-h-0: a flex item's default min-height is auto (its content
+            size), which stops the overflow-y-auto below from ever actually
+            engaging -- the section just grows to its full node-list height
+            instead of scrolling. That pushed the boundary with the
+            ReadingPath footer around, which is what read as the Reading
+            Path panel overlapping the last visible NODES entries. */}
+        <section className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
           <h2 className="px-1 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
             Nodes &middot;{" "}
             {filteredNodes.length === leafNodes.length

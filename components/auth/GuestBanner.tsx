@@ -15,7 +15,14 @@ export function GuestBanner({ next = "" }: { next?: string }) {
   const href = next ? `/login?next=${encodeURIComponent(next)}` : "/login";
 
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-paraphrase/30 bg-paraphrase/10 px-4 py-2.5">
+    <div
+      // The reader's Sidebar is `fixed inset-y-0 left-0 z-10` (shadcn's
+      // sidebar primitive), so it overlaps the top-left of the page
+      // regardless of this banner's DOM position. Without its own stacking
+      // context above that z-index, the sidebar painted over the banner's
+      // left edge, clipping its opening words.
+      className="relative z-20 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-paraphrase/30 bg-paraphrase/10 px-4 py-2.5"
+    >
       <Icon icon={TriangleAlert} size="sm" className="shrink-0 text-paraphrase" />
       <p className="font-sans text-xs text-ink">
         <span className="font-medium">You&rsquo;re reading as a guest.</span>{" "}
