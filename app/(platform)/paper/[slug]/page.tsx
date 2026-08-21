@@ -18,6 +18,7 @@ import { ClaimBlock } from "@/components/reading/ClaimBlock";
 import { PaperEngagement } from "./PaperEngagement";
 import { CommentForm } from "./CommentForm";
 import { Avatar, AvatarFallback } from "@/components/shadcn/avatar";
+import { buttonClassName } from "@/components/ui/Button";
 
 export async function generateMetadata({
   params,
@@ -112,6 +113,30 @@ export default async function PaperPage({
             <ArrowUpRight className="size-3" />
           </a>
         </p>
+
+        {/* Issue #255/#281: the only /w/ link anywhere on this page used to
+            be the site footer's "Try the demo", which points at ws-1
+            regardless of which paper this is -- a reader browsing e.g.
+            AlphaFold's write-up who clicked the only available reading
+            link landed in an unrelated sleep-and-circadian demo workspace.
+            Catalog papers aren't indexed yet (issue #279: scripts/index-
+            catalog.ts hasn't been run against any of them), so every
+            paper.workspaceId is undefined today -- this renders the honest
+            not-yet-openable state until that changes, rather than
+            silently falling back to a demo link. */}
+        {paper.workspaceId ? (
+          <Link
+            href={`/w/${paper.workspaceId}`}
+            className={buttonClassName("primary", "sm", "mt-s-4")}
+          >
+            Open in reader
+          </Link>
+        ) : (
+          <p className="mt-s-4 rounded-md border border-dashed border-border px-s-4 py-s-3 font-sans text-[13px] leading-relaxed text-ink-faint">
+            This paper isn&rsquo;t indexed for reading in Pepiros yet -- read the
+            original at the source link above.
+          </p>
+        )}
 
         <ArticleBody className="mt-s-6">
           <p>{article.standfirst}</p>

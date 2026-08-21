@@ -24,6 +24,16 @@ export interface CatalogPaper {
   field: ResearchField;
   openAccess: boolean;
   sourceUrl: string;
+  /**
+   * Set once scripts/index-catalog.ts (issue #279) has actually run this
+   * paper through the real ingest pipeline and created a workspace for it.
+   * Every entry below is undefined until that happens -- there is no
+   * indexed catalog paper yet. /paper/[slug]'s "Open in reader" action
+   * reads this field directly rather than falling back to a demo
+   * workspace id, so an unindexed paper says so instead of silently
+   * opening a workspace about a different paper entirely (issue #255).
+   */
+  workspaceId?: string;
 }
 
 export const CATALOG: CatalogPaper[] = [
