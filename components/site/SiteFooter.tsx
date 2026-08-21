@@ -1,15 +1,15 @@
 import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
+import { buttonClassName } from "@/components/ui/Button";
 
-const PRODUCT_LINKS = [
+// Issue #248: renamed from "Product"/"Project", which differed by one
+// letter and gave a reader no way to predict which held Docs vs FAQ. "Read"
+// groups what a reader consumes to use the product.
+const READ_LINKS = [
   { href: "/how-it-works", label: "How it works" },
   { href: "/how-to-use", label: "Guide" },
-  { href: "/mcp", label: "For agents" },
   { href: "/docs", label: "Docs" },
-  { href: "/discover", label: "Discover" },
-  // Straight to the reader: /w is open to guests now, so routing through
-  // /login would ask for credentials this no longer needs.
-  { href: "/w/ws-1", label: "Try the demo" },
+  { href: "/mcp", label: "For agents" },
 ] as const;
 
 const PROJECT_LINKS = [
@@ -19,6 +19,9 @@ const PROJECT_LINKS = [
   { href: "/faq", label: "FAQ" },
 ] as const;
 
+// Issue #248: was "Connect", mixing About/Contact in with the legal pages --
+// renamed to Legal now that About/Contact sit beside the brand instead.
+//
 // No mailto: link -- no contact address is referenced anywhere in the repo
 // (README.md, SECURITY.md, CONTRIBUTING.md all checked), and the brief says
 // omit rather than invent one. No GitHub link either: a repo URL does
@@ -27,13 +30,7 @@ const PROJECT_LINKS = [
 // explicitly warns against linking a private repo as if it were public --
 // applying that same reasoning here rather than one rule for the footer and
 // another for /about.
-//
-// About is listed here (not just in SiteHeader's nav) because the nav is
-// `hidden` below the `sm` breakpoint -- without this, /about would be
-// completely unreachable on narrow viewports (review finding, 2026-08-11).
-const CONNECT_LINKS = [
-  { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
+const LEGAL_LINKS = [
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
   { href: "/security", label: "Security" },
@@ -42,25 +39,50 @@ const CONNECT_LINKS = [
 
 /**
  * Site chrome footer, shared by the `(marketing)` and `(platform)` route
- * groups. 4-column grid (Brand / Product / Platform / Connect) over a bottom
- * strip with the project's origin note, the open-access data note, and the
- * license line -- see inline comments below for where each fact is sourced.
+ * groups. 4-column grid (Brand+About/Contact / Read / Project / Legal) over
+ * a bottom strip with the project's origin note, the open-access data note,
+ * and the license line -- see inline comments below for where each fact is
+ * sourced.
  */
 export function SiteFooter() {
   return (
     <footer className="border-t border-border bg-surface-sunken/40">
       <div className="mx-auto grid max-w-6xl gap-8 px-6 py-12 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           <Logo tagline size="md" />
+          {/* Issue #241/#248: was a restatement of the old hero paragraph,
+              word for word -- the footer's brand blurb should not be the
+              second place the same rewrite shows up. */}
           <p className="max-w-xs font-sans text-sm text-ink-faint">
-            A publishing platform for researchers, with a summariser you can
-            check. Every claim stays bound to the sentence it came from.
+            Every claim, one click from its source.
           </p>
+          {/* Issue #248: About/Contact used to sit in the "Connect" column
+              at the same weight as Privacy/Terms. About is repeated here
+              (not just in SiteHeader's nav) because the nav is `hidden`
+              below the `sm` breakpoint -- without this, /about would be
+              completely unreachable on narrow viewports (review finding,
+              2026-08-11). */}
+          <div className="flex gap-4 font-sans text-sm text-ink-muted">
+            <Link href="/about" className="transition-colors duration-fast ease-out hover:text-ink">
+              About
+            </Link>
+            <Link href="/contact" className="transition-colors duration-fast ease-out hover:text-ink">
+              Contact
+            </Link>
+          </div>
+          {/* Issue #248: "Try the demo" used to be the sixth item in the
+              Product list, at the same weight as License -- the footer had
+              no call to action anywhere. Straight to the reader: /w is open
+              to guests, so routing through /login would ask for
+              credentials this no longer needs. */}
+          <Link href="/w/ws-1" className={buttonClassName("primary", "sm", "self-start")}>
+            Try the demo
+          </Link>
         </div>
 
-        <FooterColumn title="Product" links={PRODUCT_LINKS} />
+        <FooterColumn title="Read" links={READ_LINKS} />
         <FooterColumn title="Project" links={PROJECT_LINKS} />
-        <FooterColumn title="Connect" links={CONNECT_LINKS} />
+        <FooterColumn title="Legal" links={LEGAL_LINKS} />
       </div>
 
       <div className="border-t border-border">
@@ -93,7 +115,9 @@ function FooterColumn({
 }) {
   return (
     <div className="flex flex-col gap-3">
-      <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">{title}</p>
+      {/* Issue #248: 9px mono column heads read as decoration rather than
+          navigation -- one size and one contrast step up. */}
+      <p className="font-mono text-[11px] uppercase tracking-widest text-ink-muted">{title}</p>
       <ul className="flex flex-col gap-2">
         {links.map((link) => (
           <li key={link.href}>
