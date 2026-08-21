@@ -112,8 +112,9 @@ export function CanvasLegend({
                             ? "var(--border-strong)"
                             : "var(--ink-muted)"
                     }
-                    strokeWidth={e.group === "judgement" ? 2 : 1.25}
+                    strokeWidth={e.group === "judgement" ? 2 : 1.5}
                     strokeDasharray={e.dash ?? undefined}
+                    strokeLinecap="round"
                   />
                 </svg>
                 <span className="font-sans text-[11px] font-medium text-ink">{e.label}</span>

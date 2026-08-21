@@ -54,6 +54,16 @@ describe("legend coverage", () => {
     const allText = EDGE_KIND_MEANINGS.map((m) => m.meaning).join(" ").toLowerCase();
     expect(allText).not.toContain("verified");
   });
+
+  // Issue #249: "relation" kinds all render in the same ink-muted colour
+  // when not pillar-tinted (GraphEdge.tsx's baseColor), so dash is the only
+  // thing telling them apart -- relates/derived_from used to share "6 4"
+  // and cites/shares_method were both solid, collapsing 5 kinds into 2
+  // visually distinguishable patterns.
+  it("gives every relation-group kind its own dash pattern, since they share a colour", () => {
+    const relationDashes = EDGE_KIND_MEANINGS.filter((m) => m.group === "relation").map((m) => m.dash);
+    expect(new Set(relationDashes).size).toBe(relationDashes.length);
+  });
 });
 
 describe("presentEdgeKinds", () => {

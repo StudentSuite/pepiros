@@ -46,6 +46,31 @@ const NODE_TYPES = {
 /** CanvasLegend's w-72 (288px) plus its left-4 offset and a gap to breathe. */
 const LEGEND_RESERVED_PX = 320;
 
+/**
+ * Issue #249: the legend explains the one thing a first-time viewer has no
+ * other way to learn (what a line or card signals), but started closed with
+ * nothing prompting anyone to open it. Opened once automatically per
+ * browser, then left to the toggle from then on -- a permanently-forced-open
+ * panel would just become the thing every return visit has to dismiss.
+ */
+const LEGEND_SEEN_KEY = "pepiros:canvas-legend-seen";
+
+function hasSeenLegend(): boolean {
+  try {
+    return window.localStorage.getItem(LEGEND_SEEN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markLegendSeen(): void {
+  try {
+    window.localStorage.setItem(LEGEND_SEEN_KEY, "1");
+  } catch {
+    // Private-browsing/storage-blocked: nothing to persist, just skip it.
+  }
+}
+
 const GHOST_DIRECTIONS: CitationDirection[] = ["cites", "cited_by"];
 const GHOST_X_OFFSET = 260;
 const GHOST_Y_STEP = 110;
@@ -258,6 +283,12 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
   // so nothing ends up underneath it.
   const [legendOpen, setLegendOpen] = useState(false);
   const { fitView } = useReactFlow();
+
+  useEffect(() => {
+    if (hasSeenLegend()) return;
+    setLegendOpen(true);
+    markLegendSeen();
+  }, []);
 
   useEffect(() => {
     if (!workspace) return;

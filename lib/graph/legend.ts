@@ -49,28 +49,34 @@ export const EDGE_KIND_MEANINGS: EdgeKindMeaning[] = [
     kind: "shares_method",
     label: "shares method",
     meaning: "Both used the same approach, so their results are comparable.",
-    dash: null,
+    // Issue #249: was null (solid), identical to cites above at default
+    // zoom whenever both share ink-muted (i.e. not pillar-tinted) -- the
+    // two were undecodable as separate kinds.
+    dash: "5 3",
     group: "relation",
   },
   {
     kind: "relates",
     label: "relates to",
     meaning: "Same subject, no stronger claim than that.",
-    dash: "6 4",
+    dash: "9 4",
     group: "relation",
   },
   {
     kind: "derived_from",
     label: "derived from",
     meaning: "This note was written out of that source claim.",
-    dash: "6 4",
+    // Issue #249: was "6 4", identical to relates above. A dash-dot rhythm
+    // reads as a distinct pattern rather than the same dash at a slightly
+    // different pace.
+    dash: "1 3 5 3",
     group: "relation",
   },
   {
     kind: "extends",
     label: "extends",
     meaning: "Builds further on the other paper's finding.",
-    dash: "2 3",
+    dash: "1 3",
     group: "relation",
   },
   {

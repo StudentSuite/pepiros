@@ -27,9 +27,16 @@ import type { PepirosEdge } from "./types";
  * semantic color always, so a contradiction can never be mistaken for a pillar tint.
  */
 const DASH: Partial<Record<EdgeKind, string>> = {
-  relates: "6 4",
-  derived_from: "6 4",
-  extends: "2 3",
+  // Issue #249: relates/derived_from/shares_method/extends previously
+  // collapsed into just two visually distinct patterns (two pairs sharing
+  // one dasharray each, cites/shares_method both solid) whenever an edge
+  // wasn't pillar-tinted -- five kinds could only be told apart as two.
+  // Kept in sync with lib/graph/legend.ts's own dash field, which the
+  // legend panel renders from; the two must not drift.
+  shares_method: "5 3",
+  relates: "9 4",
+  derived_from: "1 3 5 3",
+  extends: "1 3",
   // "6 6" matches the .motion-dash-march CSS class exactly (app/globals.css) --
   // an inline strokeDasharray would otherwise fight the class's own dasharray.
   contradicts: "6 6",
@@ -51,7 +58,9 @@ function baseColor(kind: EdgeKind): string {
 }
 
 function strokeWidth(kind: EdgeKind): number {
-  return kind === "agrees" || kind === "contradicts" ? 2 : 1.25;
+  // Issue #249: 1.25 was thin enough that the dash/dot rhythm above barely
+  // registered at default zoom, on top of the kinds it collided with.
+  return kind === "agrees" || kind === "contradicts" ? 2 : 1.5;
 }
 
 /** Edge kinds render as machine-ish slugs; a hover label should read as English. */
@@ -113,6 +122,10 @@ export function GraphEdge({
           // contradiction stays red while hovered/focused.
           strokeWidth: strokeWidth(edge.kind) + (revealed ? 1 : 0),
           strokeDasharray: DASH[edge.kind],
+          // Fine dot/dash-dot patterns (extends, derived_from) render as
+          // legible dots and dashes with a round cap; the default butt cap
+          // shrinks each short dash segment into a barely-visible sliver.
+          strokeLinecap: "round",
           transition: "stroke-width var(--dur-fast) var(--ease-out)",
         }}
       />

@@ -38,7 +38,13 @@ export function LeafNode({ data }: NodeProps<PepirosNode>) {
         {stripRefMarkers(node.bodyMd)}
       </p>
       <InlineRefs bodyMd={node.bodyMd} evidence={evidence} className="mt-1.5 flex flex-wrap gap-1" />
-      {weakest && weakest !== "quote_located" && <EvidenceBadge tier={weakest} className="mt-1.5" />}
+      {/* Issue #249: used to stay silent for a well-grounded claim and only
+          speak up for a weaker tier, which meant the card face gave no
+          grounding signal at all until you opened the drawer -- the 2026-08-16
+          critique's "same silhouette as any React Flow demo" gap. Showing
+          the tier always, not just as a warning, is what makes an anchored
+          claim look different from an unanchored one at a glance. */}
+      {weakest && <EvidenceBadge tier={weakest} className="mt-1.5" />}
       <Handle type="source" position={Position.Bottom} style={{ background: color }} />
     </div>
   );
