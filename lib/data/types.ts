@@ -117,7 +117,7 @@ export interface PostMetrics {
   likes: number;
   comments: number;
   /** Daily view counts, oldest first. Length matches the requested range. */
-  series: { date: string; views: number; likes: number }[];
+  series: { date: string; views: number; likes: number; comments: number }[];
 }
 
 export interface Comment {

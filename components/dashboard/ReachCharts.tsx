@@ -14,6 +14,8 @@ import {
 import { TrendingUp, BarChart3 } from "lucide-react";
 import {
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
@@ -147,6 +149,11 @@ export function ReachOverTime({
               dot={false}
               activeDot={{ r: 3 }}
             />
+            {/* Issue #276: Views/Likes were distinguished only by hue and a
+                0.5px stroke-width difference -- the only place the mapping
+                was spelled out was the hover tooltip, so a glance (or touch,
+                or no-hover) couldn't tell the two lines apart. */}
+            <ChartLegend content={<ChartLegendContent />} />
           </LineChart>
         </ChartContainer>
         )}

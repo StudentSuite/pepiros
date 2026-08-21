@@ -144,12 +144,14 @@ export function seedPosts(authorId = GUEST_ID): Post[] {
  */
 export function seedMetrics(postId: string, days: number): PostMetrics {
   const r = rng(`metrics:${postId}`);
+  const cr = rng(`c:${postId}`);
   const base = intBetween(r, 8, 140);
   const spikeDay = intBetween(r, 0, Math.max(0, days - 1));
 
   const series: PostMetrics["series"] = [];
   let views = 0;
   let likes = 0;
+  let comments = 0;
 
   for (let i = days - 1; i >= 0; i--) {
     const dayIndex = days - 1 - i;
@@ -166,19 +168,23 @@ export function seedMetrics(postId: string, days: number): PostMetrics {
     const jitter = 0.72 + r() * 0.56;
     const dayViews = Math.max(0, Math.round(base * weekly * spike * jitter));
     const dayLikes = Math.round(dayViews * (0.03 + r() * 0.05));
+    // Issue #275: this used to be a single aggregate derived from the
+    // *whole* `likes` total (summed over all `days`, which seedReach calls
+    // with days*2 -- both the current and comparison window combined), so a
+    // range toggle changed Views/Likes by the real selected-range amount
+    // but left Comments quietly pooling both windows, ~2x inflated relative
+    // to what Views/Likes represent for the same range. Computed per day
+    // here instead, exactly like dayLikes, so seedReach's existing sum()
+    // helper can scope it to just the current window the same way.
+    const dayComments = Math.round(dayLikes * (0.12 + cr() * 0.2));
 
-    series.push({ date, views: dayViews, likes: dayLikes });
+    series.push({ date, views: dayViews, likes: dayLikes, comments: dayComments });
     views += dayViews;
     likes += dayLikes;
+    comments += dayComments;
   }
 
-  return {
-    postId,
-    views,
-    likes,
-    comments: Math.round(likes * (0.12 + rng(`c:${postId}`)() * 0.2)),
-    series,
-  };
+  return { postId, views, likes, comments, series };
 }
 
 // ---------------------------------------------------------------------------
@@ -333,7 +339,7 @@ export function seedReach(posts: Post[], range: RangeKey): ReachSummary {
     if (date) series.push({ date, views, likes });
   }
 
-  const sum = (from: number, to: number, key: "views" | "likes") =>
+  const sum = (from: number, to: number, key: "views" | "likes" | "comments") =>
     metrics.reduce((acc, m) => {
       let s = 0;
       for (let i = from; i < to; i++) s += m.series[i]?.[key] ?? 0;
@@ -347,7 +353,12 @@ export function seedReach(posts: Post[], range: RangeKey): ReachSummary {
 
   const delta = (cur: number, prev: number) => (prev === 0 ? 0 : (cur - prev) / prev);
 
-  const totalComments = metrics.reduce((a, m) => a + m.comments, 0);
+  // Issue #275: scoped to the current window via the same sum() helper
+  // views/likes already use, instead of metrics.reduce'd whole-period
+  // (days*2) totals -- see seedMetrics's own comment for why that was ~2x
+  // inflated relative to what Views/Likes represent for the same range.
+  const totalComments = sum(days, days * 2, "comments");
+  const prevComments = sum(0, days, "comments");
 
   return {
     totalViews: curViews,
@@ -356,7 +367,11 @@ export function seedReach(posts: Post[], range: RangeKey): ReachSummary {
     followers: GUEST_PROFILE.followerCount,
     viewsDelta: delta(curViews, prevViews),
     likesDelta: delta(curLikes, prevLikes),
-    commentsDelta: delta(totalComments, Math.round(totalComments * 0.88)),
+    // Was a synthetic delta(totalComments, totalComments * 0.88) -- an
+    // arbitrary constant standing in because a properly range-scoped
+    // previous-window total didn't exist yet. Now a real comparison, same
+    // as viewsDelta/likesDelta.
+    commentsDelta: delta(totalComments, prevComments),
     followersDelta: 0.043,
     series,
     perPost: published

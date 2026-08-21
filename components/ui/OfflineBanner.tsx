@@ -30,7 +30,17 @@ export function OfflineBanner() {
       role="alert"
       className="fixed inset-x-0 top-0 z-[70] bg-unsupported px-3 py-1.5 text-center font-sans text-xs text-surface-sunken"
     >
-      You&apos;re offline. Changes won&apos;t save until you&apos;re back online.
+      {/* Issue #277: components/site/SiteHeader.tsx offsets itself below this
+          banner assuming a fixed, effectively-constant single-line height --
+          without truncate, this copy (~60 chars) wraps to two lines on
+          narrow phones (<=~380px), making the banner ~2x taller than the
+          header assumes and breaking that offset on exactly the viewport
+          class most likely to see a real connectivity drop. `title` keeps
+          the full message available on hover/long-press even where it's
+          visually clipped. */}
+      <p className="truncate" title="You're offline. Changes won't save until you're back online.">
+        You&apos;re offline. Changes won&apos;t save until you&apos;re back online.
+      </p>
     </div>
   );
 }

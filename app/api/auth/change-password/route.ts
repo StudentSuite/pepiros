@@ -9,8 +9,9 @@
 // in a settings page.
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getSession } from "@/lib/auth/session";
+import { getSession, SESSION_COOKIE, SESSION_MAX_AGE, serializeSession } from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getAdapter } from "@/lib/data/adapter";
 
 const Body = z.object({ password: z.string().min(8) });
 
@@ -42,5 +43,22 @@ export async function POST(req: Request) {
     );
   }
 
-  return NextResponse.json({ ok: true });
+  // Issue #272: this used to stop here, leaving this app's own
+  // pepiros_session cookie (a completely separate credential from the
+  // Supabase Auth session just updated above, 7-day HMAC-signed, tracked in
+  // the sessions table) valid for up to its remaining 7-day lifetime --
+  // defeating the entire point of a password change if an attacker already
+  // held a copy of it. Revoke every session for this account, then reissue
+  // a fresh one for the caller's own request so they aren't logged out by
+  // their own password change.
+  await getAdapter().revokeAllSessions(profile.id);
+  const res = NextResponse.json({ ok: true });
+  res.cookies.set(SESSION_COOKIE, await serializeSession(profile.id), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: SESSION_MAX_AGE,
+  });
+  return res;
 }

@@ -41,9 +41,12 @@ export function SiteHeader({ session = null }: { session?: Profile | null }) {
   // same top edge this header sticks to, at a higher z-index -- it doesn't
   // expose its visibility to consumers, so the header tracks the same
   // online/offline browser events independently and offsets itself below
-  // the banner's effectively-constant height (`px-3 py-1.5 text-xs` -> ~28px,
-  // i.e. Tailwind's `top-7`) instead of letting the two overlap (review
-  // finding, 2026-08-11).
+  // the banner's height (`px-3 py-1.5 text-xs` -> ~28px, i.e. Tailwind's
+  // `top-7`) instead of letting the two overlap (review finding,
+  // 2026-08-11). Issue #277: this only holds because OfflineBanner's own
+  // text is `truncate`d to one line -- without that, its ~60-char copy wraps
+  // to two lines on narrow phones (<=~380px), making the real banner ~2x
+  // taller than this hardcoded offset assumes.
   const [offline, setOffline] = useState(false);
   const pathname = usePathname();
   // Issue #128: a signed-out visitor already on /login saw a live "Sign in"

@@ -90,6 +90,23 @@ function initialsFrom(name: string): string {
 const USERNAME_PATTERN = /^[a-z0-9_]{3,30}$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Issues #273/#274: a validly-shaped but definitely-nonexistent id, used so
+// a not-found branch performs the same admin.getUserById call (and thus
+// comparable latency) as a found one, rather than short-circuiting locally.
+const DUMMY_USER_ID = "00000000-0000-0000-0000-000000000000";
+
+/**
+ * A fresh, definitely-nonexistent email per call rather than one fixed
+ * constant -- signInWithPassword/resetPasswordForEmail are real public auth
+ * endpoints Supabase actively rate-limits per target to prevent abuse, so
+ * hammering the exact same fake address on every not-found request would
+ * itself start getting throttled differently over time, ironically
+ * reintroducing a new timing signal in place of the one being closed.
+ */
+function dummyEmail(): string {
+  return `no-such-account-${Math.random().toString(36).slice(2)}@users.pepiros.dev`;
+}
+
 export const supabaseAdapter: DataAdapter = {
   kind: "supabase",
 
@@ -266,14 +283,25 @@ export const supabaseAdapter: DataAdapter = {
       .select("id, username")
       .eq("username", username.trim().toLowerCase())
       .maybeSingle();
-    if (!profileRow) return null;
 
+    // Issue #273: a nonexistent username used to return here immediately,
+    // after one local lookup -- while an existing username (right or wrong
+    // password) incurred an extra admin API round trip plus a real
+    // signInWithPassword attempt. Login's response body is deliberately
+    // generic either way, but that latency gap is measurable and lets a
+    // caller enumerate valid usernames by timing this endpoint. Running the
+    // same two calls on both branches (a fixed, definitely-nonexistent but
+    // validly-shaped placeholder id/email when there's no real profile)
+    // keeps this function's own overhead symmetric; any residual difference
+    // inside Supabase Auth's own backend (e.g. if it short-circuits a
+    // known-nonexistent user faster than a real password check) is outside
+    // what a caller of that API can control from here.
     const admin = createSupabaseServiceClient();
-    const { data: authUser } = await admin.auth.admin.getUserById(profileRow.id);
-    const email = authUser.user?.email ?? `${profileRow.username}@users.pepiros.dev`;
+    const { data: authUser } = await admin.auth.admin.getUserById(profileRow?.id ?? DUMMY_USER_ID);
+    const email = profileRow ? (authUser.user?.email ?? `${profileRow.username}@users.pepiros.dev`) : dummyEmail();
 
     const { error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) return null;
+    if (!profileRow || error) return null;
 
     return this.getProfile(profileRow.id);
   },
@@ -298,22 +326,30 @@ export const supabaseAdapter: DataAdapter = {
       .eq("username", normalized)
       .maybeSingle();
 
-    if (profileRow) {
-      const { data: authUser } = await sb.auth.admin.getUserById(profileRow.id);
-      const email = authUser.user?.email ?? null;
-      const isRealEmail = Boolean(email) && email !== `${profileRow.username}@users.pepiros.dev`;
+    // Issue #274: this used to only call getUserById/resetPasswordForEmail
+    // (the latter a real outbound email-send network call) when a profile
+    // existed *and* had a real email -- a nonexistent username, or one with
+    // no real recovery email, returned almost immediately, while a fully
+    // real account incurred both real network calls before this route's
+    // caller gets its (identical) response. Always making the same two
+    // calls -- with a nonexistent target on any branch that has nothing
+    // real to reach -- keeps this function's own latency comparable across
+    // all three cases instead of leaking which one happened through timing.
+    const { data: authUser } = await sb.auth.admin.getUserById(profileRow?.id ?? DUMMY_USER_ID);
+    const realEmail = profileRow ? (authUser.user?.email ?? null) : null;
+    const isRealEmail = Boolean(realEmail) && realEmail !== `${profileRow?.username}@users.pepiros.dev`;
 
-      if (isRealEmail) {
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-        const { error } = await sb.auth.resetPasswordForEmail(email!, {
-          redirectTo: `${appUrl}/auth/reset-callback`,
-        });
-        if (error) console.error(`[requestPasswordReset] resetPasswordForEmail failed for ${normalized}:`, error.message);
-      } else {
-        console.error(`[requestPasswordReset] ${normalized} has no real recovery email on file -- nothing sent.`);
-      }
-    } else {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const { error } = await sb.auth.resetPasswordForEmail(isRealEmail ? realEmail! : dummyEmail(), {
+      redirectTo: `${appUrl}/auth/reset-callback`,
+    });
+
+    if (!profileRow) {
       console.error(`[requestPasswordReset] no account for username ${normalized} -- nothing sent.`);
+    } else if (!isRealEmail) {
+      console.error(`[requestPasswordReset] ${normalized} has no real recovery email on file -- nothing sent.`);
+    } else if (error) {
+      console.error(`[requestPasswordReset] resetPasswordForEmail failed for ${normalized}:`, error.message);
     }
 
     return { ok: true };
