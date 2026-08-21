@@ -369,8 +369,13 @@ export default function UploadPage() {
                 placeholder="https://arxiv.org/abs/1706.03762"
                 inputMode="url"
               />
+              {/* Issue #236: a DOI is resolved through Unpaywall, which only
+                  finds a PDF when a legally free copy exists. Saying so here
+                  is the difference between an option that sometimes cannot
+                  work and one the reader is told will always work. */}
               <p className="font-sans text-[13px] text-ink-faint">
-                arXiv, PMC, or a DOI.
+                arXiv, PMC, or a direct PDF link. A DOI works when the paper has
+                an open-access copy.
               </p>
             </div>
           )}

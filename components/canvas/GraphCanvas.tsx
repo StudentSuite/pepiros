@@ -14,7 +14,7 @@ import "@xyflow/react/dist/style.css";
 
 import { useWorkspaceStore } from "@/lib/store/workspace";
 import { allPillarIds, hiddenLeafIds, leavesByPillar, visibleEdges } from "@/lib/graph/visibility";
-import { detailLevelFor, LOD_TITLE_THRESHOLD } from "@/lib/graph/lod";
+import { detailLevelFor, LOD_FULL_THRESHOLD } from "@/lib/graph/lod";
 import { CanvasLegend } from "./CanvasLegend";
 import type { GraphNode, Workspace } from "@/types/anchor";
 import type { CitationExpansionResult, CitationDirection } from "@/lib/services/citationExpand";
@@ -302,13 +302,19 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
         padding: legendOpen
           ? { left: `${LEGEND_RESERVED_PX}px`, right: "24px", y: "24px" }
           : "12%",
-        // Never fit below the band where titles still render (lib/graph/lod.ts).
-        // Without this floor, reserving room for the legend zoomed a 3-paper
-        // graph down into "minimal" -- so opening the key turned every card
-        // into a blank block, which is the opposite of explaining the picture.
-        // Anything that no longer fits is reachable by panning, which is the
-        // normal way to read a canvas.
-        minZoom: LOD_TITLE_THRESHOLD,
+        // Issue #226: this floor was LOD_TITLE_THRESHOLD, which is the exact
+        // boundary getLod() returns "minimal" at -- so a graph laid out wider
+        // than one viewport clamped to precisely the zoom where titles stop
+        // rendering, and the canvas opened as a field of blank rectangles.
+        // Fitting to LOD_FULL_THRESHOLD instead means it opens legible.
+        //
+        // The original reason for a floor still holds: without one, reserving
+        // room for the legend zoomed a 3-paper graph into "minimal", so opening
+        // the key turned every card into a blank block. Anything that no longer
+        // fits is reachable by panning, which is the normal way to read a
+        // canvas. Tightening horizontal spacing in computeLayout so more of the
+        // graph fits at a legible zoom is the better fix, and a separate one.
+        minZoom: LOD_FULL_THRESHOLD,
         duration: 320,
       });
     });

@@ -4,6 +4,7 @@ import { useState } from "react";
 import clsx from "clsx";
 import { useWorkspaceStore } from "@/lib/store/workspace";
 import type { GraphEdge, GraphNode } from "@/types/anchor";
+import { InlineRefs, stripRefMarkers } from "@/components/canvas/InlineRefs";
 
 interface PathStep {
   node: GraphNode;
@@ -71,7 +72,18 @@ export function ReadingPath() {
         </button>
       </div>
 
-      <p className="mb-3 font-sans text-xs text-ink-muted">{thread.bodyMd}</p>
+      {/* Issue #227: this rendered thread.bodyMd raw, so an inline `[^eN]`
+          citation marker printed literally in the card. Markers come out of
+          the prose and resolve to chips, the same treatment node bodies get
+          on the canvas -- and the same reason FlashcardDeck strips them. */}
+      <p className="mb-2 font-sans text-xs text-ink-muted">
+        {stripRefMarkers(thread.bodyMd)}
+      </p>
+      <InlineRefs
+        bodyMd={thread.bodyMd}
+        evidence={workspace.evidence}
+        className="mb-3 flex flex-wrap gap-1"
+      />
 
       {/* The step title used to sit in the same row as Previous/Next, leaving
           it only whatever width was left after two nav buttons in a ~256px

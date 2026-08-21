@@ -211,7 +211,15 @@ function LoginForm() {
 
         <p className="mt-s-5 font-sans text-xs text-ink-faint">
           New here?{" "}
-          <Link href="/signup" className="text-accent-text underline underline-offset-2">
+          {/* Issue #256: this was a bare /signup, so a visitor sent here from
+              a protected page kept their destination only if they already had
+              an account. Picking the other path silently dropped it and they
+              finished onboarding on /home with no memory of where they were
+              going. */}
+          <Link
+            href={next === "/home" ? "/signup" : `/signup?next=${encodeURIComponent(next)}`}
+            className="text-accent-text underline underline-offset-2"
+          >
             Create an account
           </Link>
         </p>

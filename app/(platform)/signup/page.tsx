@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -46,8 +46,13 @@ interface FieldErrors {
   confirmPassword?: string;
 }
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter();
+  // Issue #256: carry the destination the visitor was originally headed for
+  // through account creation and onboarding, instead of always landing them
+  // on /home. Login already honoured `next`; only the signup branch lost it.
+  const next = useSearchParams().get("next") || "";
+  const loginHref = next ? `/login?next=${encodeURIComponent(next)}` : "/login";
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -94,7 +99,7 @@ export default function SignupPage() {
         setFormError(body?.error ?? "Could not create an account.");
         return;
       }
-      router.push("/onboarding/1");
+      router.push(next ? `/onboarding/1?next=${encodeURIComponent(next)}` : "/onboarding/1");
       router.refresh();
     } catch {
       setFormError("Could not reach the server. Check your connection and try again.");
@@ -186,7 +191,7 @@ export default function SignupPage() {
         <p className="mt-s-5 font-sans text-xs text-ink-faint">
           Just looking? Sign in as <span className="font-mono text-ink">guest</span> /{" "}
           <span className="font-mono text-ink">guest</span> on the{" "}
-          <Link href="/login" className="text-accent-text underline underline-offset-2">
+          <Link href={loginHref} className="text-accent-text underline underline-offset-2">
             sign-in page
           </Link>{" "}
           instead.
@@ -194,11 +199,21 @@ export default function SignupPage() {
 
         <p className="mt-s-3 font-sans text-[13px] text-ink-faint">
           Already have an account?{" "}
-          <Link href="/login" className="text-accent-text underline underline-offset-2">
+          <Link href={loginHref} className="text-accent-text underline underline-offset-2">
             Sign in
           </Link>
         </p>
       </Card>
     </main>
+  );
+}
+
+export default function SignupPage() {
+  // useSearchParams needs a Suspense boundary, or the whole route opts out of
+  // static rendering. Same shape as login/page.tsx.
+  return (
+    <Suspense fallback={null}>
+      <SignupForm />
+    </Suspense>
   );
 }

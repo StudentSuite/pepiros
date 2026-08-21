@@ -20,6 +20,7 @@ import {
   type ResolvedSource,
 } from "./upload";
 import { runPythonScript } from "./pythonRunner";
+import { resolveDoiToPdfUrl } from "./unpaywall";
 
 /**
  * Orchestrates parse -> generate -> merge for one paper (docs/PLAN-V1.md
@@ -510,18 +511,26 @@ export async function queueUrlIngest(workspaceId: string, url: string): Promise<
 
   const job = createJob({ workspaceId, source: { kind: resolved.kind, url: resolved.pdfUrl ?? url, doi: resolved.doi } });
 
+  // Issue #236: a DOI used to create a job and immediately fail it, so the
+  // form offered a path guaranteed not to work. Unpaywall turns the DOI into
+  // an open-access PDF url, after which this is just the direct-PDF path
+  // below and needs no separate branch. A DOI with no free copy (or a
+  // deployment with no resolver configured) still fails, but now with a
+  // reason the reader can act on.
+  let pdfUrl = resolved.pdfUrl;
   if (resolved.kind === "doi") {
-    // DOI -> PDF resolution needs a resolver (Unpaywall) that isn't wired up
-    // yet -- an honest failure on the job, not a silent hang. Nothing async
-    // follows on this branch, so the reservation is released right here.
-    failJob(job.id, "DOI resolution isn't implemented yet. Paste a direct PDF link, or upload the file.");
-    releaseIngest(workspaceId, identity);
-    return { jobId: job.id, source: resolved };
+    const resolution = await resolveDoiToPdfUrl(resolved.doi!);
+    if (!resolution.ok) {
+      failJob(job.id, resolution.reason);
+      releaseIngest(workspaceId, identity);
+      return { jobId: job.id, source: resolved };
+    }
+    pdfUrl = resolution.pdfUrl;
   }
 
   void (async () => {
     try {
-      const res = await fetch(resolved.pdfUrl!);
+      const res = await fetch(pdfUrl!);
       if (!res.ok) throw new Error(`Fetching the PDF failed (${res.status}).`);
       const bytes = new Uint8Array(await res.arrayBuffer());
 

@@ -68,7 +68,11 @@ export async function generateMetadata({
   // giving up (same real-vs-illustrative fallback the page body itself
   // uses below).
   const profile = await getAdapter().getProfileByUsername(username);
-  if (!profile) return { title: "Profile not found" };
+  // Issue #257: see the note in paper/[slug]/page.tsx. The status is fixed
+  // once streaming starts, so a notFound() that only runs in the page body
+  // renders the right screen under a 200. The body keeps its own check: this
+  // one decides the status, that one is the guard for the render path.
+  if (!profile) notFound();
   return { title: profile.displayName, description: profile.bio || undefined };
 }
 

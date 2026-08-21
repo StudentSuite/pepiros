@@ -27,7 +27,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const paper = await getAdapter().getCatalogPaper(slug);
-  if (!paper) return { title: "Paper not found" };
+  // Issue #257: returning a "not found" title here and leaving notFound() to
+  // the page body sent 200. generateMetadata resolves first and the response
+  // starts streaming with its status already committed, so by the time the
+  // body called notFound() the 404 could no longer be set. Deciding it here
+  // is what actually produces the status, and search engines and link
+  // checkers read the status, not the heading.
+  if (!paper) notFound();
 
   const article = articleFor(paper);
   return {

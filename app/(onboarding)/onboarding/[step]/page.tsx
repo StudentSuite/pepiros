@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
@@ -37,13 +38,19 @@ export default async function OnboardingStepPage({
   };
 
   return (
-    <OnboardingWizard
-      step={step}
-      initial={initial}
-      onComplete={async (response) => {
-        "use server";
-        await saveOnboardingAction(response);
-      }}
-    />
+    // The wizard reads `next` off the query string (issue #256) to return the
+    // visitor to wherever they were headed before signing up, and
+    // useSearchParams needs a boundary or the whole route bails out of static
+    // rendering.
+    <Suspense fallback={null}>
+      <OnboardingWizard
+        step={step}
+        initial={initial}
+        onComplete={async (response) => {
+          "use server";
+          await saveOnboardingAction(response);
+        }}
+      />
+    </Suspense>
   );
 }

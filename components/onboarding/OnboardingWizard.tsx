@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
@@ -99,6 +99,9 @@ export function OnboardingWizard({
   onComplete: (response: OnboardingResponse) => Promise<void>;
 }) {
   const router = useRouter();
+  // Named `nextDest`, not `next`: the step-advance handler below is already
+  // called next(), and so is a local inside the field-cap reducer.
+  const nextDest = useSearchParams().get("next") || "";
   const [draft, setDraft] = useState<OnboardingResponse>(initial);
   const [saving, setSaving] = useState(false);
 
@@ -140,10 +143,20 @@ export function OnboardingWizard({
       const isFinal = step === STEP_COUNT;
       await onComplete(isFinal ? { ...draft, completedAt: new Date().toISOString().slice(0, 10) } : draft);
       if (isFinal) {
-        router.push("/home");
+        // Issue #256: this always finished on /home, so somebody who followed
+        // a link to a protected page, created an account, and completed
+        // onboarding arrived somewhere they never asked for. /home stays the
+        // fallback when there is no destination to return to.
+        router.push(nextDest || "/home");
         router.refresh();
       } else {
-        router.push(`/onboarding/${step + 1}`);
+        // The destination rides along step to step, so it survives a back
+        // button or a resumed half-finished wizard.
+        router.push(
+          nextDest
+            ? `/onboarding/${step + 1}?next=${encodeURIComponent(nextDest)}`
+            : `/onboarding/${step + 1}`,
+        );
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save your answers. Try again.");
