@@ -3,9 +3,10 @@
 @tailwind utilities;
 
 /*
- * Design system: "soft glass over papyrus". Day-first (day is the default
- * theme), with a warm-charcoal dark counterpart. Two hard rules govern the
- * whole system:
+ * Design system: "soft glass over papyrus". Dark is the default theme
+ * (plan.md section 11's locked "lab notebook at night" direction; issue
+ * #238), with this light counterpart still fully supported via the toggle.
+ * Two hard rules govern the whole system:
  *
  *   1. SURFACE RULE. Anything carrying body text to read is OPAQUE (--paper
  *      in both themes, with grain). Anything that is chrome, a control, or a
@@ -32,7 +33,13 @@
 
   --ink: #1c1a15;
   --ink-muted: #55504a;
-  --ink-faint: #7d776a;
+  /* Issue #239: #7d776a measured 3.68-4.30:1 against this theme's own
+     surfaces (surface/surface-raised/surface-sunken/paper/paper-muted) --
+     below WCAG AA's 4.5:1 for normal text on every one of them, worst on
+     surface-sunken. Darkened (proportionally, same hue) to clear 4.5:1
+     with margin (5.24:1 worst case) while staying visibly lighter than
+     --ink-muted (7.20:1 on surface), so the two tiers stay distinct. */
+  --ink-faint: #645f55;
 
   --border: #ded5c4;
   --border-strong: #c6baa3;
@@ -203,7 +210,7 @@
   --paper-muted-rgb: 242 236 223;
   --ink-rgb: 28 26 21;
   --ink-muted-rgb: 85 80 74;
-  --ink-faint-rgb: 125 119 106;
+  --ink-faint-rgb: 100 95 85;
   --border-rgb: 222 213 196;
   --border-strong-rgb: 198 186 163;
   --accent-rgb: 110 106 167;
