@@ -20,7 +20,9 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const parsed = bodySchema.safeParse(await request.json());
+  // Issue #267: without .catch(), a malformed/non-JSON body threw before
+  // safeParse ran, producing an unhandled 500 instead of a graceful 400.
+  const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "invalid_body", issues: parsed.error.issues }, { status: 400 });
   }
@@ -33,12 +35,23 @@ export async function POST(request: Request) {
   } catch (err) {
     // A missing/rejected model key is the common case here and is worth
     // naming: a generic 500 sends someone digging through server logs for
-    // something the message could have told them.
+    // something the message could have told them. That specific check
+    // (does the message mention one of the two key env vars) is the one
+    // deliberately-safe-to-show case; issue #266: anything else used to
+    // reach the client as this same raw err.message, potentially leaking an
+    // internal AI-SDK exception detail. Matches the UserFacingError-vs-
+    // generic pattern app/api/nodes/route.ts already established (issue
+    // #107) -- log the real error, return a generic message for anything
+    // that isn't the named config case.
     const message = err instanceof Error ? err.message : String(err);
     const isConfig = message.includes("GROQ_API_KEY") || message.includes("FEATHERLESS_API_KEY");
+    if (isConfig) {
+      return NextResponse.json({ error: "model_not_configured", detail: message }, { status: 503 });
+    }
+    console.error("[api/chat] answerQuestion failed:", err);
     return NextResponse.json(
-      { error: isConfig ? "model_not_configured" : "chat_failed", detail: message },
-      { status: isConfig ? 503 : 500 },
+      { error: "chat_failed", detail: "Could not answer that right now. Try again." },
+      { status: 500 },
     );
   }
 }

@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { expandNode } from "@/lib/services/nodes";
 import { requireWorkspaceSession } from "@/lib/services/workspaceAccess";
+import { UserFacingError } from "@/lib/errors";
 
 const bodySchema = z.object({
   workspaceId: z.string().min(1),
@@ -27,11 +28,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const result = await expandNode({ workspaceId: parsed.data.workspaceId, nodeId: id, question: parsed.data.question });
     return NextResponse.json(result);
   } catch (err) {
+    // Issue #266: any err.message used to reach the client verbatim.
+    // Matches app/api/nodes/route.ts's established pattern (issue #107).
+    if (err instanceof UserFacingError) {
+      return NextResponse.json({ error: "expand_failed", detail: err.message }, { status: 400 });
+    }
     const message = err instanceof Error ? err.message : String(err);
     const isConfig = message.includes("GROQ_API_KEY") || message.includes("FEATHERLESS_API_KEY");
+    if (isConfig) {
+      return NextResponse.json({ error: "model_not_configured", detail: message }, { status: 503 });
+    }
+    console.error("[api/nodes/[id]/expand] expandNode failed:", err);
     return NextResponse.json(
-      { error: isConfig ? "model_not_configured" : "expand_failed", detail: message },
-      { status: isConfig ? 503 : 400 },
+      { error: "expand_failed", detail: "Could not answer that follow-up right now. Try again." },
+      { status: 500 },
     );
   }
 }

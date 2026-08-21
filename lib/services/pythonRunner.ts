@@ -15,15 +15,48 @@ import { spawn } from "node:child_process";
  * means this works on either without the user needing to know which their
  * system uses.
  */
-async function spawnAndCollect(command: string, args: string[]): Promise<{ stdout: string; stderr: string; code: number | null }> {
+
+// Issue #268: a hang here (a stalled model load, a pathological PDF spinning
+// some loop in scripts/parse.py) used to leave this promise never resolving
+// or rejecting -- the job's status stayed "running" forever in jobs.ts's
+// in-memory map, and the orphaned Python process (with any loaded
+// torch/onnxruntime weights) kept running indefinitely. 5 minutes is
+// generous for a single-paper parse -- real runs observed live finish in
+// well under a minute -- while still bounding the worst case.
+const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
+
+async function spawnAndCollect(
+  command: string,
+  args: string[],
+  timeoutMs: number,
+): Promise<{ stdout: string; stderr: string; code: number | null }> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args);
     let stdout = "";
     let stderr = "";
+    let settled = false;
+
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      child.kill("SIGKILL");
+      reject(new Error(`${command} ${args[0] ?? ""} timed out after ${Math.round(timeoutMs / 1000)}s and was killed.`));
+    }, timeoutMs);
+
     child.stdout.on("data", (chunk: Buffer) => (stdout += chunk.toString("utf8")));
     child.stderr.on("data", (chunk: Buffer) => (stderr += chunk.toString("utf8")));
-    child.on("error", reject);
-    child.on("close", (code) => resolve({ stdout, stderr, code }));
+    child.on("error", (err) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      reject(err);
+    });
+    child.on("close", (code) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve({ stdout, stderr, code });
+    });
   });
 }
 
@@ -31,16 +64,16 @@ function isNotFoundError(err: unknown): boolean {
   return err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT";
 }
 
-export async function runPythonScript<T>(scriptPath: string, args: string[]): Promise<T> {
+export async function runPythonScript<T>(scriptPath: string, args: string[], timeoutMs = DEFAULT_TIMEOUT_MS): Promise<T> {
   let result: { stdout: string; stderr: string; code: number | null };
   try {
-    result = await spawnAndCollect("python3", [scriptPath, ...args]);
+    result = await spawnAndCollect("python3", [scriptPath, ...args], timeoutMs);
   } catch (err) {
     if (!isNotFoundError(err)) {
       throw new Error(`Could not run ${scriptPath} with python3: ${err instanceof Error ? err.message : String(err)}`);
     }
     try {
-      result = await spawnAndCollect("python", [scriptPath, ...args]);
+      result = await spawnAndCollect("python", [scriptPath, ...args], timeoutMs);
     } catch (fallbackErr) {
       throw new Error(
         `Could not find a Python interpreter (tried "python3" and "python"). ` +

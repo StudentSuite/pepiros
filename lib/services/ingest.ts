@@ -1,4 +1,5 @@
 import "server-only";
+import { z } from "zod";
 import { writeFile, unlink, mkdir, copyFile, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -70,8 +71,62 @@ interface ParsedDocument {
   pageCount: number;
 }
 
-function runParsePy(pdfPath: string): Promise<ParsedDocument> {
-  return runPythonScript<ParsedDocument>(path.join(process.cwd(), "scripts", "parse.py"), [pdfPath]);
+const RectSchema = z.object({ page: z.number(), x0: z.number(), y0: z.number(), x1: z.number(), y1: z.number() });
+
+/**
+ * Issue #269: runPythonScript<ParsedDocument>'s `JSON.parse(...) as T` is a
+ * bare type assertion, not a runtime check -- any valid JSON scripts/parse.py
+ * happens to emit satisfies it, with zero shape validation. A field a future
+ * parse.py change omits or mistypes (e.g. `rects: undefined`, which violates
+ * CLAUDE.md's "multi-span anchors are always an array" invariant) would
+ * silently flow straight into a persisted Chunk/Numeric/GraphNode instead of
+ * failing the job with a clear, named diagnosis. Mirrors the ParsedChunk/
+ * ParsedFigure/ParsedNumeric interfaces above exactly.
+ */
+const ParsedDocumentSchema = z.object({
+  title: z.string().nullable(),
+  authors: z.array(z.string()),
+  year: z.number().nullable(),
+  sections: z.array(z.object({ title: z.string(), order: z.number() })),
+  chunks: z.array(
+    z.object({
+      page: z.number(),
+      kind: z.string(),
+      text: z.string(),
+      sectionIndex: z.number().nullable(),
+      rects: z.array(RectSchema),
+    }),
+  ),
+  numerics: z.array(
+    z.object({
+      chunkIndex: z.number(),
+      rawText: z.string(),
+      value: z.number(),
+      unit: z.string().nullable(),
+      comparator: z.string().nullable(),
+      role: z.string(),
+    }),
+  ),
+  figures: z.array(
+    z.object({
+      page: z.number(),
+      caption: z.string().nullable(),
+      imageBase64: z.string(),
+      sectionIndex: z.number().nullable(),
+      rect: RectSchema,
+    }),
+  ),
+  references: z.array(z.object({ rawText: z.string(), doi: z.string().nullable() })),
+  pageCount: z.number(),
+});
+
+async function runParsePy(pdfPath: string): Promise<ParsedDocument> {
+  const raw = await runPythonScript<unknown>(path.join(process.cwd(), "scripts", "parse.py"), [pdfPath]);
+  const result = ParsedDocumentSchema.safeParse(raw);
+  if (!result.success) {
+    throw new Error(`scripts/parse.py produced output that doesn't match the expected shape: ${result.error.message}`);
+  }
+  return result.data;
 }
 
 /**
@@ -120,6 +175,11 @@ export interface IngestInput {
 
 export async function runIngest(input: IngestInput): Promise<void> {
   const tmpPath = path.join(tmpdir(), `pepiros-ingest-${randomUUID()}.pdf`);
+  // Issue #271: the permanent copy below persists before generation/merge
+  // finishes; if either fails afterward, this used to leave that file
+  // orphaned on disk forever, unreferenced by any paper record. Tracked
+  // here (outside the try block) so the catch below can clean it up too.
+  let copiedPdfPath: string | null = null;
 
   try {
     await writeFile(tmpPath, input.bytes);
@@ -166,7 +226,9 @@ export async function runIngest(input: IngestInput): Promise<void> {
     // unconditionally regardless of which branch this try block takes.
     const pdfFilename = `${paperId}.pdf`;
     await mkdir(PDF_STORAGE_DIR, { recursive: true });
-    await copyFile(tmpPath, resolvePdfStoragePath(pdfFilename));
+    const permanentPdfPath = resolvePdfStoragePath(pdfFilename);
+    await copyFile(tmpPath, permanentPdfPath);
+    copiedPdfPath = permanentPdfPath;
 
     let chunkOrdinal = base.chunks.reduce((max, c) => Math.max(max, c.ordinal), 0);
     let numericOrdinal = base.numerics.reduce((max, n) => Math.max(max, n.ordinal), 0);
@@ -327,40 +389,54 @@ export async function runIngest(input: IngestInput): Promise<void> {
     // most likely to land in. `ingested?.version` (undefined only when there
     // was no real row yet to race against) makes a stale write here fail
     // loudly instead of silently discarding whatever landed in that window.
-    try {
-      await setIngestedWorkspace(buildMerged(base, allChunks, numerics), ingested?.version);
-    } catch (err) {
-      if (!(err instanceof UserFacingError)) throw err;
+    //
+    // Issue #178/#270: this used to retry exactly once. A *third* concurrent
+    // ingest landing in that same retry's own read-modify-write window hit a
+    // second version conflict, which wasn't caught locally and propagated to
+    // the outer catch below, discarding an already-completed 15-45s
+    // generator run (real LLM calls) purely because two *other, unrelated*
+    // papers happened to commit first -- none of the three actually
+    // conflict (different paperIds, purely additive). Now a bounded loop:
+    // each retry re-reads the current workspace and re-computes the ordinal
+    // shift from where the *previous* attempt's chunks/numerics were last
+    // aligned, so repeated concurrent writers each get one more chance
+    // instead of the second one being fatal. Chunk/numeric ordinals are
+    // shifted so this paper's chunks can't collide with whatever the other
+    // ingest(s) just added -- ordinals are a global, never-per-paper-reset
+    // counter this whole citation system depends on staying unique. The
+    // shift can leave an already-verified evidence row's displayed ref
+    // (e.g. "C23", baked in during the generator pass above) cosmetically
+    // out of step with that chunk's new ordinal number; the citation itself
+    // still resolves correctly since anchoring is by the chunk's stable id,
+    // never by ordinal, at read time.
+    const MAX_MERGE_ATTEMPTS = 3;
+    let mergeBase = base;
+    let mergeVersion = ingested?.version;
+    let mergeChunks = allChunks;
+    let mergeNumerics = numerics;
 
-      // Issue #178: this used to just fail the whole job here -- discarding
-      // an already-completed 15-45s generator run (real LLM calls) purely
-      // because a *different, unrelated* paper committed to this workspace
-      // first. The two papers don't actually conflict (different paperIds,
-      // purely additive), so this retries the merge once against the
-      // now-current workspace instead of throwing the finished work away.
-      // Chunk/numeric ordinals are shifted by the gap between what this run
-      // started from and where the workspace's ordinals actually are now,
-      // so this paper's chunks can't collide with whatever the other
-      // ingest just added -- ordinals are a global, never-per-paper-reset
-      // counter this whole citation system depends on staying unique. The
-      // shift can leave an already-verified evidence row's displayed ref
-      // (e.g. "C23", baked in during the generator pass above) cosmetically
-      // out of step with that chunk's new ordinal number; the citation
-      // itself still resolves correctly since anchoring is by the chunk's
-      // stable id, never by ordinal, at read time.
-      const retryIngested = await getIngestedWorkspace(workspaceId);
-      const retryBase = retryIngested?.workspace ?? (await fetchWorkspace(workspaceId));
-      const priorMaxChunkOrdinal = base.chunks.reduce((max, c) => Math.max(max, c.ordinal), 0);
-      const priorMaxNumericOrdinal = base.numerics.reduce((max, n) => Math.max(max, n.ordinal), 0);
-      const newMaxChunkOrdinal = retryBase.chunks.reduce((max, c) => Math.max(max, c.ordinal), 0);
-      const newMaxNumericOrdinal = retryBase.numerics.reduce((max, n) => Math.max(max, n.ordinal), 0);
-      const chunkShift = newMaxChunkOrdinal - priorMaxChunkOrdinal;
-      const numericShift = newMaxNumericOrdinal - priorMaxNumericOrdinal;
+    for (let attempt = 1; ; attempt++) {
+      try {
+        await setIngestedWorkspace(buildMerged(mergeBase, mergeChunks, mergeNumerics), mergeVersion);
+        break;
+      } catch (err) {
+        if (!(err instanceof UserFacingError) || attempt >= MAX_MERGE_ATTEMPTS) throw err;
 
-      const shiftedChunks = allChunks.map((c) => ({ ...c, ordinal: c.ordinal + chunkShift }));
-      const shiftedNumerics = numerics.map((n) => ({ ...n, ordinal: n.ordinal + numericShift }));
+        const priorMaxChunkOrdinal = mergeBase.chunks.reduce((max, c) => Math.max(max, c.ordinal), 0);
+        const priorMaxNumericOrdinal = mergeBase.numerics.reduce((max, n) => Math.max(max, n.ordinal), 0);
 
-      await setIngestedWorkspace(buildMerged(retryBase, shiftedChunks, shiftedNumerics), retryIngested?.version);
+        const retryIngested = await getIngestedWorkspace(workspaceId);
+        const retryBase = retryIngested?.workspace ?? (await fetchWorkspace(workspaceId));
+        const newMaxChunkOrdinal = retryBase.chunks.reduce((max, c) => Math.max(max, c.ordinal), 0);
+        const newMaxNumericOrdinal = retryBase.numerics.reduce((max, n) => Math.max(max, n.ordinal), 0);
+        const chunkShift = newMaxChunkOrdinal - priorMaxChunkOrdinal;
+        const numericShift = newMaxNumericOrdinal - priorMaxNumericOrdinal;
+
+        mergeChunks = mergeChunks.map((c) => ({ ...c, ordinal: c.ordinal + chunkShift }));
+        mergeNumerics = mergeNumerics.map((n) => ({ ...n, ordinal: n.ordinal + numericShift }));
+        mergeBase = retryBase;
+        mergeVersion = retryIngested?.version;
+      }
     }
     appendEvent(
       input.jobId,
@@ -369,6 +445,9 @@ export async function runIngest(input: IngestInput): Promise<void> {
     );
   } catch (err) {
     failJob(input.jobId, err instanceof Error ? err.message : String(err));
+    // Issue #271: don't leave the permanent copy behind for a paper that
+    // never actually made it into the workspace.
+    if (copiedPdfPath) await unlink(copiedPdfPath).catch(() => {});
   } finally {
     await unlink(tmpPath).catch(() => {});
   }

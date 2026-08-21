@@ -18,7 +18,11 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const parsed = bodySchema.safeParse(await request.json());
+  // Issue #267: a malformed/non-JSON body used to throw here before
+  // safeParse ever ran, producing an unhandled 500 instead of the intended
+  // graceful 400 -- matching the .catch(() => null) pattern every sibling
+  // route already uses.
+  const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "invalid_body", issues: parsed.error.issues }, { status: 400 });
   }
