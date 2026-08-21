@@ -85,6 +85,9 @@ export const GUEST_PROFILE: Profile = {
   followingCount: 96,
   joinedAt: "2026-03-02",
   onboarded: true,
+  // The seed guest is never an admin: /admin/onboarding must not be reachable
+  // just by running without a backend.
+  isAdmin: false,
 };
 
 export const GUEST_ONBOARDING: OnboardingResponse = {
@@ -97,6 +100,14 @@ export const GUEST_ONBOARDING: OnboardingResponse = {
   intent: "verify_before_citing",
   experience: "weekly",
   agentTools: ["claude", "cursor"],
+  // Issue #233: seeded illustratively, like the rest of the guest account.
+  wrongSummaryStory:
+    "A model told me a trial reported a significant effect. It reported a null result, and the significance was in a subgroup the abstract never mentioned.",
+  verifyMethod: ["open_pdf_and_search", "check_cited_source"],
+  verifyMethodOther: null,
+  contactOptIn: false,
+  fieldFreetext: "sleep and circadian neuroscience",
+  weeklyTrigger: "If it caught a bad citation before I sent a draft to my supervisor.",
   completedAt: "2026-03-02",
 };
 

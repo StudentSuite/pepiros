@@ -15,6 +15,7 @@ import type {
   Comment,
   NotificationPrefs,
   OnboardingResponse,
+  OnboardingResponseWithProfile,
   Post,
   Profile,
   RangeKey,
@@ -196,6 +197,14 @@ export interface DataAdapter {
   getProfileByUsername(username: string): Promise<Profile | null>;
   getOnboarding(profileId: string): Promise<OnboardingResponse | null>;
   saveOnboarding(response: OnboardingResponse): Promise<void>;
+  /**
+   * Issue #234: every account's onboarding answers, joined to the profile
+   * that gave them. Callers MUST check `Profile.isAdmin` first: this is the
+   * read, not the authorisation, and it deliberately has no opinion about
+   * who is asking so the check stays in one visible place (the admin route)
+   * rather than being half-enforced here and half there.
+   */
+  listOnboardingResponses(): Promise<OnboardingResponseWithProfile[]>;
 
   /**
    * Issue #70: components/settings/NotificationPrefs.tsx's toggle() only
@@ -361,6 +370,22 @@ const seedAdapter: DataAdapter = {
   async saveOnboarding() {
     // no-op: the guest account ships already onboarded, and the wizard is
     // walkable for demonstration without writing anywhere
+  },
+
+  async listOnboardingResponses() {
+    // One seeded row, so the admin page renders with no backend configured,
+    // same contract as the rest of this adapter. The page labels it as
+    // sample data; the seed guest is not an admin, so reaching it at all
+    // takes a real account with the flag set.
+    return [
+      {
+        ...GUEST_ONBOARDING,
+        username: GUEST_PROFILE.username,
+        displayName: GUEST_PROFILE.displayName,
+        email: null,
+        joinedAt: GUEST_PROFILE.joinedAt,
+      },
+    ];
   },
 
   async getNotificationPrefs(profileId) {

@@ -9,7 +9,7 @@ import { saveOnboardingAction } from "@/app/(app)/actions";
 
 export const metadata: Metadata = { title: "Set up your account" };
 
-const STEP_COUNT = 7;
+const STEP_COUNT = 10;
 
 export default async function OnboardingStepPage({
   params,
@@ -34,6 +34,12 @@ export default async function OnboardingStepPage({
     intent: null,
     experience: null,
     agentTools: [],
+    wrongSummaryStory: null,
+    verifyMethod: [],
+    verifyMethodOther: null,
+    contactOptIn: false,
+    fieldFreetext: null,
+    weeklyTrigger: null,
     completedAt: null,
   };
 

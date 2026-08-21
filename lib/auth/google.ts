@@ -98,5 +98,7 @@ export function profileFromGoogle(identity: GoogleIdentityInput): Profile {
     followingCount: 0,
     joinedAt: new Date().toISOString(),
     onboarded: true,
+    // Issue #234: a Google-derived profile is never an admin by construction.
+    isAdmin: false,
   };
 }

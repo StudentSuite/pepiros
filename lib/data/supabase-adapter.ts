@@ -8,6 +8,7 @@ import type {
   RangeKey,
   ReachSummary,
   ResearchField,
+  VerifyMethod,
 } from "./types";
 import { RANGE_DAYS } from "./types";
 import {
@@ -65,6 +66,7 @@ const asProfile = (row: {
   created_at: string;
   followers?: number;
   following?: number;
+  is_admin?: boolean;
 }): Profile => ({
   id: row.id,
   username: row.username,
@@ -75,6 +77,9 @@ const asProfile = (row: {
   followingCount: row.following ?? 0,
   joinedAt: row.created_at.slice(0, 10),
   onboarded: row.onboarded,
+  // Issue #234: defaults false, so a row read before supabase/migrations/0007
+  // is applied is a non-admin rather than a crash or an accidental admin.
+  isAdmin: row.is_admin ?? false,
 });
 
 function initialsFrom(name: string): string {
@@ -586,6 +591,15 @@ export const supabaseAdapter: DataAdapter = {
       intent: data.intent,
       experience: data.experience,
       agentTools: data.agent_tools ?? [],
+      // Issue #233. Coalesced rather than asserted: a row written before
+      // supabase/migrations/0007 was applied simply has no value here, and
+      // that is not the read path's problem to fail on.
+      wrongSummaryStory: data.wrong_summary_story ?? null,
+      verifyMethod: (data.verify_method ?? []) as VerifyMethod[],
+      verifyMethodOther: data.verify_method_other ?? null,
+      contactOptIn: data.contact_opt_in ?? false,
+      fieldFreetext: data.field_freetext ?? null,
+      weeklyTrigger: data.weekly_trigger ?? null,
       completedAt: data.completed_at,
     };
   },
@@ -602,9 +616,62 @@ export const supabaseAdapter: DataAdapter = {
       intent: response.intent,
       experience: response.experience,
       agent_tools: response.agentTools,
+      wrong_summary_story: response.wrongSummaryStory,
+      verify_method: response.verifyMethod,
+      verify_method_other: response.verifyMethodOther,
+      contact_opt_in: response.contactOptIn,
+      field_freetext: response.fieldFreetext,
+      weekly_trigger: response.weeklyTrigger,
       completed_at: response.completedAt,
     });
     await sb.from("profiles").update({ onboarded: true }).eq("id", response.profileId);
+  },
+
+  /**
+   * Issue #234. Reads through the service-role client, which bypasses RLS:
+   * onboarding_responses' own policy (0001_platform.sql) restricts a user to
+   * their own row, and that policy is deliberately NOT relaxed for admins,
+   * because widening it would grant the same read to any client holding an
+   * anon key. Authorisation lives in the admin route instead, where it is
+   * one visible check.
+   */
+  async listOnboardingResponses() {
+    const sb = createSupabaseServiceClient();
+    const { data, error } = await sb
+      .from("onboarding_responses")
+      .select("*, profiles!inner(username, display_name, email, created_at)");
+    if (error || !data) return [];
+
+    return data.map((row) => {
+      const profile = row.profiles as unknown as {
+        username: string;
+        display_name: string;
+        email: string | null;
+        created_at: string;
+      };
+      return {
+        profileId: row.profile_id,
+        country: row.country,
+        referralSource: row.referral_source,
+        referralOther: row.referral_other,
+        role: row.role,
+        fields: (row.fields ?? []) as ResearchField[],
+        intent: row.intent,
+        experience: row.experience,
+        agentTools: row.agent_tools ?? [],
+        wrongSummaryStory: row.wrong_summary_story ?? null,
+        verifyMethod: (row.verify_method ?? []) as VerifyMethod[],
+        verifyMethodOther: row.verify_method_other ?? null,
+        contactOptIn: row.contact_opt_in ?? false,
+        fieldFreetext: row.field_freetext ?? null,
+        weeklyTrigger: row.weekly_trigger ?? null,
+        completedAt: row.completed_at,
+        username: profile.username,
+        displayName: profile.display_name,
+        email: profile.email,
+        joinedAt: profile.created_at.slice(0, 10),
+      };
+    });
   },
 
   async getNotificationPrefs(profileId) {

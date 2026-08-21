@@ -28,13 +28,14 @@ import type {
   ReferralSource,
   ResearchField,
   Role,
+  VerifyMethod,
 } from "@/lib/data/types";
 import { cn } from "@/lib/utils";
 
 /**
- * Seven-step onboarding.
+ * Ten-step onboarding.
  *
- * Each step is URL-addressable (/onboarding/1 … /onboarding/7) rather than
+ * Each step is URL-addressable (/onboarding/1 ... /onboarding/10) rather than
  * held in local state, which is what the old /welcome flow did. That means a
  * refresh does not throw someone back to the start, and a half-finished wizard
  * can be linked to or resumed.
@@ -43,9 +44,20 @@ import { cn } from "@/lib/utils";
  * reader-first home surfaces first; the agent step ends on MCP token
  * generation, which is the one feature with working backend code behind it.
  * Nothing is asked purely to fill a survey table.
+ *
+ * Steps 1-7 are segmentation and drive personalisation. Steps 8-10 (issue
+ * #233) are the opposite: free text about what actually went wrong, what the
+ * reader does today to check a claim, and a contact opt-in. They sit last on
+ * purpose, so that drop-off lands on them rather than on the answers the home
+ * surface depends on. All of them are skippable, like every other step.
  */
 
-const STEP_COUNT = 7;
+/**
+ * Issue #233: was 7. Steps 8-10 capture what the reader actually experienced
+ * rather than which bucket they fall into, and sit after every question that
+ * drives personalisation so drop-off lands on the new ones.
+ */
+const STEP_COUNT = 10;
 
 const ROLES: { value: Role; label: string; hint: string }[] = [
   { value: "grad_student", label: "Grad student", hint: "Coursework, a thesis, or a lit review" },
@@ -89,6 +101,15 @@ const AGENTS: { value: AgentTool; label: string }[] = [
 
 const MAX_FIELDS = 3;
 
+const VERIFY_OPTIONS: { value: VerifyMethod; label: string }[] = [
+  { value: "open_pdf_and_search", label: "Open the PDF and search for it" },
+  { value: "trust_and_move_on", label: "Trust the summary and move on" },
+  { value: "ask_a_colleague", label: "Ask a colleague" },
+  { value: "check_cited_source", label: "Check the cited source" },
+  { value: "reread_section", label: "Re-read the whole section" },
+  { value: "other", label: "Something else" },
+];
+
 export function OnboardingWizard({
   step,
   initial,
@@ -117,6 +138,15 @@ export function OnboardingWizard({
       const next = d.fields.length >= MAX_FIELDS ? d.fields.slice(1) : d.fields;
       return { ...d, fields: [...next, field] };
     });
+  }
+
+  function toggleVerifyMethod(method: VerifyMethod) {
+    setDraft((d) => ({
+      ...d,
+      verifyMethod: d.verifyMethod.includes(method)
+        ? d.verifyMethod.filter((m) => m !== method)
+        : [...d.verifyMethod, method],
+    }));
   }
 
   function toggleAgent(tool: AgentTool) {
@@ -304,6 +334,118 @@ export function OnboardingWizard({
                   </button>
                 );
               })}
+            </div>
+          </Step>
+        )}
+
+        {step === 8 && (
+          <Step
+            title="When did an AI summary of a paper last get something wrong in a way that mattered?"
+            hint="Skip if it hasn't. One or two sentences is plenty."
+          >
+            <textarea
+              value={draft.wrongSummaryStory ?? ""}
+              onChange={(e) => set("wrongSummaryStory", e.target.value || null)}
+              rows={5}
+              placeholder="It said the trial found an effect. It didn't."
+              className={cn(
+                "w-full resize-y rounded-md border border-border bg-surface p-s-3",
+                "font-serif text-[15px] leading-relaxed text-ink placeholder:text-ink-faint",
+                "focus-visible:border-accent focus-visible:outline-none",
+              )}
+            />
+          </Step>
+        )}
+
+        {step === 9 && (
+          <Step
+            title="When you need to know whether a paper actually says something, what do you do now?"
+            hint="Pick as many as apply."
+          >
+            <div className="flex flex-col gap-s-2">
+              {VERIFY_OPTIONS.map((option) => {
+                const active = draft.verifyMethod.includes(option.value);
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => toggleVerifyMethod(option.value)}
+                    aria-pressed={active}
+                    className={cn(
+                      "rounded-md border px-s-3 py-s-2 text-left font-sans text-sm transition-colors duration-fast ease-out",
+                      active
+                        ? "border-accent bg-accent-wash text-ink"
+                        : "border-border text-ink-muted hover:border-border-strong hover:text-ink",
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+            {/* Only asked once "Something else" is actually chosen: a free-text
+                box that is always visible reads as a required field. */}
+            {draft.verifyMethod.includes("other") && (
+              <Input
+                value={draft.verifyMethodOther ?? ""}
+                onChange={(e) => set("verifyMethodOther", e.target.value || null)}
+                placeholder="What do you do?"
+                className="mt-s-3"
+              />
+            )}
+          </Step>
+        )}
+
+        {step === 10 && (
+          <Step
+            title="Can we email you about what you're reading?"
+            hint="Occasional, from a person, never a newsletter. Unsubscribe any time."
+          >
+            <label className="flex items-start gap-s-3">
+              {/* Unchecked unless actively turned on. A pre-ticked consent box
+                  is not consent. */}
+              <input
+                type="checkbox"
+                checked={draft.contactOptIn}
+                onChange={(e) => set("contactOptIn", e.target.checked)}
+                className="mt-1 size-4 accent-accent"
+              />
+              <span className="font-sans text-sm leading-relaxed text-ink-muted">
+                Yes, you can email me. An administrator can read the answers on
+                this and the previous two screens, including anything written in
+                your own words; see the{" "}
+                <a
+                  href="/privacy"
+                  className="text-accent-text underline underline-offset-2"
+                >
+                  privacy page
+                </a>
+                .
+              </span>
+            </label>
+
+            <div className="mt-s-5 flex flex-col gap-s-2">
+              <label className="font-sans text-sm text-ink-muted" htmlFor="field-freetext">
+                What do you actually work on? The six buckets earlier are broad.
+              </label>
+              <Input
+                id="field-freetext"
+                value={draft.fieldFreetext ?? ""}
+                onChange={(e) => set("fieldFreetext", e.target.value || null)}
+                placeholder="sleep and circadian neuroscience"
+              />
+            </div>
+
+            <div className="mt-s-4 flex flex-col gap-s-2">
+              <label className="font-sans text-sm text-ink-muted" htmlFor="weekly-trigger">
+                What would make you use this weekly?
+              </label>
+              <Input
+                id="weekly-trigger"
+                value={draft.weeklyTrigger ?? ""}
+                onChange={(e) => set("weeklyTrigger", e.target.value || null)}
+                placeholder="If it caught a bad citation before I sent a draft out."
+              />
             </div>
           </Step>
         )}

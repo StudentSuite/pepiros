@@ -68,6 +68,21 @@ export interface Profile {
   followingCount: number;
   joinedAt: string;
   onboarded: boolean;
+  /**
+   * Issue #234: read access to every account's onboarding answers. Set by
+   * hand in the SQL editor; there is deliberately no role-management UI,
+   * because a screen that grants admin is a far larger security surface than
+   * one boolean nothing in the app can write.
+   */
+  isAdmin: boolean;
+}
+
+/** One row of the admin onboarding view: the answers, plus who gave them. */
+export interface OnboardingResponseWithProfile extends OnboardingResponse {
+  username: string;
+  displayName: string;
+  email: string | null;
+  joinedAt: string;
 }
 
 /** components/settings/NotificationPrefs.tsx's toggle state (issue #70). */
@@ -88,8 +103,34 @@ export interface OnboardingResponse {
   intent: ReadingIntent | null;
   experience: ExperienceLevel | null;
   agentTools: AgentTool[];
+  /**
+   * Issue #233. Everything above is segmentation and drives what the home
+   * surface shows first. These capture what the user actually experienced,
+   * which is the only part that tells us whether the premise is real. All
+   * optional, all asked after the segmentation questions, so drop-off lands
+   * here rather than on the answers personalisation depends on.
+   */
+  wrongSummaryStory: string | null;
+  verifyMethod: VerifyMethod[];
+  verifyMethodOther: string | null;
+  /** Opt-in, and false unless actively turned on. Never defaulted to true. */
+  contactOptIn: boolean;
+  /** The six-bucket `fields` enum is not how researchers describe themselves. */
+  fieldFreetext: string | null;
+  weeklyTrigger: string | null;
   completedAt: string | null;
 }
+
+export const VERIFY_METHODS = [
+  "open_pdf_and_search",
+  "trust_and_move_on",
+  "ask_a_colleague",
+  "check_cited_source",
+  "reread_section",
+  "other",
+] as const;
+
+export type VerifyMethod = (typeof VERIFY_METHODS)[number];
 
 export type PostStatus = "published" | "draft" | "archived";
 

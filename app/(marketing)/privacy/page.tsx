@@ -30,8 +30,34 @@ export default function PrivacyPage() {
       <Section title="Account data">
         <p>
           If you create an account we store your username, display name, bio, and
-          the answers you gave during onboarding. Onboarding answers are visible
-          only to you and are used to decide what your home page surfaces first.
+          the answers you gave during onboarding.
+        </p>
+        {/* Issue #237: this section used to say onboarding answers were
+            "visible only to you." That stopped being true the moment
+            /admin/onboarding existed, and a privacy page that is quietly wrong
+            about who can read your words is worse than one that never
+            mentioned it. Landed in the same change as the admin route, not
+            after it. */}
+        <p>
+          <strong className="text-ink">Who can read your onboarding answers.</strong>{" "}
+          A Pepiros administrator can read them, including the free-text ones:
+          what an AI summary got wrong for you, how you check a claim today, what
+          you actually work on, and what would make you use this weekly. They are
+          read to work out which problems are real and what to build next. They
+          are not sold, not shared with third parties, and not published.
+        </p>
+        <p>
+          <strong className="text-ink">Email contact is opt-in.</strong> The
+          checkbox on the last onboarding step is off unless you tick it, and we
+          do not email you about your reading unless you do. To withdraw it,
+          untick the box (the wizard is resumable at any time) or email us and we
+          will clear it, along with any free-text answers you would rather we did
+          not keep.
+        </p>
+        <p>
+          Everything else you answered is segmentation (role, field, intent,
+          experience, referral, country) and decides what your home page surfaces
+          first.
         </p>
         <p>
           The guest demo account stores nothing. Everything it shows is generated,

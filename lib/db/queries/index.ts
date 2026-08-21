@@ -669,3 +669,72 @@ export async function incrementRateLimitWindow(
   const row = rows[0]!;
   return { count: row.count, windowStart: new Date(row.window_start) };
 }
+
+// --- Admin stats (issue #234) ----------------------------------------------
+
+export interface CorpusStats {
+  workspaces: number;
+  papers: number;
+  chunks: number;
+  nodes: number;
+  edges: number;
+  evidence: number;
+  /** Evidence rows by tier, so grounding quality is visible, not just volume. */
+  evidenceByTier: Array<{ tier: string; count: number }>;
+  conversations: number;
+  jobs: number;
+  jobsFailed: number;
+}
+
+/**
+ * Counts across the whole corpus, for /admin.
+ *
+ * Deliberately counts rather than assembling: this is a dashboard, and
+ * loading every workspace to call `.length` on it is how a stats page becomes
+ * the slowest route on the site.
+ */
+export async function getCorpusStats(): Promise<CorpusStats> {
+  const [
+    workspaceRows,
+    paperRows,
+    chunkRows,
+    nodeRows,
+    edgeRows,
+    evidenceRows,
+    tierRows,
+    conversationRows,
+    jobRows,
+  ] = await Promise.all([
+    db.select({ n: sql<number>`count(*)::int` }).from(schema.workspaces),
+    db.select({ n: sql<number>`count(*)::int` }).from(schema.papers),
+    db.select({ n: sql<number>`count(*)::int` }).from(schema.chunks),
+    db.select({ n: sql<number>`count(*)::int` }).from(schema.nodes),
+    db.select({ n: sql<number>`count(*)::int` }).from(schema.edges),
+    db.select({ n: sql<number>`count(*)::int` }).from(schema.evidence),
+    db
+      .select({ tier: schema.evidence.tier, n: sql<number>`count(*)::int` })
+      .from(schema.evidence)
+      .groupBy(schema.evidence.tier),
+    db.select({ n: sql<number>`count(*)::int` }).from(schema.conversations),
+    db
+      .select({ status: schema.jobs.status, n: sql<number>`count(*)::int` })
+      .from(schema.jobs)
+      .groupBy(schema.jobs.status),
+  ]);
+
+  const jobs = jobRows.reduce((total, row) => total + row.n, 0);
+  const jobsFailed = jobRows.find((row) => row.status === "failed")?.n ?? 0;
+
+  return {
+    workspaces: workspaceRows[0]?.n ?? 0,
+    papers: paperRows[0]?.n ?? 0,
+    chunks: chunkRows[0]?.n ?? 0,
+    nodes: nodeRows[0]?.n ?? 0,
+    edges: edgeRows[0]?.n ?? 0,
+    evidence: evidenceRows[0]?.n ?? 0,
+    evidenceByTier: tierRows.map((row) => ({ tier: row.tier, count: row.n })),
+    conversations: conversationRows[0]?.n ?? 0,
+    jobs,
+    jobsFailed,
+  };
+}

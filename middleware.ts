@@ -23,6 +23,9 @@ import { takeToken, type BucketConfig } from "@/lib/rateLimit/tokenBucket";
  * meaningless without an identity: there is no guest inbox or guest billing.
  */
 const PROTECTED = [
+  // Issue #234. Middleware only guarantees a session; the is_admin check is in
+  // the page, because middleware does no database round trip by design.
+  "/admin",
   "/home",
   "/workspaces",
   "/posts",
@@ -122,6 +125,7 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    "/admin/:path*",
     "/home/:path*",
     "/workspaces/:path*",
     "/posts/:path*",

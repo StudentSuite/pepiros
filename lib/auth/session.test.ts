@@ -105,6 +105,7 @@ describe("parseSessionFull (issue #85)", () => {
       followingCount: 0,
       joinedAt: "2026-01-01",
       onboarded: true,
+    isAdmin: false,
     });
     expect(inlineToken.split(".")).toHaveLength(3);
     const parsed = await session.parseSessionFull(inlineToken);
