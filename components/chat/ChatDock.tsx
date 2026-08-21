@@ -28,10 +28,15 @@ interface ChatApiResponse {
 export function ChatDock({ activePaperId }: { activePaperId?: string }) {
   const workspace = useWorkspaceStore((s) => s.workspace);
   const selectedNodeId = useWorkspaceStore((s) => s.selectedNodeId);
-  // Starts collapsed: a full-height glass panel open over the reading pane
-  // by default, on every visit, covered the sidebar's own graph/related/
-  // numerics cards underneath it (z-40, fixed bottom-center) before a
-  // question was ever asked. One click on "Expand" still gets you there.
+  // Issue #290: this used to gate ALL of scope/input/suggestions behind
+  // `open`, so the collapsed default rendered as a 40px strip with nothing
+  // in it but a scope selector and an "Expand" link -- suggested questions
+  // (lib/chat/suggestions.ts, a real per-paper derivation) were invisible
+  // until a visitor found and clicked Expand first. `open` now gates only
+  // the scrollable message history; the resting (collapsed) state still
+  // renders the scope selector, the input, and two suggestion chips, so
+  // grounded Q&A is reachable without that extra click. Sending the first
+  // message expands to full height automatically (see ask()).
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -62,6 +67,10 @@ export function ChatDock({ activePaperId }: { activePaperId?: string }) {
   const suggestedQuestions = useMemo(() => deriveSuggestedQuestions(workspace), [workspace]);
 
   async function ask(question: string, options: { allowUngrounded?: boolean } = {}) {
+    // Issue #290: expand to full height on the first send, so the message
+    // history (and the room a real answer needs) appears the moment
+    // there's something to show, rather than requiring a separate click.
+    setOpen(true);
     setPending(true);
     setError(null);
     setLastQuestion(question);
@@ -169,87 +178,108 @@ export function ChatDock({ activePaperId }: { activePaperId?: string }) {
         </div>
 
         {open && (
-          <>
-            {/* Issue #211: new replies were never announced to screen reader
-                users -- the only role="status" was the transient "Reading
-                the papers..." line, gone the instant the real answer lands.
-                role="log" + aria-live="polite" here announces each new
-                message as it's appended. */}
-            <div ref={scrollRef} role="log" aria-live="polite" className="max-h-72 overflow-y-auto px-3 py-3">
-              {messages.length === 0 ? (
-                <div className="flex flex-col gap-2">
-                  <p className="font-sans text-xs text-ink-faint">Try asking:</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {suggestedQuestions.map((q) => (
-                      <button
-                        key={q}
-                        type="button"
-                        onClick={() => void ask(q)}
-                        disabled={pending}
-                        className="rounded-full border border-border-strong px-2.5 py-1 text-left font-sans text-xs text-ink-muted transition duration-fast ease-out hover:border-accent hover:text-ink disabled:opacity-50"
-                      >
-                        {q}
-                      </button>
-                    ))}
-                  </div>
+          /* Issue #211: new replies were never announced to screen reader
+             users -- the only role="status" was the transient "Reading
+             the papers..." line, gone the instant the real answer lands.
+             role="log" + aria-live="polite" here announces each new
+             message as it's appended. */
+          <div ref={scrollRef} role="log" aria-live="polite" className="max-h-72 overflow-y-auto px-3 py-3">
+            {messages.length === 0 ? (
+              <div className="flex flex-col gap-2">
+                <p className="font-sans text-xs text-ink-faint">Try asking:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {suggestedQuestions.map((q) => (
+                    <button
+                      key={q}
+                      type="button"
+                      onClick={() => void ask(q)}
+                      disabled={pending}
+                      className="rounded-full border border-border-strong px-2.5 py-1 text-left font-sans text-xs text-ink-muted transition duration-fast ease-out hover:border-accent hover:text-ink disabled:opacity-50"
+                    >
+                      {q}
+                    </button>
+                  ))}
                 </div>
-              ) : (
-                <MessageList messages={messages} />
-              )}
+              </div>
+            ) : (
+              <MessageList messages={messages} />
+            )}
 
-              {pending && (
-                <p className="mt-3 font-sans text-xs text-ink-faint" role="status">
-                  Reading the papers…
-                </p>
-              )}
+            {pending && (
+              <p className="mt-3 font-sans text-xs text-ink-faint" role="status">
+                Reading the papers…
+              </p>
+            )}
 
-              {error && (
-                <div className="mt-3">
-                  <ErrorBanner
-                    message={error}
-                    onRetry={lastQuestion ? () => void ask(lastQuestion) : undefined}
-                  />
-                </div>
-              )}
+            {error && (
+              <div className="mt-3">
+                <ErrorBanner
+                  message={error}
+                  onRetry={lastQuestion ? () => void ask(lastQuestion) : undefined}
+                />
+              </div>
+            )}
 
-              {/* §9.4: below the relevance floor, offer an explicit
-                  "answer without sources" rather than silently confabulating. */}
-              {lastRefusedQuestion && !pending && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const question = lastRefusedQuestion;
-                    setLastRefusedQuestion(null);
-                    setAllowUngrounded(true);
-                    void ask(question, { allowUngrounded: true });
-                  }}
-                  className="mt-3 rounded border border-border-strong px-2 py-1 font-sans text-xs text-ink-muted hover:text-ink"
-                >
-                  Answer without sources
-                </button>
-              )}
-            </div>
-            <div className="flex items-center gap-2 border-t border-border px-3 py-2">
-              <Input
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  // Issue #213: without the isComposing guard, the Enter
-                  // keystroke a CJK/IME user presses to confirm a composed
-                  // candidate also fired this handler, sending the message
-                  // mid-composition.
-                  if (e.key === "Enter" && !e.nativeEvent.isComposing) handleSend();
+            {/* §9.4: below the relevance floor, offer an explicit
+                "answer without sources" rather than silently confabulating. */}
+            {lastRefusedQuestion && !pending && (
+              <button
+                type="button"
+                onClick={() => {
+                  const question = lastRefusedQuestion;
+                  setLastRefusedQuestion(null);
+                  setAllowUngrounded(true);
+                  void ask(question, { allowUngrounded: true });
                 }}
-                placeholder="Ask about this workspace..."
-                disabled={pending}
-                className="flex-1"
-              />
-              <Button variant="primary" size="sm" onClick={handleSend} disabled={pending}>
-                {pending ? "Asking…" : "Send"}
-              </Button>
-            </div>
-          </>
+                className="mt-3 rounded border border-border-strong px-2 py-1 font-sans text-xs text-ink-muted hover:text-ink"
+              >
+                Answer without sources
+              </button>
+            )}
+          </div>
         )}
+
+        {/* Issue #290: the resting state (collapsed, nothing asked yet) --
+            two of the same real per-paper suggestions the expanded empty
+            state shows, so grounded Q&A is visible without an extra click.
+            Once there's a real conversation, showing the original "try
+            asking" prompts again here would be stale, so this only shows
+            before the first message. */}
+        {!open && messages.length === 0 && suggestedQuestions.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 px-3 pt-2">
+            {suggestedQuestions.slice(0, 2).map((q) => (
+              <button
+                key={q}
+                type="button"
+                onClick={() => void ask(q)}
+                disabled={pending}
+                className="rounded-full border border-border-strong px-2.5 py-1 text-left font-sans text-xs text-ink-muted transition duration-fast ease-out hover:border-accent hover:text-ink disabled:opacity-50"
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 border-t border-border px-3 py-2">
+          <Input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              // Issue #213: without the isComposing guard, the Enter
+              // keystroke a CJK/IME user presses to confirm a composed
+              // candidate also fired this handler, sending the message
+              // mid-composition.
+              if (e.key === "Enter" && !e.nativeEvent.isComposing) handleSend();
+            }}
+            placeholder="Ask about this workspace..."
+            disabled={pending}
+            className="flex-1"
+          />
+          <Button variant="primary" size="sm" onClick={handleSend} disabled={pending}>
+            {pending ? "Asking…" : "Send"}
+          </Button>
+        </div>
       </div>
     </div>
   );
