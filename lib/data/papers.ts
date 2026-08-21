@@ -8,12 +8,68 @@ import type { ResearchField } from "./types";
  * bibliographic metadata is stored here (title, authors, year, venue, link),
  * never article text.
  *
- * `openAccess` reflects whether the full text is freely readable at the linked
- * source. arXiv preprints and the open-access journals are true; several of the
- * Nature/Science/NEJM entries are not, and are marked accordingly rather than
- * being flattered. VERIFY THESE FLAGS before any public launch that leans on
- * them for a licensing claim.
+ * LICENSING (issue #285). This used to be a bare `openAccess: boolean` on
+ * every entry, hand-set and never checked, under a header comment saying
+ * "VERIFY THESE FLAGS before any public launch that leans on them for a
+ * licensing claim." That launch happened: the repo is public, /discover is
+ * live, and the submission copy states we only index open-access, arXiv,
+ * PMC-OA and CC-licensed work. That claim rested on twenty-four unchecked
+ * booleans.
+ *
+ * A boolean was the wrong shape for it. "Freely readable at the publisher's
+ * site" and "licensed for us to redistribute or index" are different
+ * questions, and collapsing them is what let an NEJM article sit next to an
+ * arXiv preprint under one flag. `licence` records which is which, and
+ * `unverified` is a real, honest value rather than an absence: an entry
+ * nobody has checked against its actual licence page is treated as NOT
+ * open-access everywhere it matters, so an unchecked paper can never be
+ * fetched by scripts/index-catalog.ts or described as open access in the UI.
+ *
+ * Verified so far, from the licence terms of the source itself rather than
+ * from whether the PDF happens to load:
+ *   - arXiv (11 entries): arxiv-perpetual. arXiv's own non-exclusive
+ *     licence to distribute, which is what makes the preprint fetchable.
+ *   - Copernicus/ESSD: cc-by. Every Copernicus journal is CC BY 4.0.
+ *   - AlphaFold (Nature 2021): cc-by, published open access under CC BY 4.0.
+ *   - Science and Annual Reviews entries: paywalled, as already recorded.
+ *
+ * Still `unverified`, and deliberately not upgraded on the strength of "the
+ * page loads for me": the 2012 NeurIPS proceedings entry, both Nature entries
+ * other than AlphaFold, both PNAS entries, and all four NEJM entries. Several
+ * of those are free to read without being openly licensed, which is exactly
+ * the distinction the old boolean erased. Check each against its own licence
+ * statement before promoting it.
  */
+
+export type PaperLicence =
+  /** arXiv's non-exclusive distribution licence. Freely readable and fetchable. */
+  | "arxiv-perpetual"
+  /** Explicit Creative Commons Attribution. */
+  | "cc-by"
+  /** PubMed Central Open Access subset. */
+  | "pmc-oa"
+  /** Readable at the publisher with no open licence: cite and link, never redistribute. */
+  | "free-to-read"
+  /** Not readable without a subscription. */
+  | "paywalled"
+  /** Nobody has checked. Treated as paywalled everywhere it matters. */
+  | "unverified";
+
+/**
+ * Licences that permit fetching and indexing the full text.
+ *
+ * `free-to-read` is deliberately excluded: being able to read something is
+ * not permission to ingest and republish it, and this is the check standing
+ * between the catalog and a licensing claim the project cannot back.
+ */
+export function isFetchableLicence(licence: PaperLicence): boolean {
+  return licence === "arxiv-perpetual" || licence === "cc-by" || licence === "pmc-oa";
+}
+
+/** What the UI may describe as open access. Same set, named for the reader-facing claim. */
+export function isOpenAccess(licence: PaperLicence): boolean {
+  return isFetchableLicence(licence);
+}
 export interface CatalogPaper {
   id: string;
   slug: string;
@@ -22,7 +78,8 @@ export interface CatalogPaper {
   year: number;
   venue: string;
   field: ResearchField;
-  openAccess: boolean;
+  /** See the LICENSING note above. Never a bare boolean again. */
+  licence: PaperLicence;
   sourceUrl: string;
   /**
    * Set once scripts/index-catalog.ts (issue #279) has actually run this
@@ -36,6 +93,28 @@ export interface CatalogPaper {
   workspaceId?: string;
 }
 
+/**
+ * Reader-facing label for a licence (issue #285). "Open access" is a claim,
+ * so it is only made for licences that actually support it; everything else
+ * describes its own status rather than being flattened into "paywalled".
+ */
+export function licenceLabel(licence: PaperLicence): string {
+  switch (licence) {
+    case "arxiv-perpetual":
+      return "Open access (arXiv)";
+    case "cc-by":
+      return "Open access (CC BY)";
+    case "pmc-oa":
+      return "Open access (PMC)";
+    case "free-to-read":
+      return "Free to read at source";
+    case "paywalled":
+      return "Paywalled source";
+    case "unverified":
+      return "Licence unverified";
+  }
+}
+
 export const CATALOG: CatalogPaper[] = [
   // ---- Machine learning ---------------------------------------------------
   {
@@ -46,7 +125,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2017,
     venue: "NeurIPS",
     field: "Machine learning",
-    openAccess: true,
+    licence: "arxiv-perpetual",
     sourceUrl: "https://arxiv.org/abs/1706.03762",
   },
   {
@@ -57,7 +136,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2016,
     venue: "CVPR",
     field: "Computer vision",
-    openAccess: true,
+    licence: "arxiv-perpetual",
     sourceUrl: "https://arxiv.org/abs/1512.03385",
   },
   {
@@ -68,7 +147,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2019,
     venue: "NAACL",
     field: "Natural language processing",
-    openAccess: true,
+    licence: "arxiv-perpetual",
     sourceUrl: "https://arxiv.org/abs/1810.04805",
   },
   {
@@ -79,7 +158,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2020,
     venue: "NeurIPS",
     field: "Natural language processing",
-    openAccess: true,
+    licence: "arxiv-perpetual",
     sourceUrl: "https://arxiv.org/abs/2005.14165",
   },
   {
@@ -90,7 +169,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2020,
     venue: "NeurIPS",
     field: "Machine learning",
-    openAccess: true,
+    licence: "arxiv-perpetual",
     sourceUrl: "https://arxiv.org/abs/2006.11239",
   },
   {
@@ -101,7 +180,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2022,
     venue: "NeurIPS",
     field: "Natural language processing",
-    openAccess: true,
+    licence: "arxiv-perpetual",
     sourceUrl: "https://arxiv.org/abs/2201.11903",
   },
   {
@@ -112,7 +191,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2015,
     venue: "ICLR",
     field: "Statistics",
-    openAccess: true,
+    licence: "arxiv-perpetual",
     sourceUrl: "https://arxiv.org/abs/1412.6980",
   },
   {
@@ -123,7 +202,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2014,
     venue: "NeurIPS",
     field: "Machine learning",
-    openAccess: true,
+    licence: "arxiv-perpetual",
     sourceUrl: "https://arxiv.org/abs/1406.2661",
   },
   {
@@ -134,7 +213,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2020,
     venue: "arXiv preprint",
     field: "Machine learning",
-    openAccess: true,
+    licence: "arxiv-perpetual",
     sourceUrl: "https://arxiv.org/abs/2001.08361",
   },
   {
@@ -145,7 +224,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2022,
     venue: "NeurIPS",
     field: "Natural language processing",
-    openAccess: true,
+    licence: "arxiv-perpetual",
     sourceUrl: "https://arxiv.org/abs/2203.02155",
   },
   {
@@ -156,7 +235,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2023,
     venue: "ICCV",
     field: "Computer vision",
-    openAccess: true,
+    licence: "arxiv-perpetual",
     sourceUrl: "https://arxiv.org/abs/2304.02643",
   },
   {
@@ -167,7 +246,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2012,
     venue: "NeurIPS",
     field: "Computer vision",
-    openAccess: true,
+    licence: "unverified",
     sourceUrl: "https://papers.nips.cc/paper_files/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html",
   },
 
@@ -180,7 +259,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2021,
     venue: "Nature",
     field: "Genomics",
-    openAccess: true,
+    licence: "cc-by",
     sourceUrl: "https://www.nature.com/articles/s41586-021-03819-2",
   },
   {
@@ -191,7 +270,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2012,
     venue: "Science",
     field: "Genomics",
-    openAccess: false,
+    licence: "paywalled",
     sourceUrl: "https://www.science.org/doi/10.1126/science.1225829",
   },
   {
@@ -202,7 +281,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2001,
     venue: "Nature",
     field: "Genomics",
-    openAccess: true,
+    licence: "unverified",
     sourceUrl: "https://www.nature.com/articles/35057062",
   },
   {
@@ -213,7 +292,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 1990,
     venue: "PNAS",
     field: "Ecology",
-    openAccess: true,
+    licence: "unverified",
     sourceUrl: "https://www.pnas.org/doi/10.1073/pnas.87.12.4576",
   },
 
@@ -226,7 +305,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2020,
     venue: "New England Journal of Medicine",
     field: "Clinical medicine",
-    openAccess: true,
+    licence: "unverified",
     sourceUrl: "https://www.nejm.org/doi/full/10.1056/NEJMoa2034577",
   },
   {
@@ -237,7 +316,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2021,
     venue: "New England Journal of Medicine",
     field: "Clinical medicine",
-    openAccess: true,
+    licence: "unverified",
     sourceUrl: "https://www.nejm.org/doi/full/10.1056/NEJMoa2021436",
   },
   {
@@ -248,7 +327,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2015,
     venue: "New England Journal of Medicine",
     field: "Clinical medicine",
-    openAccess: true,
+    licence: "unverified",
     sourceUrl: "https://www.nejm.org/doi/full/10.1056/NEJMoa1511939",
   },
   {
@@ -259,7 +338,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2015,
     venue: "New England Journal of Medicine",
     field: "Clinical medicine",
-    openAccess: true,
+    licence: "unverified",
     sourceUrl: "https://www.nejm.org/doi/full/10.1056/NEJMoa1504720",
   },
 
@@ -272,7 +351,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2013,
     venue: "Science",
     field: "Neuroscience",
-    openAccess: false,
+    licence: "paywalled",
     sourceUrl: "https://www.science.org/doi/10.1126/science.1241224",
   },
   {
@@ -283,7 +362,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2008,
     venue: "Annual Review of Neuroscience",
     field: "Neuroscience",
-    openAccess: false,
+    licence: "paywalled",
     sourceUrl: "https://www.annualreviews.org/doi/10.1146/annurev.neuro.31.061307.090723",
   },
 
@@ -296,7 +375,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2018,
     venue: "PNAS",
     field: "Climate science",
-    openAccess: true,
+    licence: "unverified",
     sourceUrl: "https://www.pnas.org/doi/10.1073/pnas.1810141115",
   },
   {
@@ -307,7 +386,7 @@ export const CATALOG: CatalogPaper[] = [
     year: 2023,
     venue: "Earth System Science Data",
     field: "Climate science",
-    openAccess: true,
+    licence: "cc-by",
     sourceUrl: "https://essd.copernicus.org/articles/15/5301/2023/",
   },
 ];

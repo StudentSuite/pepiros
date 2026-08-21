@@ -6,6 +6,7 @@ import { getAdapter } from "@/lib/data/adapter";
 import { getSession } from "@/lib/auth/session";
 import { seedCatalogStats, seedPaperComments } from "@/lib/data/seed";
 import { paperDek } from "@/lib/data/paperContent";
+import { licenceLabel } from "@/lib/data/papers";
 import {
   ArticleBody,
   ArticleHeader,
@@ -79,7 +80,7 @@ export default async function PaperPage({
                the verifier, on a page whose whole claim is that its numbers
                are measured. A grounded percentage returns when there are real
                evidence rows to compute it from (issues #279, #282). */
-            meta={paper.openAccess ? "Open access" : "Paywalled source"}
+            meta={licenceLabel(paper.licence)}
             action={
               <PaperEngagement
                 initialScore={likeState ? likeState.count : stats.score}
@@ -203,7 +204,7 @@ export default async function PaperPage({
                 Access
               </dt>
               <dd className="mt-1 font-sans text-[15px] leading-relaxed text-ink">
-                {paper.openAccess ? "Open access" : "Paywalled source"}
+                {licenceLabel(paper.licence)}
               </dd>
             </div>
           </dl>

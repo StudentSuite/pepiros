@@ -8,6 +8,7 @@ import { Dot, FeedItem } from "@/components/reading/Article";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { RESEARCH_FIELDS } from "@/lib/data/types";
 import { paperDek } from "@/lib/data/paperContent";
+import { isOpenAccess } from "@/lib/data/papers";
 import type { CatalogPaper } from "@/lib/data/papers";
 import type { CatalogStats } from "@/lib/data/seed";
 import { cn } from "@/lib/utils";
@@ -182,7 +183,10 @@ export function FeedClient({ items }: { items: FeedEntry[] }) {
                     <span className="font-mono text-[10px] uppercase tracking-wider text-ink-faint">
                       {p.field}
                     </span>
-                    {p.openAccess && (
+                    {/* Issue #285: only shown for a licence that actually
+                        supports the claim. An unverified entry gets no badge
+                        rather than an optimistic one. */}
+                    {isOpenAccess(p.licence) && (
                       <span className="font-mono text-[10px] uppercase tracking-wider text-pillar-text-7">
                         Open access
                       </span>

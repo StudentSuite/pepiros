@@ -1,4 +1,4 @@
-import { CATALOG } from "./papers";
+import { CATALOG, isOpenAccess } from "./papers";
 import type {
   Comment,
   OnboardingResponse,
@@ -123,7 +123,9 @@ export function seedPosts(authorId = GUEST_ID): Post[] {
       year: paper.year,
       venue: paper.venue,
       field: paper.field,
-      openAccess: paper.openAccess,
+      // Issue #285: the Post-level boolean is derived from the catalog's real
+      // licence, so an unverified entry is never published as open access.
+      openAccess: isOpenAccess(paper.licence),
       sourceUrl: paper.sourceUrl,
       status,
       publishedAt: daysAgo(intBetween(r, 3, 160)),
