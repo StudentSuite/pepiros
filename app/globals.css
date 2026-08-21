@@ -132,14 +132,6 @@
   --grain-blend: multiply;
   --grain-opacity: 0.09;
 
-  /* Hero art correction. The generated hero pair renders its quote-lines
-     hotter and more neon than brand teal/dusk. Rather than regenerate, the
-     art is pulled back toward the palette at render time. Dial --hero-saturate
-     to 1 to see the raw generation. */
-  --hero-saturate: 0.74;
-  --hero-contrast: 1.02;
-  --hero-brightness: 1;
-
   /* Motion. Editorial Paper: durations +40% over the base thesis, ease-out
      only -- never spring. --ease-spring stays defined for token completeness
      (other directions used it) but nothing in this build should reference it. */
@@ -147,7 +139,6 @@
   --dur-base: 280ms;
   --dur-slow: 450ms;
   --dur-canvas: 590ms;
-  --dur-hero: 620ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-inout: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -572,106 +563,6 @@ button:focus-visible {
 .motion-dash-march {
   stroke-dasharray: 6 6;
   animation: dash-march 3s linear infinite;
-}
-
-/*
- * HERO THEME CROSSFADE
- *
- * Both hero images render at once and swap by opacity, rather than swapping a
- * src off useTheme(). Two reasons: the server does not know the theme, so a
- * conditional render guarantees a hydration mismatch; and a src swap cannot
- * cross-dissolve, it can only pop.
- *
- * Built on ANIMATION, not TRANSITION, on purpose. next-themes'
- * disableTransitionOnChange injects `* { transition: none !important }` for
- * one frame during the swap (which we want -- it stops every colour on the
- * page from lerping at once). It does not touch animations, so the crossfade
- * survives it. Swapping animation-name is also what makes the fade re-trigger
- * on each toggle.
- *
- * The same fade doubles as the load-in, so first paint eases up from the
- * placeholder ground instead of snapping.
- */
-@keyframes hero-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes hero-fade-out {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-
-.hero-layer {
-  position: absolute;
-  inset: 0;
-  /* the generated art is hotter than brand teal/dusk; pull it back */
-  filter: saturate(var(--hero-saturate)) contrast(var(--hero-contrast))
-    brightness(var(--hero-brightness));
-  /* promote both layers so the fade composites on the GPU and cannot produce
-     subpixel drift between them */
-  will-change: opacity;
-  transform: translateZ(0);
-}
-
-/*
- * ONLY THE TOP LAYER ANIMATES.
- *
- * The obvious implementation -- fade one out while fading the other in -- is
- * wrong here. Mid-fade both layers sit near 50% opacity, so you see a blend of
- * two differently-lit versions of the same room, plus the ground bleeding
- * through both. That double-exposure reads as the image shifting, even though
- * the two source files are pixel-aligned (verified: correlation offset 0,0).
- *
- * So the day layer is the permanent, fully-opaque base, and the dark layer
- * simply covers it. Coverage is never below 100% at any point in the
- * transition, which means no ghosting and no ground flash.
- */
-.hero-layer--day {
-  opacity: 1;
-}
-
-/*
- * No registration correction is needed here, and that is load-bearing.
- * hero-dark.png is DERIVED from hero-day.png (scripts/make-hero-dark.cjs), so
- * the two frames are pixel-aligned by construction rather than by measurement.
- * An earlier pair of independent generations differed by 0.2% scale and ~5px,
- * which showed up as the image growing slightly on toggle.
- */
-.hero-layer--dark {
-  opacity: 0;
-  animation: hero-fade-out var(--dur-hero) var(--ease-out) both;
-}
-.dark .hero-layer--dark {
-  opacity: 1;
-  animation: hero-fade-in var(--dur-hero) var(--ease-out) both;
-}
-
-/* Ground behind the art, so a slow decode shows a plausible surface rather
-   than a hole. Matches the top-of-frame tone of each generated image. */
-.hero-ground {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    120% 80% at 50% 0%,
-    #fbf3df 0%,
-    var(--surface) 70%
-  );
-}
-.dark .hero-ground {
-  background: radial-gradient(
-    120% 80% at 50% 0%,
-    #23262b 0%,
-    var(--surface) 70%
-  );
 }
 
 @media (prefers-reduced-motion: reduce) {
