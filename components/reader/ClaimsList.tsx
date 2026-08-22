@@ -74,6 +74,7 @@ export function ClaimsList({
           <li key={node.id}>
             <button
               type="button"
+              id={`claim-${node.id}`}
               onClick={() => onSelectNode(node.id)}
               className={clsx(
                 "w-full rounded border px-s-3 py-s-2 text-left transition-colors duration-fast ease-out",

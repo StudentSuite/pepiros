@@ -25,7 +25,21 @@ interface ChatApiResponse {
  * ungrounded answer is marked as such rather than rendered as if it were
  * sourced -- §9.4 requires ungrounded output be visually distinct.
  */
-export function ChatDock({ activePaperId }: { activePaperId?: string }) {
+export function ChatDock({
+  activePaperId,
+  pendingQuestion,
+  onPendingQuestionHandled,
+}: {
+  activePaperId?: string;
+  /**
+   * Issue #294: "Ask opens the chat dock scoped to the selection." Set by a
+   * source-pane selection's floating action; on the next render this fills
+   * the draft and expands the dock, then calls onPendingQuestionHandled so
+   * the parent clears it and a later identical selection can retrigger it.
+   */
+  pendingQuestion?: string | null;
+  onPendingQuestionHandled?: () => void;
+}) {
   const workspace = useWorkspaceStore((s) => s.workspace);
   const selectedNodeId = useWorkspaceStore((s) => s.selectedNodeId);
   // Issue #290: this used to gate ALL of scope/input/suggestions behind
@@ -49,6 +63,15 @@ export function ChatDock({ activePaperId }: { activePaperId?: string }) {
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages.length]);
   const [draft, setDraft] = useState("");
+
+  useEffect(() => {
+    if (!pendingQuestion) return;
+    setDraft(pendingQuestion);
+    setOpen(true);
+    onPendingQuestionHandled?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingQuestion]);
+
   const [scope, setScope] = useState<Scope>("all");
   // Issue #166: "This node" used to silently fall back to paper-scope (or
   // even the workspace's first paper) whenever no node was selected, with

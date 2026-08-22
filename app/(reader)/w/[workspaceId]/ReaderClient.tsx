@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import clsx from "clsx";
 import { ChevronRight } from "lucide-react";
@@ -15,6 +15,7 @@ import { ClaimsList } from "@/components/reader/ClaimsList";
 import { GraphPreviewCard } from "@/components/reader/GraphPreviewCard";
 import { RelatedPapersRail } from "@/components/related/RelatedPapersRail";
 import { ChatDock } from "@/components/chat/ChatDock";
+import { SelectionAudit } from "@/components/reader/SelectionAudit";
 import { NodeInspector } from "@/components/inspector/NodeInspector";
 import { NumericChart } from "@/components/viz/NumericChart";
 import { Icon } from "@/components/ui/Icon";
@@ -57,6 +58,14 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
   // instead of a two-pane grid, matching the reader's own established
   // pattern (rail already uses this exact segmented-control shape).
   const [mobilePane, setMobilePane] = useState<"source" | "claims">("source");
+
+  // Issue #294: a floating "Claims citing this / Ask" action on a source-pane
+  // text selection. sourcePaneRef scopes selection detection to the pane
+  // itself (a selection made in the claims list or chrome shouldn't trigger
+  // it); pendingChatQuestion is how "Ask" hands a pre-filled question to
+  // ChatDock, which owns its own open/draft state otherwise.
+  const sourcePaneRef = useRef<HTMLDivElement>(null);
+  const [pendingChatQuestion, setPendingChatQuestion] = useState<string | null>(null);
 
   const paperChunks = useMemo(
     () =>
@@ -258,6 +267,7 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
         <div className="mx-auto grid w-full max-w-[92rem] gap-s-6 p-s-5 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
           <main
             id="main-content"
+            ref={sourcePaneRef}
             className={clsx(
               "min-w-0 flex-col gap-s-3",
               mobilePane === "claims" ? "hidden lg:flex" : "flex",
@@ -300,6 +310,27 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
               />
             </div>
           </main>
+
+          <SelectionAudit
+            workspaceId={workspaceId}
+            containerRef={sourcePaneRef}
+            leafNodes={leafNodes}
+            evidence={workspace.evidence}
+            onFoundClaim={(nodeId) => {
+              selectNode(nodeId);
+              setMobilePane("claims");
+              setRailTab("claims");
+              // Wait a frame for the claims pane to actually be visible
+              // (mobile pane toggle, rail tab switch) before scrolling.
+              requestAnimationFrame(() => {
+                document.getElementById(`claim-${nodeId}`)?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "center",
+                });
+              });
+            }}
+            onAsk={setPendingChatQuestion}
+          />
 
           <aside
             className={clsx(
@@ -354,7 +385,11 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
         </div>
       </div>
 
-      <ChatDock activePaperId={activePaper?.id} />
+      <ChatDock
+        activePaperId={activePaper?.id}
+        pendingQuestion={pendingChatQuestion}
+        onPendingQuestionHandled={() => setPendingChatQuestion(null)}
+      />
     </SidebarProvider>
   );
 }
