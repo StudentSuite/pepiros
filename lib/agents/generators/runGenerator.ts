@@ -100,7 +100,10 @@ ${ctx.contextBlock}`;
       // See lib/ai/generateObjectWithRetry.ts's doc comment: bounds each
       // attempt so a slow fallback provider fails fast instead of hanging
       // (observed live at ~12 minutes for a single call with no timeout).
-      abortSignal: AbortSignal.timeout(45_000),
+      // 90s, matching pillarPlanner.ts: every generator call carries the
+      // same whole-paper context block, so it needs the same headroom for
+      // a real (not fixture-sized) paper.
+      abortSignal: AbortSignal.timeout(90_000),
     }),
   );
 

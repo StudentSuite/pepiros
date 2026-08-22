@@ -50,7 +50,12 @@ ${input.contextBlock}`,
       // Bounds each attempt (see generateObjectWithRetry.ts's doc comment):
       // observed live, a slow Featherless fallback left one call hanging
       // ~12 minutes with no client-side timeout before it failed anyway.
-      abortSignal: AbortSignal.timeout(45_000),
+      // 90s, not 45s: this call carries the whole paper's context block
+      // (13-55k+ chars for a real catalog paper, not the ~11k a short
+      // fixture/case-report gets), and a real run against "Attention Is
+      // All You Need" timed out on every one of 3 attempts at 45s before
+      // any provider had a chance to actually finish responding.
+      abortSignal: AbortSignal.timeout(90_000),
     }),
   );
 
