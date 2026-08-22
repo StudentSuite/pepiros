@@ -133,6 +133,27 @@ export const workspaces = pgTable(
   (table) => [index("workspaces_owner_id_idx").on(table.ownerId)],
 );
 
+/**
+ * Which catalog papers have actually been turned into a graph (issue #279).
+ *
+ * Runtime state, not source. lib/data/papers.ts describes the catalog and is
+ * checked in; which of those entries a given deployment has indexed differs
+ * per environment and changes on a schedule, so it lives here rather than
+ * being written back into a source file by a cron job.
+ *
+ * Keyed by slug because that is the catalog's own stable identifier and the
+ * thing /paper/[slug] resolves by; the workspace id is the result, not the
+ * key.
+ */
+export const indexedCatalog = pgTable("indexed_catalog", {
+  slug: text("slug").primaryKey(),
+  workspaceId: text("workspace_id")
+    .notNull()
+    .references(() => workspaces.id, { onDelete: "cascade" }),
+  paperId: text("paper_id").notNull(),
+  indexedAt: timestamp("indexed_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const papers = pgTable(
   "papers",
   {

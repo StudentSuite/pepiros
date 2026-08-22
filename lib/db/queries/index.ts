@@ -738,3 +738,38 @@ export async function getCorpusStats(): Promise<CorpusStats> {
     jobsFailed,
   };
 }
+
+// --- Catalog indexing (issue #279) -----------------------------------------
+
+export interface IndexedCatalogEntry {
+  slug: string;
+  workspaceId: string;
+  paperId: string;
+}
+
+/** Every catalog paper this deployment has actually indexed. */
+export async function getIndexedCatalogEntries(): Promise<IndexedCatalogEntry[]> {
+  const rows = await db
+    .select({
+      slug: schema.indexedCatalog.slug,
+      workspaceId: schema.indexedCatalog.workspaceId,
+      paperId: schema.indexedCatalog.paperId,
+    })
+    .from(schema.indexedCatalog);
+  return rows;
+}
+
+/**
+ * Upsert, not insert: re-indexing a paper (a better model, a fixed parser)
+ * should repoint the slug at the new workspace rather than fail on a
+ * duplicate key and leave the catalog pointing at the older graph.
+ */
+export async function upsertIndexedCatalogEntry(entry: IndexedCatalogEntry): Promise<void> {
+  await db
+    .insert(schema.indexedCatalog)
+    .values(entry)
+    .onConflictDoUpdate({
+      target: schema.indexedCatalog.slug,
+      set: { workspaceId: entry.workspaceId, paperId: entry.paperId, indexedAt: new Date() },
+    });
+}

@@ -50,6 +50,13 @@
       "when": 1787334491745,
       "tag": "0006_superb_violations",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787379993128,
+      "tag": "0007_aberrant_black_tom",
+      "breakpoints": true
     }
   ]
 }

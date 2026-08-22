@@ -1,3 +1,4 @@
+import { withIndexedWorkspace, withIndexedWorkspaces } from "@/lib/services/catalogWorkspaces";
 import { CATALOG, CATALOG_BY_SLUG, type CatalogPaper } from "./papers";
 import {
   GUEST_ID,
@@ -419,12 +420,14 @@ const seedAdapter: DataAdapter = {
     return seedReach(await this.listPosts(authorId), range);
   },
 
+  // Issue #279: workspaceId is runtime state (has the cron indexed this one
+  // yet), not part of the checked-in catalog, so it is attached on read.
   async listCatalog() {
-    return CATALOG;
+    return withIndexedWorkspaces(CATALOG);
   },
 
   async getCatalogPaper(slug) {
-    return CATALOG_BY_SLUG.get(slug) ?? null;
+    return withIndexedWorkspace(CATALOG_BY_SLUG.get(slug) ?? null);
   },
 };
 

@@ -35,7 +35,8 @@
     "prepublishOnly": "npm run build:mcp",
     "generate:llms": "tsx scripts/generate-llms-txt.ts",
     "check:no-em-dashes": "tsx scripts/check-no-em-dashes.ts",
-    "check:generator-count": "tsx scripts/check-generator-count.ts"
+    "check:generator-count": "tsx scripts/check-generator-count.ts",
+    "index:catalog": "tsx --conditions=react-server scripts/index-catalog.ts"
   },
   "dependencies": {
     "@ai-sdk/groq": "^2.0.47",
