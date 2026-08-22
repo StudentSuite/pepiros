@@ -47,6 +47,10 @@ Has equations: ${input.hasEquations}
 
 Context block:
 ${input.contextBlock}`,
+      // Bounds each attempt (see generateObjectWithRetry.ts's doc comment):
+      // observed live, a slow Featherless fallback left one call hanging
+      // ~12 minutes with no client-side timeout before it failed anyway.
+      abortSignal: AbortSignal.timeout(45_000),
     }),
   );
 

@@ -2,6 +2,7 @@ import "server-only";
 import { generateObject, type LanguageModel, type ModelMessage } from "ai";
 import type { PaperArchetype } from "@/types/anchor";
 import { GeneratorOutputSchema, type GeneratorName, type GeneratorOutput } from "@/lib/schemas";
+import { withObjectRetry } from "@/lib/ai/generateObjectWithRetry";
 
 /**
  * Shared harness every generator (docs/PLAN-V1.md §8) runs through, so each
@@ -78,24 +79,30 @@ ${ctx.contextBlock}`;
     ];
   }
 
-  const result = await generateObject({
-    model: config.model(),
-    schema: GeneratorOutputSchema,
-    system: `${SHARED_SYSTEM_PROMPT}\n\n${config.systemPrompt}`,
-    prompt,
-    // Same "a prompt is a request, not a guarantee" class as normalizeRef()
-    // and lib/chat/citations.ts's CJK-bracket tolerance: observed live from
-    // visionModel()'s free OpenRouter model, which wrapped an otherwise
-    // perfectly valid response in a "```json ... ```" markdown fence despite
-    // supportsStructuredOutputs -- OpenRouter's free-tier routing doesn't
-    // strictly enforce response_format across every backend it proxies to.
-    // Harmless for every other generator/model, which never hits this path
-    // since it only runs after the default parse already failed.
-    experimental_repairText: async ({ text }) => {
-      const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-      return fenced?.[1] ?? null;
-    },
-  });
+  const result = await withObjectRetry(() =>
+    generateObject({
+      model: config.model(),
+      schema: GeneratorOutputSchema,
+      system: `${SHARED_SYSTEM_PROMPT}\n\n${config.systemPrompt}`,
+      prompt,
+      // Same "a prompt is a request, not a guarantee" class as normalizeRef()
+      // and lib/chat/citations.ts's CJK-bracket tolerance: observed live from
+      // visionModel()'s free OpenRouter model, which wrapped an otherwise
+      // perfectly valid response in a "```json ... ```" markdown fence despite
+      // supportsStructuredOutputs -- OpenRouter's free-tier routing doesn't
+      // strictly enforce response_format across every backend it proxies to.
+      // Harmless for every other generator/model, which never hits this path
+      // since it only runs after the default parse already failed.
+      experimental_repairText: async ({ text }) => {
+        const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        return fenced?.[1] ?? null;
+      },
+      // See lib/ai/generateObjectWithRetry.ts's doc comment: bounds each
+      // attempt so a slow fallback provider fails fast instead of hanging
+      // (observed live at ~12 minutes for a single call with no timeout).
+      abortSignal: AbortSignal.timeout(45_000),
+    }),
+  );
 
   return result.object;
 }
