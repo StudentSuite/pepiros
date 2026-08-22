@@ -1,6 +1,7 @@
 import "server-only";
 import { generateObject } from "ai";
 import { fastModel } from "@/lib/ai/client";
+import { withObjectRetry } from "@/lib/ai/generateObjectWithRetry";
 import { PAPER_ARCHETYPES, type PaperArchetype } from "@/types/anchor";
 
 /**
@@ -17,14 +18,16 @@ export interface ArchetypeClassifierInput {
 }
 
 export async function classifyArchetype(input: ArchetypeClassifierInput): Promise<PaperArchetype> {
-  const result = await generateObject({
-    model: fastModel(),
-    output: "enum",
-    enum: [...PAPER_ARCHETYPES],
-    system:
-      "Classify a research paper into exactly one archetype from the given set, based on its title and excerpt. When a paper could plausibly fit more than one archetype, pick the more specific one over a general one (e.g. prefer cohort_study over dataset_paper for a clinical cohort study that also releases a dataset).",
-    prompt: `Title: ${input.title}\n\nExcerpt:\n${input.excerpt}`,
-  });
+  const result = await withObjectRetry(() =>
+    generateObject({
+      model: fastModel(),
+      output: "enum",
+      enum: [...PAPER_ARCHETYPES],
+      system:
+        "Classify a research paper into exactly one archetype from the given set, based on its title and excerpt. When a paper could plausibly fit more than one archetype, pick the more specific one over a general one (e.g. prefer cohort_study over dataset_paper for a clinical cohort study that also releases a dataset).",
+      prompt: `Title: ${input.title}\n\nExcerpt:\n${input.excerpt}`,
+    }),
+  );
 
   return result.object;
 }

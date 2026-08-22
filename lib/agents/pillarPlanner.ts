@@ -1,6 +1,7 @@
 import "server-only";
 import { generateObject } from "ai";
 import { strongModel } from "@/lib/ai/client";
+import { withObjectRetry } from "@/lib/ai/generateObjectWithRetry";
 import { PillarPlanSchema, type PillarPlan } from "@/lib/schemas";
 import type { PaperArchetype } from "@/types/anchor";
 
@@ -34,18 +35,20 @@ const SYSTEM_PROMPT = `You are planning the thematic layout ("pillars") of a res
 - "reasoning" is shown directly to the reader as "Why this layout?" -- write it for them, not as an internal note to yourself.`;
 
 export async function planPillars(input: PillarPlannerInput): Promise<PillarPlan> {
-  const result = await generateObject({
-    model: strongModel(),
-    schema: PillarPlanSchema,
-    system: SYSTEM_PROMPT,
-    prompt: `Paper: ${input.paperTitle}
+  const result = await withObjectRetry(() =>
+    generateObject({
+      model: strongModel(),
+      schema: PillarPlanSchema,
+      system: SYSTEM_PROMPT,
+      prompt: `Paper: ${input.paperTitle}
 Archetype: ${input.archetype}
 Has extractable figures: ${input.hasFigures}
 Has equations: ${input.hasEquations}
 
 Context block:
 ${input.contextBlock}`,
-  });
+    }),
+  );
 
   return result.object;
 }
