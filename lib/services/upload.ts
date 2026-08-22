@@ -14,6 +14,22 @@ import type { Paper } from "@/types/anchor";
 export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50MB
 export const MAX_PAGES = 120;
 
+/**
+ * Advisory only, not a rejection: every generator call carries the paper's
+ * whole parsed-text context block in one request (lib/prompts/contextBlock.ts,
+ * plan.md 2's deliberate "whole paper in context, no embeddings"), and Groq's
+ * on-demand tier caps that at 8,000 tokens per minute -- confirmed live from
+ * its own error body ("Limit 8000, Requested ...") across several real
+ * catalog papers. Verified live conversion, not assumed: 29,010 characters of
+ * real extracted paper text measured at 7,252 tokens, and a 55,042-character
+ * one at 13,795 -- both land within a hair of 4 characters per token, so
+ * 8,000 tokens is ~32,000 characters; this constant rounds down for margin.
+ * A paper over this still ingests (the fallback chain in lib/ai/client.ts
+ * reroutes to OpenRouter/Featherless for whole-paper-sized calls), just less
+ * reliably and slower than one that fits Groq's fast path directly.
+ */
+export const FAST_PATH_MAX_CHARS = 30_000;
+
 export type UploadRejection =
   | "empty_file"
   | "too_large"

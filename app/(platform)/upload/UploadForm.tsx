@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/shadcn/checkbox";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { ReadingColumn } from "@/components/reading/Article";
 import { cn } from "@/lib/utils";
-import { MAX_PAGES, MAX_UPLOAD_BYTES, JOB_STAGES } from "@/lib/services/upload";
+import { MAX_PAGES, MAX_UPLOAD_BYTES, FAST_PATH_MAX_CHARS, JOB_STAGES } from "@/lib/services/upload";
 
 interface IngestResponse {
   jobId?: string;
@@ -384,6 +384,12 @@ export function UploadForm({
                     </p>
                     <p className="font-mono text-[11px] text-ink-faint">
                       PDF only, up to {formatMb(MAX_UPLOAD_BYTES)}, {MAX_PAGES} pages
+                    </p>
+                    <p className="max-w-[26rem] font-sans text-[11px] text-ink-faint">
+                      Papers under ~{FAST_PATH_MAX_CHARS.toLocaleString()} characters (about 8,000 tokens)
+                      process fastest and most reliably. Longer papers still ingest, just slower and
+                      less consistently, since our fast-tier model provider rate-limits by tokens per
+                      minute.
                     </p>
                   </>
                 )}
