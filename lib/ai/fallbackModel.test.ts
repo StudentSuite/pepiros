@@ -163,4 +163,64 @@ describe("withFallback", () => {
 
     await expect(model.doGenerate({} as LanguageModelV2CallOptions)).rejects.toThrow("not an API error");
   });
+
+  const jsonObjectOptions = {
+    responseFormat: { type: "json" as const, schema: { type: "object" as const } },
+  } as LanguageModelV2CallOptions;
+
+  // Observed live indexing a real catalog paper: OpenRouter's free daily
+  // quota was exhausted and it did not error at all -- it returned a 200
+  // whose entire text content was the literal string "[3000]". Nothing
+  // throws here, so isProviderUnavailable never runs; without this check
+  // doGenerate just returns the garbage as if it were a real success.
+  it("reroutes to the fallback when the primary succeeds but returns a non-object response for a json-object schema call", async () => {
+    const primary = stubModel("primary", async () => ({ text: "[3000]" }));
+    const fallback = stubModel("fallback", async () => ({ text: '{"pillars":[]}' }));
+    const model = withFallback(primary, fallback);
+
+    const result = await model.doGenerate(jsonObjectOptions);
+    expect(result.content).toEqual([{ type: "text", text: '{"pillars":[]}' }]);
+  });
+
+  it("uses the primary's real object response for a json-object schema call, not the fallback", async () => {
+    const primary = stubModel("primary", async () => ({ text: '{"pillars":[]}' }));
+    const fallback = stubModel("fallback", async () => ({ text: "should not be called" }));
+    const model = withFallback(primary, fallback);
+
+    const result = await model.doGenerate(jsonObjectOptions);
+    expect(result.content).toEqual([{ type: "text", text: '{"pillars":[]}' }]);
+  });
+
+  it("accepts a markdown-fenced object response for a json-object schema call without rerouting", async () => {
+    const primary = stubModel("primary", async () => ({ text: '```json\n{"pillars":[]}\n```' }));
+    const fallback = stubModel("fallback", async () => ({ text: "should not be called" }));
+    const model = withFallback(primary, fallback);
+
+    const result = await model.doGenerate(jsonObjectOptions);
+    expect(result.content[0]).toEqual({ type: "text", text: '```json\n{"pillars":[]}\n```' });
+  });
+
+  // The archetype classifier's enum-mode calls never set responseFormat to
+  // "json" with an object schema, so a real short answer ("rct", three
+  // characters) must never be mistaken for a degenerate response.
+  it("does not reroute a short response when no json-object responseFormat was requested", async () => {
+    const primary = stubModel("primary", async () => ({ text: "rct" }));
+    const fallback = stubModel("fallback", async () => ({ text: "should not be called" }));
+    const model = withFallback(primary, fallback);
+
+    const result = await model.doGenerate({} as LanguageModelV2CallOptions);
+    expect(result.content).toEqual([{ type: "text", text: "rct" }]);
+  });
+
+  it("does not reroute a non-object response when the requested json schema isn't itself an object", async () => {
+    const arraySchemaOptions = {
+      responseFormat: { type: "json" as const, schema: { type: "array" as const } },
+    } as LanguageModelV2CallOptions;
+    const primary = stubModel("primary", async () => ({ text: "[1,2,3]" }));
+    const fallback = stubModel("fallback", async () => ({ text: "should not be called" }));
+    const model = withFallback(primary, fallback);
+
+    const result = await model.doGenerate(arraySchemaOptions);
+    expect(result.content).toEqual([{ type: "text", text: "[1,2,3]" }]);
+  });
 });

@@ -2,6 +2,8 @@ import "server-only";
 import { APICallError } from "ai";
 import type { LanguageModelV2, LanguageModelV2CallOptions } from "@ai-sdk/provider";
 
+type GenerateResult = Awaited<ReturnType<LanguageModelV2["doGenerate"]>>;
+
 /**
  * Worth failing over for: anything specific to the primary provider or this
  * particular account/key on it, which a second provider (different account
@@ -39,6 +41,33 @@ function isProviderUnavailable(err: unknown): boolean {
 }
 
 /**
+ * A second, non-throwing failure mode this wrapper also has to catch:
+ * verified live indexing a real catalog paper, OpenRouter's free daily quota
+ * was exhausted (see getOpenRouterModel's own doc comment) and instead of
+ * erroring, it returned an HTTP 200 whose entire text content was the
+ * literal string "[3000]" -- valid JSON, wrong shape, and never anything a
+ * schema-validation retry could fix by resampling the same broken provider.
+ * Nothing here throws, so isProviderUnavailable never even runs: from
+ * doGenerate's perspective the call plainly succeeded, and it would return
+ * straight through without ever trying the fallback.
+ *
+ * Scoped narrowly to schema-mode object calls (`responseFormat.type ===
+ * "json"` with an object-typed schema) so this can never misfire on a
+ * legitimately short answer -- the archetype classifier's enum-mode calls
+ * (a real answer might be "rct", three characters) never reach this check
+ * at all, since they don't request that response format.
+ */
+function looksLikeUsableJsonObject(result: GenerateResult, options: LanguageModelV2CallOptions): boolean {
+  const responseFormat = options.responseFormat;
+  if (!responseFormat || responseFormat.type !== "json") return true;
+  if (responseFormat.schema?.type !== "object") return true;
+
+  const text = result.content.find((part) => part.type === "text")?.text ?? "";
+  const trimmed = text.trim().replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
+  return trimmed.startsWith("{");
+}
+
+/**
  * Wraps two LanguageModelV2s so every caller (lib/agents/*, via
  * lib/ai/client.ts's fastModel()/strongModel()) sees one model: try
  * `primary`, and only when it's unavailable in a way specific to it (see
@@ -54,7 +83,9 @@ export function withFallback(primary: LanguageModelV2, fallback: LanguageModelV2
     supportedUrls: primary.supportedUrls,
     doGenerate: async (options: LanguageModelV2CallOptions) => {
       try {
-        return await primary.doGenerate(options);
+        const result = await primary.doGenerate(options);
+        if (!looksLikeUsableJsonObject(result, options)) return fallback.doGenerate(options);
+        return result;
       } catch (err) {
         if (!isProviderUnavailable(err)) throw err;
         return fallback.doGenerate(options);
