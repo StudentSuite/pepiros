@@ -137,7 +137,7 @@ function resolveTier(
 
   // OpenRouter first when configured, because the calls this serves are
   // whole-paper calls and Groq's 8k TPM cannot accept one at all (see
-  // getOpenRouterModel). Groq stays the fallback rather than being dropped:
+  // getOpenRouterModel). Groq stays in the chain rather than being dropped:
   // it is faster and cheaper for any caller whose context does fit, and on a
   // paid Groq tier it becomes the better primary again, which is a config
   // change (PEPIROS_PREFER_GROQ=1) rather than a code change.
@@ -153,8 +153,15 @@ function resolveTier(
         "GROQ_API_KEY or FEATHERLESS_API_KEY. Copy .env.example to .env.",
     );
   }
-  if (available.length === 1) return available[0]!;
-  return withFallback(available[0]!, available[1]!);
+  // Chains every configured provider, not just the first two: observed live
+  // indexing real catalog papers that Featherless was silently unreachable
+  // whenever both OpenRouter and Groq were also configured (always true in
+  // this project's .env), since withFallback(a, b) only ever sees the first
+  // pair. OpenRouter's free daily quota can exhaust mid-run and Groq's 8k
+  // TPM can't take a whole paper either -- Featherless accepting the same
+  // request (verified live) is the difference between a paper failing
+  // outright and one more real provider to try before it does.
+  return available.reduce((primary, next) => withFallback(primary, next));
 }
 
 /** Fast/cheap tier: archetype classification, high-volume leaf generators. */
