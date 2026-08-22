@@ -55,6 +55,54 @@ Rules:
 - evidence[i].quote is copied verbatim from the source excerpt(s), not paraphrased -- paraphrasing here defeats the point, since a downstream deterministic verifier re-checks this quote against the source text and demotes anything that doesn't match closely enough.
 - followups are 2-4 short questions a reader might click to go deeper, not restatements of the title.`;
 
+/**
+ * Backfills required GeneratorOutputSchema fields a model sometimes omits
+ * outright, verified live against Featherless's fast-tier fallback model
+ * (Qwen2.5-7B-Instruct, an OpenAI-compatible provider with weaker
+ * structured-output enforcement than Groq): a real response supplied only
+ * `body_md`, missing `title`, `confidence`, and `followups` entirely --
+ * not malformed JSON, a genuinely incomplete object. Also unwraps a
+ * markdown fence first (the pre-existing OpenRouter repair this replaces).
+ *
+ * Only fills a key that's genuinely ABSENT (`!("title" in obj)`), never one
+ * that's present with an invalid value -- a hallucinated confidence like
+ * "very high" still fails schema validation afterward instead of being
+ * silently coerced to a guess, and a missing/empty `evidence` is left as a
+ * real "no claims resolved" outcome for this leaf, never backfilled with
+ * invented citations.
+ */
+function repairIncompleteOutput(text: string): string | null {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  const candidate = fenced?.[1] ?? text;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(candidate);
+  } catch {
+    return fenced?.[1] ?? null;
+  }
+  if (typeof parsed !== "object" || parsed === null) return fenced?.[1] ?? null;
+  const obj = parsed as Record<string, unknown>;
+  if (typeof obj.body_md !== "string") return fenced?.[1] ?? null;
+
+  const missingTitle = !("title" in obj);
+  const missingEvidence = !("evidence" in obj);
+  const missingConfidence = !("confidence" in obj);
+  const missingFollowups = !("followups" in obj);
+  if (!missingTitle && !missingEvidence && !missingConfidence && !missingFollowups) {
+    return fenced ? candidate : null;
+  }
+
+  const firstSentence = obj.body_md.split(/(?<=[.!?])\s/)[0]?.trim().slice(0, 80);
+  return JSON.stringify({
+    ...obj,
+    title: missingTitle ? firstSentence || "Untitled" : obj.title,
+    evidence: missingEvidence ? [] : obj.evidence,
+    confidence: missingConfidence ? "medium" : obj.confidence,
+    followups: missingFollowups ? [] : obj.followups,
+  });
+}
+
 export async function runGenerator(config: GeneratorConfig, ctx: GeneratorContext): Promise<GeneratorOutput> {
   const textPrompt = `Paper: ${ctx.paperTitle}
 Archetype: ${ctx.archetype}
@@ -89,14 +137,11 @@ ${ctx.contextBlock}`;
       // and lib/chat/citations.ts's CJK-bracket tolerance: observed live from
       // visionModel()'s free OpenRouter model, which wrapped an otherwise
       // perfectly valid response in a "```json ... ```" markdown fence despite
-      // supportsStructuredOutputs -- OpenRouter's free-tier routing doesn't
-      // strictly enforce response_format across every backend it proxies to.
+      // supportsStructuredOutputs, plus Featherless's fast-tier fallback
+      // omitting required fields outright (see repairIncompleteOutput).
       // Harmless for every other generator/model, which never hits this path
       // since it only runs after the default parse already failed.
-      experimental_repairText: async ({ text }) => {
-        const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-        return fenced?.[1] ?? null;
-      },
+      experimental_repairText: async ({ text }) => repairIncompleteOutput(text),
       // See lib/ai/generateObjectWithRetry.ts's doc comment: bounds each
       // attempt so a slow fallback provider fails fast instead of hanging
       // (observed live at ~12 minutes for a single call with no timeout).

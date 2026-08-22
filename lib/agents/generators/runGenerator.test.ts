@@ -52,7 +52,7 @@ describe("runGenerator", () => {
     expect(output).toEqual(VALID_OUTPUT);
   });
 
-  it("rejects an output missing a required field", async () => {
+  it("rejects an output with an invalid (not merely missing) field value", async () => {
     const invalid = { ...VALID_OUTPUT, confidence: "very high" };
     const mock = mockTextModel(JSON.stringify(invalid));
     const config: GeneratorConfig = { name: "methodology", model: () => mock, systemPrompt: "x" };
@@ -60,6 +60,23 @@ describe("runGenerator", () => {
     await expect(
       runGenerator(config, { paperTitle: "T", archetype: "rct", contextBlock: "ctx" }),
     ).rejects.toThrow();
+  });
+
+  // Observed live: Featherless's fast-tier fallback (Qwen2.5-7B-Instruct)
+  // returned only body_md, omitting title/confidence/followups entirely --
+  // a genuinely incomplete object, not malformed JSON.
+  it("backfills title/confidence/followups when a real response omits them entirely", async () => {
+    const incomplete = { body_md: "The variant is pathogenic. [^n0]", evidence: [{ refs: ["C1"], quote: "pathogenic" }] };
+    const mock = mockTextModel(JSON.stringify(incomplete));
+    const config: GeneratorConfig = { name: "summary", model: () => mock, systemPrompt: "x" };
+
+    const output = await runGenerator(config, { paperTitle: "T", archetype: "case_report", contextBlock: "ctx" });
+
+    expect(output.body_md).toBe("The variant is pathogenic. [^n0]");
+    expect(output.evidence).toEqual([{ refs: ["C1"], quote: "pathogenic" }]);
+    expect(output.confidence).toBe("medium");
+    expect(output.followups).toEqual([]);
+    expect(output.title.length).toBeGreaterThan(0);
   });
 });
 
