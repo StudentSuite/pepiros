@@ -3,9 +3,9 @@ import { APICallError } from "ai";
 import type { LanguageModelV2, LanguageModelV2CallOptions } from "@ai-sdk/provider";
 import { withFallback } from "./fallbackModel";
 
-function apiError(statusCode: number, isRetryable = false) {
+function apiError(statusCode: number, isRetryable = false, message = "boom") {
   return new APICallError({
-    message: "boom",
+    message,
     url: "https://example.test",
     requestBodyValues: {},
     statusCode,
@@ -102,6 +102,36 @@ describe("withFallback", () => {
 
     const result = await model.doGenerate({} as LanguageModelV2CallOptions);
     expect(result.content).toEqual([{ type: "text", text: "from fallback" }]);
+  });
+
+  // Observed live indexing real catalog papers (Attention Is All You Need,
+  // ResNet, BERT): Groq reports its tokens-per-minute cap as a 413, not a
+  // 429, so it fell through this function's reroute set entirely until
+  // this was added -- every one of them failed on Groq alone with
+  // Featherless never even tried.
+  it("reroutes on a Groq tokens-per-minute 413", async () => {
+    const primary = stubModel("primary", async () => {
+      throw apiError(
+        413,
+        false,
+        "Request too large for model `openai/gpt-oss-120b` in organization `org_123` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 13795, please reduce your message size and try again.",
+      );
+    });
+    const fallback = stubModel("fallback", async () => ({ text: "from fallback" }));
+    const model = withFallback(primary, fallback);
+
+    const result = await model.doGenerate({} as LanguageModelV2CallOptions);
+    expect(result.content).toEqual([{ type: "text", text: "from fallback" }]);
+  });
+
+  it("does not reroute on a 413 unrelated to the TPM cap -- a genuinely oversized request is a real bug", async () => {
+    const primary = stubModel("primary", async () => {
+      throw apiError(413, false, "Payload too large");
+    });
+    const fallback = stubModel("fallback", async () => ({ text: "from fallback" }));
+    const model = withFallback(primary, fallback);
+
+    await expect(model.doGenerate({} as LanguageModelV2CallOptions)).rejects.toThrow("Payload too large");
   });
 
   it("does not reroute on a 400 -- a malformed request would fail identically on the fallback", async () => {

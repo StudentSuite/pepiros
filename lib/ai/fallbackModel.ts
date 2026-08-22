@@ -10,15 +10,32 @@ import type { LanguageModelV2, LanguageModelV2CallOptions } from "@ai-sdk/provid
  * "this model is gated, connect HuggingFace" 403, observed while building
  * this), or a transient failure the provider itself marked retryable.
  *
+ * Also a Groq-specific 413: verified live that Groq reports its
+ * tokens-per-minute cap ("Request too large for model ... on tokens per
+ * minute (TPM): Limit 8000, Requested 13795") as HTTP 413, not 429, for
+ * every real paper long enough to need one -- Attention Is All You Need,
+ * ResNet, BERT all hit this on the very first catalog-indexing attempt.
+ * That's the same class of thing as a 429 (a quota specific to this
+ * account/plan on this provider), just spelled differently by Groq, so it
+ * gets the same treatment: reroute to Featherless, whose quota is separate.
+ * Narrowly matched on the TPM phrasing rather than every 413, since a
+ * genuinely oversized/malformed request (a real bug on our end) should
+ * still fail loudly instead of silently degrading to a second provider.
+ *
  * NOT worth failing over for: 400 (malformed request/schema) or 404 (wrong
  * model id). Both are configuration bugs on our end -- a different provider
  * wouldn't fix a bad schema, and a typo'd model id should fail loudly so it
  * gets fixed, not silently degrade to a second provider forever.
  */
+function isGroqTpmCeiling(err: APICallError): boolean {
+  return err.statusCode === 413 && /tokens per minute/i.test(err.message);
+}
+
 function isProviderUnavailable(err: unknown): boolean {
   if (!(err instanceof APICallError)) return false;
   if (err.isRetryable) return true;
-  return err.statusCode !== undefined && [401, 402, 403, 429].includes(err.statusCode);
+  if (err.statusCode !== undefined && [401, 402, 403, 429].includes(err.statusCode)) return true;
+  return isGroqTpmCeiling(err);
 }
 
 /**
