@@ -73,7 +73,7 @@ export async function pendingCatalogPapers(): Promise<CatalogPaper[]> {
   return CATALOG.filter((p) => isFetchableLicence(p.licence) && !done.has(p.slug));
 }
 
-async function indexOne(paper: CatalogPaper): Promise<IndexOutcome> {
+export async function indexOne(paper: CatalogPaper): Promise<IndexOutcome> {
   const pdfUrl = directPdfUrl(paper);
   if (!pdfUrl) {
     return { slug: paper.slug, status: "skipped", detail: `no directly fetchable PDF from ${paper.sourceUrl}` };
@@ -141,6 +141,33 @@ async function indexOne(paper: CatalogPaper): Promise<IndexOutcome> {
     nodes: result.nodes.length,
     evidence: result.evidence.length,
   };
+}
+
+/**
+ * Indexes one specific catalog paper by slug, out of catalog order.
+ *
+ * Catalog order is not size order (issue #229): the first several fetchable
+ * papers happen to be large, famous ML papers well past Groq's 8k
+ * tokens-per-minute cap, so a plain batch run never even reaches a short
+ * paper further down the list. This lets a caller (or the CLI's --slug flag)
+ * target one directly -- e.g. to prioritize the papers most likely to
+ * succeed on the fast path (FAST_PATH_MAX_CHARS in lib/services/upload.ts)
+ * before spending a whole run's budget on ones that need the slower
+ * OpenRouter/Featherless fallback chain.
+ */
+export async function indexCatalogSlug(slug: string): Promise<IndexOutcome> {
+  const paper = CATALOG.find((p) => p.slug === slug);
+  if (!paper) return { slug, status: "failed", detail: `no catalog paper with slug ${slug}` };
+  if (!isFetchableLicence(paper.licence)) {
+    return { slug, status: "skipped", detail: `licence "${paper.licence}" is not fetchable` };
+  }
+
+  const existing = (await getIndexedCatalogEntries()).find((e) => e.slug === slug);
+  if (existing) {
+    return { slug, status: "skipped", detail: "already indexed", workspaceId: existing.workspaceId };
+  }
+
+  return indexOne(paper);
 }
 
 export async function runCatalogIndexBatch(batchSize = DEFAULT_BATCH_SIZE): Promise<IndexRunResult> {

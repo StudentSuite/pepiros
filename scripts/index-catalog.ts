@@ -13,12 +13,16 @@
  *   npm run index:catalog                 # one batch (3 papers)
  *   npm run index:catalog -- --batch=11   # a bigger bite
  *   npm run index:catalog -- --all        # keep going until nothing is left
+ *   npm run index:catalog -- --slug=generative-adversarial-networks
+ *                                         # one specific paper, out of
+ *                                         # catalog order (see indexCatalogSlug)
  *
  * Idempotent: a paper with an `indexed_catalog` row is skipped, so a re-run
  * after a failure resumes rather than re-spending tokens.
  */
 import {
   DEFAULT_BATCH_SIZE,
+  indexCatalogSlug,
   pendingCatalogPapers,
   runCatalogIndexBatch,
 } from "../lib/services/catalogIndexer";
@@ -29,6 +33,17 @@ function arg(name: string): string | null {
 }
 
 async function main(): Promise<void> {
+  const slug = arg("slug");
+  if (slug) {
+    const outcome = await indexCatalogSlug(slug);
+    if (outcome.status === "indexed") {
+      console.log(`${outcome.slug} -> ${outcome.workspaceId} (${outcome.chunks} chunks, ${outcome.nodes} nodes, ${outcome.evidence} evidence)`);
+    } else {
+      console.log(`${outcome.slug}: ${outcome.status} -- ${outcome.detail}`);
+    }
+    return;
+  }
+
   const all = process.argv.includes("--all");
   const parsed = Number(arg("batch"));
   const batchSize = Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_BATCH_SIZE;
