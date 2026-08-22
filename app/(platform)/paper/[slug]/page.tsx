@@ -7,6 +7,9 @@ import { getSession } from "@/lib/auth/session";
 import { seedCatalogStats, seedPaperComments } from "@/lib/data/seed";
 import { paperDek } from "@/lib/data/paperContent";
 import { licenceLabel } from "@/lib/data/papers";
+import { fetchWorkspace } from "@/lib/services/workspace";
+import { computeGroundingStats } from "@/lib/services/groundingStats";
+import { GroundedArticle } from "@/components/reading/GroundedArticle";
 import {
   ArticleBody,
   ArticleHeader,
@@ -53,6 +56,17 @@ export default async function PaperPage({
   if (!paper) notFound();
 
   const stats = seedCatalogStats(paper.id, paper.year);
+
+  // Issue #283: the write-up is read from the paper's own workspace, through
+  // the same service layer the reader uses, rather than generated here. A
+  // paper that has not been indexed yet (issue #279) has no workspaceId and
+  // falls through to the honest not-indexed state below.
+  const workspace = paper.workspaceId ? await fetchWorkspace(paper.workspaceId) : null;
+  // Issue #282: measured, not seeded. Null when there is nothing to measure,
+  // and never coerced to zero: a paper with no evidence rows has no coverage
+  // figure, it has not scored zero.
+  const grounding = workspace ? computeGroundingStats(workspace) : null;
+
   const byline = paper.authors.slice(0, 3).join(", ") + (paper.authors.length > 3 ? ", et al." : "");
 
   // A real `posts` row (matched by paper_id) means this paper has actually
@@ -80,7 +94,17 @@ export default async function PaperPage({
                the verifier, on a page whose whole claim is that its numbers
                are measured. A grounded percentage returns when there are real
                evidence rows to compute it from (issues #279, #282). */
-            meta={licenceLabel(paper.licence)}
+            meta={[
+              // Only shown when the verifier actually produced it. That is the
+              // whole of issues #259/#282: a number on this page is either
+              // measured or absent, never invented to fill the slot.
+              grounding?.coverage !== null && grounding !== null
+                ? `${Math.round(grounding.coverage * 100)}% grounded`
+                : null,
+              licenceLabel(paper.licence),
+            ]
+              .filter(Boolean)
+              .join(" · ")}
             action={
               <PaperEngagement
                 initialScore={likeState ? likeState.count : stats.score}
@@ -143,72 +167,95 @@ export default async function PaperPage({
           </p>
         )}
 
-        {/* Issue #253: a procedurally generated "grounded read" used to sit
-            here -- three pillars of claims, each with a tier chosen by
-            arithmetic on a hash of the paper id, a quote from a five-item
-            pool, a page number of (hash % 11) + 2, and a match score of
-            0.92 + (hash % 8) / 100. Attached to real, checkable papers, that
-            put sentences into AlphaFold and Attention Is All You Need that are
-            not in them, under a standfirst promising every claim was bound to
-            a quoted sentence from the source.
+        {workspace ? (
+          <>
+            {/* Issue #283: the real write-up, read from this paper's own
+                workspace through the same buildClaimSummaries the reader's
+                claim stack uses, so the public page and the workspace cannot
+                disagree about a paper. Nothing here is generated at render
+                time. */}
+            <GroundedArticle workspace={workspace} />
 
-            Nothing stands in for it. The write-up appears when the paper has
-            actually been through the pipeline (issue #279) and can be read
-            from the same nodes and evidence rows the reader reads (issue
-            #283). Until then this page is the paper's real record and a link
-            to the original, which is worth more than a convincing fake. */}
-        <section className="mt-s-6 rounded-md border border-dashed border-border px-s-5 py-s-5">
-          <h2 className="font-serif text-[1.2rem] leading-snug text-ink">
-            No grounded write-up yet
-          </h2>
-          <ArticleBody className="mt-s-3">
-            <p>
-              This paper is catalogued but has not been through the verifier, so
-              there is nothing here we can show you a source sentence for. Rather
-              than generate a summary you would have to take on trust, which is
-              the exact thing Pepiros exists to avoid, the page stops here.
-            </p>
-            <p>
-              What is on this page is what we can actually stand behind: the
-              paper&rsquo;s own record, and a link to the original.
-            </p>
-          </ArticleBody>
+            {grounding?.coverage !== null && grounding !== null && (
+              <p className="mt-s-6 rounded-md border border-dashed border-border px-s-4 py-s-3 font-mono text-[11px] leading-relaxed text-ink-faint">
+                {/* The denominators, not just the percentage: "93% grounded"
+                    with nothing behind it is the kind of number this whole
+                    milestone was about removing. */}
+                {grounding.citedChunks} of {grounding.totalChunks} passages cited across{" "}
+                {grounding.totalEvidence} claims.
+                {grounding.dropRate !== null &&
+                  ` ${grounding.droppedEvidence} claimed quote${grounding.droppedEvidence === 1 ? "" : "s"} failed verification and had the citation stripped (${Math.round(grounding.dropRate * 100)}% drop rate).`}
+              </p>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Issue #253: a procedurally generated "grounded read" used to sit
+                here -- three pillars of claims, each with a tier chosen by
+                arithmetic on a hash of the paper id, a quote from a five-item
+                pool, a page number of (hash % 11) + 2, and a match score of
+                0.92 + (hash % 8) / 100. Attached to real, checkable papers,
+                that put sentences into AlphaFold and Attention Is All You Need
+                that are not in them, under a standfirst promising every claim
+                was bound to a quoted sentence from the source.
 
-          <dl className="mt-s-5 grid gap-s-3 sm:grid-cols-2">
-            <div>
-              <dt className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-                Authors
-              </dt>
-              <dd className="mt-1 font-sans text-[15px] leading-relaxed text-ink">
-                {paper.authors.join(", ")}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-                Published in
-              </dt>
-              <dd className="mt-1 font-sans text-[15px] leading-relaxed text-ink">
-                {paper.venue}, {paper.year}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-                Field
-              </dt>
-              <dd className="mt-1 font-sans text-[15px] leading-relaxed text-ink">
-                {paper.field}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-                Access
-              </dt>
-              <dd className="mt-1 font-sans text-[15px] leading-relaxed text-ink">
-                {licenceLabel(paper.licence)}
-              </dd>
-            </div>
-          </dl>
-        </section>
+                Nothing stands in for it. A paper that has not been through the
+                pipeline shows its real record and a link to the original,
+                which is worth more than a convincing fake. */}
+            <section className="mt-s-6 rounded-md border border-dashed border-border px-s-5 py-s-5">
+              <h2 className="font-serif text-[1.2rem] leading-snug text-ink">
+                No grounded write-up yet
+              </h2>
+              <ArticleBody className="mt-s-3">
+                <p>
+                  This paper is catalogued but has not been through the verifier, so
+                  there is nothing here we can show you a source sentence for. Rather
+                  than generate a summary you would have to take on trust, which is
+                  the exact thing Pepiros exists to avoid, the page stops here.
+                </p>
+                <p>
+                  What is on this page is what we can actually stand behind: the
+                  paper&rsquo;s own record, and a link to the original.
+                </p>
+              </ArticleBody>
+
+              <dl className="mt-s-5 grid gap-s-3 sm:grid-cols-2">
+                <div>
+                  <dt className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+                    Authors
+                  </dt>
+                  <dd className="mt-1 font-sans text-[15px] leading-relaxed text-ink">
+                    {paper.authors.join(", ")}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+                    Published in
+                  </dt>
+                  <dd className="mt-1 font-sans text-[15px] leading-relaxed text-ink">
+                    {paper.venue}, {paper.year}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+                    Field
+                  </dt>
+                  <dd className="mt-1 font-sans text-[15px] leading-relaxed text-ink">
+                    {paper.field}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+                    Access
+                  </dt>
+                  <dd className="mt-1 font-sans text-[15px] leading-relaxed text-ink">
+                    {licenceLabel(paper.licence)}
+                  </dd>
+                </div>
+              </dl>
+            </section>
+          </>
+        )}
 
         <ArticleRule />
 

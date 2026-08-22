@@ -268,11 +268,30 @@ def extract_equations_and_figures(doc):
     reached means the near-zero-text scanned-PDF check above still fails
     fast without loading a vision model stack it will never use.
     """
-    with suppressed_stdout():
-        from pix2text import Pix2Text
-        from pix2text.page_elements import ElementType
+    try:
+        with suppressed_stdout():
+            from pix2text import Pix2Text
+            from pix2text.page_elements import ElementType
 
-        p2t = Pix2Text.from_config()
+            p2t = Pix2Text.from_config()
+    except ImportError:
+        # Pix2Text is optional enrichment, not part of the grounding spine.
+        # It powers two of the twenty-two generators (equations, figures);
+        # chunks, numerics, sections and every anchored claim come from
+        # PyMuPDF above and do not need it.
+        #
+        # Hard-importing it meant a machine without it (README documents
+        # `pip install pymupdf` as the one setup step, so that is most of
+        # them) failed the entire parse with a ModuleNotFoundError traceback,
+        # losing the whole paper rather than two generators. Missing optional
+        # dependency now degrades to "no equations, no figures", which is the
+        # same state a paper containing neither already produces.
+        print(
+            "pix2text is not installed: skipping equation and figure extraction. "
+            "Install it with `pip install pix2text` to enable those two generators.",
+            file=sys.stderr,
+        )
+        return [], []
 
     equations = []
     figures = []

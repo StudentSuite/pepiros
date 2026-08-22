@@ -6,14 +6,11 @@ import { spawn } from "node:child_process";
  * lib/services/ingest.ts and scripts/measure-drop-rate.ts) and returns its
  * stdout parsed as JSON.
  *
- * Tries `python3` first, then falls back to `python` on ENOENT. Some
- * systems (this was hit live: a real ingest attempt failed with
- * "spawn python3 ENOENT") only expose a `python` command -- particularly
- * common on Windows, and on some Python installations elsewhere that don't
- * create a `python3` symlink even though `python3 --version` would report
- * Python 3.x if it existed. Failing over rather than hardcoding one name
- * means this works on either without the user needing to know which their
- * system uses.
+ * The interpreter name is probed once rather than hardcoded: some systems
+ * only expose `python`, others only `python3`, and on Windows `python3` is
+ * frequently a Microsoft Store stub that is not an interpreter at all. See
+ * resolveInterpreter() below for why probing replaced the old
+ * try-python3-then-fall-back-on-ENOENT approach.
  */
 
 // Issue #268: a hang here (a stalled model load, a pathological PDF spinning
@@ -60,27 +57,65 @@ async function spawnAndCollect(
   });
 }
 
-function isNotFoundError(err: unknown): boolean {
-  return err instanceof Error && "code" in err && (err as NodeJS.ErrnoException).code === "ENOENT";
+/**
+ * Which interpreter name actually works here, probed once and remembered.
+ *
+ * WHY PROBING, RATHER THAN TRYING python3 AND FALLING BACK ON ENOENT.
+ * Windows ships an App Execution Alias at
+ * `%LOCALAPPDATA%\Microsoft\WindowsApps\python3.exe`, and it is usually first
+ * on PATH. It is a Store stub, not an interpreter. Spawned from a shell it
+ * opens the Store and exits; spawned from Node with no console attached it
+ * simply hangs, holding the pipe open forever.
+ *
+ * That is not ENOENT, so the old fallback never fired: the run sat there
+ * until the 5-minute timeout, then reported "python3 timed out" and gave up
+ * without ever trying `python`, which on the same machine works fine. Caught
+ * live on Windows with a real Python 3.14 install where `python3 --version`
+ * from a shell answers instantly.
+ *
+ * So each candidate is probed with `--version` under a short timeout, and the
+ * first one that actually answers is used. A stub that hangs is skipped in
+ * seconds instead of costing the whole parse budget.
+ */
+const PROBE_TIMEOUT_MS = 10_000;
+let resolvedInterpreter: string | null = null;
+
+async function resolveInterpreter(): Promise<string> {
+  if (resolvedInterpreter) return resolvedInterpreter;
+
+  // `python` first on Windows: `python3` there is the Store alias more often
+  // than it is a real interpreter. Elsewhere `python3` is the correct name and
+  // `python` may still be Python 2.
+  const candidates = process.platform === "win32" ? ["python", "python3"] : ["python3", "python"];
+
+  for (const candidate of candidates) {
+    try {
+      const probe = await spawnAndCollect(candidate, ["--version"], PROBE_TIMEOUT_MS);
+      if (probe.code === 0 && /Python 3/.test(probe.stdout + probe.stderr)) {
+        resolvedInterpreter = candidate;
+        return candidate;
+      }
+    } catch {
+      // ENOENT, a hang, or a non-Python 3 answer: try the next name.
+    }
+  }
+
+  throw new Error(
+    'Could not find a working Python 3 interpreter (tried "python" and "python3"). ' +
+      "Install Python 3 and make sure it is on PATH. On Windows, check that " +
+      "python3 is not resolving to the Microsoft Store stub in WindowsApps.",
+  );
 }
 
 export async function runPythonScript<T>(scriptPath: string, args: string[], timeoutMs = DEFAULT_TIMEOUT_MS): Promise<T> {
+  const interpreter = await resolveInterpreter();
   let result: { stdout: string; stderr: string; code: number | null };
   try {
-    result = await spawnAndCollect("python3", [scriptPath, ...args], timeoutMs);
+    result = await spawnAndCollect(interpreter, [scriptPath, ...args], timeoutMs);
   } catch (err) {
-    if (!isNotFoundError(err)) {
-      throw new Error(`Could not run ${scriptPath} with python3: ${err instanceof Error ? err.message : String(err)}`);
-    }
-    try {
-      result = await spawnAndCollect("python", [scriptPath, ...args], timeoutMs);
-    } catch (fallbackErr) {
-      throw new Error(
-        `Could not find a Python interpreter (tried "python3" and "python"). ` +
-          `Install Python 3 and make sure it's on PATH. ` +
-          `Original error: ${fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr)}`,
-      );
-    }
+    throw new Error(
+      `Could not run ${scriptPath} with ${interpreter}: ${err instanceof Error ? err.message : String(err)}`,
+    );
   }
 
   // A python process can print its full, valid JSON output and still exit

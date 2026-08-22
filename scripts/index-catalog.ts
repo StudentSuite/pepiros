@@ -42,7 +42,8 @@ import { resolveSourceUrl } from "../lib/services/upload";
 import { runIngest } from "../lib/services/ingest";
 import { createWorkspace } from "../lib/services/workspaces";
 import { validateUpload } from "../lib/services/upload";
-import { createJob } from "../lib/services/jobs";
+import { createJob, getJob } from "../lib/services/jobs";
+import { fetchWorkspace } from "../lib/services/workspace";
 
 interface Args {
   limit: number;
@@ -120,6 +121,29 @@ async function indexOne(paper: CatalogPaper, dryRun: boolean): Promise<string | 
     sourceUrl: paper.sourceUrl,
     bytes,
   });
+
+  // runIngest reports failure by calling failJob() on its own in-memory job
+  // rather than by throwing, so awaiting it successfully says nothing about
+  // whether anything was written. Without this check the first run of this
+  // script reported "indexed 11, failed 0" while every workspace was empty:
+  // the parse had died on a missing optional dependency and the script had no
+  // way to know. Read the job back, and treat a real result as the only
+  // success.
+  const finished = getJob(job.id);
+  if (finished?.status === "failed") {
+    const reason = (finished.error ?? "unknown error").split("\n")[0];
+    console.log(`  failed: ${reason}`);
+    return null;
+  }
+
+  const result = await fetchWorkspace(workspace.id);
+  if (result.papers.length === 0 || result.chunks.length === 0) {
+    console.log("  failed: ingest finished but wrote no paper or chunks");
+    return null;
+  }
+  console.log(
+    `  ${result.chunks.length} chunks, ${result.nodes.length} nodes, ${result.evidence.length} evidence`,
+  );
 
   return workspace.id;
 }
