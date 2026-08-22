@@ -32,10 +32,12 @@ export function Hero({
         Pepiros
       </h1>
 
-      {/* The locked tagline (plan.md section 10 / design/DIRECTIONS.md's
-          brand kit): "Every claim, one click from its source." */}
+      {/* Tagline, confirmed 2026-08-22: "Be the source." wins over the old
+          "Every claim, one click from its source." (plan.md section 10 /
+          the former design/DIRECTIONS.md) -- matches the OG/social-share
+          card (app/opengraph-image.png), which was the real decided copy. */}
       <p className="mx-auto mt-s-5 max-w-xl font-sans text-base leading-relaxed text-ink-muted sm:text-lg">
-        Every claim, one click from its source.
+        Be the source.
       </p>
 
       <div className="mt-s-7 w-full">

@@ -28,20 +28,19 @@ What actually happens when you use it: upload a PDF or paste an arXiv/PMC/DOI li
 
 ## 3. Canonical copy & taglines — exact live strings, don't improvise a new one
 
-Multiple taglines exist across the repo. This is the map of which ones are actually live right now vs. historical/pitch-only, so nobody grabs the wrong one by accident.
+**The tagline is "Be the source." Confirmed and resolved 2026-08-22.**
 
-**On-page hero tagline — LIVE, `components/site/Hero.tsx`, directly under the "PEPIROS" wordmark on the homepage:**
-> "Every claim, one click from its source."
+This settles a split that had been live and deliberately unreconciled since at least 2026-08-13 (documented in the now-removed `design/DIRECTIONS.md`): the OG/social-share card always said "Be the source.", while the on-page Hero said the older "Every claim, one click from its source." Anay confirmed the OG version is the real, decided copy — the Hero was the stale one, not the other way around.
 
-The code's own comment calls this "the locked tagline (plan.md section 10 / design/DIRECTIONS.md's brand kit)."
+**Fixed:** `components/site/Hero.tsx` now reads "Be the source." under the "PEPIROS" wordmark, matching the OG image. Both surfaces are aligned as of this commit.
 
-**Root SEO/OG meta description — LIVE, `app/layout.tsx`, used as the `<meta description>` and `og:description`/`twitter:description` on every single page:**
+**Live, matching:**
+- On-page hero tagline (`components/site/Hero.tsx`) and social-share card (`app/opengraph-image.png` + `app/twitter-image.png`): **"Be the source."**
+
+**Root SEO/OG meta description — LIVE, `app/layout.tsx`, used as the `<meta description>` and `og:description`/`twitter:description` on every single page, unchanged by this decision, still worth knowing since it's a third piece of copy, not a tagline:**
 > "A publishing platform for researchers, with a summariser you can check: publish the papers you read, and every claim stays bound to the sentence it came from."
 
-**Social-share card image text — LIVE, `app/opengraph-image.png` + `app/twitter-image.png` (static PNGs, verified by opening the actual image file):**
-> "PEPIROS" / "Be the source."
-
-**⚠️ Confirmed live and unresolved as of 2026-08-22 — this is not a stale note, it's still true right now:** the on-page tagline and the social-share-card tagline are two different lines, both shipping simultaneously. Someone who clicks a shared link sees "Be the source." in the link preview, then lands on a page whose hero says "Every claim, one click from its source." **Pick one before writing any new copy that needs a tagline** — don't create a third variant to add to the pile. Whoever decides should update the losing surface's source (`Hero.tsx` or regenerate the OG image) in the same pass, not just pick one for new copy and leave the mismatch live.
+**Retired, do not use — "Every claim, one click from its source."** This was `plan.md` §10's originally locked tagline and is still printed there; treat that line in `plan.md` as stale pending its own editorial pass (§11). Don't pull it into any new copy.
 
 **Elevator pitches — Devpost/hackathon-submission copy only, `SUBMISSION.md`. NOT live anywhere on the actual site. Don't pull from here for product UI without deciding to promote one first:**
 - "A place to read, publish and argue about research papers where every claim carries the exact sentence it came from. Drop in any paper and Pepiros maps what it says."
@@ -205,7 +204,7 @@ Everything in this section was described directly by Anay on 2026-08-22. Tagged 
 - `CLAUDE.md`'s "Current data seam" section still says no live Supabase project is provisioned and everything resolves through a fixture. Stale for the grounding domain — Supabase is live and migrated there. Needs a pass so `CLAUDE.md` stops contradicting itself, and should now also explain the separate platform-domain seed/live split from §8.
 - `plan.md` §3's dependency list still mentions `@ai-sdk/anthropic` (removed from the stack, see §6).
 - `plan.md` §22.3's positioning lock needs an editorial update per §2 above — do this together with Yash, not unilaterally.
-- The tagline split in §3 needs a decision, then a code change to whichever surface loses.
+- `plan.md` §10 still prints the retired tagline ("Every claim, one click from its source."). §3 above has the resolved version ("Be the source.") — update `plan.md` on the same pass as the §22.3 edit.
 
 ## 12. Canonical docs (in priority order, don't restate their content elsewhere)
 
