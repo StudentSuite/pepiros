@@ -38,4 +38,18 @@ describe("classifyArchetype", () => {
     expect(promptText).toContain("My Paper Title");
     expect(promptText).toContain("Some excerpt text.");
   });
+
+  // Observed live: Featherless (the fast-tier fallback, an OpenAI-compatible
+  // provider with no native enum-output mode) returned the right value under
+  // the wrong key -- {"archetype": "case_report"} instead of {"result":
+  // "case_report"} -- which failed schema validation on every one of 3
+  // retries since it's the same provider returning the same shape each time.
+  it("repairs a response with the right value under the wrong key", async () => {
+    nextModel = mockTextModel(JSON.stringify({ archetype: "case_report" }));
+    const result = await classifyArchetype({
+      title: "A Case Report",
+      excerpt: "A 75-year-old man presented with...",
+    });
+    expect(result).toBe("case_report");
+  });
 });
