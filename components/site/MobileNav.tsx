@@ -188,7 +188,7 @@ export function MobileNav({
                     onClick={close}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "py-s-2 font-serif text-3xl leading-tight transition-colors duration-fast ease-out",
+                      "py-s-2 font-sans font-semibold text-3xl leading-tight transition-colors duration-fast ease-out",
                       active ? "text-ink" : "text-ink-muted hover:text-ink",
                     )}
                   >
