@@ -45,8 +45,27 @@ export function ShaderCanvas() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const gl = canvas.getContext("webgl", { antialias: false, depth: false, alpha: false });
-    if (!gl) return;
+    const glAttrs = { antialias: false, depth: false, alpha: false } as const;
+    // Some hardening/privacy browser modes (Brave's Shields fingerprinting
+    // protection is the common one) only expose the legacy
+    // "experimental-webgl" name, or block "webgl" outright while still
+    // permitting it -- worth one extra attempt before accepting the
+    // opaque-black-canvas fallback. If both fail, this really is the
+    // browser withholding WebGL for this origin (a per-site permission,
+    // not something a page can override), and Band's own CSS gradient
+    // fallback is the correct, already-graceful result.
+    const gl =
+      (canvas.getContext("webgl", glAttrs) as WebGLRenderingContext | null) ??
+      (canvas.getContext("experimental-webgl", glAttrs) as WebGLRenderingContext | null);
+    if (!gl) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(
+          "[ShaderCanvas] no WebGL context available -- falling back to Band's CSS gradient. " +
+            "If this is unexpected, check the browser's fingerprinting/shield settings for this origin.",
+        );
+      }
+      return;
+    }
 
     const program = buildProgram(gl);
     if (!program) return;
