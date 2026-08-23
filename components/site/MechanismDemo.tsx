@@ -200,17 +200,23 @@ export function MechanismDemo() {
         </div>
       </div>
 
-      {/* Below lg the two panels stack and the beam is hidden rather than
-          redrawn vertically: at that width the claim and the source are
-          already adjacent, so a line between them adds nothing and a
-          near-vertical beam over a narrow column reads as a glitch. */}
+      {/* Below xl the two panels stack and the beam is hidden rather than
+          redrawn vertically. Gated on xl, not lg: this card sits in the
+          right column of page.tsx's own lg: 2-column grid (copy | demo), so
+          at exactly the lg breakpoint both grids would flip to multi-column
+          at once and this card's own 3-column split would get squeezed to
+          ~100px text columns inside that already-narrow half -- confirmed
+          live (word-per-line wrapping) before this was xl. At that width
+          the claim and the source are already adjacent, so a line between
+          them adds nothing and a near-vertical beam over a narrow column
+          reads as a glitch anyway. */}
       {/* containerRef sits here, not on the card: AnimatedBeam computes its
           endpoints relative to the container but renders its SVG at the
           nearest positioned ancestor, so those have to be the same element or
           the line draws offset by this card's padding and header height. */}
       <div
         ref={containerRef}
-        className="relative mt-s-5 grid gap-s-4 lg:grid-cols-[minmax(0,1fr)_72px_minmax(0,1.1fr)] lg:gap-0"
+        className="relative mt-s-5 grid gap-s-4 xl:grid-cols-[minmax(0,1fr)_72px_minmax(0,1.1fr)] xl:gap-0"
       >
         {/* ---------------------------------------------------------- */}
         {/* The summary. Every claim visible, one under inspection.     */}
@@ -271,7 +277,7 @@ export function MechanismDemo() {
         </div>
 
         {/* The gutter the beam crosses. Empty on purpose. */}
-        <div aria-hidden className="hidden lg:block" />
+        <div aria-hidden className="hidden xl:block" />
 
         {/* ---------------------------------------------------------- */}
         {/* The paper. Either the sentence, or the absence of one.      */}
@@ -329,9 +335,9 @@ export function MechanismDemo() {
           )}
         </div>
 
-        {/* Rendered only from lg up, and keyed on the beat so it redraws from
+        {/* Rendered only from xl up, and keyed on the beat so it redraws from
             scratch rather than easing between two unrelated endpoints. */}
-        <div className="pointer-events-none absolute inset-0 hidden lg:block">
+        <div className="pointer-events-none absolute inset-0 hidden xl:block">
           <AnimatedBeam
             key={active}
             containerRef={containerRef}
