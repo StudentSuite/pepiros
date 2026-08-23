@@ -129,7 +129,7 @@ export function ShareClient({ workspaceId }: { workspaceId: string }) {
                       type="button"
                       onClick={() => setActivePaperId(paper.id)}
                       className={clsx(
-                        "w-full truncate rounded px-2 py-1.5 text-left font-sans text-sm transition duration-fast ease-out",
+                        "w-full truncate rounded-lg px-2 py-1.5 text-left font-sans text-sm transition duration-fast ease-out",
                         paper.id === activePaper.id
                           ? "bg-surface-sunken text-ink"
                           : "text-ink-muted hover:bg-surface-sunken hover:text-ink",
@@ -159,7 +159,7 @@ export function ShareClient({ workspaceId }: { workspaceId: string }) {
                   type="button"
                   onClick={() => selectNode(node.id)}
                   className={clsx(
-                    "w-full rounded px-2 py-1 text-left font-sans text-xs",
+                    "w-full rounded-lg px-2 py-1 text-left font-sans text-xs",
                     node.id === selectedNodeId
                       ? "bg-surface-raised text-ink"
                       : "text-ink-muted hover:text-ink",
@@ -178,7 +178,7 @@ export function ShareClient({ workspaceId }: { workspaceId: string }) {
           ) : (
             <p className="font-sans text-sm text-ink-faint">This paper has no content to show yet.</p>
           )}
-          <div className="rounded border border-border bg-surface-raised p-s-4">
+          <div className="rounded-lg border border-border bg-surface-raised p-s-4">
             <NodeInspector readOnly />
           </div>
         </main>
