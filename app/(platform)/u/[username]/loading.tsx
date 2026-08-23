@@ -1,30 +1,14 @@
-import { Skeleton } from "@/components/ui/Skeleton";
+import { ProfileShellSkeleton } from "@/components/profile/ProfileShellSkeleton";
 
 /**
- * Issue #134: same gap as discover/loading.tsx, this route's own shape --
- * a centered profile header (avatar, name, bio, stats) then a stack of
- * that person's papers, matching u/[username]/page.tsx.
+ * This route was rebuilt onto <ProfileShell> (a GitHub-shaped tab bar, left
+ * identity rail, content beside it), but its loading state was still the
+ * previous design's: a centred avatar over a centred name over a centred bio.
+ * Every load therefore flashed a layout the page no longer has and then
+ * jumped sideways into the real one.
+ *
+ * Shares one skeleton with /open so the two cannot drift apart again.
  */
 export default function ProfileLoading() {
-  return (
-    <div className="pb-s-5" aria-busy="true" aria-label="Loading">
-      <div className="mx-auto max-w-3xl border-b border-border py-s-7 text-center">
-        <Skeleton className="mx-auto h-16 w-16 rounded-full" />
-        <Skeleton className="mx-auto mt-s-4 h-7 w-48" />
-        <Skeleton className="mx-auto mt-1 h-3 w-24" />
-        <Skeleton className="mx-auto mt-s-4 h-4 w-64" />
-        <Skeleton className="mx-auto mt-s-5 h-8 w-24 rounded-full" />
-      </div>
-
-      <div className="mx-auto max-w-3xl flex flex-col gap-s-6 pt-s-6">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="flex flex-col gap-2">
-            <Skeleton className="h-5 w-3/4" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-3 w-24" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  return <ProfileShellSkeleton />;
 }
