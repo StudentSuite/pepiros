@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { buttonClassName } from "@/components/ui/Button";
 import { EvidenceBadge } from "@/components/ui/EvidenceBadge";
+import { RefChip } from "@/components/ui/RefChip";
+import { WalkthroughStep } from "@/components/site/WalkthroughStep";
+import { ReaderMock, GraphMock, AgentMock } from "@/components/mockups/ReaderMock";
 
 export const metadata: Metadata = {
   title: "How to use Pepiros",
@@ -17,24 +20,47 @@ export const metadata: Metadata = {
  * This one is for someone who has already decided and wants to get something
  * done -- what to click, in what order, and what the screen will say back.
  *
+ * Rebuilt onto the shared WalkthroughStep (issue #298): the same numbered
+ * step, kicker, title, prose, media-slot shape /how-it-works uses, so a step
+ * never looks different depending on which page describes it. Media is
+ * omitted where no real mockup fits (steps 1, 4, 6) rather than padded with
+ * an unrelated one.
+ *
  * Every step describes behaviour that actually exists today. Where something
  * is not built, it says so in the step rather than being quietly omitted,
  * because a guide that describes a button you cannot find is worse than a
  * shorter guide.
  */
+export default function HowToUsePage() {
+  return (
+    <main className="flex flex-col pb-s-5">
+      <section className="mx-auto w-full max-w-[46rem] p-s-5">
+        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+          Guide
+        </p>
+        <h1 className="mt-s-3 font-sans font-bold text-[2.1rem] leading-tight text-ink">
+          How to use Pepiros
+        </h1>
+        <p className="mt-s-4 font-sans text-[16px] leading-relaxed text-ink-muted">
+          Seven steps, in the order you&rsquo;d actually do them. If you want
+          the argument for why the checking works the way it does,{" "}
+          <Link href="/how-it-works" className="text-accent-text underline underline-offset-2">
+            how it works
+          </Link>{" "}
+          covers that instead.
+        </p>
 
-interface Step {
-  n: number;
-  title: string;
-  body: React.ReactNode;
-}
+        <div className="mt-s-5 flex flex-wrap gap-s-3">
+          <Link href="/w/ws-1" className={buttonClassName("primary")}>
+            Open the demo workspace
+          </Link>
+          <Link href="/upload" className={buttonClassName("secondary")}>
+            Add your own paper
+          </Link>
+        </div>
+      </section>
 
-const STEPS: Step[] = [
-  {
-    n: 1,
-    title: "Open a workspace",
-    body: (
-      <>
+      <WalkthroughStep index={1} title="Open a workspace">
         <p>
           A workspace holds a few papers and everything derived from them. The
           demo workspace is already populated with three papers on circadian
@@ -46,14 +72,9 @@ const STEPS: Step[] = [
           makes your own work persist &mdash; without it, anything you add is
           gone when you close the tab.
         </p>
-      </>
-    ),
-  },
-  {
-    n: 2,
-    title: "Read in the doc view first",
-    body: (
-      <>
+      </WalkthroughStep>
+
+      <WalkthroughStep index={2} title="Read in the doc view first" tone="raised" media={<ReaderMock />}>
         <p>
           The default view is a reader, not the graph: summary at the top, the
           source PDF beside it, related papers on the right. Claims and their
@@ -65,14 +86,9 @@ const STEPS: Step[] = [
           <span className="font-mono text-ink">C7</span>-style ids &mdash; to
           jump to the exact sentence it came from.
         </p>
-      </>
-    ),
-  },
-  {
-    n: 3,
-    title: "Open the graph when you want structure",
-    body: (
-      <>
+      </WalkthroughStep>
+
+      <WalkthroughStep index={3} title="Open the graph when you want structure" flip media={<GraphMock />}>
         <p>
           <strong className="text-ink">Explore graph</strong> switches to the
           canvas. Pillars start collapsed, so you see the shape of the argument
@@ -87,14 +103,9 @@ const STEPS: Step[] = [
           Zoom out and cards deliberately shed detail: at a distance you are
           reading structure, not sentences.
         </p>
-      </>
-    ),
-  },
-  {
-    n: 4,
-    title: "Ask a question",
-    body: (
-      <>
+      </WalkthroughStep>
+
+      <WalkthroughStep index={4} title="Ask a question" tone="raised">
         <p>
           The chat dock answers from the papers in the workspace and cites what
           it used. Every citation it returns is re-checked against the source
@@ -107,49 +118,52 @@ const STEPS: Step[] = [
           and that answer is marked so it can never be mistaken for a grounded
           one.
         </p>
-      </>
-    ),
-  },
-  {
-    n: 5,
-    title: "Check the grounding",
-    body: (
-      <>
+      </WalkthroughStep>
+
+      <WalkthroughStep
+        index={5}
+        title="Check the grounding"
+        media={
+          <div className="flex flex-col gap-s-4 rounded-lg border border-border bg-surface-raised p-s-5">
+            <div className="flex flex-col items-start gap-1.5">
+              <EvidenceBadge tier="quote_located" />
+              <RefChip refId="C7" />
+            </div>
+            <div className="flex flex-col items-start gap-1.5">
+              <EvidenceBadge tier="paraphrase" />
+            </div>
+            <div className="flex flex-col items-start gap-1.5">
+              <EvidenceBadge tier="unsupported" />
+            </div>
+          </div>
+        }
+      >
         <p>Every claim carries one of three badges, and the difference matters:</p>
-        <ul className="mt-s-3 flex flex-col gap-s-3">
-          <li className="flex flex-col items-start gap-1.5">
-            <EvidenceBadge tier="quote_located" />
-            <span>
-              The quote was found in the source. This is <em>not</em> a
-              statement that the claim follows from it &mdash; that judgement is
-              yours, which is why the two render side by side.
-            </span>
+        <ul className="flex flex-col gap-s-3">
+          <li>
+            <strong className="text-ink">Quote located</strong> &mdash; the
+            quote was found in the source. This is <em>not</em> a statement
+            that the claim follows from it, which is why the two render side
+            by side.
           </li>
-          <li className="flex flex-col items-start gap-1.5">
-            <EvidenceBadge tier="paraphrase" />
-            <span>Close to the source wording, but not verbatim.</span>
+          <li>
+            <strong className="text-ink">Paraphrase</strong> &mdash; close to
+            the source wording, but not verbatim.
           </li>
-          <li className="flex flex-col items-start gap-1.5">
-            <EvidenceBadge tier="unsupported" />
-            <span>
-              The quote didn&rsquo;t match, so the anchor was dropped. Nothing
-              in the app will show you this as evidence.
-            </span>
+          <li>
+            <strong className="text-ink">Unsupported</strong> &mdash; the
+            quote didn&rsquo;t match, so the anchor was dropped. Nothing in
+            the app will show you this as evidence.
           </li>
         </ul>
-        <p className="mt-s-3">
+        <p>
           The <strong className="text-ink">Audit</strong> view lists every
           claim in the workspace with its badge and a drop rate, which is the
           fastest way to see how well-grounded a workspace is overall.
         </p>
-      </>
-    ),
-  },
-  {
-    n: 6,
-    title: "Add your own paper",
-    body: (
-      <>
+      </WalkthroughStep>
+
+      <WalkthroughStep index={6} title="Add your own paper" tone="raised">
         <p>
           <strong className="text-ink">Add a paper</strong> takes a PDF or an
           arXiv / PMC / DOI link. It checks the file properly: that it really is
@@ -158,18 +172,11 @@ const STEPS: Step[] = [
           doesn&rsquo;t already have it.
         </p>
         <p>
-          If something is wrong it tells you which thing, in those words. Note
-          that parsing an accepted paper into a graph is the next piece of work
-          &mdash; today the file is validated and queued, not yet analysed.
+          If something is wrong it tells you which thing, in those words.
         </p>
-      </>
-    ),
-  },
-  {
-    n: 7,
-    title: "Call it from Claude",
-    body: (
-      <>
+      </WalkthroughStep>
+
+      <WalkthroughStep index={7} title="Call it from Claude" flip media={<AgentMock />}>
         <p>
           Pepiros also runs as an MCP server, so Claude can search the papers
           and check its own claims against them mid-conversation. Point Claude
@@ -186,78 +193,24 @@ const STEPS: Step[] = [
           </Link>
           .
         </p>
-      </>
-    ),
-  },
-];
+      </WalkthroughStep>
 
-export default function HowToUsePage() {
-  return (
-    <main className="pb-s-5">
-      <div className="mx-auto w-full max-w-[46rem] px-s-5">
-        <header className="py-s-7">
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
-            Guide
-          </p>
-          <h1 className="mt-s-3 font-sans font-bold text-[2.1rem] leading-tight text-ink">
-            How to use Pepiros
-          </h1>
-          <p className="mt-s-4 font-sans text-[16px] leading-relaxed text-ink-muted">
-            Seven steps, in the order you&rsquo;d actually do them. If you want
-            the argument for why the checking works the way it does,{" "}
-            <Link
-              href="/how-it-works"
-              className="text-accent-text underline underline-offset-2"
-            >
-              how it works
-            </Link>{" "}
-            covers that instead.
-          </p>
-
-          <div className="mt-s-5 flex flex-wrap gap-s-3">
-            <Link href="/w/ws-1" className={buttonClassName("primary")}>
-              Open the demo workspace
-            </Link>
-            <Link href="/upload" className={buttonClassName("secondary")}>
-              Add your own paper
-            </Link>
+      <section className="border-t border-border">
+        <div className="mx-auto w-full max-w-3xl p-s-5">
+          <div className="rounded-md border border-dashed border-border p-s-4">
+            <h2 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+              One thing worth repeating
+            </h2>
+            <p className="mt-s-2 font-sans text-[15px] leading-relaxed text-ink-muted">
+              Nothing here is ever labelled <em>verified</em>. A matched quote
+              proves the sentence exists in the paper; it doesn&rsquo;t prove the
+              claim built on it is true. Pepiros does the part a machine can do
+              reliably, and puts the claim and its quote next to each other so you
+              can do the part it can&rsquo;t.
+            </p>
           </div>
-        </header>
-
-        <ol className="flex flex-col gap-s-6 border-t border-border pt-s-6">
-          {STEPS.map((step) => (
-            <li key={step.n} className="flex gap-s-4">
-              <span
-                aria-hidden
-                className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full border border-border-strong font-mono text-[11px] text-ink-muted"
-              >
-                {step.n}
-              </span>
-              <div className="min-w-0">
-                <h2 className="font-sans text-[17px] font-semibold text-ink">
-                  {step.title}
-                </h2>
-                <div className="mt-s-2 flex flex-col gap-s-2 font-sans text-[15px] leading-relaxed text-ink-muted">
-                  {step.body}
-                </div>
-              </div>
-            </li>
-          ))}
-        </ol>
-
-        <section className="mt-s-7 rounded-md border border-dashed border-border p-s-4">
-          <h2 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
-            One thing worth repeating
-          </h2>
-          <p className="mt-s-2 font-sans text-[15px] leading-relaxed text-ink-muted">
-            Nothing here is ever labelled <em>verified</em>. A matched quote
-            proves the sentence exists in the paper; it doesn&rsquo;t prove the
-            claim built on it is true. Pepiros does the part a machine can do
-            reliably, and puts the claim and its quote next to each other so you
-            can do the part it can&rsquo;t.
-          </p>
-        </section>
-      </div>
+        </div>
+      </section>
     </main>
   );
 }

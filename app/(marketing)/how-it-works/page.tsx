@@ -3,6 +3,7 @@ import Link from "next/link";
 import { buttonClassName } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
 import { PacingStrip } from "@/components/site/PacingStrip";
+import { WalkthroughStep } from "@/components/site/WalkthroughStep";
 import { EvidenceBadge } from "@/components/ui/EvidenceBadge";
 import { RefChip } from "@/components/ui/RefChip";
 import { ReaderMock, GraphMock, AgentMock } from "@/components/mockups/ReaderMock";
@@ -26,56 +27,6 @@ const LIMITATIONS = [
   "Claim and quote sit side by side on purpose, so you're the one who decides whether the claim follows, not the matcher.",
 ];
 
-/**
- * Stepped, media-led walkthrough.
- *
- * Each step alternates a column of prose against a mockup of the surface being
- * described, so the page shows the product rather than only asserting things
- * about it. The mockups are code-composed from the design tokens rather than
- * screenshots, so they follow the theme and cannot drift from the palette.
- */
-function Step({
-  index,
-  kicker,
-  title,
-  children,
-  media,
-  flip = false,
-}: {
-  index: number;
-  kicker: string;
-  title: string;
-  children: React.ReactNode;
-  media: React.ReactNode;
-  flip?: boolean;
-}) {
-  return (
-    <Reveal>
-      <section className="border-t border-border">
-        <div className="mx-auto grid w-full max-w-6xl items-center gap-s-7 p-s-5 lg:grid-cols-2">
-          <div className={flip ? "lg:order-2" : undefined}>
-            <div className="flex items-center gap-s-3">
-              <span className="grid size-7 shrink-0 place-items-center rounded-full border border-border font-mono text-[11px] text-ink-faint">
-                {index}
-              </span>
-              <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">
-                {kicker}
-              </p>
-            </div>
-            <h2 className="mt-s-4 font-sans font-semibold text-2xl leading-snug text-ink sm:text-3xl">
-              {title}
-            </h2>
-            <div className="mt-s-4 flex flex-col gap-s-3 font-sans text-base leading-relaxed text-ink-muted">
-              {children}
-            </div>
-          </div>
-          <div className={flip ? "lg:order-1" : undefined}>{media}</div>
-        </div>
-      </section>
-    </Reveal>
-  );
-}
-
 export default function HowItWorksPage() {
   return (
     <main className="flex flex-col">
@@ -93,7 +44,7 @@ export default function HowItWorksPage() {
         </p>
       </section>
 
-      <Step
+      <WalkthroughStep
         index={1}
         kicker="Ingest"
         title="A paper becomes a graph, in stages you can watch."
@@ -108,13 +59,14 @@ export default function HowItWorksPage() {
           spinner. The skeleton graph lands first, then related work, then
           metadata, then the summary and pillars, then the remaining generators.
         </p>
-      </Step>
+      </WalkthroughStep>
 
-      <Step
+      <WalkthroughStep
         index={2}
         kicker="Structure"
         title="Each paper's sections are generated from its own content."
         flip
+        tone="raised"
         media={<GraphMock />}
       >
         <p>
@@ -126,9 +78,9 @@ export default function HowItWorksPage() {
           Every leaf under a pillar carries its own evidence, which is what makes
           the graph navigable rather than decorative.
         </p>
-      </Step>
+      </WalkthroughStep>
 
-      <Step
+      <WalkthroughStep
         index={3}
         kicker="Grounding"
         title="The claim and its source sit side by side."
@@ -144,9 +96,11 @@ export default function HowItWorksPage() {
           <span className="text-ink">inference</span> and gets no citation at
           all, rather than a hedge.
         </p>
-      </Step>
+      </WalkthroughStep>
 
-      {/* Worked example */}
+      {/* Worked example -- the one section on this page that earns a
+          scroll-reveal (design/anti-slop.md: one or two per page, not every
+          section). Every other step below renders plainly. */}
       <Reveal>
         <section className="border-t border-border bg-surface-sunken/40">
           <div className="mx-auto w-full max-w-3xl p-s-5">
@@ -208,7 +162,7 @@ export default function HowItWorksPage() {
         </section>
       </Reveal>
 
-      <Step
+      <WalkthroughStep
         index={4}
         kicker="For agents"
         title="An agent can check its own claims, mid-answer."
@@ -228,39 +182,37 @@ export default function HowItWorksPage() {
           </Link>
           .
         </p>
-      </Step>
+      </WalkthroughStep>
 
       {/* Limits */}
-      <Reveal>
-        <section className="border-t border-border">
-          <div className="mx-auto w-full max-w-3xl p-s-5">
-            <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">
-              Said on stage, not just in the docs
-            </p>
-            <h2 className="mt-s-4 font-sans font-semibold text-2xl text-ink">
-              Where the guarantee stops
-            </h2>
-            <ul className="mt-s-5 flex flex-col gap-s-3">
-              {LIMITATIONS.map((l) => (
-                <li
-                  key={l}
-                  className="flex gap-s-3 font-sans text-base leading-relaxed text-ink-muted"
-                >
-                  <span className="mt-2 size-1.5 shrink-0 rounded-full bg-pillar-6" />
-                  {l}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-s-5 font-sans text-base leading-relaxed text-ink-muted">
-              An entailment overlap floor helps: every number, unit, and
-              comparator in a claim also has to appear in the anchored span,
-              checked against the numeric ledger. That catches the failure a
-              fuzzy match alone misses, a genuine quote attached to a reversed or
-              overstated conclusion.
-            </p>
-          </div>
-        </section>
-      </Reveal>
+      <section className="border-t border-border">
+        <div className="mx-auto w-full max-w-3xl p-s-5">
+          <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">
+            Said on stage, not just in the docs
+          </p>
+          <h2 className="mt-s-4 font-sans font-semibold text-2xl text-ink">
+            Where the guarantee stops
+          </h2>
+          <ul className="mt-s-5 flex flex-col gap-s-3">
+            {LIMITATIONS.map((l) => (
+              <li
+                key={l}
+                className="flex gap-s-3 font-sans text-base leading-relaxed text-ink-muted"
+              >
+                <span className="mt-2 size-1.5 shrink-0 rounded-full bg-pillar-6" />
+                {l}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-s-5 font-sans text-base leading-relaxed text-ink-muted">
+            An entailment overlap floor helps: every number, unit, and
+            comparator in a claim also has to appear in the anchored span,
+            checked against the numeric ledger. That catches the failure a
+            fuzzy match alone misses, a genuine quote attached to a reversed or
+            overstated conclusion.
+          </p>
+        </div>
+      </section>
 
       {/* CTA */}
       <section className="border-t border-border">
