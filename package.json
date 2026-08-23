@@ -3,6 +3,24 @@
   "version": "0.1.0",
   "license": "MIT",
   "description": "MCP server for Pepiros: search, verify, and cite claims against a paper's actual text over stdio -- quote-located grounding, not vector similarity.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "claude-code",
+    "ai-agent",
+    "llm-tools",
+    "citation",
+    "citation-verification",
+    "grounding",
+    "research-papers",
+    "pdf"
+  ],
+  "homepage": "https://pepiros.vercel.app",
+  "bugs": {
+    "url": "https://github.com/StudentSuite/pepiros/issues"
+  },
+  "author": "Anay Dhawan and Yash Kewlani",
   "repository": {
     "type": "git",
     "url": "https://github.com/StudentSuite/pepiros.git"
