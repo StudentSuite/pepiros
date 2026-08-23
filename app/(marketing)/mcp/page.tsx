@@ -58,7 +58,7 @@ export default function McpPage() {
 
         <ArticleRule />
 
-        <h2 className="font-serif text-[1.45rem] leading-snug text-ink">
+        <h2 className="font-sans font-semibold text-[1.45rem] leading-snug text-ink">
           {LIVE_TOOLS.length} tools, live today
         </h2>
         <div className="mt-s-5 flex flex-col gap-s-6">
@@ -107,7 +107,7 @@ export default function McpPage() {
 
         <ArticleRule />
 
-        <h2 className="font-serif text-[1.45rem] leading-snug text-ink">Install</h2>
+        <h2 className="font-sans font-semibold text-[1.45rem] leading-snug text-ink">Install</h2>
         <ArticleBody className="mt-s-4">
           <p>
             Published on npm as <code>pepiros-mcp</code> -- point Claude, Codex,

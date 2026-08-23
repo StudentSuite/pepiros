@@ -64,7 +64,7 @@ export default function RoadmapPage() {
           <ul className="mt-s-3 flex flex-col gap-s-3">
             {g.items.map((it) => (
               <li key={it.title} className="rounded-md border border-border p-s-4">
-                <p className="font-serif text-base text-ink">{it.title}</p>
+                <p className="font-sans text-base font-medium text-ink">{it.title}</p>
                 <p className="mt-s-2 font-sans text-sm leading-relaxed text-ink-muted">
                   {it.note}
                 </p>

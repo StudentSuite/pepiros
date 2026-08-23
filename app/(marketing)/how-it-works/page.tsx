@@ -62,7 +62,7 @@ function Step({
                 {kicker}
               </p>
             </div>
-            <h2 className="mt-s-4 font-serif text-2xl leading-snug text-ink sm:text-3xl">
+            <h2 className="mt-s-4 font-sans font-semibold text-2xl leading-snug text-ink sm:text-3xl">
               {title}
             </h2>
             <div className="mt-s-4 flex flex-col gap-s-3 font-sans text-base leading-relaxed text-ink-muted">
@@ -84,7 +84,7 @@ export default function HowItWorksPage() {
         <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">
           How it works
         </p>
-        <h1 className="mt-s-4 font-serif text-4xl leading-tight text-ink sm:text-5xl">
+        <h1 className="mt-s-4 font-sans font-bold text-4xl leading-tight text-ink sm:text-5xl">
           How each claim gets checked against its source.
         </h1>
         <p className="mx-auto mt-s-4 max-w-xl font-sans text-base leading-relaxed text-ink-muted">
@@ -153,10 +153,10 @@ export default function HowItWorksPage() {
             <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">
               Worked example
             </p>
-            <h2 className="mt-s-4 font-serif text-2xl text-ink">One claim, scored</h2>
+            <h2 className="mt-s-4 font-sans font-semibold text-2xl text-ink">One claim, scored</h2>
 
             <div className="mt-s-5 rounded-lg border border-border bg-paper p-s-5">
-              <p className="font-serif text-base leading-snug text-ink">
+              <p className="font-sans font-semibold text-base leading-snug text-ink">
                 {WORKED_CLAIM}
               </p>
 
@@ -237,7 +237,7 @@ export default function HowItWorksPage() {
             <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">
               Said on stage, not just in the docs
             </p>
-            <h2 className="mt-s-4 font-serif text-2xl text-ink">
+            <h2 className="mt-s-4 font-sans font-semibold text-2xl text-ink">
               Where the guarantee stops
             </h2>
             <ul className="mt-s-5 flex flex-col gap-s-3">

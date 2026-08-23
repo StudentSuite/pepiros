@@ -111,7 +111,7 @@ export default function ResetPasswordConfirmPage() {
             <span className="flex h-10 w-10 items-center justify-center rounded-full border border-located/40 bg-located/10 text-located">
               <Icon icon={CheckCircle2} size="md" />
             </span>
-            <h1 ref={successHeadingRef} tabIndex={-1} className="font-serif text-2xl text-ink outline-none">
+            <h1 ref={successHeadingRef} tabIndex={-1} className="font-sans font-bold text-2xl text-ink outline-none">
               Password updated
             </h1>
             <p className="font-sans text-sm text-ink-muted">
@@ -123,7 +123,7 @@ export default function ResetPasswordConfirmPage() {
           </div>
         ) : (
           <>
-            <h1 className="mt-s-5 font-serif text-2xl text-ink">Set a new password</h1>
+            <h1 className="mt-s-5 font-sans font-bold text-2xl text-ink">Set a new password</h1>
             <p className="mt-s-1 font-sans text-sm text-ink-muted">
               Choose a new password for your account.
             </p>

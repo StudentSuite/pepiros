@@ -203,7 +203,7 @@ export default async function PaperPage({
                 pipeline shows its real record and a link to the original,
                 which is worth more than a convincing fake. */}
             <section className="mt-s-6 rounded-md border border-dashed border-border px-s-5 py-s-5">
-              <h2 className="font-serif text-[1.2rem] leading-snug text-ink">
+              <h2 className="font-sans font-semibold text-[1.2rem] leading-snug text-ink">
                 No grounded write-up yet
               </h2>
               <ArticleBody className="mt-s-3">
@@ -263,7 +263,7 @@ export default async function PaperPage({
         <section>
           <div className="flex items-center gap-s-2">
             <MessageSquare className="size-4 text-ink-faint" strokeWidth={1.5} />
-            <h2 className="font-serif text-[1.45rem] leading-snug text-ink">
+            <h2 className="font-sans font-semibold text-[1.45rem] leading-snug text-ink">
               Discussion
             </h2>
             <span className="font-mono text-[11px] text-ink-faint">

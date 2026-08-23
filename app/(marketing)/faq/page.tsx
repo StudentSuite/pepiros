@@ -116,7 +116,7 @@ export default function FaqPage() {
       <div className="divide-y divide-border border-y border-border">
         {FAQS.map((f, i) => (
           <details key={i} className="group py-s-4">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-s-4 font-serif text-base text-ink [&::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-s-4 font-sans text-base font-medium text-ink [&::-webkit-details-marker]:hidden">
               <span>{f.q}</span>
               <ChevronDown
                 className="size-4 shrink-0 text-ink-faint transition-transform duration-fast ease-out group-open:rotate-180"

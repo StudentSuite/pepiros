@@ -113,7 +113,7 @@ function SignupForm() {
       <Card className="border-border bg-card p-s-6">
         <Logo size="md" />
 
-        <h1 className="mt-s-5 font-serif text-2xl text-ink">Create an account</h1>
+        <h1 className="mt-s-5 font-sans font-bold text-2xl text-ink">Create an account</h1>
         <p className="mt-s-1 font-sans text-sm text-ink-muted">
           Read with every claim traced back to the sentence it came from.
         </p>

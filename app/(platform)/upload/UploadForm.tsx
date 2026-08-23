@@ -229,7 +229,7 @@ export function UploadForm({
           <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
             Add a paper
           </p>
-          <h1 className="mt-s-3 font-serif text-[1.9rem] leading-tight text-ink">
+          <h1 className="mt-s-3 font-sans font-bold text-[1.9rem] leading-tight text-ink">
             Start from a PDF or a link.
           </h1>
           <p className="mt-s-3 font-sans text-[15px] leading-relaxed text-ink-muted">

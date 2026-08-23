@@ -199,7 +199,7 @@ export default function HowToUsePage() {
           <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
             Guide
           </p>
-          <h1 className="mt-s-3 font-serif text-[2.1rem] leading-tight text-ink">
+          <h1 className="mt-s-3 font-sans font-bold text-[2.1rem] leading-tight text-ink">
             How to use Pepiros
           </h1>
           <p className="mt-s-4 font-sans text-[16px] leading-relaxed text-ink-muted">
