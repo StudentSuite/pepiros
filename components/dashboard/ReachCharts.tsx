@@ -32,13 +32,19 @@ const RANGES: { value: RangeKey; label: string }[] = [
   { value: "all", label: "All" },
 ];
 
+// Issue #304: repointed off pillar colours onto the dispersion palette.
+// Pillar colours are semantic to a paper's own graph structure (each pillar
+// is a real thematic grouping, docs/PLAN-V1.md §7) -- a generic dashboard
+// metric has no pillar to be, so borrowing one implied a meaning that
+// wasn't there. The dispersion tones (--disp-amber/green/violet,
+// app/globals.css) are this rebuild's actual app-chrome accent set.
 const lineConfig = {
-  views: { label: "Views", color: "var(--pillar-4)" },
-  likes: { label: "Likes", color: "var(--pillar-7)" },
+  views: { label: "Views", color: "var(--disp-amber)" },
+  likes: { label: "Likes", color: "var(--disp-green)" },
 } satisfies ChartConfig;
 
 const barConfig = {
-  views: { label: "Views", color: "var(--pillar-4)" },
+  views: { label: "Views", color: "var(--disp-amber)" },
 } satisfies ChartConfig;
 
 const compact = (n: number) =>

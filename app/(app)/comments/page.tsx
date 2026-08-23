@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { MessageSquare } from "lucide-react";
 import { getSession } from "@/lib/auth/session";
 import { getAdapter } from "@/lib/data/adapter";
-import { Card } from "@/components/shadcn/card";
+import { Card } from "@/components/ui/Panel";
 import { Avatar, AvatarFallback } from "@/components/shadcn/avatar";
 import { Badge } from "@/components/shadcn/badge";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -40,7 +40,7 @@ export default async function CommentsPage() {
         }
       />
 
-      <Card className="mt-s-5 border-border bg-card">
+      <Card className="mt-s-5">
         {comments.length === 0 ? (
           <div className="p-s-6">
             <EmptyState

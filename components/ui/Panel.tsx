@@ -15,7 +15,10 @@ export function Panel({
   return (
     <div
       className={clsx(
-        "rounded border border-border bg-surface-raised shadow-e-1 transition-shadow duration-base ease-out hover:shadow-e-2",
+        // rounded-lg (--r-lg, 14px), not the plain rounded (--r-md, 10px)
+        // default -- issue #304's "soft-rounded raised panels" spec, same
+        // radius bump the upload dropzone got in #302.
+        "rounded-lg border border-border bg-surface-raised shadow-e-1 transition-shadow duration-base ease-out hover:shadow-e-2",
         padded && "p-s-4",
         className,
       )}
