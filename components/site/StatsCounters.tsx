@@ -33,7 +33,7 @@ function useCountUp(target: number, active: boolean, reducedMotion: boolean): nu
 function Stat({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col items-center gap-1">
-      <span className="font-serif text-3xl text-ink sm:text-4xl">{value}</span>
+      <span className="font-mono text-3xl tabular-nums text-ink sm:text-4xl">{value}</span>
       <span className="max-w-[10rem] font-sans text-xs leading-snug text-ink-faint">{label}</span>
     </div>
   );
