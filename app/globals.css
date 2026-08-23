@@ -3,108 +3,186 @@
 @tailwind utilities;
 
 /*
- * Design system: "soft glass over papyrus". Dark is the default theme
- * (plan.md section 11's locked "lab notebook at night" direction; issue
- * #238), with this light counterpart still fully supported via the toggle.
- * Two hard rules govern the whole system:
+ * Design system: refractive dispersion on soft-body organic geometry.
  *
- *   1. SURFACE RULE. Anything carrying body text to read is OPAQUE (--paper
+ * Rebuilt 2026-08-23 from design/brand/README.txt and design/capsules/
+ * "Pepiros Token Lab.dc.html". The surface and ink values below are MEASURED
+ * off those two files, not chosen here: light #F5F1E6/#FBF8EF/#1B1812/#5C564A
+ * and dark #14120F/#1D1A16/#EDE7D9/#A79E8C are the locked palette. Everything
+ * else in this file derives from them and is contrast-checked against them.
+ *
+ * Three hard rules govern the whole system:
+ *
+ *   1. THE PURPLE RULE. Purple is the ENVIRONMENT the material refracts
+ *      through, never a swatch. There is no purple button, no purple accent
+ *      token, no flat purple fill anywhere. UI accents come from the
+ *      DISPERSION palette instead (--disp-amber / --disp-green / --disp-bone,
+ *      with --disp-violet reserved for atmosphere, never a fill). The single
+ *      exception is --logo-quote-bar, deliberately isolated so it can move in
+ *      one place later. It has no call site in app code today; see its
+ *      definition below.
+ *   2. SURFACE RULE. Anything carrying body text to read is OPAQUE (--paper
  *      in both themes, with grain). Anything that is chrome, a control, or a
  *      floating panel is SOFT GLASS (--glass-*, backdrop-filter). Glass never
  *      sits under long-form reading text.
- *   2. PILLAR RULE. The 7 pillar hues are theme-invariant and are FILLS only
+ *   3. PILLAR RULE. The 7 pillar hues are theme-invariant and are FILLS only
  *      (canvas nodes, chart series, chip dots, edges). They are never used
  *      for text. Text uses --pillar-N-text, which is redefined per theme.
  *
- * The pillar palette itself is the canonical Editorial Paper set, adopted
- * from Anay's reference board 2026-08-10 (docs/PLAN-V1.md §22.4) and kept
- * unchanged through the 2026-08-14 redesign. Everything around it (surfaces,
- * ink, borders, elevation, glass) was rebuilt.
+ * CONTRAST. Every text token below clears WCAG AA 4.5:1 against every surface
+ * in its own theme, worst case included (--surface-sunken in light,
+ * --paper-muted in dark). That is not a claim, it is how the values were
+ * derived: each was walked down (light) or up (dark) in OKLCH lightness at
+ * fixed chroma and hue until it cleared, which is why several land on
+ * unmemorable hex values rather than round ones. Do not "tidy" them.
  */
 :root {
-  /* Surfaces -- parchment ground. Glass panels sit on top of this. */
-  --surface: #f7f3ea;
-  --surface-raised: #fdfbf6;
-  --surface-sunken: #efe9dc;
+  /* Surfaces. Measured light palette: warm bone ground, raised is lighter. */
+  --surface: #f5f1e6;
+  --surface-raised: #fbf8ef;
+  --surface-sunken: #ebe5d6;
 
   /* Reading surface. OPAQUE, always -- see SURFACE RULE above. */
-  --paper: #fdfbf6;
-  --paper-muted: #f2ecdf;
+  --paper: #fbf8ef;
+  --paper-muted: #f1ecde;
 
-  --ink: #1c1a15;
-  --ink-muted: #55504a;
-  /* Issue #239: #7d776a measured 3.68-4.30:1 against this theme's own
-     surfaces (surface/surface-raised/surface-sunken/paper/paper-muted) --
-     below WCAG AA's 4.5:1 for normal text on every one of them, worst on
-     surface-sunken. Darkened (proportionally, same hue) to clear 4.5:1
-     with margin (5.24:1 worst case) while staying visibly lighter than
-     --ink-muted (7.20:1 on surface), so the two tiers stay distinct. */
-  --ink-faint: #645f55;
+  --ink: #1b1812;
+  --ink-muted: #5c564a;
+  /* The brand kit's own kicker/meta grey is #8A8374. It measures 3.00:1 on
+     --surface-sunken, which fails AA for normal text on every light surface
+     in this file. Darkened along its own hue until it cleared (4.53:1 worst
+     case) while staying visibly lighter than --ink-muted (5.79:1 worst), so
+     the two tiers stay distinguishable. #8A8374 survives nearly unchanged in
+     the dark theme, where it has contrast to spare. */
+  --ink-faint: #6c665a;
 
-  --border: #ded5c4;
-  --border-strong: #c6baa3;
+  --border: #e1d8c4;
+  --border-strong: #cbbea3;
 
-  /* Accent -- interactive/focus/link, distinct from pillar colours.
-     --accent is the brand fill; --accent-text is the contrast-safe variant
-     for text and links. Dusk on parchment measures ~4.9:1, which clears AA
-     but leaves no headroom for the muted states, so text gets its own hue. */
-  --accent: #6e6aa7;
-  --accent-text: #55518c;
-  --accent-hover: #5c589a;
-  --accent-sunk: #464275;
-  --accent-wash: #6e6aa714;
+  /* ---- dispersion palette ---------------------------------------------
+     Where every UI accent comes from, per the purple rule above. Authored in
+     OKLCH in the brand kit; the hex values here are those exact coordinates
+     converted, so they are the same colours a browser resolves oklch() to.
+       amber  oklch(74% .12 75)
+       green  oklch(70% .10 145)
+       violet oklch(66% .12 300)   ATMOSPHERE ONLY, never a fill
+     Bone is a measured hex in the kit, not an OKLCH coordinate. */
+  --disp-amber: #d79f4c;
+  --disp-green: #76af77;
+  --disp-violet: #9e80d1;
+  --disp-bone: #e8e0ce;
+
+  /* The one isolated purple in the system.
+     RESERVED, and currently unreferenced by app code. It was the accent bar
+     in a hand-cut simplification of the glyph; components/ui/Logo.tsx now
+     draws the kit geometry verbatim (design/brand/glyph/glyph-source.svg),
+     which has no such bar. Kept because design/brand/README.txt names it as
+     the value used under the wordmark in the kit's own og/ and social/
+     renders, so it is still the one place that colour is defined if those
+     lockups are ever typeset in the app rather than shipped as raster. */
+  --logo-quote-bar: #6e6aa7;
+
+  /* ---- brand ink, THEME-INVARIANT --------------------------------------
+     The kit's two logo treatments, per design/brand/README.txt:
+       flat-ink   a restrained single ink for placement on a LIGHT ground
+       reversed   the same mark cut for placement on DARK chrome
+     These do not flip with the theme, because a lockup's treatment is chosen
+     by the ground it is being placed on, not by the reader's colour scheme.
+     `--brand-ink` is the locked light --ink; `--brand-ink-reversed` is the
+     kit's own reversed value. Logo's `auto` variant uses the ordinary
+     theme-aware --ink instead, and that is the one nearly every call site
+     wants. */
+  --brand-ink: #1b1812;
+  --brand-ink-reversed: #faf8f4;
+
+  /* Accent -- interactive/focus/link. This is dispersion amber, moved along
+     its own lightness ramp until it works in this theme.
+     --accent is also a FILL (Button primary is `bg-accent text-paper`), so it
+     is dark enough here to carry near-white text: 5.63:1 against --paper.
+     It inverts in .dark, where the fill goes light and the text on it goes
+     dark, which is why hover is LIGHTER there and darker here. */
+  --accent: #8c5800;
+  --accent-text: #7c4a00;
+  --accent-hover: #7e4b00;
+  --accent-sunk: #6c3a00;
+  --accent-wash: #8c580014;
 
   /* Glass -- chrome only, never under reading text. */
-  --glass-bg: rgba(253, 251, 246, 0.62);
+  --glass-bg: rgba(251, 248, 239, 0.62);
   --glass-edge: rgba(255, 255, 255, 0.7);
   --glass-shadow: 0 8px 32px rgba(60, 48, 28, 0.1);
   --glass-blur: 16px;
 
-  /* Pillar palette -- canonical Editorial Paper set, adopted from Anay's
-     reference board 2026-08-10 (docs/PLAN-V1.md §22.4). Assigned in planner
+  /* ---- pillar palette (7 citation categories) --------------------------
+     Rebuilt from the dispersion set. The old Editorial Paper set is retired,
+     Dusk #6E6AA7 with it: a purple pillar is a flat purple fill, which rule 1
+     forbids outright. Slate replaces it in that slot.
+
+     Authored as OKLCH at spaced hues so the seven stay distinguishable as
+     categorical fills, with sand deliberately low-chroma to read as the
+     neutral "unsorted" category the way stone used to. Assigned in planner
      order, cycles past 7. */
-  --pillar-1: #b8b2a4; /* stone */
-  --pillar-2: #c4a78a; /* clay  */
-  --pillar-3: #7d8a73; /* sage  */
-  --pillar-4: #6e6aa7; /* dusk  */
-  --pillar-5: #b46a6a; /* rose  */
-  --pillar-6: #d4b26a; /* ochre */
-  --pillar-7: #5f8d86; /* teal  */
+  --pillar-1: #c0b79f; /* sand  */
+  --pillar-2: #d79f4c; /* amber */
+  --pillar-3: #ca7b57; /* clay  */
+  --pillar-4: #c36c6d; /* rose  */
+  --pillar-5: #76af77; /* green */
+  --pillar-6: #4c9f9e; /* teal  */
+  --pillar-7: #6a839d; /* slate */
 
-  /* Pillar TEXT variants. The fills above are mid-tone by design and most of
-     them fail 4.5:1 on parchment (stone measures ~1.9:1 on --surface), so any
-     pillar-coloured *text* uses these instead. Redefined in .dark below, where
-     the source hues already clear contrast on warm charcoal and the two sets
-     collapse back together. This pair is what replaced the old
-     `.surface-reading .text-ink-muted` contrast-cascade hack, which existed
-     only because there was no light theme to define against. */
-  --pillar-1-text: #6b655a; /* stone */
-  --pillar-2-text: #8a6b47; /* clay  */
-  --pillar-3-text: #4e5a45; /* sage  */
-  --pillar-4-text: #55518c; /* dusk  */
-  --pillar-5-text: #8a4141; /* rose  */
-  --pillar-6-text: #8a6b22; /* ochre */
-  --pillar-7-text: #3b5f59; /* teal  */
+  /* Pillar TEXT variants. The fills above are mid-tone by design and every
+     one of them fails 4.5:1 on a light ground, so any pillar-coloured *text*
+     uses these instead. Each is its fill's own hue and chroma walked down in
+     lightness until it cleared AA on --surface-sunken, the darkest light
+     surface. Redefined in .dark below, where most collapse back onto the
+     fills. */
+  --pillar-1-text: #6e664f; /* sand  */
+  --pillar-2-text: #8f5b00; /* amber */
+  --pillar-3-text: #9c522e; /* clay  */
+  --pillar-4-text: #a04d4f; /* rose  */
+  --pillar-5-text: #3b723e; /* green */
+  --pillar-6-text: #157171; /* teal  */
+  --pillar-7-text: #506982; /* slate */
 
-  /* Evidence tiers (docs/PLAN-V1.md §4.4, §9.4) -- two-tier honesty framing,
-     colour is never the only channel (see §15). These are label text, so they
-     derive from the -text variants, not the raw fills. */
-  --located: var(--pillar-7-text); /* teal, quote_located, deterministic */
-  --paraphrase: var(--pillar-2-text); /* clay, 0.75-0.92 match */
-  --unsupported: var(--pillar-5-text); /* rose, dropped anchor */
-  --inference: var(--pillar-1-text); /* stone, model-generated, not verified */
-  --ungrounded: var(--pillar-6-text); /* ochre, answered without sources */
+  /* Activity calendar ramp (components/activity/ContributionCalendar.tsx).
+     Deliberately GitHub's own greens rather than a brand hue: a contribution
+     grid reads as "activity" only because GitHub made green mean that, and
+     borrowing the convention is the whole point of the component. Level 0
+     uses the theme's own sunken surface rather than a fixed grey, so empty
+     days sit on the card instead of punching a hole in it. */
+  --activity-1: #9be9a8;
+  --activity-2: #40c463;
+  --activity-3: #30a14e;
+  --activity-4: #216e39;
+
+  /* Evidence tiers (docs/PLAN-V1.md 4.4, 9.4) -- two-tier honesty framing,
+     colour is never the only channel (see 15). These are label text, so they
+     derive from the -text variants, not the raw fills.
+
+     The mapping is the brand kit's: "quote located" is dispersion green,
+     "inference" is the neutral sand, exactly as the token lab's own two
+     evidence chips show them. The word "verified" appears nowhere. */
+  --located: var(--pillar-5-text); /* green, quote_located, deterministic */
+  --paraphrase: var(--pillar-2-text); /* amber, 0.75-0.92 match */
+  --unsupported: var(--pillar-4-text); /* rose, dropped anchor */
+  --inference: var(--pillar-1-text); /* sand, model-generated */
+  --ungrounded: var(--pillar-3-text); /* clay, answered without sources */
 
   /* --font-serif, --font-grotesque, --font-mono are set by next/font on
      <html> in app/layout.tsx (real webfonts, not just a named fallback
      chain) -- do not redeclare them here, that would fight the font loader's
      own generated fallback stack. Tailwind's fontFamily config still appends
-     Georgia/system-ui/monospace as the last-resort fallback. */
+     Georgia/system-ui/monospace as the last-resort fallback.
+
+     The families themselves changed 2026-08-23: Geist for UI and headlines,
+     Geist Mono for citation IDs and metadata, Source Serif 4 kept for
+     long-form article body copy ONLY -- never the wordmark, never a heading.
+     JetBrains Mono and Inter are both gone. */
 
   /* Spacing scale. Reading-context components (node body, PDF pane, chat
-     message text) step up one size per Editorial Paper's +25% whitespace
-     rule -- e.g. a chrome gap that's --s-4 becomes --s-5 in a reading
-     context, rather than a parallel token set. */
+     message text) step up one size per the +25% whitespace rule -- e.g. a
+     chrome gap that's --s-4 becomes --s-5 in a reading context, rather than
+     a parallel token set. */
   --s-1: 4px;
   --s-2: 8px;
   --s-3: 12px;
@@ -114,34 +192,38 @@
   --s-7: 48px;
   --s-8: 64px;
 
+  /* Geometry: soft rounded throughout, pills for buttons, chips and badges. */
   --r-sm: 6px;
   --r-md: 10px;
   --r-lg: 14px;
   --r-xl: 20px;
-  --r-full: 999px;
+  --r-full: 9999px;
 
-  /* Elevation -- borders plus low-alpha shadow, not big blurs. Day shadows are
-     warm-brown rather than black; pure black on parchment reads as dirt. */
+  /* Elevation -- borders plus low-alpha shadow, not big blurs. Light shadows
+     are warm-brown rather than black; pure black on a bone ground reads as
+     dirt. */
   --e-1: 0 1px 2px rgba(60, 48, 28, 0.08);
   --e-2: 0 4px 12px rgba(60, 48, 28, 0.1), 0 0 0 1px var(--border);
   --e-3: 0 16px 40px rgba(60, 48, 28, 0.14), 0 0 0 1px var(--border-strong);
   /* Focus ring. A halo, not a wash: a 2px surface-colour gap then a solid
-     3px --accent ring, so it reads at real contrast against whatever it
-     sits on (--accent measures ~4.9:1 against parchment, comfortably over
-     WCAG 2.4.11's 3:1 floor for UI indicators) rather than reusing
-     --accent-wash's ~8% alpha, which was designed as a background tint
-     (upload dropzone, onboarding, MCP token banner) and computed to
-     ~1.05:1 -- effectively invisible -- when reused here for a ring. */
+     3px --accent ring, so it reads at real contrast against whatever it sits
+     on. --accent measures 4.76:1 at worst against this theme's surfaces,
+     comfortably over WCAG 2.4.11's 3:1 floor for UI indicators, rather than
+     reusing --accent-wash's 8% alpha, which is a background tint (upload
+     dropzone, onboarding, MCP token banner) and computes to ~1.05:1 --
+     effectively invisible -- when reused as a ring. */
   --glow-accent: 0 0 0 2px var(--surface-raised), 0 0 0 5px var(--accent);
 
-  /* Paper grain. Multiply darkens correctly on parchment; on the dark theme it
+  /* Grain. Heavy matte film noise over everything is non-negotiable in this
+     material language: without it the whole thing reads as generic 3D-render
+     gloss. Multiply darkens correctly on a light ground; on the dark theme it
      crushes to near-black, so .dark switches to overlay at a lower opacity. */
   --grain-blend: multiply;
   --grain-opacity: 0.09;
 
-  /* Motion. Editorial Paper: durations +40% over the base thesis, ease-out
-     only -- never spring. --ease-spring stays defined for token completeness
-     (other directions used it) but nothing in this build should reference it. */
+  /* Motion: durations +40% over the base thesis, ease-out only, never spring.
+     --ease-spring stays defined for token completeness (other directions used
+     it) but nothing in this build should reference it. */
   --dur-fast: 170ms;
   --dur-base: 280ms;
   --dur-slow: 450ms;
@@ -163,33 +245,35 @@
      names, in space-separated HSL triplets consumed as hsl(var(--x)).
      Rather than rename either system, these are defined alongside the
      Pepiros tokens and hold the same values, so shadcn components inherit
-     the papyrus palette with no per-component overrides.
+     this palette with no per-component overrides. Each carries the hex it
+     was converted from, so the two vocabularies can be diffed by eye.
 
      ONE COLLISION, handled deliberately: shadcn's `--accent` means "subtle
-     hover surface", while Pepiros' `--accent` is the dusk brand colour.
-     Both cannot own the name. shadcn's meaning is remapped to `subtle`
-     (--subtle / --subtle-foreground, exposed as bg-subtle in Tailwind), and
-     vendored shadcn components get bg-accent -> bg-subtle on the way in.
-     Pepiros keeps `accent` for the brand. Every other shadcn token is either
-     disjoint from Pepiros' set or means exactly the same thing (--border). */
-  --background: 41 45% 94%;
-  --foreground: 43 14% 10%;
-  --card: 43 64% 98%;
-  --card-foreground: 43 14% 10%;
-  --popover: 43 64% 98%;
-  --popover-foreground: 43 14% 10%;
-  --primary: 244 26% 54%;
-  --primary-foreground: 43 64% 98%;
-  --secondary: 41 37% 90%;
-  --secondary-foreground: 43 14% 10%;
-  --muted: 41 37% 90%;
-  --muted-foreground: 33 7% 31%;
-  --subtle: 41 37% 90%;
-  --subtle-foreground: 43 14% 10%;
-  --destructive: 0 36% 40%;
-  --destructive-foreground: 43 64% 98%;
-  --input: 39 28% 82%;
-  --ring: 244 26% 54%;
+     hover surface", while Pepiros' `--accent` is the brand interactive
+     colour. Both cannot own the name. shadcn's meaning is remapped to
+     `subtle` (--subtle / --subtle-foreground, exposed as bg-subtle in
+     Tailwind), and vendored shadcn components get bg-accent -> bg-subtle on
+     the way in. Pepiros keeps `accent` for the brand. Every other shadcn
+     token is either disjoint from Pepiros' set or means exactly the same
+     thing (--border). */
+  --background: 44 43% 93%; /* #F5F1E6 */
+  --foreground: 40 20% 9%; /* #1B1812 */
+  --card: 45 60% 96%; /* #FBF8EF */
+  --card-foreground: 40 20% 9%; /* #1B1812 */
+  --popover: 45 60% 96%; /* #FBF8EF */
+  --popover-foreground: 40 20% 9%; /* #1B1812 */
+  --primary: 38 100% 27%; /* #8C5800 */
+  --primary-foreground: 45 60% 96%; /* #FBF8EF */
+  --secondary: 43 34% 88%; /* #EBE5D6 */
+  --secondary-foreground: 40 20% 9%; /* #1B1812 */
+  --muted: 43 34% 88%; /* #EBE5D6 */
+  --muted-foreground: 40 11% 33%; /* #5C564A */
+  --subtle: 43 34% 88%; /* #EBE5D6 */
+  --subtle-foreground: 40 20% 9%; /* #1B1812 */
+  --destructive: 359 35% 46%; /* #A04D4F, rose -text */
+  --destructive-foreground: 45 60% 96%; /* #FBF8EF */
+  --input: 41 33% 83%; /* #E1D8C4 */
+  --ring: 38 100% 27%; /* #8C5800 */
   --radius: 10px;
 
   /* ---- alpha-capable channel companions -------------------------------
@@ -201,85 +285,107 @@
      These hold the same colours as R G B channel triplets so the config can
      map them through `rgb(var(--x-rgb) / <alpha-value>)`. The hex vars above
      are kept because CSS and inline styles reference them directly (recharts
-     series, SVG strokes, the hero gradients), and those need a real colour
-     value rather than channels. Keep the two in sync when changing a token. */
-  --surface-rgb: 247 243 234;
-  --surface-raised-rgb: 253 251 246;
-  --surface-sunken-rgb: 239 233 220;
-  --paper-rgb: 253 251 246;
-  --paper-muted-rgb: 242 236 223;
-  --ink-rgb: 28 26 21;
-  --ink-muted-rgb: 85 80 74;
-  --ink-faint-rgb: 100 95 85;
-  --border-rgb: 222 213 196;
-  --border-strong-rgb: 198 186 163;
-  --accent-rgb: 110 106 167;
-  --accent-text-rgb: 85 81 140;
-  --accent-hover-rgb: 92 88 154;
-  --accent-sunk-rgb: 70 66 117;
-  --pillar-1-rgb: 184 178 164;
-  --pillar-2-rgb: 196 167 138;
-  --pillar-3-rgb: 125 138 115;
-  --pillar-4-rgb: 110 106 167;
-  --pillar-5-rgb: 180 106 106;
-  --pillar-6-rgb: 212 178 106;
-  --pillar-7-rgb: 95 141 134;
-  --pillar-1-text-rgb: 107 101 90;
-  --pillar-2-text-rgb: 138 107 71;
-  --pillar-3-text-rgb: 78 90 69;
-  --pillar-4-text-rgb: 85 81 140;
-  --pillar-5-text-rgb: 138 65 65;
-  --pillar-6-text-rgb: 138 107 34;
-  --pillar-7-text-rgb: 59 95 89;
-  --located-rgb: var(--pillar-7-text-rgb);
+     series, SVG strokes, gradients), and those need a real colour value
+     rather than channels. Keep the two in sync when changing a token. */
+  --surface-rgb: 245 241 230;
+  --surface-raised-rgb: 251 248 239;
+  --surface-sunken-rgb: 235 229 214;
+  --paper-rgb: 251 248 239;
+  --paper-muted-rgb: 241 236 222;
+  --ink-rgb: 27 24 18;
+  --ink-muted-rgb: 92 86 74;
+  --ink-faint-rgb: 108 102 90;
+  --border-rgb: 225 216 196;
+  --border-strong-rgb: 203 190 163;
+  --accent-rgb: 140 88 0;
+  --accent-text-rgb: 124 74 0;
+  --accent-hover-rgb: 126 75 0;
+  --accent-sunk-rgb: 108 58 0;
+  --brand-ink-rgb: 27 24 18;
+  --brand-ink-reversed-rgb: 250 248 244;
+  --disp-amber-rgb: 215 159 76;
+  --disp-green-rgb: 118 175 119;
+  --disp-violet-rgb: 158 128 209;
+  --disp-bone-rgb: 232 224 206;
+  --pillar-1-rgb: 192 183 159;
+  --pillar-2-rgb: 215 159 76;
+  --pillar-3-rgb: 202 123 87;
+  --pillar-4-rgb: 195 108 109;
+  --pillar-5-rgb: 118 175 119;
+  --pillar-6-rgb: 76 159 158;
+  --pillar-7-rgb: 106 131 157;
+  --pillar-1-text-rgb: 110 102 79;
+  --pillar-2-text-rgb: 143 91 0;
+  --pillar-3-text-rgb: 156 82 46;
+  --pillar-4-text-rgb: 160 77 79;
+  --pillar-5-text-rgb: 59 114 62;
+  --pillar-6-text-rgb: 21 113 113;
+  --pillar-7-text-rgb: 80 105 130;
+  --located-rgb: var(--pillar-5-text-rgb);
   --paraphrase-rgb: var(--pillar-2-text-rgb);
-  --unsupported-rgb: var(--pillar-5-text-rgb);
+  --unsupported-rgb: var(--pillar-4-text-rgb);
   --inference-rgb: var(--pillar-1-text-rgb);
-  --ungrounded-rgb: var(--pillar-6-text-rgb);
+  --ungrounded-rgb: var(--pillar-3-text-rgb);
 }
 
 /*
- * DARK THEME -- warm charcoal, never blue-black (brand rule, see
- * design/PEPIROS-BRAND/README.txt). Only the tokens that must change are
- * redefined here; the 7 pillar fills, spacing, radii, motion and layout
- * dimensions are theme-invariant and stay in :root.
+ * DARK THEME -- warm near-black, never blue-black (brand rule, see
+ * design/brand/README.txt). Only the tokens that must change are redefined
+ * here; the 7 pillar fills, the dispersion palette, spacing, radii, motion
+ * and layout dimensions are theme-invariant and stay in :root.
  */
 .dark {
-  --surface: #16181b;
-  --surface-raised: #1e2126;
-  --surface-sunken: #0b0c0e;
+  --surface: #14120f;
+  --surface-raised: #1d1a16;
+  --surface-sunken: #0b0a09;
 
-  /* Reading surface in dark is warm dark, NOT parchment -- a parchment pane
-     on a charcoal app is a flashlight in the face at night. Still opaque. */
-  --paper: #1b1815;
-  --paper-muted: #241f1a;
+  /* Reading surface in dark is warm dark, NOT the light bone -- a bone pane
+     on a near-black app is a flashlight in the face at night. Still opaque. */
+  --paper: #1d1a16;
+  --paper-muted: #26221c;
 
-  --ink: #edeae3;
-  --ink-muted: #a8a296;
-  --ink-faint: #756f63;
+  --ink: #ede7d9;
+  --ink-muted: #a79e8c;
+  /* The kit's #8A8374 measures 4.20:1 on --paper-muted, this theme's
+     LIGHTEST surface and therefore its worst case, so it is lifted 4% along
+     its own hue to 4.51:1. Still clearly below --ink-muted (5.96:1 worst). */
+  --ink-faint: #908879;
 
-  --border: #2a2d33;
-  --border-strong: #3c4048;
+  --border: #322c22;
+  --border-strong: #4a4234;
 
-  --accent: #6e6aa7;
-  --accent-text: #9b97d4;
-  --accent-hover: #8480ba;
-  --accent-sunk: #585480;
-  --accent-wash: #6e6aa71a;
+  /* The accent inverts: the fill goes light so the dark --paper text on it
+     reads (7.39:1), which also means hover moves UP the ramp here and DOWN
+     in light. Same amber hue and chroma throughout. */
+  --accent: #d79f4c;
+  --accent-text: #e7b369;
+  --accent-hover: #e7b369;
+  --accent-sunk: #b68028;
+  --accent-wash: #d79f4c1a;
 
-  --glass-bg: rgba(30, 33, 38, 0.55);
-  --glass-edge: rgba(255, 255, 255, 0.07);
+  --glass-bg: rgba(29, 26, 22, 0.55);
+  --glass-edge: rgba(237, 231, 217, 0.08);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
 
-  /* On warm charcoal the source pillar hues already clear 4.5:1, so the text
-     variants collapse back onto the fills. */
+  /* Activity ramp, dark. Inverted direction: on a dark ground the busiest day
+     must be the BRIGHTEST green, not the deepest, or the densest cells
+     disappear into the card. */
+  --activity-1: #0e4429;
+  --activity-2: #006d32;
+  --activity-3: #26a641;
+  --activity-4: #39d353;
+
+  /* On warm near-black most source pillar hues already clear 4.5:1, so the
+     text variants collapse back onto the fills. Rose and slate are the two
+     that do not: both fall just under against --paper-muted (4.28 and 4.20),
+     so each is lifted along its own hue until it clears. */
   --pillar-1-text: var(--pillar-1);
   --pillar-2-text: var(--pillar-2);
   --pillar-3-text: var(--pillar-3);
-  --pillar-4-text: var(--pillar-4);
+  --pillar-4-text: #c87172; /* rose,  lifted from #C36C6D */
   --pillar-5-text: var(--pillar-5);
   --pillar-6-text: var(--pillar-6);
-  --pillar-7-text: var(--pillar-7);
+  --pillar-7-text: #738ca7; /* slate, lifted from #6A839D */
 
   --e-1: 0 1px 2px rgba(0, 0, 0, 0.3);
   --e-2: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--border);
@@ -290,94 +396,73 @@
   --grain-opacity: 0.05;
 
   /* shadcn bridge, dark */
-  --background: 216 10% 10%;
-  --foreground: 42 22% 91%;
-  --card: 217 12% 13%;
-  --card-foreground: 42 22% 91%;
-  --popover: 217 12% 13%;
-  --popover-foreground: 42 22% 91%;
-  --primary: 244 26% 54%;
-  --primary-foreground: 42 22% 91%;
-  --secondary: 217 12% 16%;
-  --secondary-foreground: 42 22% 91%;
-  --muted: 217 12% 16%;
-  --muted-foreground: 40 9% 62%;
-  --subtle: 217 12% 16%;
-  --subtle-foreground: 42 22% 91%;
-  --destructive: 0 33% 56%;
-  --destructive-foreground: 42 22% 91%;
-  --input: 220 10% 18%;
-  --ring: 244 26% 54%;
+  --background: 36 14% 7%; /* #14120F */
+  --foreground: 42 36% 89%; /* #EDE7D9 */
+  --card: 34 14% 10%; /* #1D1A16 */
+  --card-foreground: 42 36% 89%; /* #EDE7D9 */
+  --popover: 34 14% 10%; /* #1D1A16 */
+  --popover-foreground: 42 36% 89%; /* #EDE7D9 */
+  --primary: 36 63% 57%; /* #D79F4C */
+  --primary-foreground: 34 14% 10%; /* #1D1A16 */
+  --secondary: 30 10% 4%; /* #0B0A09 */
+  --secondary-foreground: 42 36% 89%; /* #EDE7D9 */
+  --muted: 30 10% 4%; /* #0B0A09 */
+  --muted-foreground: 40 13% 60%; /* #A79E8C */
+  --subtle: 30 10% 4%; /* #0B0A09 */
+  --subtle-foreground: 42 36% 89%; /* #EDE7D9 */
+  --destructive: 359 42% 61%; /* #C87172, rose -text */
+  --destructive-foreground: 34 14% 10%; /* #1D1A16 */
+  --input: 38 19% 16%; /* #322C22 */
+  --ring: 36 63% 57%; /* #D79F4C */
 
-  /* ---- alpha-capable channel companions -------------------------------
-     Tailwind v3 cannot apply an opacity modifier to a colour whose value is
-     a bare `var(--x)` hex: `bg-pillar-5/35` compiles to nothing and the
-     element silently renders transparent. 82 such usages existed across 32
-     files, all quietly dead.
-
-     These hold the same colours as R G B channel triplets so the config can
-     map them through `rgb(var(--x-rgb) / <alpha-value>)`. The hex vars above
-     are kept because CSS and inline styles reference them directly (recharts
-     series, SVG strokes, the hero gradients), and those need a real colour
-     value rather than channels. Keep the two in sync when changing a token. */
-  --surface-rgb: 22 24 27;
-  --surface-raised-rgb: 30 33 38;
-  --surface-sunken-rgb: 11 12 14;
-  --paper-rgb: 27 24 21;
-  --paper-muted-rgb: 36 31 26;
-  --ink-rgb: 237 234 227;
-  --ink-muted-rgb: 168 162 150;
-  --ink-faint-rgb: 117 111 99;
-  --border-rgb: 42 45 51;
-  --border-strong-rgb: 60 64 72;
-  --accent-rgb: 110 106 167;
-  --accent-text-rgb: 155 151 212;
-  --accent-hover-rgb: 132 128 186;
-  --accent-sunk-rgb: 88 84 128;
-  --pillar-1-rgb: 184 178 164;
-  --pillar-2-rgb: 196 167 138;
-  --pillar-3-rgb: 125 138 115;
-  --pillar-4-rgb: 110 106 167;
-  --pillar-5-rgb: 180 106 106;
-  --pillar-6-rgb: 212 178 106;
-  --pillar-7-rgb: 95 141 134;
-  --pillar-1-text-rgb: 184 178 164;
-  --pillar-2-text-rgb: 196 167 138;
-  --pillar-3-text-rgb: 125 138 115;
-  --pillar-4-text-rgb: 110 106 167;
-  --pillar-5-text-rgb: 180 106 106;
-  --pillar-6-text-rgb: 212 178 106;
-  --pillar-7-text-rgb: 95 141 134;
-  --located-rgb: var(--pillar-7-text-rgb);
-  --paraphrase-rgb: var(--pillar-2-text-rgb);
-  --unsupported-rgb: var(--pillar-5-text-rgb);
-  --inference-rgb: var(--pillar-1-text-rgb);
-  --ungrounded-rgb: var(--pillar-6-text-rgb);
+  /* ---- alpha-capable channel companions, dark -------------------------
+     Same contract as the :root set above: keep in sync with the hex vars. */
+  --surface-rgb: 20 18 15;
+  --surface-raised-rgb: 29 26 22;
+  --surface-sunken-rgb: 11 10 9;
+  --paper-rgb: 29 26 22;
+  --paper-muted-rgb: 38 34 28;
+  --ink-rgb: 237 231 217;
+  --ink-muted-rgb: 167 158 140;
+  --ink-faint-rgb: 144 136 121;
+  --border-rgb: 50 44 34;
+  --border-strong-rgb: 74 66 52;
+  --accent-rgb: 215 159 76;
+  --accent-text-rgb: 231 179 105;
+  --accent-hover-rgb: 231 179 105;
+  --accent-sunk-rgb: 182 128 40;
+  --pillar-1-text-rgb: var(--pillar-1-rgb);
+  --pillar-2-text-rgb: var(--pillar-2-rgb);
+  --pillar-3-text-rgb: var(--pillar-3-rgb);
+  --pillar-4-text-rgb: 200 113 114;
+  --pillar-5-text-rgb: var(--pillar-5-rgb);
+  --pillar-6-text-rgb: var(--pillar-6-rgb);
+  --pillar-7-text-rgb: 115 140 167;
 }
 
 /*
- * LEGACY, FROZEN. `.surface-reading` predates the light theme. It forced an
- * always-light paper pane onto dark-only chrome, and ~53 call sites across 13
- * files hardcode `text-[#1c1a15]` inside it because the surface could be
- * counted on never to change tone.
+ * LEGACY, FROZEN. `.surface-reading` predates the light theme. It forces an
+ * always-light paper pane onto dark chrome, and a number of call sites across
+ * the reader rely on the surface being counted on never to change tone.
  *
  * It is therefore pinned to literal values rather than being pointed at
  * --paper/--ink. Wiring it to the tokens would flip these panes to warm dark
- * in the dark theme and leave every one of those hardcoded near-black strings
- * sitting on a near-black card.
+ * in the dark theme, which is wrong for a document: a PDF is a light object
+ * and stays one in both themes.
+ *
+ * Repointed 2026-08-23 onto the new locked light palette (#F5F1E6 / #1B1812)
+ * so it no longer carries the retired parchment values. Descendants now use
+ * `text-ink` / `bg-ink/NN` and resolve through the pinned vars below rather
+ * than hardcoding a hex, which is what the old `text-[#1c1a15]` call sites
+ * were doing.
  *
  * Migration target is `bg-paper text-ink`, which IS theme-aware. Each surface
  * moves as it gets rebuilt; when the last call site is gone, this block goes
  * with it. Do not add new usages.
- *
- * The old scoped contrast cascade that lived here (re-colouring
- * .text-ink-muted / .text-ink-faint / .text-unsupported to survive on paper)
- * is deleted: those tokens are now correct against their own theme's surface,
- * and inside this pinned block the local overrides below cover it.
  */
 .surface-reading {
-  background-color: #f5f1e8;
-  color: #1c1a15;
+  background-color: #f5f1e6;
+  color: #1b1812;
 
   /* Pinned too: the surface is always light here, so grain must stay on
      multiply even when the dark theme has switched the global to overlay. */
@@ -388,28 +473,85 @@
      using text-ink-muted / text-ink-faint stay readable regardless of theme.
      BOTH forms must be pinned. Tailwind's colour utilities resolve through the
      -rgb companions, so pinning only the hex vars leaves `text-ink` reading the
-     THEME's ink and rendering near-white on this cream pane in dark mode.
+     THEME's ink and rendering near-white on this light pane in dark mode.
      Likewise --paper-muted, which nested panels use for their own background
      and which would otherwise go dark inside a light card. */
-  --ink: #1c1a15;
-  --ink-muted: #4a4740;
-  --ink-faint: #6b675e;
-  --unsupported: #7a3535;
+  --ink: #1b1812;
+  --ink-muted: #5c564a;
+  --ink-faint: #6c665a;
+  --unsupported: #a04d4f;
 
-  --ink-rgb: 28 26 21;
-  --ink-muted-rgb: 74 71 64;
-  --ink-faint-rgb: 107 103 94;
-  --unsupported-rgb: 122 53 53;
-  --paper-rgb: 245 241 232;
-  --paper-muted-rgb: 236 229 213;
-  --border-rgb: 222 213 196;
+  --ink-rgb: 27 24 18;
+  --ink-muted-rgb: 92 86 74;
+  --ink-faint-rgb: 108 102 90;
+  --unsupported-rgb: 160 77 79;
+  --paper-rgb: 245 241 230;
+  --paper-muted-rgb: 235 229 214;
+  --border-rgb: 225 216 196;
 }
 
-/* Subtle paper grain for reading surfaces, per Editorial Paper's "visible
-   fiber grain" material rule. Real generated brand asset, tiled from
-   public/paper-grain.png -- not a coded/data-URI substitute. The 2026-08-14
-   kit (design/PEPIROS-BRAND) ships no grain texture, so this asset survived
-   the kit swap and public/ is now its only home. */
+/*
+ * The mirror image of `.surface-reading`: a pane that stays DARK in both
+ * themes.
+ *
+ * One surface needs this today, the reverse-audit results rail
+ * (app/(reader)/w/[workspaceId]/audit/SummaryAudit.tsx). It is not
+ * decoration: that page is a document and the rail is a verdict on it, and
+ * holding them in one palette is what stopped the old table reading as more
+ * of the same prose.
+ *
+ * It exists because that file previously carried its own parallel palette of
+ * ten hardcoded hex values, six of which appeared nowhere else in this
+ * system. Pinning the DARK ramp here instead means the rail is written in
+ * ordinary `bg-surface` / `text-ink` / `text-pillar-text-N` utilities and
+ * still renders dark when the light theme is active, with no per-call-site
+ * hex and no second vocabulary to keep in sync.
+ *
+ * Same contract as `.surface-reading`: BOTH the hex vars and their -rgb
+ * companions must be pinned, because Tailwind's colour utilities resolve
+ * through the channel triplets while CSS and inline styles read the hex.
+ */
+.surface-chrome {
+  background-color: #14120f;
+  color: #ede7d9;
+
+  /* Dark ground, so grain follows the dark theme's blend regardless of which
+     theme is actually active. */
+  --grain-blend: overlay;
+  --grain-opacity: 0.05;
+
+  --surface: #14120f;
+  --surface-raised: #1d1a16;
+  --surface-sunken: #0b0a09;
+  --ink: #ede7d9;
+  --ink-muted: #a79e8c;
+  --ink-faint: #908879;
+  --border: #322c22;
+  --border-strong: #4a4234;
+
+  --surface-rgb: 20 18 15;
+  --surface-raised-rgb: 29 26 22;
+  --surface-sunken-rgb: 11 10 9;
+  --ink-rgb: 237 231 217;
+  --ink-muted-rgb: 167 158 140;
+  --ink-faint-rgb: 144 136 121;
+  --border-rgb: 50 44 34;
+  --border-strong-rgb: 74 66 52;
+
+  /* The dark theme's pillar text ramp, pinned. Rose and slate carry their
+     lifted values here for the same reason they do in .dark. */
+  --pillar-1-text-rgb: var(--pillar-1-rgb);
+  --pillar-2-text-rgb: var(--pillar-2-rgb);
+  --pillar-3-text-rgb: var(--pillar-3-rgb);
+  --pillar-4-text-rgb: 200 113 114;
+  --pillar-5-text-rgb: var(--pillar-5-rgb);
+  --pillar-6-text-rgb: var(--pillar-6-rgb);
+  --pillar-7-text-rgb: 115 140 167;
+}
+
+/* Paper grain, per the material language's "heavy matte film noise" rule.
+   Real generated brand asset, tiled from public/paper-grain.png -- not a
+   coded/data-URI substitute. */
 .paper-grain {
   position: relative;
 }
@@ -445,6 +587,19 @@
   }
 }
 
+/* The eyebrow. Mono, small, wide-tracked, uppercase, muted -- creates
+   hierarchy without size, which is what dense information design needs.
+   Borrowed from UCIP's globals.css, and it is the shape the brand kit's own
+   section labels use ("01 Surfaces & Ink"). */
+.kicker {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
 html,
 body {
   /* min-height, NOT height. `height: 100%` boxes body at exactly the viewport,
@@ -455,14 +610,50 @@ body {
   min-height: 100%;
 }
 
+/*
+ * html gets its own explicit background, matching body's -- NOT a duplicate
+ * declaration for safety, a fix for a real CSS spec interaction.
+ *
+ * Per the CSS Backgrounds spec's canvas-background propagation rule: when the
+ * root element (html) has NO background of its own and body does, the UA
+ * "propagates" body's background up to paint the document canvas -- the very
+ * bottom paint layer -- and BODY'S OWN BOX THEN PAINTS AS THOUGH IT WERE
+ * TRANSPARENT. Ordinarily this is invisible: nothing sits between that
+ * propagated canvas layer and body's (now-transparent) descendants, so pages
+ * look identical either way.
+ *
+ * It stops being invisible the moment something occupies exactly that gap --
+ * which is precisely what components/chrome/ShaderCanvas.tsx is: a
+ * `position: fixed; z-index: -1` element sized to the full viewport. With
+ * propagation active, that canvas paints ABOVE the propagated root
+ * background but BELOW body's now-transparent box, so any page section
+ * that relies on inheriting body's opaque colour through an unstyled
+ * ancestor (nearly every plain section on this site does) shows the shader
+ * bleeding through it instead of the surface colour -- confirmed live on
+ * /privacy, where a section outside any <Band> rendered the mesh gradient
+ * across the whole page instead of the flat surface it should have been.
+ *
+ * Declaring html's OWN background stops propagation from triggering at all:
+ * the root element no longer has "no background of its own", so body keeps
+ * painting its colour locally like any ordinary element, and the fixed
+ * z-index:-1 canvas goes back to being visible only where a `.shader-band`
+ * deliberately makes its own background transparent for it.
+ */
+html {
+  background-color: var(--surface);
+}
+
 body {
   background-color: var(--surface);
   color: var(--ink);
   font-family: var(--font-grotesque);
 }
 
+/* Selection inverts cleanly in both themes without a second pair of tokens:
+   in light --accent is dark amber and --surface-sunken is light, in dark the
+   two swap roles. */
 ::selection {
-  background-color: var(--pillar-4);
+  background-color: var(--accent);
   color: var(--surface-sunken);
 }
 
@@ -482,7 +673,7 @@ body {
   border-radius: var(--r-sm);
 }
 
-/* Global focus-visible fallback (docs/PLAN-V1.md §15). Primitives (Button,
+/* Global focus-visible fallback (docs/PLAN-V1.md 15). Primitives (Button,
    IconButton, Input, Tabs, ...) already set focus-visible:shadow-glow-accent
    explicitly; this covers plain <a>/<button> elements elsewhere in the app
    (nav links, the paper switcher, the node list) so a focus ring doesn't
@@ -494,9 +685,7 @@ button:focus-visible {
   border-radius: var(--r-sm);
 }
 
-/* Motion vocabulary (docs/PLAN-V1.md §14.3, Editorial Paper: ease-out only,
-   never spring). Stage C wires each keyframe to its actual trigger; this is
-   the shared foundation other components animate with, via lib/motion.ts. */
+/* Motion vocabulary (docs/PLAN-V1.md 14.3): ease-out only, never spring. */
 @keyframes node-appear {
   from {
     opacity: 0;
@@ -519,7 +708,7 @@ button:focus-visible {
   }
 }
 
-/* The PDF highlight "money shot" (docs/PLAN-V1.md §14.3): fade in over
+/* The PDF highlight "money shot" (docs/PLAN-V1.md 14.3): fade in over
    180ms (0-40% of --dur-slow's 450ms), then one opacity pulse .6->1->.85. */
 @keyframes highlight-pulse {
   0% {
@@ -577,7 +766,7 @@ button:focus-visible {
   animation: shimmer 1.6s ease-out infinite;
 }
 
-/* Contradiction edge dash-offset march (docs/PLAN-V1.md §9.1). Disable above
+/* Contradiction edge dash-offset march (docs/PLAN-V1.md 9.1). Disable above
    4 visible such edges -- Stage C1 wires that count check. */
 .motion-dash-march {
   stroke-dasharray: 6 6;
@@ -602,36 +791,36 @@ button:focus-visible {
  * shadcn sidebar tokens.
  *
  * The CLI seeds these with its own neutral greys and a blue ring
- * (217 91% 60%), which belong to no part of this palette. Restated here on the
- * papyrus/charcoal system so the app shell matches everything else: a slightly
- * sunken parchment rail in day, a deeper charcoal rail in dark, dusk for the
- * active state, and the same --border in both.
+ * (217 91% 60%), which belong to no part of this palette. Restated here on
+ * the bone/near-black system so the app shell matches everything else: a
+ * slightly sunken bone rail in light, a deeper near-black rail in dark, the
+ * amber accent for the active state, and the same --border in both.
  */
 @layer base {
   :root {
-    --sidebar-background: 41 37% 90%; /* --surface-sunken */
-    --sidebar-foreground: 43 14% 10%; /* --ink */
-    --sidebar-primary: 244 26% 54%; /* --accent, dusk */
-    --sidebar-primary-foreground: 43 64% 98%;
-    --sidebar-accent: 39 30% 86%; /* hover, a step down from the rail */
-    --sidebar-accent-foreground: 43 14% 10%;
-    --sidebar-border: 39 28% 82%; /* --border */
-    --sidebar-ring: 244 26% 54%;
+    --sidebar-background: 43 34% 88%; /* --surface-sunken, #EBE5D6 */
+    --sidebar-foreground: 40 20% 9%; /* --ink, #1B1812 */
+    --sidebar-primary: 38 100% 27%; /* --accent, #8C5800 */
+    --sidebar-primary-foreground: 45 60% 96%; /* --paper, #FBF8EF */
+    --sidebar-accent: 41 33% 83%; /* hover, a step down from the rail */
+    --sidebar-accent-foreground: 40 20% 9%;
+    --sidebar-border: 41 33% 83%; /* --border, #E1D8C4 */
+    --sidebar-ring: 38 100% 27%;
   }
   .dark {
-    --sidebar-background: 220 12% 8%;
-    --sidebar-foreground: 42 22% 91%; /* --ink */
-    --sidebar-primary: 244 26% 54%;
-    --sidebar-primary-foreground: 42 22% 91%;
-    --sidebar-accent: 217 12% 16%;
-    --sidebar-accent-foreground: 42 22% 91%;
-    --sidebar-border: 220 10% 18%; /* --border */
-    --sidebar-ring: 244 26% 54%;
+    --sidebar-background: 30 10% 4%; /* --surface-sunken, #0B0A09 */
+    --sidebar-foreground: 42 36% 89%; /* --ink, #EDE7D9 */
+    --sidebar-primary: 36 63% 57%; /* --accent, #D79F4C */
+    --sidebar-primary-foreground: 34 14% 10%; /* --paper, #1D1A16 */
+    --sidebar-accent: 38 19% 16%;
+    --sidebar-accent-foreground: 42 36% 89%;
+    --sidebar-border: 38 19% 16%; /* --border, #322C22 */
+    --sidebar-ring: 36 63% 57%;
   }
 }
 
 /* --------------------------------------------------------------------------
-   Canvas level-of-detail (lib/graph/lod.ts, docs/PLAN-V1.md §9.1)
+   Canvas level-of-detail (lib/graph/lod.ts, docs/PLAN-V1.md 9.1)
 
    GraphCanvas sets data-canvas-detail on an ancestor from the current zoom.
    Doing the hiding here rather than as a prop on each node means a zoom that
@@ -646,4 +835,25 @@ button:focus-visible {
 [data-canvas-detail="minimal"] [data-lod="body"],
 [data-canvas-detail="minimal"] [data-lod="title"] {
   visibility: hidden;
+}
+
+/* --------------------------------------------------------------------------
+   Shader band progressive enhancement (components/chrome/Band.tsx,
+   ShaderCanvas.tsx). Every .shader-band renders its own opaque CSS gradient
+   fallback by default. Once ShaderCanvas's WebGL context has actually linked
+   and started drawing, it sets data-shader-active on <html>; only then does
+   a band's own background step aside so the shared canvas -- sitting behind
+   everything at z-index -1 -- can show through it. Never wire a shader-band
+   background transparent any other way: that is what makes every fallback
+   path in ShaderCanvas simply "render nothing" and still be correct.
+   -------------------------------------------------------------------------- */
+html[data-shader-active="true"] .shader-band {
+  /* !important, deliberately: Band.tsx sets its fallback gradient via an
+     inline `style`, which always outranks an external stylesheet rule
+     regardless of selector specificity. This is the one legitimate use of
+     !important in this codebase -- a single, documented kill-switch, not
+     general styling -- and without it this rule compiles but silently never
+     wins, leaving the fallback gradient permanently covering the shader. */
+  background-image: none !important;
+  background-color: transparent !important;
 }
