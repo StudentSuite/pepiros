@@ -166,12 +166,22 @@ export default async function PaperPage({
               not-yet-openable state until that changes, rather than
               silently falling back to a demo link. */}
           {paper.workspaceId ? (
-            <Link
-              href={`/w/${paper.workspaceId}`}
-              className={buttonClassName("primary", "sm", "mt-s-4")}
-            >
-              Open in reader
-            </Link>
+            <div className="mt-s-4 flex flex-wrap gap-s-2">
+              <Link
+                href={`/w/${paper.workspaceId}`}
+                className={buttonClassName("primary", "sm")}
+              >
+                Open in reader
+              </Link>
+              {/* Issue #312: a rendering of the same verified graph, not a
+                  second source of truth -- only offered once one exists. */}
+              <Link
+                href={`/paper/${slug}/mindmap`}
+                className={buttonClassName("secondary", "sm")}
+              >
+                View mindmap
+              </Link>
+            </div>
           ) : (
             <p className="mt-s-4 rounded-md border border-dashed border-border px-s-4 py-s-3 font-sans text-[13px] leading-relaxed text-ink-faint">
               This paper isn&rsquo;t indexed for reading in Pepiros yet -- read the
