@@ -1,0 +1,119 @@
+"use client";
+
+import clsx from "clsx";
+import { MESH_DRIFT_PALETTE_HEX } from "./mesh-drift.frag";
+import { useShaderBand } from "./useShaderBand";
+export { bandButtonClassName } from "./band-button";
+
+/**
+ * A region where the page's own background steps aside and the shared
+ * `<ShaderCanvas>` shows through instead (§2 of the plan).
+ *
+ * PROGRESSIVE ENHANCEMENT, not a toggle this component decides for itself.
+ * Every `<Band>` renders an opaque CSS gradient by default, built from the
+ * exact same MESH_DRIFT_PALETTE_HEX the shader draws from, so a band is never
+ * blank: not before hydration, not with JS disabled, not on
+ * prefers-reduced-motion, not on a device with no WebGL1, not on the coarse
+ * low-end heuristic in ShaderCanvas.tsx. That gradient only turns transparent
+ * once `<ShaderCanvas>` has an actual frame to show, signalled by the
+ * `data-shader-active` attribute it sets on `<html>` -- see the matching CSS
+ * rule at the bottom of app/globals.css. A band never has to know which case
+ * it's in; the two rules compose correctly on their own.
+ *
+ * This is also why every fallback path in ShaderCanvas.tsx can simply be
+ * "render nothing": with the gradient already covering the canvas by
+ * default, doing nothing IS the fallback.
+ */
+export function Band({
+  children,
+  className,
+  as: Component = "div",
+  /**
+   * Bands on a light page are meant to be full-bleed dark interruptions
+   * (§1 "Light mode: light base, shader confined to dark full-bleed bands").
+   * `light` opts a band out of that for the few places the plan wants a
+   * slim, less dramatic strip instead (page-header bands, the auth panel).
+   */
+  variant = "dark",
+}: {
+  children?: React.ReactNode;
+  className?: string;
+  as?: "div" | "section" | "header";
+  variant?: "dark" | "light";
+}) {
+  // Without this, ShaderCanvas has no way to know this band exists at all --
+  // it never appears in getBands(), the IntersectionObserver never watches
+  // it, and the RAF loop's "is anything visible" check stays permanently
+  // false. The canvas then never calls drawArrays, and the region behind
+  // this band renders whatever the WebGL context's uninitialized buffer
+  // happens to be (opaque black, with `alpha: false`) instead of the shader.
+  const bandRef = useShaderBand();
+
+  return (
+    <Component
+      ref={bandRef}
+      className={clsx(
+        // `paper-grain` HERE, on the band's own root, not on a separate
+        // absolutely-positioned child -- see this file's earlier bug. That
+        // class's own stylesheet rule sets `position: relative` on whatever
+        // it's applied to, and its grain texture is drawn by a `::before`
+        // pseudo-element the element implicitly becomes the containing
+        // block for. A prior version instead put `paper-grain` on a
+        // separate empty `absolute inset-0` div stacked inside this one --
+        // `.paper-grain`'s `position: relative` fought Tailwind's
+        // `.absolute` utility for the SAME property on the SAME element,
+        // `.paper-grain` won the specificity fight, and the div collapsed
+        // to a 0-height box with its grain overlay going nowhere.
+        // components/site/MechanismDemo.tsx's own `paper-grain` usage is
+        // the pattern this now matches: applied to the real container, not
+        // spun off into a dedicated overlay element.
+        "shader-band paper-grain relative isolate overflow-hidden",
+        variant === "dark" && "text-brand-ink-reversed",
+        className,
+      )}
+      style={{
+        backgroundImage: `linear-gradient(160deg, ${MESH_DRIFT_PALETTE_HEX[0]}, ${MESH_DRIFT_PALETTE_HEX[1]} 45%, ${MESH_DRIFT_PALETTE_HEX[2]} 75%, ${MESH_DRIFT_PALETTE_HEX[3]})`,
+        "--grain-blend": "overlay",
+        "--grain-opacity": "0.10",
+      } as React.CSSProperties}
+    >
+
+      {/*
+       * The contrast scrim, and why it is not optional.
+       *
+       * Plan §8 states the actual bar: "every text placed over a shader
+       * band clears it against the band's LIGHTEST frame, not its
+       * average." The mesh-drift shader legitimately cycles through its own
+       * lightest stop (#F0E6D8, near-white bone) at every point on screen
+       * as its blobs drift -- confirmed by testing this page live rather
+       * than against a single static screenshot: a first pass shipped
+       * --brand-ink-reversed text directly on the raw shader with no scrim,
+       * and it read fine in the frame that happened to be dark when one
+       * screenshot was taken, then went NEAR-INVISIBLE on the very next
+       * reload once the animation had drifted into its lighter register,
+       * in both themes (the shader itself is theme-independent). A
+       * one-off "looked fine" is not the same as "clears the lightest
+       * frame" for content that keeps moving.
+       *
+       * The fix is a scrim: a fixed-opacity dark layer between the shader
+       * and the content, dark enough that --brand-ink-reversed text (near
+       * white) stays comfortably above 4.5:1 even when the shader
+       * underneath it is at its own lightest, animated extreme.
+       *
+       * 60%, not the ~55% that JUST clears the floor: computed against the
+       * worst case (text over the palette's own lightest stop, #F0E6D8, the
+       * one colour a blob's Gaussian weighting could in principle push a
+       * pixel arbitrarily close to), 55% opacity measures 4.78:1 -- legal,
+       * but close enough to WCAG AA's 4.5:1 floor that ordinary alpha-
+       * compositing rounding differences between this approximation and a
+       * real browser's gamma-correct blend could tip it under. 62%
+       * measures ~6.1:1 against the same worst case, real margin rather
+       * than a number that only just clears the bar today.
+       */}
+      <div className="absolute inset-0 bg-[#0E0A14]/60" />
+
+      <div className="relative z-10">{children}</div>
+    </Component>
+  );
+}
+
