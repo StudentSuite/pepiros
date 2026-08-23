@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { MessageCircle, X } from "lucide-react";
 import type { EvidenceTier } from "@/types/anchor";
 import { MessageList, type ChatMessage } from "./MessageList";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { useWorkspaceStore } from "@/lib/store/workspace";
 import { toCitationSegments } from "@/lib/chat/citations";
@@ -42,15 +44,13 @@ export function ChatDock({
 }) {
   const workspace = useWorkspaceStore((s) => s.workspace);
   const selectedNodeId = useWorkspaceStore((s) => s.selectedNodeId);
-  // Issue #290: this used to gate ALL of scope/input/suggestions behind
-  // `open`, so the collapsed default rendered as a 40px strip with nothing
-  // in it but a scope selector and an "Expand" link -- suggested questions
-  // (lib/chat/suggestions.ts, a real per-paper derivation) were invisible
-  // until a visitor found and clicked Expand first. `open` now gates only
-  // the scrollable message history; the resting (collapsed) state still
-  // renders the scope selector, the input, and two suggestion chips, so
-  // grounded Q&A is reachable without that extra click. Sending the first
-  // message expands to full height automatically (see ask()).
+  // Issue #321: issue #290's fix for a near-invisible collapsed state
+  // overcorrected into the opposite problem -- a docked bar (scope
+  // selector, input, suggestion chips) that rendered permanently, covering
+  // real reading/inspector surface on both desktop and mobile with no true
+  // dismiss. `open` now means exactly one thing: whether the whole panel is
+  // showing at all. Closed renders nothing but a small FAB; there is no
+  // third "resting, partially visible" state anymore.
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -90,9 +90,10 @@ export function ChatDock({
   const suggestedQuestions = useMemo(() => deriveSuggestedQuestions(workspace), [workspace]);
 
   async function ask(question: string, options: { allowUngrounded?: boolean } = {}) {
-    // Issue #290: expand to full height on the first send, so the message
-    // history (and the room a real answer needs) appears the moment
-    // there's something to show, rather than requiring a separate click.
+    // Asking from a suggestion chip or a pending question (issue #294) can
+    // only happen once the panel is already open (the closed state renders
+    // no chips at all), but this stays harmless and keeps the panel open
+    // through a send either way.
     setOpen(true);
     setPending(true);
     setError(null);
@@ -172,9 +173,31 @@ export function ChatDock({
     void ask(text);
   }
 
+  // Issue #321: the collapsed rest state is a small FAB, full stop -- not a
+  // docked bar with the scope selector/input/suggestions still showing.
+  // This is the only thing rendered on both desktop and mobile until a
+  // reader explicitly asks for the panel.
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label="Ask a question about this workspace"
+        className="glass fixed bottom-4 right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full text-ink shadow-e-2 transition-colors duration-fast ease-out hover:text-accent-text"
+      >
+        <Icon icon={MessageCircle} size="md" />
+      </button>
+    );
+  }
+
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-4">
-      <div className="glass pointer-events-auto w-full max-w-2xl rounded-lg">
+    // Full-width bottom sheet below sm (mobile: "explicit bottom-sheet
+    // triggered by tap", never resting open), an anchored corner panel at
+    // sm+ (desktop) -- either way it opens on demand and closes via the X
+    // below, rather than sitting over the reading/inspector surface by
+    // default the way the old always-rendered bar did.
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-4 sm:inset-x-auto sm:right-4 sm:justify-end sm:px-0">
+      <div className="glass pointer-events-auto flex max-h-[85vh] w-full max-w-2xl flex-col rounded-lg sm:max-h-[32rem] sm:w-96">
         <div className="flex items-center justify-between border-b border-border px-3 py-2">
           <div className="flex items-center gap-2">
             <span className="font-sans text-sm font-medium text-ink">Ask</span>
@@ -193,96 +216,73 @@ export function ChatDock({
           </div>
           <button
             type="button"
-            onClick={() => setOpen((o) => !o)}
-            className="font-sans text-xs text-ink-faint hover:text-ink"
+            onClick={() => setOpen(false)}
+            aria-label="Close chat"
+            className="text-ink-faint hover:text-ink"
           >
-            {open ? "Collapse" : "Expand"}
+            <Icon icon={X} size="sm" />
           </button>
         </div>
 
-        {open && (
-          /* Issue #211: new replies were never announced to screen reader
-             users -- the only role="status" was the transient "Reading
-             the papers..." line, gone the instant the real answer lands.
-             role="log" + aria-live="polite" here announces each new
-             message as it's appended. */
-          <div ref={scrollRef} role="log" aria-live="polite" className="max-h-72 overflow-y-auto px-3 py-3">
-            {messages.length === 0 ? (
-              <div className="flex flex-col gap-2">
-                <p className="font-sans text-xs text-ink-faint">Try asking:</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {suggestedQuestions.map((q) => (
-                    <button
-                      key={q}
-                      type="button"
-                      onClick={() => void ask(q)}
-                      disabled={pending}
-                      className="rounded-full border border-border-strong px-2.5 py-1 text-left font-sans text-xs text-ink-muted transition duration-fast ease-out hover:border-accent hover:text-ink disabled:opacity-50"
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
+        {/* Issue #211: new replies were never announced to screen reader
+           users -- the only role="status" was the transient "Reading
+           the papers..." line, gone the instant the real answer lands.
+           role="log" + aria-live="polite" here announces each new
+           message as it's appended. */}
+        <div ref={scrollRef} role="log" aria-live="polite" className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+          {messages.length === 0 ? (
+            <div className="flex flex-col gap-2">
+              <p className="font-sans text-xs text-ink-faint">Try asking:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {suggestedQuestions.map((q) => (
+                  <button
+                    key={q}
+                    type="button"
+                    onClick={() => void ask(q)}
+                    disabled={pending}
+                    className="rounded-full border border-border-strong px-2.5 py-1 text-left font-sans text-xs text-ink-muted transition duration-fast ease-out hover:border-accent hover:text-ink disabled:opacity-50"
+                  >
+                    {q}
+                  </button>
+                ))}
               </div>
-            ) : (
-              <MessageList messages={messages} />
-            )}
+            </div>
+          ) : (
+            <MessageList messages={messages} />
+          )}
 
-            {pending && (
-              <p className="mt-3 font-sans text-xs text-ink-faint" role="status">
-                Reading the papers…
-              </p>
-            )}
+          {pending && (
+            <p className="mt-3 font-sans text-xs text-ink-faint" role="status">
+              Reading the papers…
+            </p>
+          )}
 
-            {error && (
-              <div className="mt-3">
-                <ErrorBanner
-                  message={error}
-                  onRetry={lastQuestion ? () => void ask(lastQuestion) : undefined}
-                />
-              </div>
-            )}
+          {error && (
+            <div className="mt-3">
+              <ErrorBanner
+                message={error}
+                onRetry={lastQuestion ? () => void ask(lastQuestion) : undefined}
+              />
+            </div>
+          )}
 
-            {/* §9.4: below the relevance floor, offer an explicit
-                "answer without sources" rather than silently confabulating. */}
-            {lastRefusedQuestion && !pending && (
-              <button
-                type="button"
-                onClick={() => {
-                  const question = lastRefusedQuestion;
-                  setLastRefusedQuestion(null);
-                  setAllowUngrounded(true);
-                  void ask(question, { allowUngrounded: true });
-                }}
-                className="mt-3 rounded border border-border-strong px-2 py-1 font-sans text-xs text-ink-muted hover:text-ink"
-              >
-                Answer without sources
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Issue #290: the resting state (collapsed, nothing asked yet) --
-            two of the same real per-paper suggestions the expanded empty
-            state shows, so grounded Q&A is visible without an extra click.
-            Once there's a real conversation, showing the original "try
-            asking" prompts again here would be stale, so this only shows
-            before the first message. */}
-        {!open && messages.length === 0 && suggestedQuestions.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 px-3 pt-2">
-            {suggestedQuestions.slice(0, 2).map((q) => (
-              <button
-                key={q}
-                type="button"
-                onClick={() => void ask(q)}
-                disabled={pending}
-                className="rounded-full border border-border-strong px-2.5 py-1 text-left font-sans text-xs text-ink-muted transition duration-fast ease-out hover:border-accent hover:text-ink disabled:opacity-50"
-              >
-                {q}
-              </button>
-            ))}
-          </div>
-        )}
+          {/* §9.4: below the relevance floor, offer an explicit
+              "answer without sources" rather than silently confabulating. */}
+          {lastRefusedQuestion && !pending && (
+            <button
+              type="button"
+              onClick={() => {
+                const question = lastRefusedQuestion;
+                setLastRefusedQuestion(null);
+                setAllowUngrounded(true);
+                void ask(question, { allowUngrounded: true });
+              }}
+              className="mt-3 rounded border border-border-strong px-2 py-1 font-sans text-xs text-ink-muted hover:text-ink"
+            >
+              Answer without sources
+            </button>
+          )}
+        </div>
 
         <div className="flex items-center gap-2 border-t border-border px-3 py-2">
           <Input
