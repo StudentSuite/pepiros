@@ -92,6 +92,24 @@ vec2 hash21(float x) {
   return vec2(hash11(x), hash11(x + 17.0));
 }
 
+/* ---- smooth value noise --------------------------------------------------
+ * hash11 alone has no spatial coherence -- adjacent pixels get uncorrelated
+ * values, which reads as static/grain, not flow. Bilinear-interpolating
+ * hash11 across a unit lattice (the standard value-noise construction) gives
+ * a continuous field instead, which is what the domain warp below needs to
+ * look like liquid motion rather than dithered noise.
+ */
+float valueNoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  float a = hash11(i.x + i.y * 57.0);
+  float b = hash11(i.x + 1.0 + i.y * 57.0);
+  float c = hash11(i.x + (i.y + 1.0) * 57.0);
+  float d = hash11(i.x + 1.0 + (i.y + 1.0) * 57.0);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
 /* ---- sRGB <-> OKLab, standard coefficients ------------------------------- */
 vec3 srgbToLinear(vec3 c) {
   return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(0.04045, c));
@@ -160,14 +178,21 @@ void main() {
   p.x *= u_resolution.x / u_resolution.y;
   vec2 centerOffset = vec2(0.5 * (u_resolution.x / u_resolution.y - 1.0), 0.0);
 
-  // Domain warp: displace the sample point by a slow secondary drift before
-  // evaluating blobs against it. Off by default (u_warp = 0).
+  // Domain warp: displace the sample point by a slow secondary flow field
+  // before evaluating blobs against it -- this is what gives the gradient
+  // its liquid/webgl-ish character rather than blobs that just glide
+  // around independently. Was raw hash11(p * freq), which has no spatial
+  // coherence and reads as static/grain, not flow; valueNoise's bilinear
+  // interpolation makes it continuous. Sampled at two offset points so the
+  // two displacement axes decorrelate (reusing the same field for both
+  // would only ever push the whole image radially).
   if (u_warp > 0.0001) {
+    vec2 flow = p * 2.2 + vec2(u_time * 0.11, -u_time * 0.08);
     vec2 w = vec2(
-      hash11(p.x * 3.1 + u_time * 0.05),
-      hash11(p.y * 3.7 - u_time * 0.04)
+      valueNoise(flow),
+      valueNoise(flow + vec2(11.3, 4.7))
     ) - 0.5;
-    p += w * u_warp * 0.25;
+    p += w * u_warp * 0.35;
   }
 
   // Base raised 6.0 -> 14.0 (2026-08-23): at 6.0, 8 blobs' Gaussian falloffs
@@ -216,7 +241,11 @@ void main() {
 
 /** Default uniform values, tuned for the calm/slow read the plan asks for. */
 export const MESH_DRIFT_DEFAULTS = {
-  warp: 0,
+  // Was 0 (off). Now on: "webgl-ish motion, liquid" -- 0.55 gives the
+  // blobs a genuinely fluid, flowing edge instead of gliding around as
+  // clean circles. See the valueNoise-based warp in the fragment source
+  // above for why this only looks like liquid and not static/grain.
+  warp: 0.55,
   soften: 0,
   oklab: 1,
   // Was 0.73 (the plan's own note, verbatim). Raised 2026-08-23: at 0.73 a

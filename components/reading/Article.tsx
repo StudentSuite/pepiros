@@ -49,12 +49,25 @@ export function ArticleHeader({
   dek,
   children,
   /**
-   * A slim shader strip behind kicker+title+dek, `variant="light"` (a
-   * header-height band, not the full-bleed hero treatment -- see
-   * design/anti-slop.md on why the shader stays a bookend). Off by default:
+   * A slim shader strip behind kicker+title+dek (a header-height band, not
+   * the full-bleed hero treatment -- see design/anti-slop.md on why the
+   * shader stays a bookend). Off by default:
    * this component is also used on dense working surfaces (paper detail)
    * that want no shader at all, so the band is opt-in per caller rather
    * than baked into every header on the site.
+   *
+   * FIXED 2026-08-23 (StudentSuite/pepiros#317): Band's own background
+   * never actually changes between variant="light" and variant="dark" --
+   * both render the same dark mesh-drift gradient plus the same 62%-opacity
+   * dark scrim (see Band.tsx). `variant` only ever controlled whether the
+   * WRAPPING element got `text-brand-ink-reversed`, and this content sets
+   * `text-ink`/`text-ink-muted` directly on its own h1/p, which wins over
+   * whatever color class an ancestor carries -- so the "light" variant's
+   * text was falling through to its normal light-theme dark ink, on a band
+   * background that is always dark. Confirmed live: rgb(27,24,18) title
+   * text on the purple band in light theme, essentially invisible.
+   * Banded now always renders light text, since the band it sits on is
+   * never actually a light surface regardless of which variant is passed.
    */
   banded = false,
 }: {
@@ -67,15 +80,30 @@ export function ArticleHeader({
   const content = (
     <>
       {kicker && (
-        <p className="mb-s-3 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+        <p
+          className={cn(
+            "mb-s-3 font-mono text-[11px] uppercase tracking-[0.14em]",
+            banded ? "text-brand-ink-reversed/60" : "text-ink-faint",
+          )}
+        >
           {kicker}
         </p>
       )}
-      <h1 className="font-sans font-bold text-[2rem] leading-[1.15] tracking-[-0.01em] text-ink sm:text-[2.6rem]">
+      <h1
+        className={cn(
+          "font-sans font-bold text-[2rem] leading-[1.15] tracking-[-0.01em] sm:text-[2.6rem]",
+          banded ? "text-brand-ink-reversed" : "text-ink",
+        )}
+      >
         {title}
       </h1>
       {dek && (
-        <p className="mt-s-4 font-sans text-lg leading-[1.5] text-ink-muted sm:text-xl">
+        <p
+          className={cn(
+            "mt-s-4 font-sans text-lg leading-[1.5] sm:text-xl",
+            banded ? "text-brand-ink-reversed/70" : "text-ink-muted",
+          )}
+        >
           {dek}
         </p>
       )}
@@ -85,7 +113,7 @@ export function ArticleHeader({
 
   if (banded) {
     return (
-      <Band as="header" variant="light" className="px-6 py-s-7">
+      <Band as="header" variant="dark" className="px-6 py-s-7">
         <div className="mx-auto w-full max-w-[42rem]">{content}</div>
       </Band>
     );
