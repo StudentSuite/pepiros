@@ -11,7 +11,28 @@ const POLL_MS = 500;
 /** Stop streaming eventually rather than holding a connection open forever. */
 const MAX_DURATION_MS = 2 * 60 * 1000;
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+/**
+ * Sleep for one poll interval, or return early the moment the client
+ * disconnects, whichever happens first.
+ *
+ * The listener is always removed: an AbortSignal outlives this call, and
+ * leaking one listener per poll would mean 240 of them over a full-length
+ * stream.
+ */
+function sleepUntilPollOrAbort(signal: AbortSignal): Promise<void> {
+  if (signal.aborted) return Promise.resolve();
+  return new Promise((resolve) => {
+    const done = () => {
+      clearTimeout(timer);
+      signal.removeEventListener("abort", done);
+      resolve();
+    };
+    const timer = setTimeout(done, POLL_MS);
+    signal.addEventListener("abort", done, { once: true });
+  });
+}
+
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   if (!getJob(id)) {
@@ -28,11 +49,26 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     async start(controller) {
       let lastPayload = "";
 
+      // The client going away is the common case, not the exceptional one:
+      // the reader closes the tab, or navigates off the workspace, long
+      // before a two-minute ingest finishes. Without this the loop kept
+      // polling every 500ms for the remainder of MAX_DURATION_MS against a
+      // socket nobody was reading, holding one of the browser's six
+      // per-origin connections the whole time. Two or three abandoned
+      // ingests were enough to starve the rest of the app of sockets.
+      //
+      // `request.signal` is already aborted by the runtime on disconnect, so
+      // there is nothing to wire up beyond reading it -- which is why the
+      // parameter is no longer named `_request`.
+      const { signal } = request;
+
       const send = (event: string, data: unknown) => {
         controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
       };
 
       while (Date.now() - startedAt < MAX_DURATION_MS) {
+        if (signal.aborted) break;
+
         const job = getJob(id);
         if (!job) {
           send("error", { error: "job_disappeared" });
@@ -56,10 +92,23 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         }
 
         if (job.status === "done" || job.status === "failed") break;
-        await new Promise((resolve) => setTimeout(resolve, POLL_MS));
+
+        // Race the poll interval against the disconnect rather than sleeping
+        // through it: checking `aborted` only at the top of the loop would
+        // still leave up to POLL_MS of dead polling after the tab closes,
+        // and on a slow job that is the difference between releasing the
+        // socket now and releasing it half a second from now, every time.
+        await sleepUntilPollOrAbort(signal);
       }
 
-      controller.close();
+      // enqueue() on a stream whose consumer has gone throws, and so does
+      // close(); neither is a real failure here, it is just the disconnect
+      // arriving between the check above and the call below.
+      try {
+        controller.close();
+      } catch {
+        // Already closed by the runtime on abort. Nothing to do.
+      }
     },
   });
 
