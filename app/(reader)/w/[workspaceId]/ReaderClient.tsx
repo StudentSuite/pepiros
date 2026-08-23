@@ -290,6 +290,7 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
                 {activeChunk ? (
                   <PdfPane
                     chunk={activeChunk}
+                    paperChunks={paperChunks}
                     pdfUrl={activePdfUrl}
                     highlights={highlights}
                     activeNodeId={selectedNodeId}

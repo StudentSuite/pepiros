@@ -16,6 +16,12 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
+/** A chunk's topmost rect on its own page, for sorting same-page chunks into reading order. */
+function topOf(chunk: Chunk): number {
+  const ys = chunk.rects.filter((r) => r.page === chunk.page).map((r) => r.y0);
+  return ys.length > 0 ? Math.min(...ys) : Infinity;
+}
+
 // react-pdf renders into a <canvas>, which pdfjs-dist can only touch in a
 // real browser -- dynamic+ssr:false rather than a plain import so the
 // server render never tries to construct one.
@@ -37,12 +43,18 @@ const Page = dynamic(() => import("react-pdf").then((m) => m.Page), { ssr: false
  */
 export function PdfPane({
   chunk,
+  paperChunks = [],
   pdfUrl,
   highlights = [],
   activeNodeId = null,
   onSelectHighlight,
 }: {
   chunk: Chunk;
+  /** Every chunk on this paper, used only by the mock-page fallback (below) to
+   *  show the rest of the paper's real text around the active chunk instead
+   *  of it in isolation. Ignored once a real PDF renders -- that page
+   *  already has its own surrounding text. */
+  paperChunks?: Chunk[];
   pdfUrl: string | null;
   highlights?: Highlight[];
   activeNodeId?: string | null;
@@ -65,6 +77,7 @@ export function PdfPane({
     return (
       <MockPdfPane
         chunk={chunk}
+        paperChunks={paperChunks}
         highlights={highlights}
         activeNodeId={activeNodeId}
         onSelectHighlight={onSelectHighlight}
@@ -116,17 +129,33 @@ export function PdfPane({
  */
 function MockPdfPane({
   chunk,
+  paperChunks,
   highlights,
   activeNodeId = null,
   onSelectHighlight,
 }: {
   chunk: Chunk;
+  paperChunks: Chunk[];
   highlights: Highlight[];
   activeNodeId?: string | null;
   onSelectHighlight?: (nodeId: string) => void;
 }) {
   // Issue #323: see lib/reader/mockPageAnchor.ts's own doc comment.
   const anchoredHighlights = anchorHighlightsToMockPage(chunk, highlights);
+
+  // A single chunk is a sentence or two, and this fixture-style paper rarely
+  // has a same-page sibling to fall back on (the bundled fixture's papers
+  // average ~3 chunks total, one per page) -- so "the rest of the page" is
+  // really "the rest of the paper": every other real chunk, in page order,
+  // each labelled with its own page so it never reads as continuous prose
+  // with the active quote. Rendered strictly AFTER the active chunk's text,
+  // never before: the highlight above is positioned by
+  // anchorHighlightsToMockPage assuming the active chunk's own text starts
+  // right at the top margin, so nothing may sit above it without shifting
+  // the anchor off its highlighted quote.
+  const restOfPaper = paperChunks
+    .filter((c) => c.id !== chunk.id)
+    .sort((a, b) => a.page - b.page || topOf(a) - topOf(b));
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -143,20 +172,26 @@ function MockPdfPane({
         <div className="absolute right-3 top-2 z-10 font-mono text-[11px] text-ink/50">
           p. {chunk.page}
         </div>
-        {/* A single chunk is a sentence or two; laid straight into a full
-            US-Letter box (unavoidable -- HighlightLayer positions rects
-            against that exact geometry, see mockPageAnchor.ts) that left
-            most of the "page" a flat, empty rectangle below it, reading
-            as a stalled render rather than a deliberate excerpt. Faint
-            ruled lines fill the remainder the way an unwritten manuscript
-            page would, purely decorative and behind the real text/highlight
-            layers, so nothing here touches anchor coordinates. */}
+        {/* Faint ruled lines under everything, the way an unwritten
+            manuscript page would look -- a fallback for whatever's still
+            blank once the real text below (the active chunk, plus any other
+            real chunks from this paper) runs out. Purely decorative and
+            behind the real text/highlight layers, so nothing here touches
+            anchor coordinates. */}
         <div
           aria-hidden
           className="absolute inset-0 bg-[repeating-linear-gradient(to_bottom,transparent,transparent_23px,rgb(27_24_18_/_0.05)_23px,rgb(27_24_18_/_0.05)_24px)] [mask-image:linear-gradient(to_bottom,transparent,black_112px,black)]"
         />
-        <div className="absolute inset-0 overflow-hidden p-10 pt-8 font-serif text-[13px] leading-relaxed text-ink">
-          {chunk.text}
+        <div className="absolute inset-0 overflow-hidden p-10 pt-8 font-serif text-[13px] leading-relaxed">
+          <p className="text-ink">{chunk.text}</p>
+          {restOfPaper.map((c) => (
+            <p key={c.id} className="mt-3 text-ink/50">
+              <span className="mr-1.5 font-mono text-[10px] uppercase tracking-wide text-ink/40">
+                p.{c.page}
+              </span>
+              {c.text}
+            </p>
+          ))}
         </div>
         <HighlightLayer
           highlights={anchoredHighlights}
