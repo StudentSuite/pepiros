@@ -38,7 +38,7 @@ On top of that sits an **entailment overlap floor**: every number, unit, and com
 
 > **No claim is ever labelled "verified."** The badge reads **quote located**, because a fuzzy-matched quote proves *quotation provenance*, not *entailment*. Claim and quote render side by side so the reader adjudicates. This is a deliberate, load-bearing constraint, not hedging.
 
-[`plan.md`](plan.md) is the canonical spec: architecture, data model, locked decisions, and the list of things deliberately **not** built. This README is the entry point.
+[`docs/PLAN-V1.md`](docs/PLAN-V1.md) is the canonical spec: architecture, data model, locked decisions, and the list of things deliberately **not** built. This README is the entry point.
 
 ---
 
@@ -51,7 +51,7 @@ Early build, moving fast. Honest status:
 | Area | State |
 | --- | --- |
 | **Grounding spine** (`lib/grounding/*`) | Quote verification, entailment floor, reverse audit, citation-ref resolution. Deterministic, no model calls. |
-| **Data model** (`lib/db/schema.ts`) | All 18 tables from `plan.md` §5, in Drizzle, with real migrations applied and CI running against a real ephemeral Postgres on every push. |
+| **Data model** (`lib/db/schema.ts`) | All 18 tables from `docs/PLAN-V1.md` §5, in Drizzle, with real migrations applied and CI running against a real ephemeral Postgres on every push. |
 | **UI** (`components/*`, `app/(app)/*`) | React Flow canvas (5 node types, ghost citation nodes, kind-coloured edges), doc-reader, outline, audit, learn, and share views -- all four reader subpages share one nav/spacing shell and a consistent guest banner. Renders the bundled fixture or any real ingested workspace alike. |
 | **Citation APIs** (`lib/services/related.ts`, `lib/services/citationExpand.ts`) | Real Semantic Scholar + OpenAlex calls (free, no key) for the related-papers rail and canvas citation expansion. Typed `ok`/`no_match`/`rate_limited`/`error` status, never fabricated fallback data. |
 | **LLM layer** (`lib/agents/*`) | Archetype classifier, archetype-conditioned pillar planner, and 19 of the 22 node generators, fanned out via `p-queue` with per-node failure isolation. Runs on **Groq (primary) + Featherless (fallback)**, not Anthropic: see [Configuration](#configuration). Every claimed quote is re-verified through the grounding spine before it becomes a real evidence row. Verified end to end against both live APIs, not just mocked. |
@@ -72,7 +72,7 @@ Each of these is a one-line `TODO` at the top of its file, describing what belon
 
 | Area | Missing |
 | --- | --- |
-| **OCR fallback + seed script** | `scripts/ocr_fallback.py` (PaddleOCR-VL, for scanned/table-heavy pages) and `scripts/seed.ts` (bulk-loading a corpus into Postgres once one exists) are still stubs -- a scanned/image-only PDF now fails the job with a clear message instead of silently ingesting nothing, but there's no OCR pass yet to actually recover text from one. `scripts/parse.py` (PyMuPDF) and `lib/services/ingest.ts` are otherwise real -- `pip install pymupdf` is the one setup step, since it's a local script per plan.md §2, never a deployed service. |
+| **OCR fallback + seed script** | `scripts/ocr_fallback.py` (PaddleOCR-VL, for scanned/table-heavy pages) and `scripts/seed.ts` (bulk-loading a corpus into Postgres once one exists) are still stubs -- a scanned/image-only PDF now fails the job with a clear message instead of silently ingesting nothing, but there's no OCR pass yet to actually recover text from one. `scripts/parse.py` (PyMuPDF) and `lib/services/ingest.ts` are otherwise real -- `pip install pymupdf` is the one setup step, since it's a local script per docs/PLAN-V1.md §2, never a deployed service. |
 | **Remaining generators** | 19 of the ~22 real types in `docs/PLAN-V1.md` §8 are implemented (`lib/agents/generators/`), including `equations` -- `scripts/parse.py` detects display-equation regions and converts them to LaTeX via Pix2Text (free, open-source, runs entirely locally), bbox-anchored like any other chunk -- and `figures`, which needed the same Pix2Text pass to also crop each detected figure region and pair it with its nearby caption (a real `figure_caption`-kind chunk), plus a third model tier: `visionModel()` in `lib/ai/client.ts` (OpenRouter, a free `:free`-suffixed model, since Groq has no vision model at all and Featherless's returned `capacity_exhausted` on every attempt checked live). Left: `concept_links` (needs cross-paper context a single-paper `GeneratorContext` doesn't carry, plus a way to write real `relates` edges from a generator's output -- already solved a different way by `lib/services/synthesis.ts`'s `relates` classification, so this isn't a real gap so much as a pointer to where the equivalent already lives). `quiz`/`flashcards` are solved a different way -- `lib/services/quiz.ts` and `components/learn/FlashcardDeck.tsx` derive them from already-verified leaf nodes rather than being their own generator. |
 | **Synthesis, remaining node types** | Dataset Overlap and Open Questions (`docs/PLAN-V1.md` §10) need signals nothing in the pipeline extracts yet (dataset identifiers, a genuine gap-in-the-literature judgment) -- not a metadata gap like the two that shipped, new extraction work. |
 | **Session refresh** | A signed-in session simply expires at its 7-day lifetime with no silent renewal. Revocation exists (see Auth, above); refresh doesn't yet. |
@@ -129,7 +129,7 @@ scripts/parse.py  local PyMuPDF run: sections, chunks, figures, equations, refs,
 scripts/ocr_fallback.py   local PaddleOCR-VL, for scanned or table-heavy pages
 ```
 
-Three things that look like omissions and are not. There are **no embeddings and no vector column**: a paper is 8-20k tokens, so the whole thing goes in context behind a prompt cache, addressed by stable citation ids (`search_paper` scores keyword coverage rather than cosine distance). There is **no deployed Python service**: PyMuPDF and PaddleOCR run as local scripts, so there is no second deploy target. There is **no force-directed layout**: positions come from `lib/layout/*` as a pure function of the graph's shape, so the same graph always lands identically. See [`plan.md`](plan.md) §2 and §11 before proposing any of them.
+Three things that look like omissions and are not. There are **no embeddings and no vector column**: a paper is 8-20k tokens, so the whole thing goes in context behind a prompt cache, addressed by stable citation ids (`search_paper` scores keyword coverage rather than cosine distance). There is **no deployed Python service**: PyMuPDF and PaddleOCR run as local scripts, so there is no second deploy target. There is **no force-directed layout**: positions come from `lib/layout/*` as a pure function of the graph's shape, so the same graph always lands identically. See [`docs/PLAN-V1.md`](docs/PLAN-V1.md) §2 and §20 before proposing any of them.
 
 Working in this repo with an AI coding agent? Read [`CLAUDE.md`](CLAUDE.md) first.
 
@@ -232,8 +232,7 @@ Two conventions worth knowing before adding a component: pillar hues have two ac
 
 | File | What |
 | --- | --- |
-| [`plan.md`](plan.md) | Canonical spec: product, architecture, locked decisions, cut list |
-| [`docs/PLAN-V1.md`](docs/PLAN-V1.md) | Long-form reference behind `plan.md`, cited by the `TODO` comments |
+| [`docs/PLAN-V1.md`](docs/PLAN-V1.md) | Canonical spec: product, architecture, locked decisions, cut list, cited by the `TODO` comments throughout the codebase |
 | [`CLAUDE.md`](CLAUDE.md) | Conventions and invariants for AI coding agents |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Setup, PR gates, code conventions |
 | [`CHANGELOG.md`](CHANGELOG.md) | Keep a Changelog format |

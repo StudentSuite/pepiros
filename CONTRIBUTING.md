@@ -1,6 +1,6 @@
 # Contributing to Pepiros
 
-Thanks for looking at this. Pepiros is an early-stage hackathon build (see [`plan.md`](plan.md) for the full spec and schedule). Expect things to move fast and change shape.
+Thanks for looking at this. Pepiros is an early-stage hackathon build (see [`docs/PLAN-V1.md`](docs/PLAN-V1.md) for the full spec and schedule). Expect things to move fast and change shape.
 
 ## Getting set up
 
@@ -24,7 +24,7 @@ npm test
 npm run build
 ```
 
-All five should pass, and CI runs exactly these. `npm test` is Vitest over `lib/**/*.test.ts` (322 cases: the grounding spine, layout, graph visibility, citation parsing, the service layer, and the LLM/chat agents against a mock model); it is not the same thing as `evals/`, which is reserved for golden-paper generator eval cases per plan.md §9 and is still a stub. Anything touching `lib/grounding/*` should arrive with a test, since that code is the product.
+All five should pass, and CI runs exactly these. `npm test` is Vitest over `lib/**/*.test.ts` (322 cases: the grounding spine, layout, graph visibility, citation parsing, the service layer, and the LLM/chat agents against a mock model); it is not the same thing as `evals/`, which is reserved for golden-paper generator eval cases and is still a stub. Anything touching `lib/grounding/*` should arrive with a test, since that code is the product.
 
 Two habits this repo has earned the hard way:
 
@@ -33,9 +33,9 @@ Two habits this repo has earned the hard way:
 
 ## Code conventions
 
-- Read [`plan.md`](plan.md) §2 ("locked decisions, do not reopen these") and §11 (cut list) before proposing pgvector/embeddings, elkjs/auto-layout, a deployed Python service, a light theme, or spaced-repetition scheduling. These were deliberately killed, not overlooked.
+- Read [`docs/PLAN-V1.md`](docs/PLAN-V1.md) §2 ("locked decisions") and §20 (cut list) before proposing pgvector/embeddings, elkjs/auto-layout, a deployed Python service, a light theme, or spaced-repetition scheduling. These were deliberately killed, not overlooked.
 - The grounding spine (`lib/grounding/*`) is deterministic on purpose: fuzzy quote matching + a numeric entailment floor, no LLM judge. Don't replace a threshold check with a model call to make something "smarter."
-- Never write UI copy, API responses, or comments that call a grounded claim "verified." The only tier labels are quote located / paraphrase / unsupported (plan.md §4).
+- Never write UI copy, API responses, or comments that call a grounded claim "verified." The only tier labels are quote located / paraphrase / unsupported (docs/PLAN-V1.md §4).
 - Use the existing design tokens (`app/globals.css`, `tailwind.config.ts`): no new colors, no light theme.
 - TypeScript strict mode is on; keep it passing rather than reaching for `any` or `@ts-ignore`.
 - Match the existing comment style: none by default, one line only when it explains a non-obvious constraint or invariant (see any file under `lib/grounding/` for the tone).

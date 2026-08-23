@@ -1,6 +1,6 @@
 # Pepiros
 
-**Read [`plan.md`](plan.md) first.** It is the canonical product/architecture spec: one-liner, locked decisions, data model, the grounding spine, MCP layer, schedule, and the cut list of things deliberately not to build. This file is only harness-facing conventions; don't duplicate plan.md's content here.
+**Read [`docs/PLAN-V1.md`](docs/PLAN-V1.md) first.** It is the canonical product/architecture spec: one-liner, locked decisions, data model, the grounding spine, MCP layer, schedule, and the cut list of things deliberately not to build. This file is only harness-facing conventions; don't duplicate its content here.
 
 ## Commands
 
@@ -18,7 +18,7 @@ npm run seed                # scripts/seed.ts -- still a stub
 npm run mcp:stdio           # mcp/stdio.ts -- a real server, see below, not a stub
 ```
 
-`npm test` is Vitest over `lib/**/*.test.ts` (318 cases): the grounding spine, layout, graph visibility, citation parsing, the service layer, and the LLM/chat agents, the last two mocked at the model level, so no API key is needed. It is a different thing from `evals/`, which is reserved for golden-paper generator evals per plan.md §9 and is still a stub. `npm run typecheck` plus `npm test` is the correctness bar. Run both after every change to `lib/`.
+`npm test` is Vitest over `lib/**/*.test.ts` (318 cases): the grounding spine, layout, graph visibility, citation parsing, the service layer, and the LLM/chat agents, the last two mocked at the model level, so no API key is needed. It is a different thing from `evals/`, which is reserved for golden-paper generator evals and is still a stub. `npm run typecheck` plus `npm test` is the correctness bar. Run both after every change to `lib/`.
 
 Vitest only collects `lib/**`, so **pure logic worth testing belongs in `lib/`, not `components/`** -- that's why the canvas's collapse/visibility rules live in `lib/graph/visibility.ts` rather than inside `GraphCanvas.tsx`.
 
@@ -43,19 +43,19 @@ Tests mock the model at the `LanguageModelV2` level (`lib/testing/mockLanguageMo
 
 It lives under `lib/services/` rather than `lib/store/` because server routes must not import the client zustand module to reach it. `lib/store/workspace.ts` re-exports it for client consumers and owns `useWorkspaceStore`; server code imports `lib/services/workspace.ts` directly.
 
-`fixtures/workspace.json` and `types/anchor.ts` are a frozen contract (plan.md §8): `lib/*` and `components/*` both code against this shape, not against each other. If you change either, both `lib/*` and `components/*` consumers need to stay in sync, so check `grep -rl "types/anchor"` and `grep -rl "workspace.json"` before editing either file.
+`fixtures/workspace.json` and `types/anchor.ts` are a frozen contract (docs/PLAN-V1.md §18): `lib/*` and `components/*` both code against this shape, not against each other. If you change either, both `lib/*` and `components/*` consumers need to stay in sync, so check `grep -rl "types/anchor"` and `grep -rl "workspace.json"` before editing either file.
 
 ## Conventions
 
 - **The grounding spine is the product.** `lib/grounding/verify.ts`'s tier thresholds (`token_set_ratio >= 0.92` → `quote_located`, `>= 0.75` → `paraphrase`, else `unsupported` + anchor dropped) and the entailment-overlap floor in `lib/grounding/entail.ts` are deterministic by design: no LLM judge, ever. Don't "simplify" this into a model call.
-- **"Verified" is a banned word.** Anywhere evidence/quote state is surfaced (UI copy, API responses, code comments), the only tier labels are "quote located" / "paraphrase" / "unsupported". A fuzzy-matched quote proves quotation provenance, not entailment (plan.md §4).
+- **"Verified" is a banned word.** Anywhere evidence/quote state is surfaced (UI copy, API responses, code comments), the only tier labels are "quote located" / "paraphrase" / "unsupported". A fuzzy-matched quote proves quotation provenance, not entailment (docs/PLAN-V1.md §4).
 - **Never trust a client-asserted `quote_located`.** Any endpoint that accepts a claimed evidence tier (MCP `verify_claim`/`create_node`, `/api/verify`) must re-run `lib/services/verify.ts` server-side against the corpus, not just record what the caller said.
 - **Service-layer boundary**: `app/api/*` and `mcp/tools/*` call only `lib/services/*`, never `lib/grounding/*` or `lib/db/*` directly. Both surfaces are live now, so this is what keeps them re-verifying through one path instead of two that drift.
 - **Layout is a pure function, computed once at the data seam.** `lib/layout/computeLayout()` is called inside `fetchWorkspace()`, so API, MCP, and the client store all get identical positions: laying out in a component would leave the other callers on stale coordinates. Never measure the DOM to lay out (it isn't server-computable) and never add a force/physics layout (same graph must always land identically). Footprints are the hardcoded table in `lib/layout/footprints.ts`; if a node card's width class changes, change it there too or spacing silently goes wrong.
-- **Upload limits live in one place.** `MAX_UPLOAD_BYTES` / `MAX_PAGES` in `lib/services/upload.ts`, imported by both the route and the UI. Don't re-hardcode 50MB or 120 anywhere. A rejection must name the actual problem ("scanned PDF, no text layer"), per plan.md §6; a generic failure here is a bug, not a style choice.
+- **Upload limits live in one place.** `MAX_UPLOAD_BYTES` / `MAX_PAGES` in `lib/services/upload.ts`, imported by both the route and the UI. Don't re-hardcode 50MB or 120 anywhere. A rejection must name the actual problem ("scanned PDF, no text layer"), per docs/PLAN-V1.md §6; a generic failure here is a bug, not a style choice.
 - **Design tokens only.** `app/globals.css` / `tailwind.config.ts` define the full "lab notebook at night" palette (`surface`/`paper`/`ink`/`border`/`pillar-1..6`/`located`/`paraphrase`/`unsupported`) and font families (`font-serif` for reading prose, `font-sans` for UI chrome, `font-mono` for citation ids). Don't introduce new colors or a light theme.
 - **Pillar color is structural, not decorative.** A node, its edges, and any chip referencing the same pillar all pull from `pillarColor()` in `components/ui/PillarChip.tsx`.
-- **Cut list (plan.md §11), do not rebuild these**: pgvector/embeddings/BM25, elkjs/auto-layout (nodes carry deterministic `x`/`y` already), a deployed Python service (PyMuPDF/PaddleOCR run as local scripts only), `role="application"` on the canvas (breaks screen readers), minimap, light theme, SM-2 spaced repetition / adaptive quiz difficulty.
+- **Cut list (docs/PLAN-V1.md §20), do not rebuild these**: pgvector/embeddings/BM25, elkjs/auto-layout (nodes carry deterministic `x`/`y` already), a deployed Python service (PyMuPDF/PaddleOCR run as local scripts only), `role="application"` on the canvas (breaks screen readers), minimap, light theme, SM-2 spaced repetition / adaptive quiz difficulty.
 - **Multi-span anchors are required, not optional.** `Evidence.anchor.spans` is always an array; aggregate claims can have 2+ rects. Never assume `spans.length === 1`.
 - **Any settings write path must check `isDemoAccount()` (`lib/data/demo.ts`), not just the UI.** `ProfileForm`/`DangerZone`/logout-everywhere/delete-account already gate this way; `McpTokens`/`NotificationPrefs` shipped without it (issue #214) and the shared demo account could mint a real MCP token or make a notification-pref write actually persist, contradicting `DemoNotice`'s own promise that "changes are not saved." The client-side `readOnly` prop disabling controls is not enough on its own -- the server action/route is the one that actually has to refuse.
 - TypeScript strict mode is on (`tsconfig.json`). Any component using hooks/state/React Flow/zustand needs `"use client"`.
