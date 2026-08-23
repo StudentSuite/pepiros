@@ -1,3 +1,5 @@
+import { QUOTE_LOCATED_THRESHOLD } from "@/lib/grounding/verify";
+
 /**
  * Block 4 (plan §6.1): Cohere's "Safe. Flexible. Independent." slot. Copy is
  * the plan's own drafted triad, "Located. Traceable. Yours." -- Cohere's
@@ -12,29 +14,56 @@
  *
  * REVISED AGAIN 2026-08-23 (do-all-of-the-silly-gem plan §7): decorative
  * icons removed site-wide, text-only.
+ *
+ * REVISED AGAIN 2026-08-23: Traceable and Yours gain a real mono stat line
+ * (not decoration) -- the section otherwise had three short paragraphs and
+ * nothing else to give it weight. Located stays text-only rather than
+ * force a stat where no real single number exists for it. `mcpToolsLive`
+ * comes in as a prop from page.tsx's real LIVE_TOOLS.length
+ * (lib/mcp/registry.ts); Traceable's threshold imports
+ * QUOTE_LOCATED_THRESHOLD directly (lib/grounding/verify.ts) rather than
+ * hardcoding 0.92, so it can't drift from the real cutoff.
  */
 const CARDS = [
   {
     title: "Located.",
     body: "Every claim is generated from the paper, then matched back against its own source sentence -- not summarised on trust.",
+    stat: null as string | null,
+    statLabel: null as string | null,
   },
   {
     title: "Traceable.",
     body: "A deterministic string match scores each claim, the same way every time. No second model grades the first one's work.",
+    stat: `≥ ${QUOTE_LOCATED_THRESHOLD}`,
+    statLabel: "score to badge quote located",
   },
   {
     title: "Yours.",
     body: "Connect over MCP and an agent can check its own claims before it answers, using the same verifier this page describes.",
+    stat: null as string | null,
+    statLabel: null as string | null,
   },
 ] as const;
 
-export function CapabilityCards() {
+export function CapabilityCards({ mcpToolsLive }: { mcpToolsLive: number }) {
+  const cards = CARDS.map((c) =>
+    c.title === "Yours."
+      ? { ...c, stat: `${mcpToolsLive} tools`, statLabel: "live over MCP right now" }
+      : c,
+  );
+
   return (
     <div className="divide-y divide-border sm:grid sm:grid-cols-3 sm:divide-y-0 sm:divide-x">
-      {CARDS.map((card) => (
+      {cards.map((card) => (
         <div key={card.title} className="py-s-4 first:pt-0 sm:px-s-5 sm:py-0 sm:first:pl-0 sm:last:pr-0">
           <h3 className="font-sans font-semibold text-base text-ink">{card.title}</h3>
           <p className="mt-1 font-sans text-[13px] leading-relaxed text-ink-muted">{card.body}</p>
+          {card.stat && (
+            <div className="mt-s-4 border-t border-border pt-s-3">
+              <span className="font-mono text-lg text-ink">{card.stat}</span>
+              <span className="mt-0.5 block font-sans text-xs text-ink-faint">{card.statLabel}</span>
+            </div>
+          )}
         </div>
       ))}
     </div>

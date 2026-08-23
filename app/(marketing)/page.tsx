@@ -72,7 +72,19 @@ function Section({
 }) {
   return (
     <section
-      className={`relative flex min-h-[72vh] flex-col justify-center border-t border-border py-s-8 ${className ?? ""}`}
+      // Was min-h-[72vh]. Even after adding real content to every block this
+      // wraps (stat lines, a summary count, a real install command, all 4
+      // changelog entries instead of 3), a full-page screenshot still showed
+      // each section as a small content block over a few hundred px of dead
+      // space -- these blocks just don't have enough real, non-fabricated
+      // content to justify 72vh, and padding further would mean inventing
+      // filler, which is exactly what this product's own honesty stance
+      // argues against. 48vh is close to what the enriched content actually
+      // fills at 1440px; MechanismDemo and the evidence-guarantee section
+      // (both custom markup, not this helper) keep their fuller heights,
+      // they earn it with a real interactive demo and the page's actual
+      // argument.
+      className={`relative flex min-h-[48vh] flex-col justify-center border-t border-border py-s-8 ${className ?? ""}`}
     >
       <ReadingColumn wide>
         {kicker && <p className="kicker">{kicker}</p>}
@@ -113,7 +125,7 @@ export default function MarketingPage() {
           this is above the fold on most screens and should just be there. */}
       <Section title="Located. Traceable. Yours.">
         <DispersionGlow tone="amber" className="-left-12 top-0" />
-        <CapabilityCards />
+        <CapabilityCards mcpToolsLive={LIVE_TOOLS.length} />
       </Section>
 
       {/* Block 5: reader showcase. Plain section now, not a shader band --
@@ -173,6 +185,16 @@ export default function MarketingPage() {
               sentences before asserting them. When one comes back
               unsupported, it says so in the same breath.
             </p>
+
+            {/* Real, working command -- same one /mcp's own install section
+                gives, not a shortened or paraphrased version. */}
+            <pre className="mt-s-5 overflow-x-auto rounded-md border border-border bg-surface-sunken/60 px-s-4 py-s-3">
+              <code className="font-mono text-[13px] text-ink">npx -y pepiros-mcp</code>
+            </pre>
+            <p className="mt-s-2 font-sans text-xs text-ink-faint">
+              Published on npm. Points Claude, Codex, or Cursor at Pepiros directly, no clone required.
+            </p>
+
             <Link
               href="/mcp"
               className="mt-s-4 inline-block font-sans text-sm text-accent-text underline underline-offset-2"
