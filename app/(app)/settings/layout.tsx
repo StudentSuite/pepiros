@@ -25,7 +25,7 @@ export default async function SettingsLayout({
   return (
     <div className="mx-auto w-full max-w-4xl p-s-5">
       <header>
-        <h1 className="font-serif text-2xl leading-tight text-ink">Settings</h1>
+        <h1 className="font-sans font-bold text-2xl leading-tight text-ink">Settings</h1>
         <p className="mt-s-2 font-sans text-sm text-ink-muted">
           Your profile, how agents connect, and what Pepiros tells you about.
         </p>

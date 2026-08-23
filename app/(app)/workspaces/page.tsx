@@ -62,7 +62,7 @@ export default async function WorkspacesPage() {
                 padded
                 className="flex h-full flex-col gap-s-2 transition duration-fast ease-out hover:border-accent"
               >
-                <h2 className="font-serif text-lg text-ink">{workspace.name}</h2>
+                <h2 className="font-sans font-semibold text-lg text-ink">{workspace.name}</h2>
                 <p className="font-mono text-xs text-ink-faint">
                   {workspace.paperCount} {workspace.paperCount === 1 ? "paper" : "papers"}
                 </p>

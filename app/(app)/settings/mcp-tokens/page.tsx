@@ -20,7 +20,7 @@ export default async function McpTokensPage() {
       {demo && <DemoNotice />}
 
       <header className="pb-s-5">
-        <h2 className="font-serif text-lg text-ink">MCP tokens</h2>
+        <h2 className="font-sans font-semibold text-lg text-ink">MCP tokens</h2>
         <p className="mt-1 max-w-prose font-sans text-[13px] leading-relaxed text-ink-faint">
           Connect Claude, Codex, or Cursor so an agent can check its own claims
           against a source, mid-conversation.

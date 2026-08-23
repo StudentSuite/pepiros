@@ -21,7 +21,7 @@ export default async function ProfileSettingsPage() {
           added here rather than removed there, since a heading also helps
           screen-reader heading navigation. */}
       <header className="pb-s-5">
-        <h2 className="font-serif text-lg text-ink">Profile</h2>
+        <h2 className="font-sans font-semibold text-lg text-ink">Profile</h2>
         <p className="mt-1 max-w-prose font-sans text-[13px] leading-relaxed text-ink-faint">
           Your display name and bio, shown on your public profile.
         </p>

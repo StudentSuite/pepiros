@@ -197,11 +197,11 @@ export function OnboardingTable({
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Panel padded>
           <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">Responses</p>
-          <p className="mt-1 font-serif text-2xl text-ink">{total}</p>
+          <p className="mt-1 font-mono text-2xl tabular-nums text-ink">{total}</p>
         </Panel>
         <Panel padded>
           <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">Completed</p>
-          <p className="mt-1 font-serif text-2xl text-ink">
+          <p className="mt-1 font-mono text-2xl tabular-nums text-ink">
             {completedCount}
             <span className="ml-1 font-sans text-sm text-ink-faint">
               {Math.round((completedCount / total) * 100)}%
@@ -212,13 +212,13 @@ export function OnboardingTable({
           <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
             Told us a story
           </p>
-          <p className="mt-1 font-serif text-2xl text-ink">{storyCount}</p>
+          <p className="mt-1 font-mono text-2xl tabular-nums text-ink">{storyCount}</p>
         </Panel>
         <Panel padded>
           <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
             Contact opt-in
           </p>
-          <p className="mt-1 font-serif text-2xl text-ink">
+          <p className="mt-1 font-mono text-2xl tabular-nums text-ink">
             {optInCount}
             <span className="ml-1 font-sans text-sm text-ink-faint">
               {Math.round((optInCount / total) * 100)}%
@@ -239,7 +239,7 @@ export function OnboardingTable({
 
       <section>
         <div className="mb-s-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-serif text-xl text-ink">Responses</h2>
+          <h2 className="font-sans font-semibold text-xl text-ink">Responses</h2>
           <div className="flex items-center gap-2">
             <label className="font-sans text-xs text-ink-faint">
               Sort{" "}

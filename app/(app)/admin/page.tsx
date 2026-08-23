@@ -40,7 +40,7 @@ function Stat({
   return (
     <Panel padded>
       <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">{label}</p>
-      <p className="mt-1 font-serif text-2xl text-ink">{value}</p>
+      <p className="mt-1 font-mono text-2xl tabular-nums text-ink">{value}</p>
       {hint && <p className="mt-0.5 font-sans text-xs text-ink-faint">{hint}</p>}
     </Panel>
   );
@@ -92,7 +92,7 @@ export default async function AdminPage() {
       />
 
       <section className="mb-s-6">
-        <h2 className="mb-s-3 font-serif text-xl text-ink">Onboarding</h2>
+        <h2 className="mb-s-3 font-sans font-semibold text-xl text-ink">Onboarding</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="Responses" value={responses.length} />
           <Stat
@@ -113,7 +113,7 @@ export default async function AdminPage() {
       </section>
 
       <section className="mb-s-6">
-        <h2 className="mb-s-3 font-serif text-xl text-ink">Library</h2>
+        <h2 className="mb-s-3 font-sans font-semibold text-xl text-ink">Library</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="Catalog papers" value={catalog.length} />
           <Stat
@@ -131,7 +131,7 @@ export default async function AdminPage() {
       </section>
 
       <section className="mb-s-6">
-        <h2 className="mb-s-3 font-serif text-xl text-ink">Corpus</h2>
+        <h2 className="mb-s-3 font-sans font-semibold text-xl text-ink">Corpus</h2>
         {corpus === null ? (
           <Panel padded>
             <p className="font-sans text-sm text-ink-faint">
@@ -167,7 +167,7 @@ export default async function AdminPage() {
 
       {corpus !== null && (
         <section>
-          <h2 className="mb-s-3 font-serif text-xl text-ink">Ingest jobs</h2>
+          <h2 className="mb-s-3 font-sans font-semibold text-xl text-ink">Ingest jobs</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat label="Jobs run" value={corpus.jobs} />
             <Stat

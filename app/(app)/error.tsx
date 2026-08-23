@@ -29,7 +29,7 @@ export default function AppError({
       <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">
         Something broke
       </p>
-      <h1 className="mt-s-3 font-serif text-2xl leading-tight text-ink">
+      <h1 className="mt-s-3 font-sans font-bold text-2xl leading-tight text-ink">
         That page did not load.
       </h1>
       <p className="mt-s-3 font-sans text-sm leading-relaxed text-ink-muted">
