@@ -134,7 +134,13 @@ function MockPdfPane({
         className="surface-reading paper-grain relative w-full max-w-xl overflow-hidden rounded shadow-lg"
         style={{ aspectRatio: `${PAGE_WIDTH} / ${PAGE_HEIGHT}` }}
       >
-        <div className="absolute right-3 top-2 font-mono text-[11px] text-ink/50">
+        {/* Issue #324: this sat before the text block below in DOM order
+            with no z-index, so the (currently transparent) text div painted
+            over it by default stacking -- confirmed 100% overlap by the
+            automated detector. Harmless while that div stays background-
+            less, but that was accidental, not a stacking decision; z-10
+            makes "this label always shows" an actual guarantee. */}
+        <div className="absolute right-3 top-2 z-10 font-mono text-[11px] text-ink/50">
           p. {chunk.page}
         </div>
         <div className="absolute inset-0 overflow-hidden p-10 pt-8 font-serif text-[13px] leading-relaxed text-ink">

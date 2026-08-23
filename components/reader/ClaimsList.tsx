@@ -99,7 +99,11 @@ export function ClaimsList({
               <p className="mt-1 line-clamp-2 font-serif text-[13px] leading-snug text-ink-muted">
                 {stripRefMarkers(node.bodyMd)}
               </p>
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[10px]">
+              {/* Issue #324: 10px is below the accessible text-size floor
+                  for page-number/match-score labels; 11px is the floor
+                  used everywhere else in this same meta-row pattern
+                  (e.g. GroundedArticle.tsx's figcaption). */}
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px]">
                 {weakestTier ? (
                   <>
                     <EvidenceBadge tier={weakestTier} />

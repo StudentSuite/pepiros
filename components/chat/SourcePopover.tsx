@@ -41,7 +41,8 @@ export function SourcePopover({
           source to clear the paraphrase floor.
         </p>
       )}
-      <p className="mt-2 font-mono text-[10px] text-ink-faint">
+      {/* Issue #324: 10px was below the accessible text-size floor. */}
+      <p className="mt-2 font-mono text-[11px] text-ink-faint">
         match {Math.round(citation.matchScore * 100)}%
       </p>
     </Popover>

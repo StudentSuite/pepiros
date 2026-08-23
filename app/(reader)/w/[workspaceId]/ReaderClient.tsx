@@ -220,7 +220,14 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
               size="xs"
               className="hidden shrink-0 text-ink-faint sm:inline"
             />
-            <span className="truncate font-medium text-ink">
+            {/* Issue #324: a flex item's min-width defaults to `auto` (its
+                content's intrinsic width), not 0 -- the parent nav's own
+                min-w-0 doesn't cascade down to this child, so a long title's
+                full un-truncated width still forced this span past its
+                allotted space (confirmed live, 147-163px overflow) even
+                though `truncate` was already set. min-w-0 here is what
+                actually lets truncate's overflow/ellipsis take effect. */}
+            <span className="min-w-0 truncate font-medium text-ink">
               {activePaper?.title ?? "..."}
             </span>
           </nav>
