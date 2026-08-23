@@ -42,22 +42,35 @@ interface AuditResponse {
  *
  * It is not decoration: the page is a document and the rail is a verdict on
  * it, and holding them in one palette is what made the old table read as more
- * of the same prose. These are the `chrome` inks Logo already uses, so the
- * rail matches the brand's own dark ground rather than inventing a third one.
+ * of the same prose.
+ *
+ * This used to be a parallel palette of ten hardcoded hex values, six of
+ * which existed nowhere in app/globals.css -- the worst token bypass in the
+ * repo. The `surface-chrome` class on the <section> below now pins the DARK
+ * ink ramp locally (the exact mirror of `.surface-reading`, which pins the
+ * light one), so these are ordinary theme utilities that happen to resolve
+ * dark whichever theme is active. Nothing here is a colour any more, only a
+ * role.
  */
 const RAIL = {
-  bg: "bg-[#17150f]",
-  text: "text-[#f3efe7]",
-  muted: "text-[#f3efe7]/55",
-  faint: "text-[#f3efe7]/40",
-  edge: "border-[#f3efe7]/12",
+  bg: "bg-surface",
+  text: "text-ink",
+  muted: "text-ink-muted",
+  faint: "text-ink-faint",
+  edge: "border-border",
 } as const;
 
-/** Tier -> rail accent. Located and paraphrase both read as "supported" here. */
+/**
+ * Tier -> rail accent. Located and paraphrase both read as "supported" here.
+ *
+ * Bars are pillar FILLS and labels are pillar TEXT variants, per the pillar
+ * rule: green for a located quote, amber for a paraphrase, rose for an
+ * unsupported claim, matching the evidence tokens the rest of the app uses.
+ */
 const TIER_RAIL: Record<EvidenceTier, { bar: string; label: string; text: string }> = {
-  quote_located: { bar: "bg-[#8ca77c]", label: "Supported", text: "text-[#a8c096]" },
-  paraphrase: { bar: "bg-[#c2a878]", label: "Paraphrase", text: "text-[#d9c092]" },
-  unsupported: { bar: "bg-[#c0685c]", label: "Unsupported", text: "text-[#d98a7e]" },
+  quote_located: { bar: "bg-pillar-5", label: "Supported", text: "text-pillar-text-5" },
+  paraphrase: { bar: "bg-pillar-2", label: "Paraphrase", text: "text-pillar-text-2" },
+  unsupported: { bar: "bg-pillar-4", label: "Unsupported", text: "text-pillar-text-4" },
 };
 
 /** Tier -> the underline drawn under the sentence itself, on the paper side. */
@@ -234,7 +247,7 @@ export function SummaryAudit({ workspace }: { workspace: Workspace }) {
         <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
           Reverse audit
         </p>
-        <h2 className="mt-2 font-serif text-3xl text-ink">AI summary under audit</h2>
+        <h2 className="mt-2 font-sans font-semibold text-3xl text-ink">AI summary under audit</h2>
 
         {!result ? (
           <div className="mt-s-5 max-w-2xl">
@@ -324,8 +337,9 @@ export function SummaryAudit({ workspace }: { workspace: Workspace }) {
       {/* Rail: one verdict per sentence, numbered to match.                */}
       {/* ---------------------------------------------------------------- */}
       <section
-
-        className={clsx("flex flex-col", RAIL.bg, RAIL.text)}
+        // `surface-chrome` is what makes RAIL.* resolve dark in the light
+        // theme; see the comment on RAIL above.
+        className={clsx("surface-chrome flex flex-col", RAIL.bg, RAIL.text)}
         aria-label="Audit results"
       >
         <p
@@ -417,7 +431,7 @@ export function SummaryAudit({ workspace }: { workspace: Workspace }) {
                   "font-sans text-xs transition-colors duration-fast ease-out",
                   RAIL.edge,
                   RAIL.text,
-                  "hover:bg-[#f3efe7]/10",
+                  "hover:bg-ink/10",
                 )}
               >
                 <Icon icon={Download} size="xs" />
