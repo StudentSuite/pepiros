@@ -7,10 +7,9 @@ import { MailCheck } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { FormField } from "@/components/ui/FormField";
 import { Button } from "@/components/ui/Button";
-import { Logo } from "@/components/ui/Logo";
 import { Icon } from "@/components/ui/Icon";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { Card } from "@/components/shadcn/card";
+import { AuthShell } from "@/components/auth/AuthShell";
 
 /**
  * `/reset-password` -- same card pattern as `/login` and `/signup` (issue
@@ -85,10 +84,7 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col justify-center p-s-5">
-      <Card className="border-border bg-card p-s-6">
-        <Logo size="md" />
-
+    <AuthShell>
         {submitted ? (
           <div className="mt-s-5 flex flex-col items-start gap-s-3" role="status">
             <span className="flex h-10 w-10 items-center justify-center rounded-full border border-located/40 bg-located/10 text-located">
@@ -142,8 +138,7 @@ function ResetPasswordForm() {
             </p>
           </>
         )}
-      </Card>
-    </div>
+    </AuthShell>
   );
 }
 

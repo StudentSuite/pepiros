@@ -7,10 +7,9 @@ import { CheckCircle2 } from "lucide-react";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { FormField } from "@/components/ui/FormField";
 import { Button } from "@/components/ui/Button";
-import { Logo } from "@/components/ui/Logo";
 import { Icon } from "@/components/ui/Icon";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
-import { Card } from "@/components/shadcn/card";
+import { AuthShell } from "@/components/auth/AuthShell";
 
 /**
  * Where app/auth/reset-callback/route.ts sends the browser after a real
@@ -102,10 +101,7 @@ export default function ResetPasswordConfirmPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col justify-center p-s-5">
-      <Card className="border-border bg-card p-s-6">
-        <Logo size="md" />
-
+    <AuthShell>
         {done ? (
           <div className="mt-s-5 flex flex-col items-start gap-s-3" role="status">
             <span className="flex h-10 w-10 items-center justify-center rounded-full border border-located/40 bg-located/10 text-located">
@@ -167,7 +163,6 @@ export default function ResetPasswordConfirmPage() {
             </p>
           </>
         )}
-      </Card>
-    </div>
+    </AuthShell>
   );
 }

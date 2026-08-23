@@ -3,13 +3,12 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { FormField } from "@/components/ui/FormField";
-import { Card } from "@/components/shadcn/card";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { AuthShell } from "@/components/auth/AuthShell";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -109,10 +108,7 @@ function SignupForm() {
   }
 
   return (
-    <main className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col justify-center p-s-5">
-      <Card className="border-border bg-card p-s-6">
-        <Logo size="md" />
-
+    <AuthShell>
         <h1 className="mt-s-5 font-sans font-bold text-2xl text-ink">Create an account</h1>
         <p className="mt-s-1 font-sans text-sm text-ink-muted">
           Read with every claim traced back to the sentence it came from.
@@ -203,8 +199,7 @@ function SignupForm() {
             Sign in
           </Link>
         </p>
-      </Card>
-    </main>
+    </AuthShell>
   );
 }
 
