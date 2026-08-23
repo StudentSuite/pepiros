@@ -215,3 +215,28 @@ export const RANGE_DAYS: Record<RangeKey, number> = {
   "90d": 90,
   all: 365,
 };
+
+/**
+ * One site-search hit, in whichever of the three lanes it came from.
+ *
+ * Flattened deliberately: the search UI renders a single ranked list grouped
+ * by kind, so a shape per lane would only be destructured back into this.
+ * `href` is resolved by the adapter rather than by the component, because
+ * only the adapter knows whether a discussion has a paper to hang off.
+ */
+export interface SearchHit {
+  kind: "paper" | "person" | "discussion";
+  href: string;
+  /** The bold line. A paper title, a display name, a paper title again. */
+  title: string;
+  /** The muted line beneath it. Authors, a handle, the comment body. */
+  subtitle: string;
+  /** Mono badge on the right. Field, handle, or "on C7". */
+  meta?: string;
+}
+
+export interface SearchResults {
+  papers: SearchHit[];
+  people: SearchHit[];
+  discussions: SearchHit[];
+}

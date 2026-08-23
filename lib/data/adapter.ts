@@ -21,6 +21,8 @@ import type {
   Profile,
   RangeKey,
   ReachSummary,
+  SearchHit,
+  SearchResults,
 } from "./types";
 
 const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
@@ -237,6 +239,21 @@ export interface DataAdapter {
 
   listCatalog(): Promise<CatalogPaper[]>;
   getCatalogPaper(slug: string): Promise<CatalogPaper | null>;
+
+  /**
+   * Site search across the three things this app actually holds: papers,
+   * people, and the discussion on a paper.
+   *
+   * Returns the three lanes SEPARATELY rather than one merged, ranked list.
+   * Cross-lane relevance scoring would need a shared notion of "how good is
+   * this match", and a title hit on a paper and a substring hit in a comment
+   * body are not comparable quantities -- inventing a ranking between them
+   * would be arbitrary dressed up as clever. Grouping by kind is honest and
+   * is what the UI renders anyway.
+   *
+   * `limit` is per lane, not total.
+   */
+  search(query: string, limit?: number): Promise<SearchResults>;
 }
 
 // ---------------------------------------------------------------------------
@@ -265,6 +282,59 @@ const seedNotificationPrefs = new Map<string, NotificationPrefs>();
  * trade-off as deletedPostIds above.
  */
 const seedReadCommentIds = new Set<string>();
+
+// ---------------------------------------------------------------------------
+// Search
+// ---------------------------------------------------------------------------
+
+/**
+ * Normalise a query for matching: casefold, collapse runs of whitespace, trim.
+ *
+ * Substring matching, deliberately, not full-text. Postgres FTS would be the
+ * better engine and is the obvious upgrade, but it would only exist on the
+ * Supabase backend, and the seed adapter (the one that runs with no Supabase
+ * project at all, which is how the demo ships) would then need a second,
+ * differently-behaving implementation. One predictable rule across both
+ * backends beats a clever rule on one of them.
+ */
+export function normaliseQuery(q: string): string {
+  return q.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+/** The shortest query worth running. One character matches most of the corpus. */
+export const MIN_QUERY_LENGTH = 2;
+
+/** Papers come from the static catalog, so this is shared by both backends. */
+export function searchCatalog(q: string, limit: number): SearchHit[] {
+  const hits: SearchHit[] = [];
+  for (const p of CATALOG) {
+    const haystack = `${p.title} ${p.authors.join(" ")} ${p.venue} ${p.field}`.toLowerCase();
+    if (!haystack.includes(q)) continue;
+    hits.push({
+      kind: "paper",
+      href: `/paper/${p.slug}`,
+      title: p.title,
+      subtitle: `${p.authors.join(", ")} (${p.year})`,
+      meta: p.field,
+    });
+    if (hits.length >= limit) break;
+  }
+  return hits;
+}
+
+/** A comment, shaped for the results list. */
+export function commentHit(c: Comment, paperSlug: string | null, paperTitle: string): SearchHit {
+  return {
+    kind: "discussion",
+    // A comment with no resolvable paper still deserves a destination, so it
+    // falls back to the commenter rather than rendering an unclickable row.
+    href: paperSlug ? `/paper/${paperSlug}#comments` : `/u/${c.authorUsername}`,
+    title: paperTitle,
+    // Comment bodies run long; the list gives each row one line.
+    subtitle: c.body.length > 140 ? `${c.body.slice(0, 139)}…` : c.body,
+    meta: c.claimRef ? `on ${c.claimRef}` : `@${c.authorUsername}`,
+  };
+}
 
 const seedAdapter: DataAdapter = {
   kind: "seed",
@@ -418,6 +488,38 @@ const seedAdapter: DataAdapter = {
 
   async getReach(authorId, range) {
     return seedReach(await this.listPosts(authorId), range);
+  },
+
+  async search(query, limit = 5) {
+    const q = normaliseQuery(query);
+    if (q.length < MIN_QUERY_LENGTH) return { papers: [], people: [], discussions: [] };
+
+    // The seed backend has exactly one account by construction (see
+    // getProfileByUsername above), so "people" is a match against that one
+    // rather than a query. Returning it when it matches is more honest than
+    // returning an empty lane that implies nobody is here.
+    const people: SearchHit[] = [GUEST_PROFILE]
+      .filter((p) => `${p.displayName} ${p.username} ${p.bio}`.toLowerCase().includes(q))
+      .map((p) => ({
+        kind: "person" as const,
+        href: `/u/${p.username}`,
+        title: p.displayName,
+        subtitle: p.bio || "No bio yet.",
+        meta: `@${p.username}`,
+      }));
+
+    const posts = await this.listPosts(GUEST_ID);
+    const byId = new Map(posts.map((post) => [post.id, post]));
+    const discussions = seedComments(posts)
+      .filter((c) => c.body.toLowerCase().includes(q))
+      .slice(0, limit)
+      .map((c) => {
+        const post = byId.get(c.postId);
+        const paper = post ? CATALOG.find((cp) => cp.id === post.paperId) : undefined;
+        return commentHit(c, paper?.slug ?? null, post?.title ?? "Discussion");
+      });
+
+    return { papers: searchCatalog(q, limit), people, discussions };
   },
 
   // Issue #279: workspaceId is runtime state (has the cron indexed this one

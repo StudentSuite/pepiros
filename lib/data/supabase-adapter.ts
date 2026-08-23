@@ -1,5 +1,6 @@
 import { CATALOG, CATALOG_BY_SLUG } from "./papers";
 import type { DataAdapter } from "./adapter";
+import { MIN_QUERY_LENGTH, commentHit, normaliseQuery, searchCatalog } from "./adapter";
 import type {
   Comment,
   NotificationPrefs,
@@ -7,15 +8,36 @@ import type {
   Profile,
   RangeKey,
   ReachSummary,
+  SearchHit,
   ResearchField,
   VerifyMethod,
 } from "./types";
 import { RANGE_DAYS } from "./types";
 import {
+  createSupabaseAnonClient,
   createSupabaseServerClient,
   createSupabaseServiceClient,
 } from "@/lib/supabase/server";
 import { initialsFor, usernameFor } from "@/lib/auth/google";
+
+/**
+ * Narrow a PostgREST embedded relation to a single row.
+ *
+ * Without a generated database schema, supabase-js types every embed as an
+ * ARRAY, even a to-one join declared with `!inner` which returns a bare object
+ * at runtime. Rather than cast the shape away at each call site, this handles
+ * both and returns null when there is nothing, so the caller reads the same
+ * either way and a genuinely empty embed cannot become a crash.
+ *
+ * (The older queries in this file dodge the problem by selecting `*, ...`,
+ * which widens the whole row to any and takes the embeds with it. That works
+ * by giving up type-checking on the entire row, which is not a trade worth
+ * repeating.)
+ */
+function one<T>(embed: T | T[] | null | undefined): T | null {
+  if (!embed) return null;
+  return Array.isArray(embed) ? (embed[0] ?? null) : embed;
+}
 
 /** Matches components/settings/NotificationPrefs.tsx's previous hardcoded client-only defaults (issue #70). */
 const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
@@ -564,7 +586,14 @@ export const supabaseAdapter: DataAdapter = {
   },
 
   async getProfileByUsername(username) {
-    const sb = await createSupabaseServerClient();
+    // Cookie-less anon client, deliberately. This is a public profile read
+    // called from Server Components (/u/[username]'s generateMetadata and
+    // every tab's resolveProfile), and the cookie-bound client makes PostgREST
+    // attach a bearer token, refresh it, and then fail to persist the rotated
+    // pair because Next forbids cookie writes mid-render. The dropped rotation
+    // silently revokes the user's Supabase session. RLS still applies here, so
+    // nothing is loosened by dropping the cookie. See createSupabaseAnonClient.
+    const sb = createSupabaseAnonClient();
     const { data } = await sb
       .from("profiles")
       .select("*")
@@ -876,6 +905,77 @@ export const supabaseAdapter: DataAdapter = {
 
   // The public catalogue is static content, not database rows, so it is served
   // identically by both adapters.
+  async search(query, limit = 5) {
+    const q = normaliseQuery(query);
+    if (q.length < MIN_QUERY_LENGTH) return { papers: [], people: [], discussions: [] };
+
+    // PostgREST's `or` filter takes a comma-separated list, so a query
+    // containing a comma would split into two bogus conditions and silently
+    // widen the search. Same for the wildcard characters ilike treats as
+    // syntax: a user typing "100%" should search for "100%", not "starts with
+    // 100". Escaped rather than stripped, so the query the user typed is the
+    // query that runs.
+    const safe = q.replace(/[,%_\()]/g, (ch) => "\\" + ch);
+    const pattern = `%${safe}%`;
+
+    const sb = createSupabaseAnonClient();
+
+    // Two independent queries rather than one join: they hit different tables
+    // with different filters, and PostgREST cannot express the union anyway.
+    // Run together because neither depends on the other.
+    const [peopleRes, commentRes] = await Promise.all([
+      sb
+        .from("profiles")
+        .select("username, display_name, bio, avatar_initials")
+        .or(`username.ilike.${pattern},display_name.ilike.${pattern}`)
+        .limit(limit),
+      sb
+        .from("comments")
+        // `!inner` on both, matching listComments above. It types the embed
+        // as an object rather than an array, and it is also correct
+        // semantically: a comment with no post or no author is not a result,
+        // it is corrupt data.
+        .select(
+          "id, post_id, body, claim_ref, created_at, profiles!inner(username), posts!inner(paper_id, title)",
+        )
+        .ilike("body", pattern)
+        .order("created_at", { ascending: false })
+        .limit(limit),
+    ]);
+
+    const people: SearchHit[] = (peopleRes.data ?? []).map((row) => ({
+      kind: "person",
+      href: `/u/${row.username}`,
+      title: row.display_name ?? row.username,
+      subtitle: row.bio || "No bio yet.",
+      meta: `@${row.username}`,
+    }));
+
+    const discussions: SearchHit[] = (commentRes.data ?? []).map((row) => {
+      // posts.paper_id points at the catalog, which is a checked-in module
+      // rather than a table, so the slug is resolved here rather than joined.
+      const post = one(row.posts);
+      const paper = CATALOG.find((p) => p.id === post?.paper_id);
+      return commentHit(
+        {
+          id: row.id,
+          postId: row.post_id,
+          authorName: "",
+          authorUsername: one(row.profiles)?.username ?? "unknown",
+          authorInitials: "",
+          body: row.body,
+          createdAt: row.created_at?.slice(0, 10) ?? "",
+          claimRef: row.claim_ref,
+          read: true,
+        },
+        paper?.slug ?? null,
+        post?.title ?? paper?.title ?? "Discussion",
+      );
+    });
+
+    return { papers: searchCatalog(q, limit), people, discussions };
+  },
+
   async listCatalog() {
     return CATALOG;
   },
