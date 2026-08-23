@@ -8,6 +8,7 @@ import { Button } from "@/components/shadcn/button";
 import { Card } from "@/components/shadcn/card";
 import { Input } from "@/components/shadcn/input";
 import { Progress } from "@/components/shadcn/progress";
+import { Band } from "@/components/chrome/Band";
 import {
   Command,
   CommandEmpty,
@@ -220,18 +221,15 @@ export function OnboardingWizard({
   // survey before someone can look at the product is a good way to lose them.
   const canAdvance = true;
 
-  return (
-    <div className="mx-auto flex min-h-[80vh] w-full max-w-xl flex-col justify-center p-s-5">
-      <Logo size="md" />
-
-      <div className="mt-s-5 flex items-center gap-s-3">
-        <Progress value={(step / STEP_COUNT) * 100} className="h-1.5" />
-        <span className="shrink-0 font-mono text-[11px] text-ink-faint">
-          {step} / {STEP_COUNT}
-        </span>
-      </div>
-
-      <Card className="mt-s-4 border-border bg-card p-s-6">
+  // Issue #305: everything the wizard has shown across all ten steps is
+  // chrome-free by design -- kept that way deliberately, this is the one
+  // surface in the app correct to leave mostly alone. The one exception the
+  // plan asks for: the final step gets a full shader Band as a one-time
+  // reward rather than a running theme through the wizard, so this content
+  // is pulled out once and rendered inside whichever wrapper matches the
+  // current step instead of duplicating all ten step blocks per wrapper.
+  const stepBody = (
+    <>
         {step === 1 && (
           <Step title="Where are you based?" hint="Used only to understand who Pepiros reaches.">
             <CountryCombobox value={draft.country} onChange={(v) => set("country", v)} />
@@ -477,7 +475,36 @@ export function OnboardingWizard({
             {step < STEP_COUNT && <ArrowRight className="size-3.5" />}
           </Button>
         </div>
-      </Card>
+    </>
+  );
+
+  return (
+    <div className="mx-auto flex min-h-[80vh] w-full max-w-xl flex-col justify-center p-s-5">
+      <Logo size="md" />
+
+      <div className="mt-s-5 flex items-center gap-s-3">
+        <Progress value={(step / STEP_COUNT) * 100} className="h-1.5" />
+        <span className="shrink-0 font-mono text-[11px] text-ink-faint">
+          {step} / {STEP_COUNT}
+        </span>
+      </div>
+
+      {step === STEP_COUNT ? (
+        // A generous shader margin around a fully opaque inner panel, not
+        // `.glass`: shadcn's <Input> is bg-transparent, so it would inherit
+        // whatever sits behind it, and `.glass`'s own background is
+        // theme-aware (light and translucent in light mode) while this
+        // Band's variant="dark" sets reversed (light) text unconditionally
+        // -- combining the two risks exactly the contrast bug design/
+        // anti-slop.md warns about. bg-surface + an explicit text-ink reset
+        // keeps every field here exactly as legible as every other step,
+        // regardless of theme or where the shader's motion currently is.
+        <Band as="div" variant="dark" className="mt-s-4 rounded-lg p-s-6">
+          <div className="rounded-md bg-surface p-s-6 text-ink">{stepBody}</div>
+        </Band>
+      ) : (
+        <Card className="mt-s-4 border-border bg-card p-s-6">{stepBody}</Card>
+      )}
 
       <button
         type="button"

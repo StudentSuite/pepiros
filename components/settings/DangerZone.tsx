@@ -121,7 +121,12 @@ function Row({
   onClick: () => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-s-3 rounded-md border border-border p-s-4">
+    // Issue #305: deep dispersion-red, keyed off --unsupported (the rose
+    // pillar token grounding tiers already use for "dropped anchor",
+    // app/globals.css) rather than an arbitrary red -- same
+    // tinted-border/wash pattern reset-password's success banner uses with
+    // --located, just the risk-toned end of the same convention.
+    <div className="flex flex-wrap items-center justify-between gap-s-3 rounded-lg border border-unsupported/40 bg-unsupported/5 p-s-4">
       <div className="min-w-0">
         <p className="font-sans text-sm text-ink">{title}</p>
         <p className="mt-0.5 font-sans text-xs text-ink-faint">{description}</p>
