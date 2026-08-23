@@ -22,7 +22,19 @@ const SKIP_EXTENSIONS = new Set([
   ".png", ".jpg", ".jpeg", ".gif", ".ico", ".woff", ".woff2", ".ttf", ".otf",
   ".pdf", ".zip", ".svg",
 ]);
-const SKIP_FILES = new Set(["package-lock.json"]);
+const SKIP_FILES = new Set([
+  "package-lock.json",
+  // dc-runtime's own compiled bundle (design/capsules/*.dc.html are the
+  // token-lab/brand-kit capsules; support.js is their shared runtime). Its
+  // own header says "GENERATED ... do not edit" -- it is vendored, not this
+  // project's prose, same reasoning as the Next.js generated block below.
+  "design/capsules/support.js",
+  // Sync notes written by the external design tool that produced
+  // design/brand/, not hand-authored by this project. Every other file this
+  // project actually wrote under design/ (README.txt, anti-slop.md, the
+  // .dc.html capsules themselves) is already clean and stays checked.
+  "design/github.md",
+]);
 
 /**
  * node_modules/next/dist/server/lib/generate-agent-files.js re-writes this
