@@ -543,6 +543,20 @@ export async function queueUrlIngest(workspaceId: string, url: string): Promise<
     pdfUrl = resolution.pdfUrl;
   }
 
+  // Fire-and-forget, but NOT unsupervised.
+  //
+  // `void (async () => {...})()` with no rejection handler is an unhandled
+  // rejection waiting to happen, and Node's default for one is to kill the
+  // process. The try/catch below covers the ingest itself, but not everything:
+  // a throw from failJob() inside the catch, or from releaseIngest() inside
+  // the finally, escapes with nothing left to catch it. Neither is likely,
+  // which is exactly why it would have been diagnosed as a mystery restart
+  // rather than as this.
+  //
+  // The trailing .catch() is the backstop for that narrow window. It cannot
+  // repair the job (failJob is the thing that just failed), so it logs and
+  // lets the SSE stream's own MAX_DURATION_MS time the client out honestly
+  // instead of taking the server down.
   void (async () => {
     try {
       const res = await fetch(pdfUrl!);
@@ -568,7 +582,9 @@ export async function queueUrlIngest(workspaceId: string, url: string): Promise<
     } finally {
       releaseIngest(workspaceId, identity);
     }
-  })();
+  })().catch((err) => {
+    console.error(`[ingest] background ingest for job ${job.id} threw past its own handler:`, err);
+  });
 
   return { jobId: job.id, source: resolved };
 }
