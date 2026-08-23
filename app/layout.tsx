@@ -1,24 +1,35 @@
 import type { Metadata } from "next";
-import { Source_Serif_4, Inter, JetBrains_Mono } from "next/font/google";
+import { Source_Serif_4, Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "@/components/ui/Toaster";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { ShaderCanvas } from "@/components/chrome/ShaderCanvas";
 import "./globals.css";
 
+// Type system, per design/brand/README.txt:
+//   Geist          UI, headlines, wordmark, navigation, buttons
+//   Geist Mono     citation IDs, technical metadata, scores, the .kicker eyebrow
+//   Source Serif 4 long-form article/paper body copy ONLY -- never the
+//                  wordmark, never a heading
+//
+// The CSS variable names are deliberately unchanged (--font-grotesque,
+// --font-mono): every call site addresses the ROLE, not the face, so swapping
+// Inter -> Geist and JetBrains Mono -> Geist Mono is a two-line change here
+// rather than a repo-wide find-and-replace.
 const sourceSerif = Source_Serif_4({
   subsets: ["latin"],
   variable: "--font-serif",
   display: "swap",
 });
 
-const inter = Inter({
+const geist = Geist({
   subsets: ["latin"],
   variable: "--font-grotesque",
   display: "swap",
 });
 
-const jetbrainsMono = JetBrains_Mono({
+const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
   display: "swap",
@@ -63,7 +74,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${sourceSerif.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${sourceSerif.variable} ${geist.variable} ${geistMono.variable}`}
     >
       <body>
         {/* Issue #120 (WCAG 2.4.1 Bypass Blocks): the first focusable element
@@ -77,6 +88,11 @@ export default function RootLayout({
         >
           Skip to content
         </a>
+        {/* Mounted exactly once, outside <ThemeProvider>'s render tree
+            concerns: one WebGL context for the whole app (components/chrome/
+            ShaderCanvas.tsx), never per-route. See that file and Band.tsx
+            for the fallback contract. */}
+        <ShaderCanvas />
         <ThemeProvider>
           <OfflineBanner />
           {children}
