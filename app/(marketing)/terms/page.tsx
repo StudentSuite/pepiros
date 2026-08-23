@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPage, Section } from "@/components/site/LegalPage";
+import { MAX_PAGES, MAX_UPLOAD_BYTES } from "@/lib/services/upload";
 
 export const metadata: Metadata = {
   title: "Terms",
@@ -34,6 +35,10 @@ export default function TermsPage() {
           You keep whatever rights you already had. By uploading, you confirm you
           are allowed to do so and that you will not publish anything into the
           public library whose licence does not permit it.
+        </p>
+        <p>
+          PDF only, up to {MAX_UPLOAD_BYTES / (1024 * 1024)}MB and {MAX_PAGES}{" "}
+          pages; anything else is rejected before it reaches storage.
         </p>
       </Section>
 

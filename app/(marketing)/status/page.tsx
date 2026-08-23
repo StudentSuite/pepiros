@@ -90,6 +90,14 @@ const DOT: Record<State, string> = {
   planned: "bg-pillar-1",
 };
 
+/** Same technique CapabilityCards.tsx uses on the homepage: a real number
+ *  computed from the data already on this page, not a second source that
+ *  could drift from the table below it. */
+const COUNTS = (["live", "partial", "planned"] as const).map((state) => ({
+  state,
+  count: ROWS.filter((r) => r.state === state).length,
+}));
+
 export default function StatusPage() {
   return (
     <LegalPage
@@ -98,6 +106,15 @@ export default function StatusPage() {
       intro="A feature-by-feature breakdown of what's live, in progress, or planned, kept here so nobody has to find out by clicking."
       updated="17 August 2026"
     >
+      <div className="mb-s-5 flex flex-wrap gap-s-5 font-mono text-[13px] text-ink-faint">
+        {COUNTS.filter((c) => c.count > 0).map((c) => (
+          <span key={c.state} className="flex items-center gap-s-2">
+            <span className={`size-1.5 rounded-full ${DOT[c.state]}`} />
+            <span className="text-ink">{c.count}</span> {LABEL[c.state].toLowerCase()}
+          </span>
+        ))}
+      </div>
+
       <div className="overflow-hidden rounded-md border border-border">
         <table className="w-full text-left">
           <thead>

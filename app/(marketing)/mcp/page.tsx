@@ -8,6 +8,7 @@ import {
 } from "@/components/reading/Article";
 import { AgentMock } from "@/components/mockups/ReaderMock";
 import { LIVE_TOOLS, PLANNED_TOOLS, type ToolGroup } from "@/lib/mcp/registry";
+import { PARAPHRASE_THRESHOLD, QUOTE_LOCATED_THRESHOLD } from "@/lib/grounding/verify";
 
 export const metadata: Metadata = {
   title: "MCP Server",
@@ -52,6 +53,22 @@ export default function McpPage() {
             you to catch it later.
           </p>
         </ArticleBody>
+
+        {/* Issue #315: the real cutoffs verify_claim actually runs, not a
+            description of them -- imported directly from
+            lib/grounding/verify.ts so this can't drift from the real
+            thresholds, same pattern CapabilityCards.tsx uses on the
+            homepage. */}
+        <div className="mt-s-5 flex flex-wrap gap-s-5 font-mono text-[13px] text-ink-faint">
+          <span>
+            <span className="text-ink">&ge; {QUOTE_LOCATED_THRESHOLD}</span> match score reads quote
+            located
+          </span>
+          <span>
+            <span className="text-ink">&ge; {PARAPHRASE_THRESHOLD}</span> reads paraphrase
+          </span>
+          <span>below that, the anchor is dropped</span>
+        </div>
 
         <div className="mt-s-6">
           <AgentMock />

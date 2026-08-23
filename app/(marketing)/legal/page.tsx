@@ -6,6 +6,7 @@ import {
   ArticleRule,
   ReadingColumn,
 } from "@/components/reading/Article";
+import { CATALOG, isOpenAccess } from "@/lib/data/papers";
 
 export const metadata: Metadata = {
   title: "Legal",
@@ -35,6 +36,11 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.`;
+
+// Issue #315: computed from the real catalog rather than hardcoded, so this
+// can't drift from lib/data/papers.ts the way a written-down number would.
+const OPEN_ACCESS_COUNT = CATALOG.filter((p) => isOpenAccess(p.licence)).length;
+const ARXIV_COUNT = CATALOG.filter((p) => p.licence === "arxiv-perpetual").length;
 
 export default function LegalPage() {
   return (
@@ -68,9 +74,15 @@ export default function LegalPage() {
           <section id="data" className="scroll-mt-topbar">
             <h2>Where the papers come from</h2>
             <p>
-              The public library lists open-access work: arXiv, PMC, and
-              CC-licensed journals. Only bibliographic metadata is stored, never
-              article text, and every entry links out to the publisher.
+              {OPEN_ACCESS_COUNT} of the catalog&rsquo;s {CATALOG.length} papers
+              are open access today ({ARXIV_COUNT} from arXiv under its own
+              distribution licence, the rest CC BY or PMC open-access) and are
+              the ones actually indexed and readable. The remainder are
+              catalogued for reference and still browsable, but never fetched
+              or served as open access -- paywalled or unverified licensing
+              means the same thing here it would anywhere else. Only
+              bibliographic metadata is stored, never article text, and every
+              entry links out to the publisher.
             </p>
             <p>
               Anything you upload yourself stays private to your own workspace.

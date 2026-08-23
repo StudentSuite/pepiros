@@ -63,6 +63,11 @@ export default function PrivacyPage() {
           The guest demo account stores nothing. Everything it shows is generated,
           and nothing you do inside it is written anywhere.
         </p>
+        <p>
+          A signed-in session lasts 7 days and does not silently renew. Signing
+          out, or signing out everywhere in settings, revokes it immediately
+          rather than leaving it valid until it expires on its own.
+        </p>
       </Section>
 
       <Section title="Third parties">

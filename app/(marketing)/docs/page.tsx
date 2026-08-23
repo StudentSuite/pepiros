@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPage, Section } from "@/components/site/LegalPage";
+import { LIVE_TOOLS } from "@/lib/mcp/registry";
+import { PARAPHRASE_THRESHOLD, QUOTE_LOCATED_THRESHOLD } from "@/lib/grounding/verify";
+import { MAX_PAGES, MAX_UPLOAD_BYTES } from "@/lib/services/upload";
 
 export const metadata: Metadata = {
   title: "Docs",
@@ -68,18 +71,19 @@ npm run mcp:stdio`}</Code>
         </p>
         <ul className="ml-s-4 list-disc space-y-s-2">
           <li>
-            <strong className="text-ink">quote located</strong>: the quote scored
-            0.92 or above against a real chunk of the source. Page and quote are
-            both shown.
+            <strong className="text-ink">quote located</strong>: the quote scored{" "}
+            {QUOTE_LOCATED_THRESHOLD} or above against a real chunk of the source.
+            Page and quote are both shown.
           </li>
           <li>
-            <strong className="text-ink">paraphrase</strong>: scored between 0.75
-            and 0.92. Close, but not a verbatim match.
+            <strong className="text-ink">paraphrase</strong>: scored between{" "}
+            {PARAPHRASE_THRESHOLD} and {QUOTE_LOCATED_THRESHOLD}. Close, but not a
+            verbatim match.
           </li>
           <li>
-            <strong className="text-ink">unsupported</strong>: below 0.75. The
-            anchor is dropped and the citation marker is stripped on
-            re-verification.
+            <strong className="text-ink">unsupported</strong>: below{" "}
+            {PARAPHRASE_THRESHOLD}. The anchor is dropped and the citation marker
+            is stripped on re-verification.
           </li>
         </ul>
         <p>
@@ -108,15 +112,21 @@ npm run mcp:stdio`}</Code>
 
       <Section title="Tools">
         <p>
-          Eight tools are registered: <code className="font-mono text-xs">list_papers</code>,{" "}
-          <code className="font-mono text-xs">search_paper</code>,{" "}
-          <code className="font-mono text-xs">verify_claim</code>,{" "}
-          <code className="font-mono text-xs">get_outline</code>,{" "}
-          <code className="font-mono text-xs">get_node</code>,{" "}
-          <code className="font-mono text-xs">create_node</code>,{" "}
-          <code className="font-mono text-xs">find_contradictions</code>, and{" "}
-          <code className="font-mono text-xs">paper_facts</code>. Full argument
-          tables are on the{" "}
+          {/* Issue #315: hand-maintained lists of tool names have drifted
+              from the real registry before (the changelog's own 2026-08-17
+              entry: "The MCP tool count corrected everywhere it was wrong:
+              all 12 tools in the registry are live, not 8" -- this section
+              was the one place that fix never reached). Rendered straight
+              from lib/mcp/registry.ts, same as /mcp's own page, so it can't
+              happen again. */}
+          {LIVE_TOOLS.length} tools are registered:{" "}
+          {LIVE_TOOLS.map((t, i) => (
+            <span key={t.name}>
+              <code className="font-mono text-xs">{t.name}</code>
+              {i < LIVE_TOOLS.length - 1 ? ", " : ""}
+            </span>
+          ))}
+          . Full argument tables are on the{" "}
           <Link href="/mcp" className="text-accent-text underline underline-offset-2">
             MCP page
           </Link>
@@ -127,6 +137,21 @@ npm run mcp:stdio`}</Code>
           server-side and never trusts a client-asserted tier. An agent cannot
           write a claim into the graph badged &ldquo;quote located&rdquo; by simply
           saying it is.
+        </p>
+      </Section>
+
+      <Section title="Limits">
+        <p>
+          A PDF is capped at {MAX_UPLOAD_BYTES / (1024 * 1024)}MB and{" "}
+          {MAX_PAGES} pages. The size limit is checked the moment{" "}
+          <Link href="/upload" className="text-accent-text underline underline-offset-2">
+            the upload form
+          </Link>{" "}
+          sees the file; the page count can only be known after parsing, so
+          that check runs server-side. Both apply the same way whether a
+          paper arrives through the form or through{" "}
+          <code className="font-mono text-xs">add_paper</code>, with the
+          actual reason named rather than a generic failure.
         </p>
       </Section>
     </LegalPage>

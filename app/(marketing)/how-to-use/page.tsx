@@ -5,6 +5,7 @@ import { EvidenceBadge } from "@/components/ui/EvidenceBadge";
 import { RefChip } from "@/components/ui/RefChip";
 import { WalkthroughStep } from "@/components/site/WalkthroughStep";
 import { ReaderMock, GraphMock, AgentMock } from "@/components/mockups/ReaderMock";
+import { MAX_PAGES, MAX_UPLOAD_BYTES } from "@/lib/services/upload";
 
 export const metadata: Metadata = {
   title: "How to use Pepiros",
@@ -167,8 +168,9 @@ export default function HowToUsePage() {
         <p>
           <strong className="text-ink">Add a paper</strong> takes a PDF or an
           arXiv / PMC / DOI link. It checks the file properly: that it really is
-          a PDF, that it&rsquo;s within the size and page limits, that it has a
-          text layer rather than being a scan, and that the workspace
+          a PDF, that it&rsquo;s within the limits (up to{" "}
+          {MAX_UPLOAD_BYTES / (1024 * 1024)}MB and {MAX_PAGES} pages), that it
+          has a text layer rather than being a scan, and that the workspace
           doesn&rsquo;t already have it.
         </p>
         <p>

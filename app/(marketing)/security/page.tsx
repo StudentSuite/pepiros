@@ -38,13 +38,33 @@ export default function SecurityPage() {
           that can be made to point at the wrong sentence has failed at the only
           thing it claims to do.
         </p>
+        <p>
+          Also in scope: anything that gets past upload validation itself --
+          a spoofed file type, an oversized payload, or a page count that
+          slips through uncounted before it reaches the parser.
+        </p>
       </Section>
 
       <Section title="Current posture, stated honestly">
         <p>
-          Sessions are signed HTTP-only cookies. Protected routes are enforced in
-          middleware, not only hidden from search engines. MCP tokens are
-          scoped and revocable.
+          Sessions are signed HTTP-only cookies with a 7-day lifetime and no
+          silent renewal, and are server-side revocable: signing out, or
+          signing out everywhere, actually kills the session rather than
+          just clearing a cookie the server would still honor. Protected
+          routes are enforced in middleware, not only hidden from search
+          engines.
+        </p>
+        <p>
+          An MCP token carries its own scope (read-only, or read and write),
+          can be pinned to a single workspace rather than every workspace an
+          account owns, and can be revoked independently of the account
+          session that minted it.
+        </p>
+        <p>
+          The verifier and its thresholds -- the thing this page&rsquo;s own
+          &ldquo;what is in scope&rdquo; section leads with -- are covered by
+          five dedicated test files (anchor location, fuzzy matching, numeric
+          entailment, reverse audit, tier assignment), not just code review.
         </p>
         <p>
           There is no bug bounty, no formal SLA, and no third-party audit. This

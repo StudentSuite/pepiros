@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { LegalPage } from "@/components/site/LegalPage";
+import { MAX_PAGES, MAX_UPLOAD_BYTES } from "@/lib/services/upload";
 
 export const metadata: Metadata = {
   title: "FAQ",
@@ -79,6 +80,17 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
     ),
   },
   {
+    q: "What can I upload?",
+    a: (
+      <>
+        A PDF, up to {MAX_UPLOAD_BYTES / (1024 * 1024)}MB and {MAX_PAGES}{" "}
+        pages. A file outside either limit, or one with no extractable text
+        (a scanned image with no OCR pass yet), is rejected with the actual
+        reason named rather than a generic upload failure.
+      </>
+    ),
+  },
+  {
     q: "Can I try it without signing up?",
     a: (
       <>
@@ -92,12 +104,13 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
     q: "How finished is this?",
     a: (
       <>
-        Partly. The verification spine is real and tested; several surfaces around
-        it still run on a fixed demo workspace. The{" "}
+        Partly, by design rather than by accident: 7 areas are fully live, 5
+        are partly built and say so on their own page rather than pretending
+        otherwise. The{" "}
         <Link href="/status" className="text-accent-text underline underline-offset-2">
           status page
         </Link>{" "}
-        lists exactly what works.
+        lists exactly which is which.
       </>
     ),
   },
