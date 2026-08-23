@@ -25,8 +25,14 @@ const GROUPS: { horizon: string; items: { title: string; note: string }[] }[] = 
     horizon: "After that",
     items: [
       {
-        title: "Per-account workspace ownership",
-        note: "A workspace has no owner column today, so \"my workspaces\" is server-wide, not scoped to who's signed in. The web app also has no \"create a workspace\" route of its own yet -- only MCP's create_workspace tool does that.",
+        // Issue #319: this item used to say workspace ownership itself
+        // wasn't built ("no owner column today"). It shipped 2026-08-21
+        // (lib/db/schema.ts's real owner_id column, enforced in
+        // lib/services/workspaceAccess.ts) and the status page has said so
+        // since -- this roadmap entry just never caught up. What's
+        // actually still missing is narrower: a web UI to create one.
+        title: "A web UI to create a workspace",
+        note: "Workspace ownership itself is real now -- \"my workspaces\" is scoped to who's signed in, and one account can't write to another's. There's still no \"create a workspace\" route in the web app, though; MCP's create_workspace tool is the only way to mint one today.",
       },
       {
         title: "Session refresh",
@@ -37,10 +43,12 @@ const GROUPS: { horizon: string; items: { title: string; note: string }[] }[] = 
   {
     horizon: "Later, or maybe never",
     items: [
-      {
-        title: "Remote MCP over HTTP with OAuth",
-        note: "For hosted connectors. stdio covers the current use case.",
-      },
+      // Issue #319: "Remote MCP over HTTP with OAuth" used to sit here.
+      // It shipped (app/api/mcp/route.ts's streamable-HTTP transport,
+      // real OAuth 2.1 dynamic client registration/PKCE at
+      // app/api/mcp/oauth/*), and both /docs and /mcp already say so --
+      // this was the one page that hadn't caught up. Removed rather than
+      // reworded: a roadmap lists what isn't done yet, and this is.
       {
         title: "Spaced repetition",
         note: "Flashcards exist but are synthesised at render. Real scheduling was cut deliberately.",

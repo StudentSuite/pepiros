@@ -50,10 +50,19 @@ export async function saveOnboardingAction(response: OnboardingResponse) {
  * node-editor Save bug was, before that one got its own real fix. The
  * profile id comes from the session, never the client, same reasoning as
  * every other action here.
+ *
+ * Issue #319: ProfileForm already disables its inputs client-side for the
+ * demo account (its own `readOnly` prop), but this, the real write path,
+ * had no server-side check at all -- the exact
+ * client-readOnly-prop-isn't-enough gap CLAUDE.md documents for
+ * McpTokens/NotificationPrefs (issue #214), just not yet closed here.
  */
 export async function updateProfileAction(input: { displayName: string; bio: string }) {
   const profile = await getSession();
   if (!profile) throw new Error("Not signed in.");
+  if (isDemoAccount(profile)) {
+    throw new Error("The shared demo account can't edit its profile -- everyone who tries Pepiros shares it.");
+  }
 
   const updated = await getAdapter().updateProfile(profile.id, input);
   revalidatePath("/settings/profile");

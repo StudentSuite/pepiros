@@ -10,6 +10,17 @@ import { Icon } from "@/components/ui/Icon";
  * the actual consequence is the only version a reader can act on before it
  * costs them something. It links rather than blocks: the whole point of
  * guest mode is that the app is usable without an account.
+ *
+ * Issue #319: "papers you add... disappear when you close this tab" used to
+ * cover both papers and questions. Real ingest is durably backed by
+ * Postgres now (lib/services/ingestStore.ts, issue #47) -- an uploaded
+ * paper survives the tab closing, it just has nowhere of its own to live
+ * yet (app/(platform)/upload/UploadForm.tsx has no per-account workspace to
+ * write into, so every upload -- guest or signed-in -- lands in the one
+ * shared demo workspace; see the roadmap's own "no create-a-workspace UI
+ * route" entry). Chat questions are the one half of the old claim still
+ * true: ChatDock's messages are plain React state POST to /api/chat, never
+ * written anywhere server-side.
  */
 export function GuestBanner({ next = "" }: { next?: string }) {
   const href = next ? `/login?next=${encodeURIComponent(next)}` : "/login";
@@ -27,14 +38,19 @@ export function GuestBanner({ next = "" }: { next?: string }) {
       <p className="font-sans text-xs text-ink">
         <span className="font-medium">You&rsquo;re reading as a guest.</span>{" "}
         <span className="text-ink-muted">
-          Papers you add and questions you ask disappear when you close this tab.
+          Questions you ask disappear when you close this tab. A paper you add is
+          saved to the shared demo workspace, not to an account of your own.
         </span>
       </p>
       <Link
         href={href}
         className="ml-auto shrink-0 font-sans text-xs font-medium text-accent underline underline-offset-4 hover:text-accent-hover"
       >
-        Sign in to keep them
+        {/* "Sign in to keep them" used to sit here, promising per-account
+            persistence sign-in doesn't actually deliver yet (upload has no
+            per-account workspace to write into, and chat is never
+            persisted regardless of session -- see the doc comment above). */}
+        Sign in for your own account
       </Link>
     </div>
   );

@@ -14,7 +14,7 @@ export default function PrivacyPage() {
       kicker="Privacy"
       title="What we store, and what we do not"
       intro="This page describes what Pepiros actually does today, not aspirational policy."
-      updated="15 August 2026"
+      updated="24 August 2026"
     >
       <Section title="Papers you upload">
         <p>

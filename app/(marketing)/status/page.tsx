@@ -104,7 +104,7 @@ export default function StatusPage() {
       kicker="Status"
       title="What actually works today"
       intro="A feature-by-feature breakdown of what's live, in progress, or planned, kept here so nobody has to find out by clicking."
-      updated="17 August 2026"
+      updated="24 August 2026"
     >
       <div className="mb-s-5 flex flex-wrap gap-s-5 font-mono text-[13px] text-ink-faint">
         {COUNTS.filter((c) => c.count > 0).map((c) => (

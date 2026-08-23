@@ -50,7 +50,12 @@ export default async function AdminOnboardingPage() {
         <EmptyState
           icon={Inbox}
           title="No responses yet"
-          description="Answers appear here once somebody completes onboarding."
+          // Issue #319: this said "completes onboarding" -- every
+          // step-advancing/back action in the wizard saves the draft so
+          // far (OnboardingWizard.tsx), which is exactly why the table
+          // below has its own "step reached" drop-off column. A row exists
+          // after step one, not only after step ten.
+          description="Answers appear here once somebody starts onboarding, not only once they finish it."
         />
       ) : (
         <OnboardingTable responses={responses} />
