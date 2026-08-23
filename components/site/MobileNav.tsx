@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { buttonClassName } from "@/components/ui/Button";
@@ -34,6 +33,21 @@ import type { Profile } from "@/lib/data/types";
  * One deliberate difference from the portfolio: the motion is ease-out, not a
  * spring. design/DIRECTIONS.md rules out spring easing for this project, so the
  * behaviour matches while the curve stays on-brand.
+ *
+ * PLAIN CSS TRANSITION, NOT FRAMER MOTION (issue #320, 2026-08-24). A single
+ * translateX slide with no gesture handling, no springs, and no layout
+ * animation was pulling in the whole framer-motion runtime for every page
+ * that renders this component -- which is nearly every page, since this
+ * sits in the shared site header. Confirmed via a real per-route bundle
+ * analysis (`npx next build --experimental-analyze`) that framer-motion
+ * showed up on /, /discover, /paper/[slug], /mcp, /about -- everywhere this
+ * component is in the tree. The panel now stays mounted once opened for the
+ * first time (never unmounts again) and is driven purely by `translate-x-*`
+ * + `inert` when closed: `inert` (native, widely supported) makes it
+ * unfocusable and unclickable while off-screen without needing to manually
+ * gate every interactive descendant, and the exit transition is the same
+ * CSS transition running in reverse, no separate exit-then-unmount choreography
+ * required.
  *
  * THE PANEL IS PORTALLED, and it has to be. This component renders inside the
  * site header, which carries `backdrop-filter` for its glass effect. A filter
@@ -134,22 +148,23 @@ export function MobileNav({
 
       {mounted &&
         createPortal(
-          <AnimatePresence>
-        {open && (
-          <motion.div
+          <div
             id="mobile-menu-panel"
             ref={panelRef}
             role="dialog"
             aria-modal="true"
             aria-label="Site menu"
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{
-              duration: reduced ? 0 : 0.28,
-              ease: [0.16, 1, 0.3, 1], // --ease-out
-            }}
-            className="fixed inset-0 z-[60] flex flex-col overflow-y-auto bg-surface lg:hidden"
+            aria-hidden={!open}
+            // Native `inert`, not a manual focusable-descendant sweep: while
+            // closed the panel sits off-screen (translate-x-full below) but
+            // is still technically in the DOM, and without this its links
+            // would be reachable by Tab despite being invisible.
+            inert={!open}
+            style={{ transitionDuration: reduced ? "0ms" : "280ms" }}
+            className={cn(
+              "fixed inset-0 z-[60] flex flex-col overflow-y-auto bg-surface transition-transform ease-out lg:hidden",
+              open ? "translate-x-0" : "translate-x-full",
+            )}
           >
             {/* Quiet pillar wash, so the panel reads as a surface of its own
                 rather than a flat block of --surface. */}
@@ -260,9 +275,7 @@ export function MobileNav({
                 </>
               )}
             </div>
-          </motion.div>
-        )}
-          </AnimatePresence>,
+          </div>,
           document.body,
         )}
     </>
