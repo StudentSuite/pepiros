@@ -64,8 +64,15 @@ export default async function HomePage() {
           slack, so the feed's measure stays readable rather than stretching
           across a wide monitor. */}
       <div className="mt-s-6 grid gap-s-6 lg:grid-cols-[16rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_20rem]">
+        {/* Issue #314: only the right rail carried an explicit grid position
+            (xl:col-start-3 xl:row-start-1); these two relied on plain
+            auto-placement to land in columns 1/2 of the same row. Giving
+            every item in this grid an explicit position removes any
+            ambiguity between the auto-placed and explicitly-placed items
+            for the browser's placement algorithm to resolve, regardless of
+            how tall an empty-state's content makes any one column. */}
         {/* ---- Left rail: your own items ---------------------------------- */}
-        <aside className="flex flex-col gap-s-5">
+        <aside className="flex flex-col gap-s-5 xl:col-start-1 xl:row-start-1">
           <section>
             <div className="flex items-baseline justify-between">
               <h2 className="kicker">Your papers</h2>
@@ -132,7 +139,7 @@ export default async function HomePage() {
         </aside>
 
         {/* ---- Centre: the activity feed ---------------------------------- */}
-        <section className="min-w-0">
+        <section className="min-w-0 xl:col-start-2 xl:row-start-1">
           <h2 className="kicker">Recent activity</h2>
 
           {feed.length === 0 ? (
