@@ -9,7 +9,7 @@ import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
  */
 export default function Loading() {
   return (
-    <div className="mx-auto w-full max-w-3xl p-s-5" aria-busy="true" aria-label="Loading">
+    <div className="mx-auto w-full max-w-[42rem] p-s-5" aria-busy="true" aria-label="Loading">
       <Skeleton className="h-3 w-24" />
       <Skeleton className="mt-s-4 h-8 w-2/3" />
       <div className="mt-s-5 max-w-xl">
