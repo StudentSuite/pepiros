@@ -1,30 +1,15 @@
 import { RefChip } from "@/components/ui/RefChip";
+import { resolveInlineRefs } from "@/lib/reader/inlineRefs";
 import type { Evidence } from "@/types/anchor";
 
-const REF_MARKER = /\[\^(e\d+)\]/g;
-
-/** Strips inline `[^eN]` markers out of body text so a truncated card snippet reads
- *  as clean prose; the markers themselves surface as a `RefChip` row via InlineRefs. */
-export function stripRefMarkers(bodyMd: string): string {
-  return bodyMd.replace(REF_MARKER, "").replace(/\s{2,}/g, " ").trim();
-}
-
-/** Resolves a node's inline `[^eN]` markers to their evidence rows, in first-seen
- *  order. A marker with no matching row is skipped here -- a dangling `[^eN]` is a
- *  render error elsewhere in the pipeline (plan.md §5), not something to mask. */
-export function resolveInlineRefs(bodyMd: string, evidence: Evidence[]): Evidence[] {
-  const ids = [...bodyMd.matchAll(REF_MARKER)].map((m) => m[1]!);
-  const byId = new Map(evidence.map((e) => [e.id, e]));
-  const seen = new Set<string>();
-  const result: Evidence[] = [];
-  for (const id of ids) {
-    if (seen.has(id)) continue;
-    seen.add(id);
-    const row = byId.get(id);
-    if (row) result.push(row);
-  }
-  return result;
-}
+/**
+ * The pure marker-parsing logic lives in lib/reader/inlineRefs.ts (Vitest
+ * only collects lib/**, and a real bug there -- the marker regex not
+ * matching the long, node-prefixed ids verify.ts actually mints -- needed
+ * real regression coverage, not just a live check). Re-exported here so
+ * every existing `@/components/canvas/InlineRefs` import keeps working.
+ */
+export { stripRefMarkers, resolveInlineRefs } from "@/lib/reader/inlineRefs";
 
 function tooltipFor(ev: Evidence): string {
   const tier = ev.tier.replace("_", " ");

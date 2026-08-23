@@ -16,7 +16,6 @@ import {
   ArticleRule,
   Byline,
   Dot,
-  ReadingColumn,
 } from "@/components/reading/Article";
 import { PaperEngagement } from "./PaperEngagement";
 import { CommentForm } from "./CommentForm";
@@ -80,94 +79,107 @@ export default async function PaperPage({
   const comments = post ? await adapter.listCommentsForPost(post.id) : seedPaperComments(paper.id);
   const likeState = post ? await adapter.getLikeState(post.id, viewer?.id ?? null) : null;
 
+  const bylineNode = (
+    <Byline
+      name={`@${stats.postedBy}`}
+      href={`/u/${stats.postedBy}`}
+      initials={stats.postedBy.slice(0, 2).toUpperCase()}
+      /* Issues #253/#259: this used to read "N min read - N% grounded".
+         Both were fabricated -- reading time was `4 + (hash % 7)` and
+         the grounding percentage came from lib/data/seed.ts, not from
+         the verifier, on a page whose whole claim is that its numbers
+         are measured. A grounded percentage returns when there are real
+         evidence rows to compute it from (issues #279, #282). */
+      meta={[
+        // Only shown when the verifier actually produced it. That is the
+        // whole of issues #259/#282: a number on this page is either
+        // measured or absent, never invented to fill the slot.
+        grounding?.coverage !== null && grounding !== null
+          ? `${Math.round(grounding.coverage * 100)}% grounded`
+          : null,
+        licenceLabel(paper.licence),
+      ]
+        .filter(Boolean)
+        .join(" · ")}
+      action={
+        <PaperEngagement
+          initialScore={likeState ? likeState.count : stats.score}
+          real={post ? { postId: post.id, slug, initiallyLiked: likeState!.liked } : undefined}
+        />
+      }
+    />
+  );
+
   return (
     <main className="pb-s-5">
-      <ReadingColumn>
-        <ArticleHeader kicker={paper.field} title={paper.title} dek={paperDek(paper)}>
-          <Byline
-            name={`@${stats.postedBy}`}
-            href={`/u/${stats.postedBy}`}
-            initials={stats.postedBy.slice(0, 2).toUpperCase()}
-            /* Issues #253/#259: this used to read "N min read - N% grounded".
-               Both were fabricated -- reading time was `4 + (hash % 7)` and
-               the grounding percentage came from lib/data/seed.ts, not from
-               the verifier, on a page whose whole claim is that its numbers
-               are measured. A grounded percentage returns when there are real
-               evidence rows to compute it from (issues #279, #282). */
-            meta={[
-              // Only shown when the verifier actually produced it. That is the
-              // whole of issues #259/#282: a number on this page is either
-              // measured or absent, never invented to fill the slot.
-              grounding?.coverage !== null && grounding !== null
-                ? `${Math.round(grounding.coverage * 100)}% grounded`
-                : null,
-              licenceLabel(paper.licence),
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-            action={
-              <PaperEngagement
-                initialScore={likeState ? likeState.count : stats.score}
-                real={post ? { postId: post.id, slug, initiallyLiked: likeState!.liked } : undefined}
-              />
-            }
-          />
-        </ArticleHeader>
+      {/* Byline + engagement becomes a sticky rail at lg (issue #300) rather
+          than sitting inline in the header -- this page can run long (a full
+          claim-by-claim write-up plus comments), and the author/like control
+          scrolling out of view on a long read is the thing this fixes. Below
+          lg there is no room for a second column, so it renders inline in
+          its original position instead. Wider than ReadingColumn's own
+          max-w-[42rem] to fit a rail without squeezing the reading measure:
+          the main column below is pinned back to that same 42rem itself. */}
+      <div className="mx-auto w-full max-w-[58rem] px-s-5 lg:grid lg:grid-cols-[1fr_15rem] lg:items-start lg:gap-s-7">
+        <div className="min-w-0 max-w-[42rem]">
+          <ArticleHeader kicker={paper.field} title={paper.title} dek={paperDek(paper)} />
 
-        {/* Issue #258: the byline, like count and discussion below are all
-            lib/data/seed.ts fixtures until a real post exists for this
-            paper -- nothing on the page said so, and this product's whole
-            position is that a reader can tell what's real from what's
-            asserted. Fabricated discussion presented as discussion
-            undercuts that on the surface where it's most visible. */}
-        {!post && (
-          <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
-            Sample author &amp; engagement, to show the format
+          <div className="lg:hidden">{bylineNode}</div>
+
+          {/* Issue #258: the byline, like count and discussion below are all
+              lib/data/seed.ts fixtures until a real post exists for this
+              paper -- nothing on the page said so, and this product's whole
+              position is that a reader can tell what's real from what's
+              asserted. Fabricated discussion presented as discussion
+              undercuts that on the surface where it's most visible. */}
+          {!post && (
+            <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+              Sample author &amp; engagement, to show the format
+            </p>
+          )}
+
+          {/* Source line. Kept immediately under the byline because the whole
+              proposition is that the original is one click away. */}
+          <p className="mt-s-1 font-sans text-[13px] leading-relaxed text-ink-faint">
+            {byline} &middot; <span className="italic">{paper.venue}</span> &middot;{" "}
+            {paper.year}
+            {" · "}
+            <a
+              href={paper.sourceUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="inline-flex items-center gap-0.5 text-accent-text underline underline-offset-2"
+            >
+              Read the original
+              <ArrowUpRight className="size-3" />
+            </a>
           </p>
-        )}
 
-        {/* Source line. Kept immediately under the byline because the whole
-            proposition is that the original is one click away. */}
-        <p className="mt-s-1 font-sans text-[13px] leading-relaxed text-ink-faint">
-          {byline} &middot; <span className="italic">{paper.venue}</span> &middot;{" "}
-          {paper.year}
-          {" · "}
-          <a
-            href={paper.sourceUrl}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="inline-flex items-center gap-0.5 text-accent-text underline underline-offset-2"
-          >
-            Read the original
-            <ArrowUpRight className="size-3" />
-          </a>
-        </p>
+          {/* Issue #255/#281: the only /w/ link anywhere on this page used to
+              be the site footer's "Try the demo", which points at ws-1
+              regardless of which paper this is -- a reader browsing e.g.
+              AlphaFold's write-up who clicked the only available reading
+              link landed in an unrelated sleep-and-circadian demo workspace.
+              Catalog papers aren't indexed yet (issue #279: scripts/index-
+              catalog.ts hasn't been run against any of them), so every
+              paper.workspaceId is undefined today -- this renders the honest
+              not-yet-openable state until that changes, rather than
+              silently falling back to a demo link. */}
+          {paper.workspaceId ? (
+            <Link
+              href={`/w/${paper.workspaceId}`}
+              className={buttonClassName("primary", "sm", "mt-s-4")}
+            >
+              Open in reader
+            </Link>
+          ) : (
+            <p className="mt-s-4 rounded-md border border-dashed border-border px-s-4 py-s-3 font-sans text-[13px] leading-relaxed text-ink-faint">
+              This paper isn&rsquo;t indexed for reading in Pepiros yet -- read the
+              original at the source link above.
+            </p>
+          )}
 
-        {/* Issue #255/#281: the only /w/ link anywhere on this page used to
-            be the site footer's "Try the demo", which points at ws-1
-            regardless of which paper this is -- a reader browsing e.g.
-            AlphaFold's write-up who clicked the only available reading
-            link landed in an unrelated sleep-and-circadian demo workspace.
-            Catalog papers aren't indexed yet (issue #279: scripts/index-
-            catalog.ts hasn't been run against any of them), so every
-            paper.workspaceId is undefined today -- this renders the honest
-            not-yet-openable state until that changes, rather than
-            silently falling back to a demo link. */}
-        {paper.workspaceId ? (
-          <Link
-            href={`/w/${paper.workspaceId}`}
-            className={buttonClassName("primary", "sm", "mt-s-4")}
-          >
-            Open in reader
-          </Link>
-        ) : (
-          <p className="mt-s-4 rounded-md border border-dashed border-border px-s-4 py-s-3 font-sans text-[13px] leading-relaxed text-ink-faint">
-            This paper isn&rsquo;t indexed for reading in Pepiros yet -- read the
-            original at the source link above.
-          </p>
-        )}
-
-        {workspace ? (
+          {workspace ? (
           <>
             {/* Issue #283: the real write-up, read from this paper's own
                 workspace through the same buildClaimSummaries the reader's
@@ -328,7 +340,14 @@ export default async function PaperPage({
             </p>
           )}
         </section>
-      </ReadingColumn>
+        </div>
+
+        {/* The sticky rail itself -- hidden below lg, where bylineNode
+            already rendered inline above instead. */}
+        <aside className="hidden lg:sticky lg:top-[calc(var(--topbar)+1.5rem)] lg:block">
+          {bylineNode}
+        </aside>
+      </div>
     </main>
   );
 }

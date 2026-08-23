@@ -41,7 +41,11 @@ function EvidenceLine({ evidence, chunks }: { evidence: Evidence; chunks: Chunk[
 
   return (
     <figure className="mt-s-3 border-l-2 border-border-strong pl-s-4">
-      <blockquote className="font-serif text-[15px] italic leading-relaxed text-ink">
+      {/* One step down from the claim's own text-[15px] and on text-ink-muted
+          rather than text-ink -- subordinate to the claim, per issue #300,
+          not the same visual weight as the thing it's supporting. Still
+          never hidden: full quote, not truncated. */}
+      <blockquote className="font-serif text-[14px] italic leading-relaxed text-ink-muted">
         &ldquo;{evidence.anchor.quote}&rdquo;
       </blockquote>
       <figcaption className="mt-s-2 flex flex-wrap items-center gap-2 font-mono text-[11px] text-ink-faint">
@@ -79,8 +83,9 @@ function Claim({
 
       {/* Markers stripped from the prose and surfaced as the evidence block
           below, so the claim reads as prose and its sources sit beside it
-          rather than mid-sentence. */}
-      <p className="mt-s-2 font-sans text-[15px] leading-relaxed text-ink-muted">
+          rather than mid-sentence. font-serif: this is reading prose, not
+          UI chrome (issue #300's font-role rule, same as ArticleBody). */}
+      <p className="mt-s-2 font-serif text-[15px] leading-relaxed text-ink-muted">
         {stripRefMarkers(node.bodyMd)}
       </p>
 
@@ -139,7 +144,7 @@ export function GroundedArticle({ workspace }: { workspace: Workspace }) {
         <section key={pillar.id} className="mt-s-7">
           <h2 className="font-sans font-semibold text-[1.45rem] leading-snug text-ink">{pillar.title}</h2>
           {pillar.bodyMd.trim() !== "" && (
-            <p className="mt-s-2 font-sans text-[15px] leading-relaxed text-ink-faint">
+            <p className="mt-s-2 font-serif text-[15px] leading-relaxed text-ink-faint">
               {stripRefMarkers(pillar.bodyMd)}
             </p>
           )}

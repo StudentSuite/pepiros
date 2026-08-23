@@ -1,5 +1,5 @@
 import type { Chunk, Evidence, EvidenceTier, GraphNode } from "@/types/anchor";
-import { resolveInlineRefs } from "@/components/canvas/InlineRefs";
+import { resolveInlineRefs } from "@/lib/reader/inlineRefs";
 
 /**
  * Same pessimistic rule as components/canvas/LeafNode.tsx: a claim citing
