@@ -60,7 +60,7 @@ export function ReadingPath() {
           <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
             Reading path
           </p>
-          <p className="font-serif text-sm text-ink">{thread.title}</p>
+          <p className="font-sans text-sm text-ink">{thread.title}</p>
         </div>
         <button
           type="button"

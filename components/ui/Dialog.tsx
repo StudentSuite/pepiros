@@ -85,7 +85,7 @@ export function Dialog({
         )}
       >
         <div className="flex items-center justify-between">
-          <h2 id="dialog-title" className="font-serif text-lg text-ink">
+          <h2 id="dialog-title" className="font-sans font-semibold text-lg text-ink">
             {title}
           </h2>
           <IconButton icon={X} label="Close" onClick={onClose} />

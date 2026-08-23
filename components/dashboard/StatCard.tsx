@@ -35,7 +35,7 @@ export function StatCard({
           {label}
         </p>
         <div className="mt-s-2 flex items-baseline gap-s-2">
-          <span className="font-serif text-2xl leading-none text-ink">{value}</span>
+          <span className="font-mono text-2xl tabular-nums leading-none text-ink">{value}</span>
           {dir && (
             <span
               className={cn(

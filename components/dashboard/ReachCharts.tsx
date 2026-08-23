@@ -76,7 +76,7 @@ export function ReachOverTime({
           <CardTitle className="whitespace-nowrap font-mono text-[11px] font-normal uppercase tracking-widest text-ink-faint">
             Reach over time
           </CardTitle>
-          <p className="mt-s-2 font-serif text-3xl leading-none text-ink">
+          <p className="mt-s-2 font-mono text-3xl tabular-nums leading-none text-ink">
             {reach.totalViews.toLocaleString()}
           </p>
           <p className="mt-s-1 font-sans text-xs text-ink-faint">

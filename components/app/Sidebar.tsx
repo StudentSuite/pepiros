@@ -95,7 +95,7 @@ export function Sidebar({
                   type="button"
                   onClick={() => onSelectPaper(paper.id)}
                   className={clsx(
-                    "w-full truncate rounded px-2 py-1.5 text-left font-serif text-sm transition duration-fast ease-out",
+                    "w-full truncate rounded px-2 py-1.5 text-left font-sans text-sm transition duration-fast ease-out",
                     paper.id === activePaperId
                       ? "bg-surface-sunken text-ink"
                       : "text-ink-muted hover:bg-surface-sunken hover:text-ink",

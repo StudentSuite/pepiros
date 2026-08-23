@@ -90,7 +90,7 @@ export function CanvasHeader({ workspaceId, isGuest }: { workspaceId: string; is
                   <li key={paper.id}>
                     <span
                       className={clsx(
-                        "block w-full truncate rounded px-2 py-1.5 text-left font-serif text-sm",
+                        "block w-full truncate rounded px-2 py-1.5 text-left font-sans text-sm",
                         paper.id === activePaper?.id ? "bg-surface-sunken text-ink" : "text-ink-muted",
                       )}
                       title={paper.title}

@@ -60,7 +60,7 @@ export function ArticleHeader({
           {kicker}
         </p>
       )}
-      <h1 className="font-serif text-[2rem] leading-[1.15] tracking-[-0.01em] text-ink sm:text-[2.6rem]">
+      <h1 className="font-sans font-bold text-[2rem] leading-[1.15] tracking-[-0.01em] text-ink sm:text-[2.6rem]">
         {title}
       </h1>
       {dek && (
@@ -135,8 +135,8 @@ export function ArticleBody({
         "[&_strong]:font-medium [&_strong]:text-ink",
         "[&_a]:text-accent-text [&_a]:underline [&_a]:underline-offset-2",
         // headings step down from the title rather than restarting the scale
-        "[&_h2]:mt-s-7 [&_h2]:font-serif [&_h2]:text-[1.45rem] [&_h2]:leading-snug [&_h2]:text-ink",
-        "[&_h3]:mt-s-6 [&_h3]:font-serif [&_h3]:text-[1.15rem] [&_h3]:leading-snug [&_h3]:text-ink",
+        "[&_h2]:mt-s-7 [&_h2]:font-sans [&_h2]:font-semibold [&_h2]:text-[1.45rem] [&_h2]:leading-snug [&_h2]:text-ink",
+        "[&_h3]:mt-s-6 [&_h3]:font-sans [&_h3]:font-semibold [&_h3]:text-[1.15rem] [&_h3]:leading-snug [&_h3]:text-ink",
         "[&_ul]:flex [&_ul]:flex-col [&_ul]:gap-s-2 [&_ul]:pl-5",
         "[&_li]:list-disc [&_li]:marker:text-ink-faint",
         "[&_blockquote]:border-l-2 [&_blockquote]:border-border-strong [&_blockquote]:pl-s-4 [&_blockquote]:font-serif [&_blockquote]:italic",
@@ -181,7 +181,7 @@ export function FeedItem({
       <div className="flex gap-s-5">
         <div className="min-w-0 flex-1">
           {tags && <div className="mb-s-2 flex flex-wrap gap-s-2">{tags}</div>}
-          <h2 className="font-serif text-xl leading-snug tracking-[-0.005em] text-ink">
+          <h2 className="font-sans font-semibold text-xl leading-snug tracking-[-0.005em] text-ink">
             <Link href={href} className="hover:text-accent-text">
               {title}
             </Link>

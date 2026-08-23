@@ -582,7 +582,7 @@ export function GraphCanvas({ workspaceId }: { workspaceId: string }) {
   if (isMobile) {
     return (
       <div className="flex h-full w-full flex-col items-center justify-center gap-s-4 p-s-5 text-center">
-        <p className="font-serif text-lg text-ink">The graph needs more room than this screen has.</p>
+        <p className="font-sans text-lg text-ink">The graph needs more room than this screen has.</p>
         <p className="max-w-xs font-sans text-sm text-ink-muted">
           The citation graph isn&rsquo;t usable at this width yet. Read the paper instead -- every claim
           still shows its source.

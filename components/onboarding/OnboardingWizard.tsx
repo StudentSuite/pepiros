@@ -501,7 +501,7 @@ function Step({
 }) {
   return (
     <div>
-      <h1 className="font-serif text-xl leading-snug text-ink">{title}</h1>
+      <h1 className="font-sans font-bold text-xl leading-snug text-ink">{title}</h1>
       {hint && <p className="mt-s-2 font-sans text-sm text-ink-muted">{hint}</p>}
       <div className="mt-s-5">{children}</div>
     </div>

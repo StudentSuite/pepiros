@@ -230,7 +230,7 @@ export function PostsList({
                     )}
                   </div>
 
-                  <h3 className="mt-1 font-serif text-lg leading-snug text-ink">
+                  <h3 className="mt-1 font-sans font-semibold text-lg leading-snug text-ink">
                     {(() => {
                       const href = paperHref(post.paperId);
                       return href ? (

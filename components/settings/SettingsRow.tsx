@@ -73,7 +73,7 @@ export function SettingsGroup({
     <section className={cn("border-t border-border pt-s-6", className)}>
       {title && (
         <div className="mb-s-2">
-          <h2 className="font-serif text-lg text-ink">{title}</h2>
+          <h2 className="font-sans font-semibold text-lg text-ink">{title}</h2>
           {description && (
             <p className="mt-1 max-w-prose font-sans text-[13px] leading-relaxed text-ink-faint">
               {description}

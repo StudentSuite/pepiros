@@ -61,7 +61,7 @@ export function Drawer({
       >
         <div className="flex items-center justify-between">
           {title && (
-            <h2 id="drawer-title" className="font-serif text-lg text-ink">
+            <h2 id="drawer-title" className="font-sans font-semibold text-lg text-ink">
               {title}
             </h2>
           )}

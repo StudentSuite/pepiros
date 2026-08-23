@@ -97,7 +97,7 @@ function RelatedPaperCard({ paper }: { paper: RelatedPaper }) {
           href={paper.url}
           target="_blank"
           rel="noreferrer"
-          className="font-serif text-sm text-ink hover:underline"
+          className="font-sans text-sm text-ink hover:underline"
         >
           {paper.title}
         </a>

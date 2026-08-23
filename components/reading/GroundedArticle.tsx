@@ -73,7 +73,7 @@ function Claim({
   return (
     <section className="mt-s-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="font-serif text-[1.15rem] leading-snug text-ink">{node.title}</h3>
+        <h3 className="font-sans font-semibold text-[1.15rem] leading-snug text-ink">{node.title}</h3>
         {tier && <EvidenceBadge tier={tier} />}
       </div>
 
@@ -137,7 +137,7 @@ export function GroundedArticle({ workspace }: { workspace: Workspace }) {
     <div className="mt-s-6">
       {sections.map(({ pillar, children }) => (
         <section key={pillar.id} className="mt-s-7">
-          <h2 className="font-serif text-[1.45rem] leading-snug text-ink">{pillar.title}</h2>
+          <h2 className="font-sans font-semibold text-[1.45rem] leading-snug text-ink">{pillar.title}</h2>
           {pillar.bodyMd.trim() !== "" && (
             <p className="mt-s-2 font-sans text-[15px] leading-relaxed text-ink-faint">
               {stripRefMarkers(pillar.bodyMd)}
@@ -156,7 +156,7 @@ export function GroundedArticle({ workspace }: { workspace: Workspace }) {
 
       {orphans.length > 0 && (
         <section className="mt-s-7">
-          <h2 className="font-serif text-[1.45rem] leading-snug text-ink">Other claims</h2>
+          <h2 className="font-sans font-semibold text-[1.45rem] leading-snug text-ink">Other claims</h2>
           {orphans.map((leaf) => (
             <Claim
               key={leaf.id}
