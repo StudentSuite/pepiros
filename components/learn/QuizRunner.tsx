@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import clsx from "clsx";
 import { RefChip } from "@/components/ui/RefChip";
+import { buttonClassName } from "@/components/ui/Button";
 import { useWorkspaceStore } from "@/lib/store/workspace";
 
 interface QuizQuestion {
@@ -103,7 +104,7 @@ export function QuizRunner({ workspaceId }: { workspaceId: string }) {
             setSelected(null);
             setCorrectCount(0);
           }}
-          className="rounded border border-border-strong px-3 py-1.5 font-sans text-sm text-ink-muted hover:text-ink"
+          className="rounded-lg border border-border-strong px-3 py-1.5 font-sans text-sm text-ink-muted hover:text-ink"
         >
           Restart
         </button>
@@ -147,7 +148,7 @@ export function QuizRunner({ workspaceId }: { workspaceId: string }) {
                 onClick={() => selectOption(i)}
                 disabled={stage !== "question"}
                 className={clsx(
-                  "w-full rounded border px-3 py-2 text-left font-sans text-sm transition-colors",
+                  "w-full rounded-lg border px-3 py-2 text-left font-sans text-sm transition-colors",
                   !revealed && "border-border text-ink hover:border-border-strong",
                   revealed && isCorrect && "border-located/70 bg-located/10 text-ink",
                   revealed && isSelected && !isCorrect && "border-unsupported/70 bg-unsupported/10 text-ink",
@@ -167,23 +168,30 @@ export function QuizRunner({ workspaceId }: { workspaceId: string }) {
         <button
           type="button"
           onClick={() => setStage("explaining")}
-          className="self-start rounded border border-border-strong px-3 py-1.5 font-sans text-xs text-ink-muted hover:text-ink"
+          className="self-start rounded-lg border border-border-strong px-3 py-1.5 font-sans text-xs text-ink-muted hover:text-ink"
         >
           Show explanation
         </button>
       )}
 
       {stage === "explaining" && (
-        <div className="rounded border border-border bg-surface-raised p-3">
+        <div className="rounded-lg border border-border bg-surface-raised p-3">
           <div className="mb-1.5 flex items-center gap-2">
             <RefChip refId={question.citationRefId} />
             <span className="font-sans text-xs text-ink-faint">explanation</span>
           </div>
           <p className="font-sans text-sm text-ink-muted">{question.explanation}</p>
+          {/* Issue #308: this was a flat pillar-4 (rose) fill, the exact hue
+              `border-unsupported/70 bg-unsupported/10` above uses for "your
+              answer, incorrect" -- a rose "Next question" CTA sitting right
+              below a rose wrong-answer state reads as two different things
+              sharing one signal. buttonClassName's primary variant (--accent)
+              is this app's real CTA token, not a pillar hue (which plan.md
+              §10 reserves for structural per-paper meaning, not decoration). */}
           <button
             type="button"
             onClick={goNext}
-            className="mt-3 rounded bg-pillar-4/20 px-3 py-1.5 font-sans text-xs text-ink hover:bg-pillar-4/30"
+            className={buttonClassName("primary", "sm", "mt-3")}
           >
             {index + 1 >= questions.length ? "See summary" : "Next question"}
           </button>

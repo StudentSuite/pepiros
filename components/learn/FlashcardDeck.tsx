@@ -3,6 +3,7 @@
 import { useState } from "react";
 import clsx from "clsx";
 import { useWorkspaceStore } from "@/lib/store/workspace";
+import { DispersionGlow } from "@/components/site/DispersionGlow";
 
 function stripMarkers(text: string): string {
   return text.replace(/\[\^[a-zA-Z0-9_-]+\]/g, "").trim();
@@ -60,28 +61,41 @@ export function FlashcardDeck() {
         {(index % cards.length) + 1} of {cards.length}
       </p>
 
-      <button
-        type="button"
-        onClick={() => setFlipped((f) => !f)}
-        onKeyDown={(e) => {
-          if (e.key === " ") {
-            e.preventDefault();
-            setFlipped((f) => !f);
-          }
-        }}
-        aria-pressed={flipped}
-        aria-label={flipped ? "Card back, press to flip to front" : "Card front, press to flip to back"}
-        className={clsx(
-          "surface-reading paper-grain flex min-h-[160px] w-full max-w-md items-center justify-center rounded p-6 text-center shadow-lg",
+      <div className="relative w-full max-w-md">
+        {/* Issue #308: "a dispersion back face" -- a soft halo behind the
+            card, only on its answer side, never a fill inside it (the
+            SURFACE RULE still applies: this card carries body text to
+            read, so the card itself stays opaque). */}
+        {flipped && (
+          <DispersionGlow
+            tone="green"
+            className="left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2"
+            opacity={0.18}
+          />
         )}
-      >
-        <p
-          aria-live="polite"
-          className={clsx("font-serif text-base leading-snug text-ink", flipped && "italic")}
+        <button
+          type="button"
+          onClick={() => setFlipped((f) => !f)}
+          onKeyDown={(e) => {
+            if (e.key === " ") {
+              e.preventDefault();
+              setFlipped((f) => !f);
+            }
+          }}
+          aria-pressed={flipped}
+          aria-label={flipped ? "Card back, press to flip to front" : "Card front, press to flip to back"}
+          className={clsx(
+            "surface-reading paper-grain relative flex min-h-[160px] w-full items-center justify-center rounded-lg p-6 text-center shadow-lg",
+          )}
         >
-          {flipped ? card.back : card.front}
-        </p>
-      </button>
+          <p
+            aria-live="polite"
+            className={clsx("font-serif text-base leading-snug text-ink", flipped && "italic")}
+          >
+            {flipped ? card.back : card.front}
+          </p>
+        </button>
+      </div>
 
       <p className="font-sans text-[11px] text-ink-faint">
         Click the card (or press space) to flip.
@@ -93,7 +107,7 @@ export function FlashcardDeck() {
             key={rating}
             type="button"
             onClick={next}
-            className="rounded border border-border-strong px-3 py-1 font-sans text-xs text-ink-muted hover:border-ink-muted hover:text-ink"
+            className="rounded-lg border border-border-strong px-3 py-1 font-sans text-xs text-ink-muted hover:border-ink-muted hover:text-ink"
           >
             {rating}
           </button>
