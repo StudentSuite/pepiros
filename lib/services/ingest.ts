@@ -20,7 +20,7 @@ import {
   type ResolvedSource,
 } from "./upload";
 import { runPythonScript } from "./pythonRunner";
-import { deletePdf, downloadPdf, resolveLocalPdfPath, uploadPdf } from "./pdfStorage";
+import { createSignedPdfUrl, deletePdf, downloadPdf, isStorageConfigured, resolveLocalPdfPath, uploadPdf } from "./pdfStorage";
 import { resolveDoiToPdfUrl } from "./unpaywall";
 
 /**
@@ -122,13 +122,67 @@ const ParsedDocumentSchema = z.object({
   pageCount: z.number(),
 });
 
-async function runParsePy(pdfPath: string): Promise<ParsedDocument> {
-  const raw = await runPythonScript<unknown>(path.join(process.cwd(), "scripts", "parse.py"), [pdfPath]);
+function parseDocumentOrThrow(raw: unknown, source: string): ParsedDocument {
   const result = ParsedDocumentSchema.safeParse(raw);
   if (!result.success) {
-    throw new Error(`scripts/parse.py produced output that doesn't match the expected shape: ${result.error.message}`);
+    throw new Error(`${source} produced output that doesn't match the expected shape: ${result.error.message}`);
   }
   return result.data;
+}
+
+/**
+ * Hosted-runtime parse path (StudentSuite/pepiros#318): Vercel's Node
+ * runtime has no Python interpreter, so parsing here goes to
+ * `api/parse_pdf.py`, a separate Vercel Python Function (file-based
+ * convention, see that file's own header comment) that runs the exact same
+ * scripts/parse.py core logic, minus the Pix2Text equation/figure pass
+ * (torch/onnxruntime are too heavy for a lean serverless bundle, and that
+ * pass was already optional -- see scripts/parse.py's own ImportError
+ * fallback, which this path degrades to identically: no equations, no
+ * figures, everything else real).
+ *
+ * The PDF itself travels via a short-lived signed Storage URL, not the
+ * request body: Vercel Functions cap request payloads well under this
+ * app's own 50MB upload limit (lib/services/upload.ts), so posting raw
+ * bytes would silently fail on any real-sized paper. The Python function
+ * downloads the file itself once it has the URL, unconstrained by that
+ * limit. This requires Storage to be configured -- see
+ * isPdfIngestSupportedHere() below, which now checks for exactly that on
+ * Vercel instead of unconditionally returning false.
+ */
+async function runParsePyHosted(
+  workspaceId: string,
+  paperId: string,
+  bytes: Uint8Array,
+): Promise<{ parsed: ParsedDocument; uploadedKey: string }> {
+  const uploadedKey = await uploadPdf(workspaceId, paperId, bytes);
+  if (!uploadedKey) {
+    throw new UserFacingError(
+      "Could not upload the PDF to Storage, so the hosted parser has nothing to read it from. Try again in a moment.",
+    );
+  }
+
+  const signedUrl = await createSignedPdfUrl(uploadedKey);
+  const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const res = await fetch(new URL("/api/parse_pdf", base), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ url: signedUrl }),
+    signal: AbortSignal.timeout(5 * 60 * 1000),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`api/parse_pdf returned ${res.status}: ${body.slice(0, 500) || res.statusText}`);
+  }
+
+  const raw: unknown = await res.json();
+  return { parsed: parseDocumentOrThrow(raw, "api/parse_pdf"), uploadedKey };
+}
+
+async function runParsePyLocal(pdfPath: string): Promise<ParsedDocument> {
+  const raw = await runPythonScript<unknown>(path.join(process.cwd(), "scripts", "parse.py"), [pdfPath]);
+  return parseDocumentOrThrow(raw, "scripts/parse.py");
 }
 
 /**
@@ -145,26 +199,33 @@ export { resolveLocalPdfPath as resolvePdfStoragePath };
 const PDF_STORAGE_DIR = path.join(process.cwd(), "data", "pdfs");
 
 /**
- * PDF ingest is deliberately local-only (plan.md's cut list: "a deployed
- * Python service, PyMuPDF/PaddleOCR run as local scripts only"): parsing
- * shells out to scripts/parse.py, and Vercel's Node.js serverless runtime
- * has no Python interpreter at all -- confirmed live, not assumed: a real
- * ingest attempt against the deployed site failed with "Could not find a
- * Python interpreter (tried python3 and python)". No PATH fix can change
- * this on Vercel's standard Node runtime; it isn't a configuration problem.
+ * Whether ingest can actually run in this environment.
  *
- * Checked via `VERCEL`, which Vercel sets in every deployment regardless of
- * value, rather than attempting a doomed spawn per request just to hit the
- * same ENOENT every time. app/api/ingest/route.ts calls this before doing
- * any other work, so a request fails fast with an honest explanation
- * instead of creating a job that can then never make progress -- ingest
- * jobs are also process-local in-memory (jobs.ts) and the background
- * pipeline itself doesn't survive past the triggering request on
- * serverless (issues #86/#87), both of which this check makes moot for
- * ingest specifically by never starting one there at all.
+ * FIXED, StudentSuite/pepiros#318: ingest used to be unconditionally
+ * local-only, because parsing shelled out to scripts/parse.py and Vercel's
+ * Node.js serverless runtime has no Python interpreter at all -- confirmed
+ * live, not assumed: a real ingest attempt against the deployed site failed
+ * with "Could not find a Python interpreter (tried python3 and python)".
+ * That is still true of the Node runtime specifically, but it is no longer
+ * the whole story: `api/parse_pdf.py` is a separate Vercel Python Function
+ * (its own runtime, its own interpreter) that runParsePyHosted() calls
+ * instead, so hosted ingest works now too -- provided Storage is
+ * configured, since that hosted path hands the PDF to the parse function
+ * via a signed Storage URL rather than the request body (see
+ * runParsePyHosted()'s own comment for why). Without Storage there is no
+ * way to get the file to that function at all, so this stays honest about
+ * that one remaining real constraint rather than claiming universal
+ * support.
+ *
+ * `VERCEL` is set in every Vercel deployment regardless of value.
+ * app/api/ingest/route.ts calls this before doing any other work, so a
+ * request fails fast with an honest explanation instead of creating a job
+ * that can then never make progress on a runtime combination this still
+ * doesn't support.
  */
 export function isPdfIngestSupportedHere(): boolean {
-  return !process.env.VERCEL;
+  if (!process.env.VERCEL) return true;
+  return isStorageConfigured();
 }
 
 export interface IngestInput {
@@ -185,11 +246,31 @@ export async function runIngest(input: IngestInput): Promise<void> {
   /** Issue #278: the Storage equivalent, so a failed run cleans up there too. */
   let storedPdfKey: string | null = null;
 
+  // Generated up front (was after parsing): the hosted parse path needs a
+  // paperId before it can even upload the PDF, since that upload IS how
+  // the hosted parser gets the file (see runParsePyHosted()). A fresh
+  // random id has no real dependency on parse results, so moving it
+  // earlier changes nothing for the local path.
+  const workspaceId = input.workspaceId;
+  const paperId = `paper-${randomUUID().slice(0, 8)}`;
+  // Set as soon as the hosted path's upload succeeds (before parsing
+  // finishes), not just at the "persist the actual PDF" step below, so a
+  // parse failure after a successful upload still cleans the object up via
+  // the catch block's existing storedPdfKey handling.
+  let hostedUploadedKey: string | null = null;
+
   try {
     await writeFile(tmpPath, input.bytes);
 
     appendEvent(input.jobId, "Extracting text", "Running PyMuPDF extraction.");
-    const parsed = await runParsePy(tmpPath);
+    const parsed = process.env.VERCEL
+      ? await (async () => {
+          const { parsed: p, uploadedKey } = await runParsePyHosted(workspaceId, paperId, input.bytes);
+          hostedUploadedKey = uploadedKey;
+          storedPdfKey = uploadedKey;
+          return p;
+        })()
+      : await runParsePyLocal(tmpPath);
 
     appendEvent(
       input.jobId,
@@ -199,8 +280,6 @@ export async function runIngest(input: IngestInput): Promise<void> {
 
     const ingested = await getIngestedWorkspace(input.workspaceId);
     const rawBase = ingested?.workspace ?? (await fetchWorkspace(input.workspaceId));
-    const paperId = `paper-${randomUUID().slice(0, 8)}`;
-    const workspaceId = input.workspaceId;
 
     // Issue #102: fetchWorkspace()'s fixture fallback returns
     // fixtures/workspace.json verbatim -- unchanged `id` included -- for any
@@ -232,7 +311,11 @@ export async function runIngest(input: IngestInput): Promise<void> {
     // from production. The local copy is still written when Storage is not
     // configured, which keeps a credential-free `npm run dev` working exactly
     // as it did.
-    const uploadedKey = await uploadPdf(workspaceId, paperId, input.bytes);
+    //
+    // The hosted path (#318) already uploaded this exact PDF before parsing
+    // even started -- that upload IS how the hosted parser got the file --
+    // so reuse that key instead of uploading the same bytes a second time.
+    const uploadedKey = hostedUploadedKey ?? (await uploadPdf(workspaceId, paperId, input.bytes));
     let pdfFilename: string;
     if (uploadedKey) {
       pdfFilename = uploadedKey;

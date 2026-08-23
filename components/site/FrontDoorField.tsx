@@ -14,22 +14,24 @@ const CYCLE_MS = 2600;
  * to be looking at a generated illustration; this is the product's actual
  * entry point instead -- paste a link or drop a PDF.
  *
- * Honesty gate (issue #295, non-negotiable per #296): hosted ingest returns
- * 501 on this deployment, since the parse step shells out to a Python
- * interpreter Vercel's Node runtime doesn't have. Submitting here must never
- * hit that route. `ingestSupported` is the same isPdfIngestSupportedHere()
- * check /upload's real form gates on (passed down from the server so the
- * two surfaces can't disagree), and while it's false the field explains why
- * inline rather than failing after a click. The primary action is "Open a
- * paper someone has read" instead -- this field stays secondary until
- * ingest actually works, at which point it becomes primary with no layout
- * change (per the issue).
+ * Honesty gate (issue #295, non-negotiable per #296), still real but no
+ * longer permanently tripped: `ingestSupported` is the same
+ * isPdfIngestSupportedHere() check /upload's real form gates on (passed
+ * down from the server so the two surfaces can't disagree). It used to be
+ * unconditionally false on the hosted deployment (Vercel's Node runtime has
+ * no Python interpreter for the parse step); since StudentSuite/pepiros#318
+ * hosted ingest routes through api/parse_pdf.py, a separate Vercel Python
+ * Function, instead, so this is now false only when Storage isn't
+ * configured (that path also needs Storage -- see runParsePyHosted()'s own
+ * comment in lib/services/ingest.ts). When it IS false the field still
+ * explains why inline rather than failing after a click, same as before.
  *
- * Drag-and-drop file handling isn't implemented here: with ingest
- * architecturally blocked on this deployment, a real drop target would just
- * be more surface area for the same 501 this field is built to avoid.
- * "drop a PDF" stays as illustrative placeholder text, matching what the
- * real /upload form actually accepts once ingest is supported.
+ * Drag-and-drop file handling isn't implemented here: this field's primary
+ * action is still "Open a paper someone has read", by design (per #296),
+ * not because of the parse limitation -- so a drop target is a real feature
+ * gap, not something this fix unblocks by itself. "drop a PDF" stays as
+ * illustrative placeholder text, matching what the real /upload form
+ * actually accepts.
  */
 export function FrontDoorField({ ingestSupported }: { ingestSupported: boolean }) {
   const reducedMotion = usePrefersReducedMotion();

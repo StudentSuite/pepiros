@@ -267,29 +267,32 @@ export function UploadForm({
           </p>
         </header>
 
-        {/* Issue #295: the hosted deployment returns 501 for both the upload
-            and the paste-a-link path, because the parse step shells out to
-            Python and Vercel's Node runtime has no interpreter. middleware.ts
-            deliberately leaves /upload open to guests, so the door was open
-            with a wall behind it and the only way to find out was to submit a
-            file and get an error back.
-
-            This is architecturally blocked rather than a config bug, so the
-            honest fix is to say so here, before anyone clicks, rather than to
-            imply a repair is coming. A volunteered limitation reads as rigour;
-            a discovered one reads as overclaiming. Rendered from the same
-            isPdfIngestSupportedHere() check the route enforces with, so the
-            notice and the behaviour cannot disagree. */}
+        {/* Issue #295, resolved by #318: this used to be unconditional on
+            the hosted deployment (Vercel's Node runtime has no Python
+            interpreter, and parsing shelled out to one directly). Hosted
+            ingest now routes through api/parse_pdf.py, a separate Vercel
+            Python Function, so the only remaining real gate is Storage --
+            that path hands the PDF to the parse function via a signed
+            Storage URL rather than the request body (see
+            runParsePyHosted()'s comment in lib/services/ingest.ts), so with
+            no Storage configured there is genuinely nowhere for the parse
+            function to read the file from. middleware.ts deliberately
+            leaves /upload open to guests, so this stays a volunteered
+            notice rather than a wall discovered by submitting and getting
+            an error back -- same reasoning as before, updated cause.
+            Rendered from the same isPdfIngestSupportedHere() check the
+            route enforces with, so the notice and the behaviour cannot
+            disagree. */}
         {!ingestSupported && (
           <div className="mb-s-4 rounded-md border border-border-strong bg-surface-sunken p-s-4">
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
-              Ingest runs locally only
+              Ingest needs Storage configured
             </p>
             <p className="mt-s-2 font-sans text-[14px] leading-relaxed text-ink-muted">
-              Parsing a paper needs Python (PyMuPDF), and the hosted runtime has
-              no interpreter for it, so an upload here will not complete. This is
-              a limitation of where the site runs, not a setting. Run Pepiros
-              locally with{" "}
+              Parsing a paper now runs on this deployment too, but it hands the
+              file to the parser through Supabase Storage, and Storage isn&apos;t
+              configured here. This is a setting, not an architectural limit.
+              Run Pepiros locally with{" "}
               <code className="font-mono text-[13px] text-ink">npm run dev</code>{" "}
               to ingest your own papers, or browse{" "}
               <Link href="/discover" className="text-accent-text underline underline-offset-2">

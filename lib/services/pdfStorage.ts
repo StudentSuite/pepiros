@@ -97,6 +97,26 @@ export async function uploadPdf(
 }
 
 /**
+ * A short-lived signed URL for a stored PDF (StudentSuite/pepiros#318): the
+ * bucket is private, service-role-only, so a plain public fetch of the
+ * object never works. The hosted parse function (api/parse_pdf.py) needs
+ * exactly this -- a URL it can `urlopen()` from a separate Vercel Function
+ * with no Supabase credentials of its own -- rather than exposing the
+ * service-role key to that function directly.
+ *
+ * 5 minutes: the parse function fetches it within seconds of this call, not
+ * minutes later, so this is generous headroom rather than a tuned budget.
+ */
+export async function createSignedPdfUrl(storagePath: string, expiresInSeconds = 300): Promise<string> {
+  const supabase = createSupabaseServiceClient();
+  const { data, error } = await supabase.storage.from(PDF_BUCKET).createSignedUrl(storagePath, expiresInSeconds);
+  if (error || !data) {
+    throw new Error(`Could not create a signed URL for ${storagePath}: ${error?.message ?? "unknown error"}`);
+  }
+  return data.signedUrl;
+}
+
+/**
  * Reads a stored PDF back, Storage first and local disk second.
  *
  * The order matters for the migration: a row written before this change holds

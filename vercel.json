@@ -5,5 +5,10 @@
       "path": "/api/cron/index-catalog",
       "schedule": "0 4 * * 1"
     }
-  ]
+  ],
+  "functions": {
+    "api/parse_pdf.py": {
+      "maxDuration": 60
+    }
+  }
 }
