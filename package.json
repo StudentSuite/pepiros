@@ -34,6 +34,7 @@
     "build:mcp": "esbuild mcp/stdio.ts --bundle --platform=node --format=esm --conditions=react-server --external:@modelcontextprotocol/sdk --external:ai --external:zod --external:p-queue --external:@ai-sdk/groq --external:@ai-sdk/openai-compatible --outfile=dist/mcp/stdio.mjs",
     "prepublishOnly": "npm run build:mcp",
     "generate:llms": "tsx scripts/generate-llms-txt.ts",
+    "build:brand": "tsx scripts/build-brand.ts",
     "check:no-em-dashes": "tsx scripts/check-no-em-dashes.ts",
     "check:generator-count": "tsx scripts/check-generator-count.ts",
     "index:catalog": "tsx --conditions=react-server scripts/index-catalog.ts"
@@ -98,7 +99,9 @@
     "esbuild": "^0.25.0",
     "eslint": "^9.17.0",
     "eslint-config-next": "^15.1.0",
+    "jszip": "^3.10.1",
     "postcss": "^8.5.26",
+    "sharp": "^0.35.3",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
