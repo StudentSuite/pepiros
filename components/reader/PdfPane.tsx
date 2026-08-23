@@ -130,10 +130,10 @@ function MockPdfPane({
         className="surface-reading paper-grain relative w-full max-w-xl overflow-hidden rounded shadow-lg"
         style={{ aspectRatio: `${PAGE_WIDTH} / ${PAGE_HEIGHT}` }}
       >
-        <div className="absolute right-3 top-2 font-mono text-[11px] text-[#1c1a15]/50">
+        <div className="absolute right-3 top-2 font-mono text-[11px] text-ink/50">
           p. {chunk.page}
         </div>
-        <div className="absolute inset-0 overflow-hidden p-10 pt-8 font-serif text-[13px] leading-relaxed text-[#1c1a15]">
+        <div className="absolute inset-0 overflow-hidden p-10 pt-8 font-serif text-[13px] leading-relaxed text-ink">
           {chunk.text}
         </div>
         <HighlightLayer

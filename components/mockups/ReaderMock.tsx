@@ -44,7 +44,7 @@ function TextLines({ n = 6, className }: { n?: number; className?: string }) {
       {Array.from({ length: n }).map((_, i) => (
         <div
           key={i}
-          className="h-1.5 rounded-full bg-[#1c1a15]/12"
+          className="h-1.5 rounded-full bg-ink/12"
           style={{ width: `${[100, 96, 99, 92, 97, 88, 94, 90][i % 8]}%` }}
         />
       ))}
@@ -60,9 +60,12 @@ export function ReaderMock({ className }: { className?: string }) {
   return (
     <Chrome label="reader" className={className}>
       <div className="grid gap-px bg-border sm:grid-cols-[1.05fr_1fr]">
-        {/* Source pane: always opaque paper, in both themes */}
-        <div className="bg-[#f5f1e8] p-s-4">
-          <p className="font-mono text-[9px] uppercase tracking-widest text-[#1c1a15]/45">
+        {/* Source pane: always opaque paper, in both themes. `surface-reading`
+            pins the light ink ramp locally, so the ink utilities below resolve
+            dark-on-light here even when the dark theme is active -- no
+            hardcoded hex needed. */}
+        <div className="surface-reading p-s-4">
+          <p className="font-mono text-[9px] uppercase tracking-widest text-ink/45">
             Okafor &amp; Lindqvist, 2022 &middot; p.4
           </p>
           <div className="mt-s-3">
@@ -72,8 +75,8 @@ export function ReaderMock({ className }: { className?: string }) {
           {/* The located quote */}
           <div className="my-s-3 rounded-sm bg-pillar-7/25 p-1.5 ring-1 ring-pillar-7/40">
             <div className="flex flex-col gap-1.5">
-              <div className="h-1.5 w-[97%] rounded-full bg-[#1c1a15]/30" />
-              <div className="h-1.5 w-[72%] rounded-full bg-[#1c1a15]/30" />
+              <div className="h-1.5 w-[97%] rounded-full bg-ink/30" />
+              <div className="h-1.5 w-[72%] rounded-full bg-ink/30" />
             </div>
           </div>
 

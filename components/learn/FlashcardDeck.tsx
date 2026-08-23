@@ -77,7 +77,7 @@ export function FlashcardDeck() {
       >
         <p
           aria-live="polite"
-          className={clsx("font-serif text-base leading-snug text-[#1c1a15]", flipped && "italic")}
+          className={clsx("font-serif text-base leading-snug text-ink", flipped && "italic")}
         >
           {flipped ? card.back : card.front}
         </p>
