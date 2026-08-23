@@ -19,3 +19,6 @@ __pycache__
 .impeccable/
 .vercel
 .env*
+
+# Brand kit delivery archive, extracted into design/
+newb.zip
