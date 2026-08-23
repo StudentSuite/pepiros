@@ -172,7 +172,13 @@ export function NavMenu({ items }: { items: readonly NavMenuItem[] }) {
             onMouseEnter={scheduleClose}
             className={clsx(
               "rounded-md px-s-3 py-s-2 font-sans text-sm transition-colors duration-fast ease-out",
-              pathname === item.href ? "text-ink" : "text-ink-muted hover:text-ink",
+              // Current-page state reads as a real accent signal now (was
+              // plain text-ink, indistinguishable from "just less muted").
+              // The mega-menu trigger's own open/closed state, just below in
+              // this file, is deliberately left alone -- that's a different
+              // state (is this dropdown expanded), not "current page", and
+              // wasn't part of this change.
+              pathname === item.href ? "text-accent-text" : "text-ink-muted hover:text-ink",
             )}
           >
             {item.label}

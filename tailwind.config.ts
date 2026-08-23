@@ -31,10 +31,13 @@ const config: Config = {
   				sunk: 'rgb(var(--accent-sunk-rgb) / <alpha-value>)',
   				wash: 'var(--accent-wash)'
   			},
-  			// The dispersion palette, the only legal source of a UI accent
-  			// (see the purple rule at the top of app/globals.css). `violet` is
-  			// exposed for atmosphere -- gradients, fringes, glows -- and must
-  			// never be used as a flat fill or a button background.
+  			// The dispersion palette. `accent` above (violet, since
+  			// 2026-08-23) is the primary interactive colour -- see THE ACCENT
+  			// RULE at the top of app/globals.css. Amber/green/bone stay real,
+  			// legal UI accents for secondary/decorative use; raw `disp.violet`
+  			// itself is not used as a text-bearing fill (fails AA at 3.06:1
+  			// against --paper), which is why `accent` is its own derivation
+  			// rather than pointing here.
   			disp: {
   				amber: 'rgb(var(--disp-amber-rgb) / <alpha-value>)',
   				green: 'rgb(var(--disp-green-rgb) / <alpha-value>)',

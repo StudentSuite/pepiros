@@ -189,7 +189,7 @@ export function MobileNav({
                     aria-current={active ? "page" : undefined}
                     className={cn(
                       "py-s-2 font-sans font-semibold text-3xl leading-tight transition-colors duration-fast ease-out",
-                      active ? "text-ink" : "text-ink-muted hover:text-ink",
+                      active ? "text-accent-text" : "text-ink-muted hover:text-ink",
                     )}
                   >
                     {link.label}
@@ -213,7 +213,7 @@ export function MobileNav({
                       aria-current={active ? "page" : undefined}
                       className={cn(
                         "font-sans text-sm transition-colors duration-fast ease-out",
-                        active ? "text-ink" : "text-ink-muted hover:text-ink",
+                        active ? "text-accent-text" : "text-ink-muted hover:text-ink",
                       )}
                     >
                       {link.label}

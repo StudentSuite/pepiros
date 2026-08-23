@@ -28,10 +28,19 @@ TYPOGRAPHY
                    wordmark, never headlines
 
 COLOR PHILOSOPHY
-  Purple/lavender is the ENVIRONMENT the material refracts through, not a
-  brand swatch. There is no purple button, no purple card, no purple CTA
-  anywhere in this kit. The dispersion palette (bone, amber, green, violet)
-  appears only as thin fringe/glow accents on glass material.
+  Purple/lavender is the material's ENVIRONMENT -- the shader gradient,
+  fringe/glow accents on glass material -- and appears there as raw
+  dispersion swatches (bone, amber, green, violet).
+
+  AMENDED 2026-08-23: the app's primary UI accent (buttons, links, focus
+  rings, active states) is now VIOLET, via a colour separately derived from
+  this kit's violet hue rather than the raw swatch above (the raw swatch
+  fails contrast as a text-bearing fill). This kit's own raster assets
+  (buttons, cards, CTAs shown in og/social renders) still use the original
+  restrained material treatment and are not being regenerated for this
+  change -- the amendment is app-token-level, see app/globals.css's own
+  "THE ACCENT RULE" comment for the full derivation and reasoning.
+
   --logo-quote-bar (#6E6AA7) is kept as one isolated token -- the small
   accent bar under the wordmark in brand/og and brand/social renders is
   the only place that exact value is used, by design, so it can move in

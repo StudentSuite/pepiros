@@ -13,14 +13,23 @@
  *
  * Three hard rules govern the whole system:
  *
- *   1. THE PURPLE RULE. Purple is the ENVIRONMENT the material refracts
- *      through, never a swatch. There is no purple button, no purple accent
- *      token, no flat purple fill anywhere. UI accents come from the
- *      DISPERSION palette instead (--disp-amber / --disp-green / --disp-bone,
- *      with --disp-violet reserved for atmosphere, never a fill). The single
- *      exception is --logo-quote-bar, deliberately isolated so it can move in
- *      one place later. It has no call site in app code today; see its
- *      definition below.
+ *   1. THE ACCENT RULE (amended 2026-08-23, was "the purple rule"). Violet is
+ *      now the primary interactive accent -- buttons, active states, focus
+ *      rings, badges -- via a SEPARATELY DERIVED --accent, not the raw
+ *      --disp-violet swatch. That distinction is load-bearing: raw
+ *      --disp-violet (oklch 66% .12 300) measures only 3.06:1 against
+ *      --paper, well under AA for text-bearing fills, so --accent below is
+ *      its own OKLCH ramp at the same hue/chroma, walked in lightness the
+ *      same way the rest of this file's tokens are. Do not "simplify"
+ *      --accent back to var(--disp-violet) -- that would silently reintroduce
+ *      the contrast failure this derivation exists to avoid.
+ *      Amber and green remain real, valid tokens (--disp-amber / --disp-green
+ *      / --disp-bone) for secondary and decorative use -- tier badges,
+ *      pillar-adjacent accents, restrained variety -- but are no longer the
+ *      default reach-for accent; that is --accent's job now.
+ *      --logo-quote-bar stays the one isolated exception, deliberately kept
+ *      separate so it can move in one place later. It has no call site in
+ *      app code today; see its definition below.
  *   2. SURFACE RULE. Anything carrying body text to read is OPAQUE (--paper
  *      in both themes, with grain). Anything that is chrome, a control, or a
  *      floating panel is SOFT GLASS (--glass-*, backdrop-filter). Glass never
@@ -60,12 +69,15 @@
   --border-strong: #cbbea3;
 
   /* ---- dispersion palette ---------------------------------------------
-     Where every UI accent comes from, per the purple rule above. Authored in
-     OKLCH in the brand kit; the hex values here are those exact coordinates
-     converted, so they are the same colours a browser resolves oklch() to.
+     Amber, green and bone are ready-to-use UI accents. Violet is the hue
+     --accent (below) derives its own ramp from -- see the accent rule above
+     for why raw --disp-violet itself isn't used directly as a fill. Authored
+     in OKLCH in the brand kit; the hex values here are those exact
+     coordinates converted, so they are the same colours a browser resolves
+     oklch() to.
        amber  oklch(74% .12 75)
        green  oklch(70% .10 145)
-       violet oklch(66% .12 300)   ATMOSPHERE ONLY, never a fill
+       violet oklch(66% .12 300)   the hue --accent is derived from
      Bone is a measured hex in the kit, not an OKLCH coordinate. */
   --disp-amber: #d79f4c;
   --disp-green: #76af77;
@@ -95,17 +107,20 @@
   --brand-ink: #1b1812;
   --brand-ink-reversed: #faf8f4;
 
-  /* Accent -- interactive/focus/link. This is dispersion amber, moved along
-     its own lightness ramp until it works in this theme.
-     --accent is also a FILL (Button primary is `bg-accent text-paper`), so it
-     is dark enough here to carry near-white text: 5.63:1 against --paper.
-     It inverts in .dark, where the fill goes light and the text on it goes
-     dark, which is why hover is LIGHTER there and darker here. */
-  --accent: #8c5800;
-  --accent-text: #7c4a00;
-  --accent-hover: #7e4b00;
-  --accent-sunk: #6c3a00;
-  --accent-wash: #8c580014;
+  /* Accent -- interactive/focus/link. Dispersion violet's own hue/chroma
+     (oklch 66% .12 300), walked down in OKLCH lightness until it clears AA
+     against every light surface, worst case included (--surface-sunken):
+     4.77:1. --accent is also a FILL (Button primary is `bg-accent
+     text-paper`), confirmed at 5.65:1 against --paper. It inverts in .dark,
+     where the fill goes light and the text on it goes dark, which is why
+     hover is LIGHTER there and darker here -- same amber accent used to work
+     this way, same mechanism, new hue. Amended 2026-08-23 from amber
+     (#8c5800) to violet; see THE ACCENT RULE at the top of this file for why. */
+  --accent: #7254a1;
+  --accent-text: #644691;
+  --accent-hover: #654893;
+  --accent-sunk: #553780;
+  --accent-wash: #7254a114;
 
   /* Glass -- chrome only, never under reading text. */
   --glass-bg: rgba(251, 248, 239, 0.62);
@@ -272,7 +287,7 @@
   --card-foreground: 40 20% 9%; /* #1B1812 */
   --popover: 45 60% 96%; /* #FBF8EF */
   --popover-foreground: 40 20% 9%; /* #1B1812 */
-  --primary: 38 100% 27%; /* #8C5800 */
+  --primary: 263 31% 48%; /* #7254A1 */
   --primary-foreground: 45 60% 96%; /* #FBF8EF */
   --secondary: 43 34% 88%; /* #EBE5D6 */
   --secondary-foreground: 40 20% 9%; /* #1B1812 */
@@ -283,7 +298,7 @@
   --destructive: 359 35% 46%; /* #A04D4F, rose -text */
   --destructive-foreground: 45 60% 96%; /* #FBF8EF */
   --input: 41 33% 83%; /* #E1D8C4 */
-  --ring: 38 100% 27%; /* #8C5800 */
+  --ring: 263 31% 48%; /* #7254A1 */
   --radius: 10px;
 
   /* ---- alpha-capable channel companions -------------------------------
@@ -307,10 +322,10 @@
   --ink-faint-rgb: 108 102 90;
   --border-rgb: 225 216 196;
   --border-strong-rgb: 203 190 163;
-  --accent-rgb: 140 88 0;
-  --accent-text-rgb: 124 74 0;
-  --accent-hover-rgb: 126 75 0;
-  --accent-sunk-rgb: 108 58 0;
+  --accent-rgb: 114 84 161;
+  --accent-text-rgb: 100 70 145;
+  --accent-hover-rgb: 101 72 147;
+  --accent-sunk-rgb: 85 55 128;
   --brand-ink-rgb: 27 24 18;
   --brand-ink-reversed-rgb: 250 248 244;
   --disp-amber-rgb: 215 159 76;
@@ -365,13 +380,15 @@
   --border-strong: #4a4234;
 
   /* The accent inverts: the fill goes light so the dark --paper text on it
-     reads (7.39:1), which also means hover moves UP the ramp here and DOWN
-     in light. Same amber hue and chroma throughout. */
-  --accent: #d79f4c;
-  --accent-text: #e7b369;
-  --accent-hover: #e7b369;
-  --accent-sunk: #b68028;
-  --accent-wash: #d79f4c1a;
+     reads (7.41:1), which also means hover moves UP the ramp here and DOWN
+     in light. Same violet hue and chroma throughout, walked in lightness the
+     same way -- worst case (--paper-muted) is 6.75:1. Amended 2026-08-23 from
+     amber (#d79f4c); see THE ACCENT RULE at the top of this file. */
+  --accent: #b99bed;
+  --accent-text: #ccaeff;
+  --accent-hover: #ccaeff;
+  --accent-sunk: #9e80d1;
+  --accent-wash: #b99bed1a;
 
   --glass-bg: rgba(29, 26, 22, 0.55);
   --glass-edge: rgba(237, 231, 217, 0.08);
@@ -412,7 +429,7 @@
   --card-foreground: 42 36% 89%; /* #EDE7D9 */
   --popover: 34 14% 10%; /* #1D1A16 */
   --popover-foreground: 42 36% 89%; /* #EDE7D9 */
-  --primary: 36 63% 57%; /* #D79F4C */
+  --primary: 262 69% 77%; /* #B99BED */
   --primary-foreground: 34 14% 10%; /* #1D1A16 */
   --secondary: 30 10% 4%; /* #0B0A09 */
   --secondary-foreground: 42 36% 89%; /* #EDE7D9 */
@@ -423,7 +440,7 @@
   --destructive: 359 42% 61%; /* #C87172, rose -text */
   --destructive-foreground: 34 14% 10%; /* #1D1A16 */
   --input: 38 19% 16%; /* #322C22 */
-  --ring: 36 63% 57%; /* #D79F4C */
+  --ring: 262 69% 77%; /* #B99BED */
 
   /* ---- alpha-capable channel companions, dark -------------------------
      Same contract as the :root set above: keep in sync with the hex vars. */
@@ -437,10 +454,10 @@
   --ink-faint-rgb: 144 136 121;
   --border-rgb: 50 44 34;
   --border-strong-rgb: 74 66 52;
-  --accent-rgb: 215 159 76;
-  --accent-text-rgb: 231 179 105;
-  --accent-hover-rgb: 231 179 105;
-  --accent-sunk-rgb: 182 128 40;
+  --accent-rgb: 185 155 237;
+  --accent-text-rgb: 204 174 255;
+  --accent-hover-rgb: 204 174 255;
+  --accent-sunk-rgb: 158 128 209;
   --pillar-1-text-rgb: var(--pillar-1-rgb);
   --pillar-2-text-rgb: var(--pillar-2-rgb);
   --pillar-3-text-rgb: var(--pillar-3-rgb);
@@ -539,6 +556,21 @@
   --border: #322c22;
   --border-strong: #4a4234;
 
+  /* Accent, pinned to the dark-theme ramp. Added 2026-08-23: this block
+     originally pinned surface/ink/border/pillar-text but not accent, so a
+     .surface-chrome pane in the LIGHT theme rendered the light theme's own
+     --accent (dark violet, tuned for a light background) against this
+     pane's pinned dark background -- 2.89-3.11:1, failing AA. Confirmed
+     needed the moment Hero.tsx's front-door panel (a .surface-chrome pane
+     meant to look identical in both themes) started using --accent for its
+     button. Pinned to the dark-theme values below fixes it: 7.41:1 worst
+     case, same number `.dark`'s own accent block documents. */
+  --accent: #b99bed;
+  --accent-text: #ccaeff;
+  --accent-hover: #ccaeff;
+  --accent-sunk: #9e80d1;
+  --accent-wash: #b99bed1a;
+
   --surface-rgb: 20 18 15;
   --surface-raised-rgb: 29 26 22;
   --surface-sunken-rgb: 11 10 9;
@@ -547,6 +579,10 @@
   --ink-faint-rgb: 144 136 121;
   --border-rgb: 50 44 34;
   --border-strong-rgb: 74 66 52;
+  --accent-rgb: 185 155 237;
+  --accent-text-rgb: 204 174 255;
+  --accent-hover-rgb: 204 174 255;
+  --accent-sunk-rgb: 158 128 209;
 
   /* The dark theme's pillar text ramp, pinned. Rose and slate carry their
      lifted values here for the same reason they do in .dark. */
@@ -810,22 +846,22 @@ button:focus-visible {
   :root {
     --sidebar-background: 43 34% 88%; /* --surface-sunken, #EBE5D6 */
     --sidebar-foreground: 40 20% 9%; /* --ink, #1B1812 */
-    --sidebar-primary: 38 100% 27%; /* --accent, #8C5800 */
+    --sidebar-primary: 263 31% 48%; /* --accent, #7254A1 */
     --sidebar-primary-foreground: 45 60% 96%; /* --paper, #FBF8EF */
     --sidebar-accent: 41 33% 83%; /* hover, a step down from the rail */
     --sidebar-accent-foreground: 40 20% 9%;
     --sidebar-border: 41 33% 83%; /* --border, #E1D8C4 */
-    --sidebar-ring: 38 100% 27%;
+    --sidebar-ring: 263 31% 48%;
   }
   .dark {
     --sidebar-background: 30 10% 4%; /* --surface-sunken, #0B0A09 */
     --sidebar-foreground: 42 36% 89%; /* --ink, #EDE7D9 */
-    --sidebar-primary: 36 63% 57%; /* --accent, #D79F4C */
+    --sidebar-primary: 262 69% 77%; /* --accent, #B99BED */
     --sidebar-primary-foreground: 34 14% 10%; /* --paper, #1D1A16 */
     --sidebar-accent: 38 19% 16%;
     --sidebar-accent-foreground: 42 36% 89%;
     --sidebar-border: 38 19% 16%; /* --border, #322C22 */
-    --sidebar-ring: 36 63% 57%;
+    --sidebar-ring: 262 69% 77%;
   }
 }
 

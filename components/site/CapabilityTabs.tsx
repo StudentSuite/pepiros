@@ -35,7 +35,19 @@ export function CapabilityTabs() {
           <div
             key={tool.name}
             className="rounded-lg border border-l-[3px] border-border bg-surface-raised p-s-4 transition-colors duration-fast ease-out hover:border-accent/50"
-            style={{ borderLeftColor: "var(--disp-amber)" }}
+            // Inline style, not a `border-l-accent` utility class: this box
+            // already carries `border-border` (all four sides) from the base
+            // Tailwind border-color utility, and whether a second, more
+            // specific `.border-l-{color}` utility class wins the left edge
+            // depends on Tailwind's internal generation order between two
+            // different colour keys, which is not something to bet on
+            // (`.paper-grain` vs `.absolute` fighting over `position` for
+            // exactly this reason is the bug that taught this lesson earlier
+            // this session). Inline style always wins the cascade, no bet
+            // required. Was `var(--disp-amber)`, a hardcoded "default accent"
+            // reach that predates the accent rule amendment -- now reads the
+            // real accent token so it moves with any future re-derivation.
+            style={{ borderLeftColor: "var(--accent)" }}
           >
             <div className="flex flex-wrap items-baseline gap-s-2">
               <code className="font-mono text-sm font-medium text-ink">{tool.name}</code>

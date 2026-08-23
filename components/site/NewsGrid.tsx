@@ -21,7 +21,12 @@ export function NewsGrid() {
         >
           <span
             className="absolute inset-x-0 top-0 h-[3px] opacity-70 transition-opacity duration-fast ease-out group-hover:opacity-100"
-            style={{ backgroundColor: `var(--disp-${["amber", "green", "violet"][i % 3]})` }}
+            // Violet leads now that it's the primary accent (was
+            // amber,green,violet) -- the first card is typically the most
+            // recent changelog entry, so it's the one that should carry the
+            // new default accent rather than landing on it by array-order
+            // accident.
+            style={{ backgroundColor: `var(--disp-${["violet", "amber", "green"][i % 3]})` }}
             aria-hidden
           />
           <span className="relative font-mono text-xs text-ink-faint">{entry.date}</span>
