@@ -1,0 +1,41 @@
+name: Publish to npm
+
+# Manual only, deliberately: this publishes a real version of pepiros-mcp to
+# the public npm registry. Nothing here runs on a push or a PR -- someone has
+# to open the Actions tab and click "Run workflow" for a publish to happen.
+on:
+  workflow_dispatch:
+
+# id-token: write is what npm's trusted publishing (OIDC) actually needs --
+# no NPM_TOKEN secret exists in this repo, and none should: the registry
+# verifies this exact workflow file/repo against the trusted-publisher
+# config on npmjs.com instead of trusting a long-lived token.
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # Optional extra gate: if a "npm-publish" GitHub Environment exists with
+    # required reviewers configured (Settings -> Environments), this job
+    # waits for an approval before it runs. With no such environment (or one
+    # with no protection rules), it behaves exactly like an environment-less
+    # job. Delete this line if that extra step isn't wanted.
+    environment: npm-publish
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+      # Same fix as ci.yml: Node 22's bundled npm (10.x) doesn't support
+      # trusted publishing at all (it needs 11.5.1+), and separately
+      # hard-fails npm ci with EBADPLATFORM on this lockfile.
+      - run: npm install -g npm@latest
+      - run: npm ci
+      # package.json's own prepublishOnly script runs build:mcp first, so
+      # the dist/mcp bundle publish depends on is always fresh here. Publish
+      # fails loudly (not silently) if package.json's version is already on
+      # the registry -- bump it in a normal commit before running this.
+      - run: npm publish --provenance
