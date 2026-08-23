@@ -41,6 +41,10 @@ export function PillarNode({ data }: NodeProps<PepirosNode>) {
         backgroundColor: `color-mix(in srgb, ${color} 4%, var(--surface-raised))`,
         animationDelay: `${appearDelayMs ?? 0}ms`,
       }}
+      // Issue #322: explicit fallback so a screen reader always gets at
+      // least the title, matching what a sighted user sees at every zoom
+      // level rather than depending on hidden content's a11y-tree removal.
+      aria-label={node.title}
     >
       <Handle type="target" position={Position.Top} style={{ background: color }} />
       <div className="flex items-start justify-between gap-2">

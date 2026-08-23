@@ -872,14 +872,24 @@ button:focus-visible {
    crosses a threshold costs one attribute change instead of rebuilding every
    node's data object.
 
-   `visibility: hidden` rather than `display: none` on purpose: the card keeps
-   its footprint, so nothing reflows or shifts position as detail drops in and
-   out -- only the ink disappears.
+   Issue #322: this used to be `visibility: hidden`, which keeps an element's
+   layout box even though it draws nothing -- the stated intent was "the card
+   keeps its footprint, so nothing reflows." In practice that meant a
+   title-only card at mid-zoom (confirmed live, ~2 zoom-in clicks from
+   fit-view, which is the band most people land in right after opening the
+   canvas) rendered a border and category label sitting over a fully blank
+   box the exact height of the hidden body text -- reading as a broken
+   render, not an intentional detail level. `display: none` instead collapses
+   that space, so a title-only card is actually title-sized. Node x/y
+   positions (lib/layout/computeLayout, still fully deterministic) are
+   unaffected either way: this only changes one card's own content height,
+   not where any node sits, and React Flow already re-measures each node's
+   actual rendered size for edge routing on every frame regardless.
    -------------------------------------------------------------------------- */
 [data-canvas-detail="title"] [data-lod="body"],
 [data-canvas-detail="minimal"] [data-lod="body"],
 [data-canvas-detail="minimal"] [data-lod="title"] {
-  visibility: hidden;
+  display: none;
 }
 
 /* --------------------------------------------------------------------------

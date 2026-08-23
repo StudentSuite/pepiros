@@ -34,6 +34,10 @@ export function LeafNode({ data }: NodeProps<PepirosNode>) {
         node.stale && "opacity-50",
       )}
       style={{ borderColor: color, animationDelay: `${appearDelayMs ?? 0}ms` }}
+      // Issue #322: explicit fallback so a screen reader always gets at
+      // least the title, matching what a sighted user sees at every zoom
+      // level rather than depending on hidden content's a11y-tree removal.
+      aria-label={node.title}
     >
       <Handle type="target" position={Position.Top} style={{ background: color }} />
       <div data-lod="title" className="font-sans text-[11px] font-medium leading-snug text-ink">{node.title}</div>

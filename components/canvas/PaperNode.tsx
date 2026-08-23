@@ -24,6 +24,12 @@ export function PaperNode({ data }: NodeProps<PepirosNode>) {
         node.stale && "opacity-50",
       )}
       style={{ animationDelay: `${appearDelayMs ?? 0}ms` }}
+      // Issue #322: at title/minimal zoom, the visible label is exactly
+      // this title, so a screen reader hearing anything else (or nothing)
+      // for the same node would be an inconsistent experience across
+      // modalities. Explicit, so it never depends on whether the hidden
+      // body copy gets removed from the accessibility tree correctly.
+      aria-label={node.title}
     >
       <Handle type="target" position={Position.Top} className="!bg-border-strong" />
       <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">Paper</div>

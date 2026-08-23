@@ -27,6 +27,10 @@ export function SynthesisNode({ data }: NodeProps<PepirosNode>) {
         node.stale && "opacity-50",
       )}
       style={{ animationDelay: `${appearDelayMs ?? 0}ms` }}
+      // Issue #322: explicit fallback so a screen reader always gets at
+      // least the title, matching what a sighted user sees at every zoom
+      // level rather than depending on hidden content's a11y-tree removal.
+      aria-label={node.title}
     >
       <Handle type="target" position={Position.Top} className="!bg-border-strong" />
       <div className="flex items-center justify-between">
