@@ -14,13 +14,14 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <main className="pb-s-5">
-      <ReadingColumn>
-        <ArticleHeader
-          kicker="Contact"
-          title="There is no support desk."
-          dek="Two people build this. Here is where each kind of message actually goes."
-        />
+      <ArticleHeader
+        banded
+        kicker="Contact"
+        title="There is no support desk."
+        dek="Two people build this. Here is where each kind of message actually goes."
+      />
 
+      <ReadingColumn className="pt-s-6">
         <ArticleBody>
           <p>
             Pepiros is built by Anay Dhawan and Yash Kewlani. There is no

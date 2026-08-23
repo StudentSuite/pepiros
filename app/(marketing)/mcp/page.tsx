@@ -31,13 +31,14 @@ const TOOLS = GROUPS.map((group) => ({
 export default function McpPage() {
   return (
     <main className="pb-s-5">
-      <ReadingColumn>
-        <ArticleHeader
-          kicker="For agents"
-          title="Let your agent check its own claims."
-          dek="Connect over MCP and it can verify what it is about to tell you, against the source, before it says it."
-        />
+      <ArticleHeader
+        banded
+        kicker="For agents"
+        title="Let your agent check its own claims."
+        dek="Connect over MCP and it can verify what it is about to tell you, against the source, before it says it."
+      />
 
+      <ReadingColumn className="pt-s-6">
         <ArticleBody>
           <p>
             An agent that summarises a paper is guessing at how faithful it is

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Avatar, AvatarFallback } from "@/components/shadcn/avatar";
+import { Band } from "@/components/chrome/Band";
 import { cn } from "@/lib/utils";
 
 /**
@@ -47,14 +48,24 @@ export function ArticleHeader({
   title,
   dek,
   children,
+  /**
+   * A slim shader strip behind kicker+title+dek, `variant="light"` (a
+   * header-height band, not the full-bleed hero treatment -- see
+   * design/anti-slop.md on why the shader stays a bookend). Off by default:
+   * this component is also used on dense working surfaces (paper detail)
+   * that want no shader at all, so the band is opt-in per caller rather
+   * than baked into every header on the site.
+   */
+  banded = false,
 }: {
   kicker?: string;
   title: string;
   dek?: string;
   children?: React.ReactNode;
+  banded?: boolean;
 }) {
-  return (
-    <header className="pb-s-6 pt-s-7">
+  const content = (
+    <>
       {kicker && (
         <p className="mb-s-3 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
           {kicker}
@@ -69,8 +80,18 @@ export function ArticleHeader({
         </p>
       )}
       {children && <div className="mt-s-5">{children}</div>}
-    </header>
+    </>
   );
+
+  if (banded) {
+    return (
+      <Band as="header" variant="light" className="px-6 py-s-7">
+        <div className="mx-auto w-full max-w-[42rem]">{content}</div>
+      </Band>
+    );
+  }
+
+  return <header className="pb-s-6 pt-s-7">{content}</header>;
 }
 
 /** Avatar, name, and a muted metadata line. */
@@ -129,7 +150,11 @@ export function ArticleBody({
   return (
     <div
       className={cn(
-        "font-sans text-[1.0625rem] leading-[1.75] text-ink-muted",
+        // Long-form reading prose, not UI chrome: Source Serif 4, per
+        // design/anti-slop.md's font-role rule (serif for reading body,
+        // Geist for headings and UI). Headings below stay font-sans
+        // deliberately -- they step down from the title, not the prose.
+        "font-serif text-[1.0625rem] leading-[1.75] text-ink-muted",
         "[&>*+*]:mt-s-5",
         "[&_p]:text-[1.0625rem] [&_p]:leading-[1.75]",
         "[&_strong]:font-medium [&_strong]:text-ink",

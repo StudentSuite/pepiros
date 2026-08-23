@@ -16,13 +16,14 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <main className="pb-s-5">
-      <ReadingColumn>
-        <ArticleHeader
-          kicker="About"
-          title="Turns a research PDF into a living knowledge graph."
-          dek="Every generated claim is bound to a located quote, exposed to Claude as an MCP service."
-        />
+      <ArticleHeader
+        banded
+        kicker="About"
+        title="Turns a research PDF into a living knowledge graph."
+        dek="Every generated claim is bound to a located quote, exposed to Claude as an MCP service."
+      />
 
+      <ReadingColumn className="pt-s-6">
         <ArticleBody>
           <p>
             Most tools that summarise a paper ask you to trust the summary. The
