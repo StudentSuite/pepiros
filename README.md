@@ -233,6 +233,7 @@ Two conventions worth knowing before adding a component: pillar hues have two ac
 | File | What |
 | --- | --- |
 | [`docs/PLAN-V1.md`](docs/PLAN-V1.md) | Canonical spec: product, architecture, locked decisions, cut list, cited by the `TODO` comments throughout the codebase |
+| [`docs/`](docs/) (Word format) | Formal project documentation: overview and audience, installation and setup, user manual, technical reference (architecture, full data model, MCP tool reference) |
 | [`CLAUDE.md`](CLAUDE.md) | Conventions and invariants for AI coding agents |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Setup, PR gates, code conventions |
 | [`CHANGELOG.md`](CHANGELOG.md) | Keep a Changelog format |

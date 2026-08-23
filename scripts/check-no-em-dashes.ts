@@ -20,7 +20,7 @@ const EM_DASH = "\u2014";
 // UTF-8 at all.
 const SKIP_EXTENSIONS = new Set([
   ".png", ".jpg", ".jpeg", ".gif", ".ico", ".woff", ".woff2", ".ttf", ".otf",
-  ".pdf", ".zip", ".svg",
+  ".pdf", ".zip", ".svg", ".docx",
 ]);
 const SKIP_FILES = new Set([
   "package-lock.json",
