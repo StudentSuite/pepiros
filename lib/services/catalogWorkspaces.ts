@@ -17,13 +17,42 @@ import { getIndexedCatalogEntries } from "@/lib/db/queries";
  * render (issue #281) rather than an error page. A missing workspace id
  * costs a reader one link; a thrown error costs them the whole page.
  */
+/**
+ * Deadline for the catalog lookup.
+ *
+ * The try/catch below is decorative without this. postgres.js parks queries on
+ * an unbounded queue with no query timeout once its connections are busy or
+ * half-open, so a dropped socket produces a promise that never settles and
+ * never rejects: not an error, just a render that hangs forever. That is what
+ * wedged the dev server twice on 2026-08-23, and it presents as the whole app
+ * being down because the browser runs out of sockets waiting.
+ *
+ * 3s is far longer than a healthy lookup (single indexed table, tens of rows)
+ * and short enough that a sick database costs a "not yet indexed" badge rather
+ * than the page.
+ */
+const LOOKUP_TIMEOUT_MS = 3000;
+
 async function indexedBySlug(): Promise<Map<string, string>> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    const entries = await getIndexedCatalogEntries();
+    const entries = await Promise.race([
+      getIndexedCatalogEntries(),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`indexed_catalog lookup exceeded ${LOOKUP_TIMEOUT_MS}ms`)),
+          LOOKUP_TIMEOUT_MS,
+        );
+      }),
+    ]);
     return new Map(entries.map((e) => [e.slug, e.workspaceId]));
   } catch (err) {
     console.error("[catalogWorkspaces] getIndexedCatalogEntries() unavailable:", err);
     return new Map();
+  } finally {
+    // Promise.race does not cancel the loser. Without this the timer keeps the
+    // event loop alive for the full timeout on every successful request.
+    clearTimeout(timer);
   }
 }
 
