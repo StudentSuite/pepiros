@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; }
+    a { color: #6E6AA7; }
+    a:hover { color: #55518c; }
+  </style>
+</helmet>
+
+<div style="background:#F5F1E6;color:#1B1812;font-family:'Geist',Helvetica,Arial,sans-serif;">
+
+  <!-- HERO / MATERIAL STUDY -->
+  <div style="position:relative;background:#0B0A09;padding:100px 24px 90px;overflow:hidden;">
+    <div style="position:absolute;inset:0;background:radial-gradient(circle at 20% 15%, rgba(142,111,176,0.30), transparent 55%), radial-gradient(circle at 82% 85%, rgba(201,164,78,0.16), transparent 50%), radial-gradient(circle at 78% 12%, rgba(111,163,106,0.12), transparent 45%);"></div>
+    <div style="position:absolute;inset:0;background-image:url(./grain.png);background-size:260px 260px;opacity:0.28;mix-blend-mode:overlay;pointer-events:none;"></div>
+    <div style="position:relative;max-width:1040px;margin:0 auto;text-align:center;">
+      <div style="display:flex;justify-content:center;margin-bottom:28px;">
+        <div style="filter:drop-shadow(0 10px 30px rgba(0,0,0,0.4));">
+          <dc-import name="Glyph" size="128" treatment="chrome" bg-color="#0B0A09" hint-size="128px,150px"></dc-import>
+        </div>
+      </div>
+      <h1 style="font-size:clamp(40px,6vw,68px);font-weight:700;letter-spacing:0.02em;color:#FAF8F4;margin:0 0 14px;">PEPIROS</h1>
+      <p style="font-family:'Source Serif 4',Georgia,serif;font-style:italic;font-size:22px;color:rgba(250,248,244,0.8);margin:0 0 40px;">Be the source.</p>
+      <p style="max-width:640px;margin:0 auto;font-size:16px;line-height:1.6;color:rgba(250,248,244,0.72);">
+        Refractive dispersion on soft-body organic geometry. Purple is the environment the material refracts through: never a brand swatch, never a button.
+      </p>
+    </div>
+  </div>
+
+  <!-- SECTION: NEUTRALS -->
+  <div style="max-width:1100px;margin:0 auto;padding:80px 24px 20px;">
+    <div style="font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#8A8374;margin-bottom:18px;">01 · Surfaces &amp; Ink</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:32px;">
+      <div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Light</div>
+        <div style="display:flex;flex-direction:column;gap:1px;border:1px solid #E1D8C4;border-radius:10px;overflow:hidden;">
+          <div style="background:#F5F1E6;padding:14px 16px;font-family:'Geist Mono',monospace;font-size:12px;">--surface #F5F1E6</div>
+          <div style="background:#FBF8EF;padding:14px 16px;font-family:'Geist Mono',monospace;font-size:12px;">--surface-raised #FBF8EF</div>
+          <div style="background:#1B1812;color:#F5F1E6;padding:14px 16px;font-family:'Geist Mono',monospace;font-size:12px;">--ink #1B1812</div>
+          <div style="background:#F5F1E6;color:#5C564A;padding:14px 16px;font-family:'Geist Mono',monospace;font-size:12px;">--ink-muted #5C564A</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Dark</div>
+        <div style="display:flex;flex-direction:column;gap:1px;border:1px solid #322C22;border-radius:10px;overflow:hidden;">
+          <div style="background:#14120F;color:#EDE7D9;padding:14px 16px;font-family:'Geist Mono',monospace;font-size:12px;">--surface #14120F</div>
+          <div style="background:#1D1A16;color:#EDE7D9;padding:14px 16px;font-family:'Geist Mono',monospace;font-size:12px;">--surface-raised #1D1A16</div>
+          <div style="background:#EDE7D9;color:#14120F;padding:14px 16px;font-family:'Geist Mono',monospace;font-size:12px;">--ink #EDE7D9</div>
+          <div style="background:#1D1A16;color:#A79E8C;padding:14px 16px;font-family:'Geist Mono',monospace;font-size:12px;">--ink-muted #A79E8C</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px;">Isolated token</div>
+        <div style="border:1px solid #E1D8C4;border-radius:10px;overflow:hidden;">
+          <div style="background:#6E6AA7;color:#FAF8F4;padding:14px 16px;font-family:'Geist Mono',monospace;font-size:12px;">--logo-quote-bar #6E6AA7</div>
+          <div style="padding:14px 16px;font-size:13px;line-height:1.5;color:#5C564A;">Used only under the wordmark. Deliberately isolated: one call site, change it here alone.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: DISPERSION ACCENTS -->
+  <div style="max-width:1100px;margin:0 auto;padding:60px 24px 20px;">
+    <div style="font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#8A8374;margin-bottom:8px;">02 · Dispersion Palette</div>
+    <p style="max-width:640px;font-size:14px;line-height:1.6;color:#5C564A;margin:0 0 24px;">Atmosphere and fringe only: never a fill, never a background, never a button.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:18px;">
+      <div style="background:#FBF8EF;border:1px solid #E1D8C4;border-radius:10px;padding:20px;">
+        <div style="width:100%;height:56px;border-radius:8px;background:oklch(74% 0.12 75);margin-bottom:12px;"></div>
+        <div style="font-size:13px;font-weight:600;">Amber</div>
+        <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#8A8374;">oklch(74% .12 75)</div>
+      </div>
+      <div style="background:#FBF8EF;border:1px solid #E1D8C4;border-radius:10px;padding:20px;">
+        <div style="width:100%;height:56px;border-radius:8px;background:oklch(70% 0.10 145);margin-bottom:12px;"></div>
+        <div style="font-size:13px;font-weight:600;">Green</div>
+        <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#8A8374;">oklch(70% .10 145)</div>
+      </div>
+      <div style="background:#FBF8EF;border:1px solid #E1D8C4;border-radius:10px;padding:20px;">
+        <div style="width:100%;height:56px;border-radius:8px;background:oklch(66% 0.12 300);margin-bottom:12px;"></div>
+        <div style="font-size:13px;font-weight:600;">Violet</div>
+        <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#8A8374;">oklch(66% .12 300) · atmosphere</div>
+      </div>
+      <div style="background:#FBF8EF;border:1px solid #E1D8C4;border-radius:10px;padding:20px;">
+        <div style="width:100%;height:56px;border-radius:8px;background:#E8E0CE;margin-bottom:12px;"></div>
+        <div style="font-size:13px;font-weight:600;">Bone</div>
+        <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#8A8374;">#E8E0CE</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: TYPOGRAPHY -->
+  <div style="max-width:1100px;margin:0 auto;padding:60px 24px 20px;">
+    <div style="font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#8A8374;margin-bottom:24px;">03 · Typography</div>
+    <div style="display:flex;flex-direction:column;gap:22px;">
+      <div>
+        <div style="font-size:48px;font-weight:700;line-height:1.1;">Geist · Headline</div>
+        <div style="font-family:'Geist Mono',monospace;font-size:12px;color:#8A8374;margin-top:4px;">700 · UI, headlines, wordmark, navigation, buttons</div>
+      </div>
+      <div style="font-family:'Source Serif 4',Georgia,serif;font-size:20px;line-height:1.7;max-width:680px;color:#2b2820;">
+        Long-form article and paper body copy sets in Source Serif 4: an editorial reading experience the interface itself never borrows for headlines or the wordmark.
+      </div>
+      <div style="font-family:'Geist Mono',monospace;font-size:14px;background:#1B1812;color:#EDE7D9;padding:14px 18px;border-radius:8px;display:inline-block;max-width:fit-content;">
+        PEPIROS-2024-0917 · p.14 · <span style="color:#9ecb9a;">quote located</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: GLYPH TREATMENTS -->
+  <div style="max-width:1100px;margin:0 auto;padding:60px 24px 20px;">
+    <div style="font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#8A8374;margin-bottom:8px;">04 · Glyph · Locked Geometry</div>
+    <p style="max-width:640px;font-size:14px;line-height:1.6;color:#5C564A;margin:0 0 24px;">Research paper + binder clip. Proportions never change: only the material treatment.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-end;">
+      <div style="background:#0B0A09;border-radius:12px;padding:30px 40px;display:flex;flex-direction:column;align-items:center;gap:10px;">
+        <dc-import name="Glyph" size="88" treatment="chrome" bg-color="#0B0A09" hint-size="88px,108px"></dc-import>
+        <span style="font-size:11px;font-family:'Geist Mono',monospace;color:#A79E8C;">chrome · marketing</span>
+      </div>
+      <div style="background:#FBF8EF;border:1px solid #E1D8C4;border-radius:12px;padding:30px 40px;display:flex;flex-direction:column;align-items:center;gap:10px;">
+        <dc-import name="Glyph" size="88" treatment="flat" bg-color="#FBF8EF" hint-size="88px,108px"></dc-import>
+        <span style="font-size:11px;font-family:'Geist Mono',monospace;color:#8A8374;">flat ink · product UI</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+        <dc-import name="Glyph" size="40" treatment="flat" bg-color="#F5F1E6" hint-size="40px,50px"></dc-import>
+        <span style="font-size:11px;font-family:'Geist Mono',monospace;color:#8A8374;">40px</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+        <dc-import name="Glyph" size="24" treatment="flat" bg-color="#F5F1E6" hint-size="24px,34px"></dc-import>
+        <span style="font-size:11px;font-family:'Geist Mono',monospace;color:#8A8374;">24px</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: BUTTONS + EVIDENCE -->
+  <div style="background:#0B0A09;margin-top:70px;padding:70px 24px;">
+    <div style="max-width:1100px;margin:0 auto;">
+      <div style="font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#8A8374;margin-bottom:24px;">05 · Buttons &amp; Evidence States</div>
+      <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-bottom:36px;">
+        <button style="background:#FAF8F4;color:#181511;border:none;border-radius:999px;padding:14px 28px;font-family:'Geist',sans-serif;font-weight:600;font-size:15px;cursor:pointer;">Primary pill</button>
+        <button style="background:transparent;color:#FAF8F4;border:1px solid rgba(250,248,244,0.35);border-radius:999px;padding:14px 28px;font-family:'Geist',sans-serif;font-weight:600;font-size:15px;cursor:pointer;">Secondary pill</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;">
+        <div style="display:flex;align-items:center;gap:8px;background:rgba(250,248,244,0.06);border:1px solid rgba(250,248,244,0.14);border-radius:999px;padding:8px 16px;">
+          <span style="width:7px;height:7px;border-radius:50%;background:oklch(70% 0.10 145);"></span>
+          <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#EDE7D9;">quote located</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;background:rgba(250,248,244,0.06);border:1px solid rgba(250,248,244,0.14);border-radius:999px;padding:8px 16px;">
+          <span style="width:7px;height:7px;border-radius:50%;background:#8A8374;"></span>
+          <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#EDE7D9;">inference</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: MATERIAL SAMPLES -->
+  <div style="max-width:1100px;margin:0 auto;padding:70px 24px 100px;">
+    <div style="font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#8A8374;margin-bottom:24px;">06 · Material Samples</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;">
+      <div style="position:relative;height:160px;border-radius:14px;overflow:hidden;background:#1D1A16;">
+        <div style="position:absolute;inset:0;background-image:url(./grain.png);background-size:220px 220px;opacity:0.55;mix-blend-mode:overlay;"></div>
+        <div style="position:absolute;bottom:12px;left:14px;font-family:'Geist Mono',monospace;font-size:11px;color:#EDE7D9;">grain</div>
+      </div>
+      <div style="position:relative;height:160px;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,#8E6FB0,#6FA36A,#C9A44E);">
+        <div style="position:absolute;inset:0;backdrop-filter:blur(14px) saturate(1.6);background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);"></div>
+        <div style="position:absolute;bottom:12px;left:14px;font-family:'Geist Mono',monospace;font-size:11px;color:#fff;">glass</div>
+      </div>
+      <div style="position:relative;height:160px;border-radius:14px;overflow:hidden;background:conic-gradient(from 120deg,#8E6FB0,#6FA36A,#C9A44E,#8E6FB0);">
+        <div style="position:absolute;bottom:12px;left:14px;font-family:'Geist Mono',monospace;font-size:11px;color:#fff;">iridescence</div>
+      </div>
+      <div style="position:relative;height:160px;border-radius:14px;overflow:hidden;background:#0a0810;box-shadow:inset 0 0 40px rgba(0,0,0,0.6);">
+        <div style="position:absolute;inset:0;background:radial-gradient(circle at 30% 30%,#2a2436,#0a0810 70%);"></div>
+        <div style="position:absolute;left:0;top:0;bottom:0;width:14px;background:linear-gradient(90deg,rgba(111,163,106,0.5),transparent);"></div>
+        <div style="position:absolute;right:0;top:0;bottom:0;width:14px;background:linear-gradient(270deg,rgba(176,126,160,0.5),transparent);"></div>
+        <div style="position:absolute;bottom:12px;left:14px;font-family:'Geist Mono',monospace;font-size:11px;color:#EDE7D9;">dispersion edge</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;padding:0 24px 60px;font-family:'Geist Mono',monospace;font-size:12px;color:#8A8374;">Pepiros · visual identity token lab · v1</div>
+</div>
+
+</x-dc>
+</body>
+</html>

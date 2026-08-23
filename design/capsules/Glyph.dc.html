@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<svg viewBox="0 0 96 118" width="{{ pxSize }}" height="{{ pxSize }}" style="display: block; overflow: visible; position: absolute; left: 9px; top: 15px">
+  <sc-if value="{{ isChrome }}" hint-placeholder-val="{{ false }}">
+    <defs>
+      <linearGradient id="pepirosChromeGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#FDFBF6"></stop>
+        <stop offset="42%" stop-color="#E6E1D4"></stop>
+        <stop offset="68%" stop-color="#C7C0E2"></stop>
+        <stop offset="100%" stop-color="#EFD8A6"></stop>
+      </linearGradient>
+    </defs>
+  </sc-if>
+  <rect x="12" y="18" width="72" height="94" rx="2.5" fill="{{ sheetFill }}" stroke="{{ inkColor }}" stroke-width="1.6" style="{{ dispersionFilter }}"></rect>
+  <line x1="22" y1="46" x2="74" y2="46" stroke="{{ inkColor }}" stroke-width="3" stroke-linecap="round"></line>
+  <line x1="22" y1="57" x2="74" y2="57" stroke="{{ inkColor }}" stroke-width="3" stroke-linecap="round"></line>
+  <line x1="22" y1="68" x2="74" y2="68" stroke="{{ inkColor }}" stroke-width="3" stroke-linecap="round"></line>
+  <line x1="22" y1="79" x2="74" y2="79" stroke="{{ inkColor }}" stroke-width="3" stroke-linecap="round"></line>
+  <line x1="22" y1="90" x2="74" y2="90" stroke="{{ inkColor }}" stroke-width="3" stroke-linecap="round"></line>
+  <line x1="22" y1="101" x2="52" y2="101" stroke="{{ inkColor }}" stroke-width="3" stroke-linecap="round"></line>
+  <path d="M39 15.5 H57 L59.5 33.5 H36.5 Z" fill="{{ inkColor }}"></path>
+  <path d="M43 16 C43 6.5 45.2 3.4 48 3.4 C50.8 3.4 53 6.5 53 16" fill="none" stroke="#8A8374" stroke-width="2.4" stroke-linecap="round"></path>
+</svg>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: {&quot;width&quot;: 120, &quot;height&quot;: 140},
+  &quot;size&quot;: {&quot;editor&quot;: &quot;int&quot;, &quot;default&quot;: 96, &quot;tsType&quot;: &quot;number&quot;, &quot;min&quot;: 16, &quot;max&quot;: 512},
+  &quot;treatment&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;flat&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;options&quot;: [&quot;flat&quot;, &quot;chrome&quot;]},
+  &quot;paperColor&quot;: {&quot;editor&quot;: &quot;color&quot;, &quot;default&quot;: &quot;#FAF8F4&quot;, &quot;tsType&quot;: &quot;string&quot;},
+  &quot;inkColor&quot;: {&quot;editor&quot;: &quot;color&quot;, &quot;default&quot;: &quot;#181511&quot;, &quot;tsType&quot;: &quot;string&quot;}
+}">
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props || {};
+    const treatment = p.treatment ?? "flat";
+    const isChrome = treatment === "chrome";
+    const paperColor = p.paperColor ?? "#FAF8F4";
+    const inkColor = p.inkColor ?? "#181511";
+    return {
+      pxSize: p.size ?? 96,
+      isChrome,
+      paperColor,
+      inkColor,
+      sheetFill: isChrome ? "url(#pepirosChromeGrad)" : paperColor,
+      dispersionFilter: isChrome
+        ? "filter: drop-shadow(-1.1px 0 0 rgba(196,150,255,0.4)) drop-shadow(1.1px 0.5px 0 rgba(180,214,150,0.35)) drop-shadow(0 2px 5px rgba(0,0,0,0.3));"
+        : "",
+    };
+  }
+}
+</script>
+</body>
+</html>

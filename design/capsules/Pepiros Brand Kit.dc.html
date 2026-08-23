@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; }
+    a { color: #6E6AA7; }
+    a:hover { color: #55518c; }
+  </style>
+</helmet>
+
+<div style="background:#F5F1E6;color:#1B1812;font-family:'Geist',Helvetica,Arial,sans-serif;">
+
+  <div style="padding:70px 24px 50px;text-align:center;">
+    <h1 style="font-size:clamp(32px,5vw,52px);font-weight:700;margin:0 0 8px;">Pepiros Brand Kit</h1>
+    <p style="font-family:'Geist Mono',monospace;font-size:13px;color:#8A8374;margin:0;">one source SVG → one generator → the entire kit</p>
+  </div>
+
+  <!-- LOGOS -->
+  <div style="max-width:1100px;margin:0 auto;padding:30px 24px;">
+    <div style="font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#8A8374;margin-bottom:18px;">Logo Package</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;">
+      <div style="background:#FBF8EF;border:1px solid #E1D8C4;border-radius:12px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:14px;">
+        <img src="brand/logos/horizontal.svg" alt="Horizontal lockup" style="width:100%;height:60px;object-fit:contain;">
+        <span style="font-size:11px;font-family:'Geist Mono',monospace;color:#8A8374;">horizontal</span>
+      </div>
+      <div style="background:#0B0A09;border-radius:12px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:14px;">
+        <img src="brand/logos/horizontal-reversed.svg" alt="Horizontal reversed" style="width:100%;height:60px;object-fit:contain;">
+        <span style="font-size:11px;font-family:'Geist Mono',monospace;color:#A79E8C;">horizontal · reversed</span>
+      </div>
+      <div style="background:#FBF8EF;border:1px solid #E1D8C4;border-radius:12px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:14px;">
+        <img src="brand/logos/stacked.svg" alt="Stacked lockup" style="width:100%;height:110px;object-fit:contain;">
+        <span style="font-size:11px;font-family:'Geist Mono',monospace;color:#8A8374;">stacked + tagline</span>
+      </div>
+      <div style="background:#FBF8EF;border:1px solid #E1D8C4;border-radius:12px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:14px;">
+        <img src="brand/logos/wordmark-tagline.svg" alt="Wordmark + tagline" style="width:100%;height:60px;object-fit:contain;">
+        <span style="font-size:11px;font-family:'Geist Mono',monospace;color:#8A8374;">wordmark + tagline</span>
+      </div>
+      <div style="background:#FBF8EF;border:1px solid #E1D8C4;border-radius:12px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:14px;">
+        <img src="brand/logos/wordmark.svg" alt="Wordmark" style="width:100%;height:50px;object-fit:contain;">
+        <span style="font-size:11px;font-family:'Geist Mono',monospace;color:#8A8374;">wordmark only</span>
+      </div>
+      <div style="background:#FBF8EF;border:1px solid #E1D8C4;border-radius:12px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:14px;">
+        <img src="brand/logos/monochrome-lockup.svg" alt="Monochrome lockup" style="width:100%;height:60px;object-fit:contain;">
+        <span style="font-size:11px;font-family:'Geist Mono',monospace;color:#8A8374;">monochrome</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- GLYPH PACKAGE -->
+  <div style="max-width:1100px;margin:0 auto;padding:30px 24px;">
+    <div style="font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#8A8374;margin-bottom:18px;">Glyph Package</div>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;">
+      <sc-for list="{{ glyphSizes }}" as="s" hint-placeholder-count="5">
+        <div style="background:#0B0A09;border-radius:10px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:8px;width:100px;">
+          <img src="{{ s.src }}" alt="glyph" style="width:56px;height:56px;object-fit:contain;">
+          <span style="font-size:10px;font-family:'Geist Mono',monospace;color:#A79E8C;">{{ s.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- FAVICON + APP ICONS -->
+  <div style="max-width:1100px;margin:0 auto;padding:30px 24px;">
+    <div style="font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#8A8374;margin-bottom:18px;">Favicon &amp; App Icons</div>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;">
+      <sc-for list="{{ favicons }}" as="f" hint-placeholder-count="7">
+        <div style="background:#FBF8EF;border:1px solid #E1D8C4;border-radius:10px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px;width:88px;">
+          <img src="{{ f.src }}" alt="favicon" style="width:40px;height:40px;object-fit:contain;">
+          <span style="font-size:10px;font-family:'Geist Mono',monospace;color:#8A8374;">{{ f.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:14px;">
+      <sc-for list="{{ appIcons }}" as="a" hint-placeholder-count="6">
+        <div style="background:#FBF8EF;border:1px solid #E1D8C4;border-radius:10px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px;width:120px;">
+          <img src="{{ a.src }}" alt="app icon" style="width:64px;height:64px;object-fit:contain;">
+          <span style="font-size:10px;font-family:'Geist Mono',monospace;color:#8A8374;text-align:center;">{{ a.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- OG + SOCIAL -->
+  <div style="max-width:1100px;margin:0 auto;padding:30px 24px;">
+    <div style="font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#8A8374;margin-bottom:18px;">Open Graph &amp; Social</div>
+    <div style="margin-bottom:16px;">
+      <img src="brand/og/og-1200x630.png" alt="Open Graph card" style="width:100%;max-width:640px;border-radius:10px;display:block;">
+      <span style="font-size:11px;font-family:'Geist Mono',monospace;color:#8A8374;">og-1200x630</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+      <sc-for list="{{ social }}" as="s" hint-placeholder-count="5">
+        <div>
+          <img src="{{ s.src }}" alt="{{ s.label }}" style="width:100%;border-radius:10px;display:block;">
+          <span style="font-size:11px;font-family:'Geist Mono',monospace;color:#8A8374;">{{ s.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- POSTERS -->
+  <div style="max-width:1100px;margin:0 auto;padding:30px 24px 90px;">
+    <div style="font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#8A8374;margin-bottom:18px;">ChromeField Poster Frames</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+      <sc-for list="{{ posters }}" as="p" hint-placeholder-count="3">
+        <img src="{{ p.src }}" alt="poster frame" style="width:100%;border-radius:10px;display:block;">
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="text-align:center;padding:0 24px 60px;font-family:'Geist Mono',monospace;font-size:12px;color:#8A8374;">
+    Full kit + README: <a href="brand/README.txt">brand/README.txt</a> · Material loop: <a href="Pepiros%20Material%20Loop.dc.html">Pepiros Material Loop.dc.html</a> · Tokens: <a href="Pepiros%20Token%20Lab.dc.html">Pepiros Token Lab.dc.html</a>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const glyphSizes = [64,128,256,512,1024].map(s => ({ src: `brand/glyph/glyph-${s}.png`, label: `${s}px` }));
+    const favicons = [16,32,48,64,128,256,512].map(s => ({ src: `brand/favicon/favicon-${s}.png`, label: `${s}px` }));
+    const appIcons = [
+      { src: "brand/app-icons/android-192.png", label: "android 192" },
+      { src: "brand/app-icons/android-512.png", label: "android 512" },
+      { src: "brand/app-icons/maskable-512.png", label: "maskable 512" },
+      { src: "brand/app-icons/foreground-512.png", label: "foreground 512" },
+      { src: "brand/app-icons/apple-touch-180.png", label: "apple touch 180" },
+      { src: "brand/app-icons/mstile-150.png", label: "mstile 150" },
+    ];
+    const social = [
+      { src: "brand/social/avatar-800.png", label: "avatar 800" },
+      { src: "brand/social/twitter-1600x900.png", label: "twitter 1600x900" },
+      { src: "brand/social/linkedin-1200x627.png", label: "linkedin 1200x627" },
+      { src: "brand/social/github-1280x640.png", label: "github 1280x640" },
+      { src: "brand/social/discord-1024x512.png", label: "discord 1024x512" },
+    ];
+    const posters = [1,2,3].map(n => ({ src: `brand/posters/chromefield-0${n}.png` }));
+    return { glyphSizes, favicons, appIcons, social, posters };
+  }
+}
+</script>
+</body>
+</html>
