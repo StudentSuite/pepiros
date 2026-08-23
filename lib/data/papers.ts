@@ -91,6 +91,30 @@ export interface CatalogPaper {
    * opening a workspace about a different paper entirely (issue #255).
    */
   workspaceId?: string;
+  /**
+   * ISO date (YYYY-MM-DD) this paper entered the catalog. Not the publication
+   * date, which is `year`.
+   *
+   * Optional, and absent means CATALOG_SEEDED_AT below, which is every entry
+   * currently in this file. Papers added from here on set their own date, and
+   * the /open activity calendar plots this field.
+   */
+  addedAt?: string;
+}
+
+/**
+ * The date the existing catalog is treated as having landed on /open.
+ *
+ * Anay's call, 2026-08-23. Git says these entries were committed 2026-08-15
+ * (`git log -S'"p-<id>"' -- lib/data/papers.ts`), but that is when they entered
+ * the source file, not when /open existed to add them to. /open is the thing
+ * the calendar describes, so its own start date is the honest origin.
+ */
+export const CATALOG_SEEDED_AT = "2026-08-22";
+
+/** When a paper entered the catalog, falling back to the seed date. */
+export function paperAddedAt(paper: CatalogPaper): string {
+  return paper.addedAt ?? CATALOG_SEEDED_AT;
 }
 
 /**
