@@ -1,49 +1,42 @@
-import { FrontDoorField } from "@/components/site/FrontDoorField";
-import { CatalogBrowser } from "@/components/site/CatalogBrowser";
-import type { CatalogPaper } from "@/lib/data/papers";
+import Link from "next/link";
+import { Band } from "@/components/chrome/Band";
+import { bandButtonClassName } from "@/components/chrome/band-button";
 
 /**
- * Landing hero -- the front door (issue #296, superseding #246/#247).
+ * Block 1 of the homepage rebuild (plan §6.1): "Full-bleed Band, shader +
+ * chrome forms bleeding from the top corners and cropping off-canvas. Geist
+ * headline, white, centered. One line of subcopy. White pill primary +
+ * ghost secondary."
  *
- * JSTOR reference point: the page opens on the product's first real action,
- * not a picture of one. A wide paste-or-drop field (FrontDoorField) is the
- * literal "start here", with discipline chips and a strip of real catalog
- * papers (CatalogBrowser) underneath so there's always something to click
- * regardless of whether ingest is available on this deployment.
- *
- * Honesty gate (issue #295): hosted ingest 501s here, so `ingestSupported`
- * (passed down from the server, the same isPdfIngestSupportedHere() check
- * /upload's real form gates on) makes "Open a paper someone has read" the
- * primary action rather than the paste field, until ingest actually works.
+ * Deliberately simpler than the section it replaces. The previous Hero also
+ * carried the paste-a-paper field and the full discipline-chip catalog
+ * browser directly on the page background; both move to their own blocks
+ * now (FrontDoorField overlaps this band's bottom edge as block 2; the
+ * catalog browsing surface lives in the discipline grid, block 6). Putting
+ * muted UI chrome (chip borders, faint text) directly on top of a moving
+ * gradient tested poorly for contrast during the shader smoke test this
+ * session -- the plan's own spec for this block is only ever high-contrast
+ * elements (white wordmark, white pills) for exactly that reason.
  */
-export function Hero({
-  ingestSupported,
-  papers,
-}: {
-  ingestSupported: boolean;
-  papers: CatalogPaper[];
-}) {
+export function Hero() {
   return (
-    <section className="flex flex-col items-center px-6 pb-s-9 pt-[10vh] text-center">
-      {/* The wordmark IS the headline here. Tracking matches the brand kit
-          spec (letter-spacing 18 at font-size 62 = 0.29em), with the
-          trailing letter-space pulled back so it optically centres. */}
-      <h1 className="-mr-[0.29em] font-serif text-5xl uppercase leading-none tracking-[0.29em] text-ink sm:text-6xl md:text-7xl">
+    <Band as="section" className="flex flex-col items-center px-6 pb-s-8 pt-[14vh] text-center">
+      <h1 className="-mr-[0.15em] font-sans text-5xl font-bold uppercase leading-none tracking-[0.15em] text-brand-ink-reversed sm:text-6xl md:text-7xl">
         Pepiros
       </h1>
 
-      {/* Tagline, confirmed 2026-08-22: "Be the source." wins over the old
-          "Every claim, one click from its source." (plan.md section 10 /
-          the former design/DIRECTIONS.md) -- matches the OG/social-share
-          card (app/opengraph-image.png), which was the real decided copy. */}
-      <p className="mx-auto mt-s-5 max-w-xl font-sans text-base leading-relaxed text-ink-muted sm:text-lg">
+      <p className="mx-auto mt-s-5 max-w-xl font-sans text-base leading-relaxed text-brand-ink-reversed/70 sm:text-lg">
         Be the source.
       </p>
 
-      <div className="mt-s-7 w-full">
-        <FrontDoorField ingestSupported={ingestSupported} />
-        <CatalogBrowser papers={papers} />
+      <div className="mt-s-7 flex flex-wrap items-center justify-center gap-s-3">
+        <Link href="/discover" className={bandButtonClassName("primary")}>
+          Browse the library
+        </Link>
+        <Link href="/upload" className={bandButtonClassName("ghost")}>
+          Add a paper
+        </Link>
       </div>
-    </section>
+    </Band>
   );
 }
