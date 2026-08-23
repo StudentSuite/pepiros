@@ -76,7 +76,7 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${sourceSerif.variable} ${geist.variable} ${geistMono.variable}`}
     >
-      <body>
+      <body className="flex min-h-screen flex-col">
         {/* Issue #120 (WCAG 2.4.1 Bypass Blocks): the first focusable element
             on every page, so a keyboard/screen-reader user doesn't have to
             tab through the header's nav links, theme toggle, and auth

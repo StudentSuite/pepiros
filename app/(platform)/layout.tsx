@@ -20,7 +20,7 @@ export default async function PlatformLayout({
   return (
     <>
       <SiteHeader session={session} />
-      <main id="main-content">{children}</main>
+      <main id="main-content" className="flex-1">{children}</main>
       <SiteFooter />
     </>
   );

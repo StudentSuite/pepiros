@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Hero } from "@/components/site/Hero";
-import { FrontDoorField } from "@/components/site/FrontDoorField";
 import { SourceStrip } from "@/components/site/SourceStrip";
 import { CapabilityCards } from "@/components/site/CapabilityCards";
 import { MechanismDemo } from "@/components/site/MechanismDemo";
@@ -15,6 +14,7 @@ import { ReadingColumn } from "@/components/reading/Article";
 import { ReaderMock, AgentMock } from "@/components/mockups/ReaderMock";
 import { CATALOG } from "@/lib/data/papers";
 import { isPdfIngestSupportedHere } from "@/lib/services/ingest";
+import { LIVE_TOOLS } from "@/lib/mcp/registry";
 
 /**
  * Landing page, rebuilt per the approved plan's §6.1 (2026-08-23): eleven
@@ -71,7 +71,9 @@ function Section({
   className?: string;
 }) {
   return (
-    <section className={`relative border-t border-border py-s-7 ${className ?? ""}`}>
+    <section
+      className={`relative flex min-h-[72vh] flex-col justify-center border-t border-border py-s-8 ${className ?? ""}`}
+    >
       <ReadingColumn wide>
         {kicker && <p className="kicker">{kicker}</p>}
         {title && (
@@ -90,24 +92,19 @@ export default function MarketingPage() {
 
   return (
     <main className="flex flex-col">
-      {/* Block 1: hero. Shader bookend #1. */}
-      <Hero />
-
-      {/* Block 2: front-door field, a frosted card overlapping the hero's
-          bottom edge. */}
-      <div className="relative z-10 mx-auto -mt-s-8 w-full max-w-xl px-6">
-        <div
-          className="rounded-xl p-px"
-          style={{
-            background:
-              "conic-gradient(from 180deg, var(--disp-amber), var(--disp-green), var(--disp-violet), var(--disp-amber))",
-          }}
-        >
-          <div className="glass rounded-[19px] p-s-5">
-            <FrontDoorField ingestSupported={ingestSupported} />
-          </div>
-        </div>
-      </div>
+      {/* Block 1: hero. Shader bookend #1. Front-door field and stats now
+          live inside Hero itself (plan §2) -- see that component's header
+          comment for why the old overlapping frosted card is gone. */}
+      <Hero
+        papersInCatalog={CATALOG.length}
+        mcpToolsLive={LIVE_TOOLS.length}
+        // Literal, not derived: fixtures/workspace.json's evidence array has
+        // 11 rows, 10 with a real anchor (1 is deliberately unsupported /
+        // anchor: null). Same hand-copied-real-value precedent as
+        // MechanismDemo.tsx's own fixture numbers.
+        claimsAnchored={10}
+        ingestSupported={ingestSupported}
+      />
 
       {/* Block 3: source strip. */}
       <SourceStrip />
@@ -126,8 +123,14 @@ export default function MarketingPage() {
           screenshot, and a fade-in gives a beat of attention it would not
           get sitting flush with the section above it. */}
       <Reveal>
-        <section className="border-t border-border py-s-8">
-          <ReadingColumn wide>
+        <section className="flex min-h-[72vh] flex-col justify-center border-t border-border py-s-8">
+          {/* Widened past ReadingColumn's default "wide" (max-w-3xl, 768px):
+              at that width the right column only had ~358px to give
+              MechanismDemo, whose own internal 3-column beam layout needs
+              real room (see that component's own comment for the confirmed
+              measurement). max-w-6xl gives the demo column ~600px once its
+              xl: split activates. */}
+          <ReadingColumn wide className="max-w-6xl">
             <div className="grid gap-s-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-center">
               <div>
                 <p className="kicker">The mechanism</p>
@@ -215,7 +218,10 @@ export default function MarketingPage() {
 
       {/* Block 11: CTA band. Shader bookend #2. SiteFooter renders directly
           beneath this, from app/(marketing)/layout.tsx. */}
-      <Band as="section" className="border-t border-border px-6 py-s-9 text-center">
+      <Band
+        as="section"
+        className="flex min-h-[62vh] flex-col items-center justify-center border-t border-border px-6 py-s-8 text-center"
+      >
         <h2 className="font-sans text-[1.75rem] font-semibold leading-snug text-brand-ink-reversed sm:text-[2.4rem]">
           Ready to check your sources?
         </h2>

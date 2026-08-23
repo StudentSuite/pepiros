@@ -30,11 +30,33 @@ function useCountUp(target: number, active: boolean, reducedMotion: boolean): nu
   return value;
 }
 
-function Stat({ value, label }: { value: number; label: string }) {
+function Stat({
+  value,
+  label,
+  tone,
+}: {
+  value: number;
+  label: string;
+  tone: "surface" | "band";
+}) {
   return (
     <div className="flex flex-col items-center gap-1">
-      <span className="font-mono text-3xl tabular-nums text-ink sm:text-4xl">{value}</span>
-      <span className="max-w-[10rem] font-sans text-xs leading-snug text-ink-faint">{label}</span>
+      <span
+        className={
+          "font-mono text-3xl tabular-nums sm:text-4xl " +
+          (tone === "band" ? "text-brand-ink-reversed" : "text-ink")
+        }
+      >
+        {value}
+      </span>
+      <span
+        className={
+          "max-w-[10rem] font-sans text-xs leading-snug " +
+          (tone === "band" ? "text-brand-ink-reversed/70" : "text-ink-faint")
+        }
+      >
+        {label}
+      </span>
     </div>
   );
 }
@@ -57,10 +79,13 @@ export function StatsCounters({
   papersInCatalog,
   claimsAnchored,
   mcpToolsLive,
+  tone = "surface",
 }: {
   papersInCatalog: number;
   claimsAnchored: number;
   mcpToolsLive: number;
+  /** "band": sits on the dark shader Hero, swaps to brand-ink-reversed text. */
+  tone?: "surface" | "band";
 }) {
   const reducedMotion = usePrefersReducedMotion();
   const [active, setActive] = useState(false);
@@ -92,9 +117,9 @@ export function StatsCounters({
 
   return (
     <div ref={ref} className="flex flex-wrap justify-center gap-s-8">
-      <Stat value={papers} label="Papers in the open-access catalog" />
-      <Stat value={claims} label="Claims anchored in the demo workspace" />
-      <Stat value={tools} label="MCP tools live" />
+      <Stat value={papers} label="Papers in the open-access catalog" tone={tone} />
+      <Stat value={claims} label="Claims anchored in the demo workspace" tone={tone} />
+      <Stat value={tools} label="MCP tools live" tone={tone} />
     </div>
   );
 }
