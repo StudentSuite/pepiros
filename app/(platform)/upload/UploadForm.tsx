@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { FileText, UploadCloud } from "lucide-react";
+import { Check, FileText, UploadCloud } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
@@ -44,44 +44,73 @@ function fileBody(file: File): FormData {
 const WORKSPACE_ID = "ws-1";
 
 /**
- * Live stage checklist, driven by the real SSE stream at
- * GET /api/jobs/[id] (docs/PLAN-V1.md §6) -- this used to just print a
- * static "queued" notice and stop, even though the pipeline behind it now
- * genuinely runs (lib/services/ingest.ts). Each stage lights up as it's
- * actually reached, from real job_events, not a fixed-duration timer.
+ * Live stepper, driven by the real SSE stream at GET /api/jobs/[id]
+ * (docs/PLAN-V1.md §6) -- this used to just print a static "queued" notice
+ * and stop, even though the pipeline behind it now genuinely runs
+ * (lib/services/ingest.ts). Each stage lights up as it's actually reached,
+ * from real job_events, not a fixed-duration timer.
+ *
+ * A vertical connected stepper (issue #302), not the plain dot list this
+ * replaces: nine real stages is too many for a horizontal one on this
+ * column width, and a connecting line between dots is what makes "done"
+ * read as progress rather than a checklist of unrelated items.
  */
 function JobProgressView({ progress }: { progress: JobProgress }) {
   const latestMessage = progress.events.at(-1)?.message;
 
   return (
-    <div className="rounded-md border border-border p-s-4">
-      <ol className="flex flex-col gap-s-2">
-        {progress.stages.map((s) => (
-          <li key={s.stage} className="flex items-center gap-s-3 font-sans text-sm">
+    <div className="rounded-lg border border-border p-s-5">
+      <ol className="flex flex-col">
+        {progress.stages.map((s, i) => (
+          <li key={s.stage} className="relative flex gap-s-3 pb-s-4 last:pb-0">
+            {i < progress.stages.length - 1 && (
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "absolute left-[9px] top-5 h-[calc(100%-0.25rem)] w-px",
+                  s.state === "done" ? "bg-located" : "bg-border",
+                )}
+              />
+            )}
             <span
               aria-hidden="true"
               className={cn(
-                "h-1.5 w-1.5 shrink-0 rounded-full",
-                s.state === "done" && "bg-located",
-                s.state === "current" && "animate-pulse bg-accent",
-                s.state === "pending" && "bg-border-strong",
+                "z-10 grid size-[19px] shrink-0 place-items-center rounded-full border font-mono text-[10px]",
+                s.state === "done" && "border-located bg-located text-surface",
+                s.state === "current" && "border-accent bg-surface text-accent",
+                s.state === "pending" && "border-border-strong bg-surface text-ink-faint",
               )}
-            />
-            <span className={s.state === "pending" ? "text-ink-faint" : "text-ink"}>{s.stage}</span>
+            >
+              {s.state === "done" ? (
+                <Check className="size-3" strokeWidth={2.5} />
+              ) : s.state === "current" ? (
+                <span className="size-1.5 animate-pulse rounded-full bg-accent" />
+              ) : (
+                i + 1
+              )}
+            </span>
+            <span
+              className={cn(
+                "font-sans text-sm leading-[19px]",
+                s.state === "pending" ? "text-ink-faint" : "text-ink",
+              )}
+            >
+              {s.stage}
+            </span>
           </li>
         ))}
       </ol>
 
       {progress.status === "failed" ? (
-        <p className="mt-s-3 font-sans text-[13px] leading-relaxed text-unsupported">
+        <p className="mt-s-4 font-sans text-[13px] leading-relaxed text-unsupported">
           {progress.error ?? "Ingest failed."}
         </p>
       ) : progress.status === "done" ? (
-        <p className="mt-s-3 font-sans text-[13px] leading-relaxed text-located">
+        <p className="mt-s-4 font-sans text-[13px] leading-relaxed text-located">
           Ready. <Link href={`/w/${WORKSPACE_ID}`} className="underline underline-offset-2">Open the workspace</Link>.
         </p>
       ) : (
-        latestMessage && <p className="mt-s-3 font-sans text-[13px] leading-relaxed text-ink-faint">{latestMessage}</p>
+        latestMessage && <p className="mt-s-4 font-sans text-[13px] leading-relaxed text-ink-faint">{latestMessage}</p>
       )}
     </div>
   );
@@ -224,7 +253,7 @@ export function UploadForm({
 
   return (
     <main className="pb-s-5">
-      <ReadingColumn>
+      <ReadingColumn wide>
         <header className="py-s-7">
           <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
             Add a paper
@@ -344,9 +373,12 @@ export function UploadForm({
 
           {mode === "file" ? (
             <div id="upload-panel-file" role="tabpanel" aria-labelledby="upload-tab-file" tabIndex={0}>
-              <button
-                type="button"
-                onClick={() => inputRef.current?.click()}
+              {/* Dispersion-fringe border on drag-over, same conic-gradient
+                  pattern as the homepage front-door card (issue #302) --
+                  drag handlers sit on this outer wrapper, not the button
+                  inside, so the fringe reads as the dropzone's own edge
+                  rather than something layered on top of it. */}
+              <div
                 onDragOver={(e) => {
                   e.preventDefault();
                   setDragOver(true);
@@ -358,42 +390,53 @@ export function UploadForm({
                   const f = e.dataTransfer.files[0];
                   if (f) setFile(f);
                 }}
-                className={cn(
-                  "flex w-full flex-col items-center gap-s-3 rounded-md border border-dashed px-s-5 py-s-8",
-                  "transition-colors duration-fast ease-out",
-                  dragOver
-                    ? "border-accent bg-accent-wash"
-                    : "border-border hover:border-border-strong",
-                )}
+                className="rounded-xl p-px transition-[background] duration-fast ease-out"
+                style={{
+                  background: dragOver
+                    ? "conic-gradient(from 180deg, var(--disp-amber), var(--disp-green), var(--disp-violet), var(--disp-amber))"
+                    : "transparent",
+                }}
               >
-                {file ? (
-                  <>
-                    <FileText className="size-6 text-ink-faint" strokeWidth={1.5} />
-                    <p className="max-w-full truncate font-sans text-sm text-ink">
-                      {file.name}
-                    </p>
-                    <p className="font-mono text-[11px] text-ink-faint">
-                      {(file.size / 1024 / 1024).toFixed(1)} MB
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <UploadCloud className="size-6 text-ink-faint" strokeWidth={1.5} />
-                    <p className="font-sans text-sm text-ink">
-                      Drag a PDF here, or click to browse
-                    </p>
-                    <p className="font-mono text-[11px] text-ink-faint">
-                      PDF only, up to {formatMb(MAX_UPLOAD_BYTES)}, {MAX_PAGES} pages
-                    </p>
-                    <p className="max-w-[26rem] font-sans text-[11px] text-ink-faint">
-                      Papers under ~{FAST_PATH_MAX_CHARS.toLocaleString()} characters (about 8,000 tokens)
-                      process fastest and most reliably. Longer papers still ingest, just slower and
-                      less consistently, since our fast-tier model provider rate-limits by tokens per
-                      minute.
-                    </p>
-                  </>
-                )}
-              </button>
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.click()}
+                  className={cn(
+                    "flex w-full flex-col items-center gap-s-3 rounded-[19px] border border-dashed px-s-5 py-s-10",
+                    "transition-colors duration-fast ease-out",
+                    dragOver
+                      ? "border-transparent bg-surface-raised"
+                      : "border-border hover:border-border-strong",
+                  )}
+                >
+                  {file ? (
+                    <>
+                      <FileText className="size-6 text-ink-faint" strokeWidth={1.5} />
+                      <p className="max-w-full truncate font-sans text-sm text-ink">
+                        {file.name}
+                      </p>
+                      <p className="font-mono text-[11px] text-ink-faint">
+                        {(file.size / 1024 / 1024).toFixed(1)} MB
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <UploadCloud className="size-6 text-ink-faint" strokeWidth={1.5} />
+                      <p className="font-sans text-sm text-ink">
+                        Drag a PDF here, or click to browse
+                      </p>
+                      <p className="font-mono text-[11px] text-ink-faint">
+                        PDF only, up to {formatMb(MAX_UPLOAD_BYTES)}, {MAX_PAGES} pages
+                      </p>
+                      <p className="max-w-[26rem] font-sans text-[11px] text-ink-faint">
+                        Papers under ~{FAST_PATH_MAX_CHARS.toLocaleString()} characters (about 8,000 tokens)
+                        process fastest and most reliably. Longer papers still ingest, just slower and
+                        less consistently, since our fast-tier model provider rate-limits by tokens per
+                        minute.
+                      </p>
+                    </>
+                  )}
+                </button>
+              </div>
               <input
                 ref={inputRef}
                 type="file"
