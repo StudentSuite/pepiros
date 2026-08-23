@@ -28,7 +28,26 @@ function getClient() {
     // 30+ seconds before lib/services/ingestStore.ts's fallback-to-fixture
     // catch (issue #56) even gets a chance to run. 5s is generous for a
     // reachable Supabase project and fails fast for an unreachable one.
-    global.__pepirosPg = postgres(getConnectionString(), { prepare: false, connect_timeout: 5 });
+    // connect_timeout bounds the HANDSHAKE only: postgres.js cancels that
+    // timer once a socket connects, so a connection that dies mid-life is
+    // never reaped and its queries queue forever. The queue is unbounded and
+    // has no timeout, so once all connections are stuck every later query
+    // awaits a promise that will never settle or reject. Nothing logs, nothing
+    // throws, and because this pool is cached on `global` it survives HMR --
+    // which is why editing files did nothing and only a full restart cleared
+    // it (dev server wedged twice, 2026-08-23).
+    //
+    // idle_timeout reaps sockets Supabase has already dropped; max_lifetime
+    // recycles them before it can; max is lowered because `npm run dev`,
+    // drizzle-studio and scripts/index-catalog.ts all draw on the same
+    // Postgres connection allowance.
+    global.__pepirosPg = postgres(getConnectionString(), {
+      prepare: false,
+      connect_timeout: 5,
+      idle_timeout: 20,
+      max_lifetime: 60 * 30,
+      max: 5,
+    });
   }
   return global.__pepirosPg;
 }
