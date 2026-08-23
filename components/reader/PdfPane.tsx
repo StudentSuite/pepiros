@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { pdfjs } from "react-pdf";
 import type { Chunk } from "@/types/anchor";
+import { anchorHighlightsToMockPage } from "@/lib/reader/mockPageAnchor";
 import { HighlightLayer, type Highlight } from "./HighlightLayer";
 
 const PAGE_WIDTH = 612; // US-letter, 72dpi points
@@ -124,6 +125,9 @@ function MockPdfPane({
   activeNodeId?: string | null;
   onSelectHighlight?: (nodeId: string) => void;
 }) {
+  // Issue #323: see lib/reader/mockPageAnchor.ts's own doc comment.
+  const anchoredHighlights = anchorHighlightsToMockPage(chunk, highlights);
+
   return (
     <div className="flex flex-col items-center gap-2">
       <div
@@ -137,7 +141,7 @@ function MockPdfPane({
           {chunk.text}
         </div>
         <HighlightLayer
-          highlights={highlights}
+          highlights={anchoredHighlights}
           page={chunk.page}
           pageWidth={PAGE_WIDTH}
           pageHeight={PAGE_HEIGHT}
@@ -148,7 +152,8 @@ function MockPdfPane({
       <p className="font-sans text-[11px] text-ink-faint">
         Mock page render (no PDF binary is stored for this paper -- either it&rsquo;s the bundled
         demo workspace, whose papers are synthetic, or it predates issue #76&rsquo;s PDF storage) --
-        highlight position is authored PDF point-space, not measured from this text.
+        highlight position is re-anchored to this chunk&rsquo;s own text (issue #323), not measured
+        from it, so it can still drift on an unusually long or short chunk.
       </p>
     </div>
   );
