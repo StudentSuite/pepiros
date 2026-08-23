@@ -285,7 +285,7 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
   // column. Re-fitting with more padding when it opens pulls the graph inward
   // so nothing ends up underneath it.
   const [legendOpen, setLegendOpen] = useState(false);
-  const { fitView } = useReactFlow();
+  const { fitView, getViewport, setViewport } = useReactFlow();
 
   useEffect(() => {
     if (hasSeenLegend()) return;
@@ -301,24 +301,34 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
     // the panel. Reserving the panel's actual width on the left is what
     // actually moves content out from under it.
     const id = requestAnimationFrame(() => {
+      // A plain, unreserved fit either way: asking fitView itself to also
+      // reserve the legend's footprint via `padding.left` competes with the
+      // minZoom floor below, and on a graph wide enough that both can't be
+      // honored, fitView keeps the floor and the leftmost card lands under
+      // the panel -- confirmed live on the bundled 3-paper fixture, whose
+      // first card rendered half-hidden behind "Reading this graph" on the
+      // very first, auto-opened view. The flat pixel pan after this fit is
+      // what actually reserves the space (see below), unconditionally.
       void fitView({
-        padding: legendOpen
-          ? { left: `${LEGEND_RESERVED_PX}px`, right: "24px", y: "24px" }
-          : "12%",
+        padding: "12%",
         // Issue #226: this floor was LOD_TITLE_THRESHOLD, which is the exact
         // boundary getLod() returns "minimal" at -- so a graph laid out wider
         // than one viewport clamped to precisely the zoom where titles stop
         // rendering, and the canvas opened as a field of blank rectangles.
         // Fitting to LOD_FULL_THRESHOLD instead means it opens legible.
-        //
-        // The original reason for a floor still holds: without one, reserving
-        // room for the legend zoomed a 3-paper graph into "minimal", so opening
-        // the key turned every card into a blank block. Anything that no longer
-        // fits is reachable by panning, which is the normal way to read a
-        // canvas. Tightening horizontal spacing in computeLayout so more of the
-        // graph fits at a legible zoom is the better fix, and a separate one.
         minZoom: LOD_FULL_THRESHOLD,
         duration: 320,
+      }).then((didFit) => {
+        // A flat pixel pan, not more padding: it shifts every node right by
+        // exactly the panel's footprint regardless of what zoom the fit above
+        // landed on, so nothing can end up under opaque chrome. Worst case is
+        // content sliding off the right edge, reachable by panning like any
+        // other oversized graph -- strictly better than hiding silently
+        // behind the legend, which reads as a rendering bug rather than
+        // "pan to see more."
+        if (!didFit || !legendOpen) return;
+        const vp = getViewport();
+        setViewport({ ...vp, x: vp.x + LEGEND_RESERVED_PX }, { duration: 160 });
       });
     });
     return () => cancelAnimationFrame(id);

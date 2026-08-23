@@ -143,6 +143,18 @@ function MockPdfPane({
         <div className="absolute right-3 top-2 z-10 font-mono text-[11px] text-ink/50">
           p. {chunk.page}
         </div>
+        {/* A single chunk is a sentence or two; laid straight into a full
+            US-Letter box (unavoidable -- HighlightLayer positions rects
+            against that exact geometry, see mockPageAnchor.ts) that left
+            most of the "page" a flat, empty rectangle below it, reading
+            as a stalled render rather than a deliberate excerpt. Faint
+            ruled lines fill the remainder the way an unwritten manuscript
+            page would, purely decorative and behind the real text/highlight
+            layers, so nothing here touches anchor coordinates. */}
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-[repeating-linear-gradient(to_bottom,transparent,transparent_23px,rgb(27_24_18_/_0.05)_23px,rgb(27_24_18_/_0.05)_24px)] [mask-image:linear-gradient(to_bottom,transparent,black_112px,black)]"
+        />
         <div className="absolute inset-0 overflow-hidden p-10 pt-8 font-serif text-[13px] leading-relaxed text-ink">
           {chunk.text}
         </div>
