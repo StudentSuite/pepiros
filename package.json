@@ -1,6 +1,6 @@
 {
   "name": "pepiros-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "description": "MCP server for Pepiros: search, verify, and cite claims against a paper's actual text over stdio -- quote-located grounding, not vector similarity.",
   "keywords": [
