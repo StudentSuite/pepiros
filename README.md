@@ -44,14 +44,14 @@ On top of that sits an **entailment overlap floor**: every number, unit, and com
 
 ## What works today
 
-Early build, moving fast. Honest status:
+Pre-1.0, under active development. What works today, what is partly built, and what is not built yet:
 
 ### Working
 
 | Area | State |
 | --- | --- |
 | **Grounding spine** (`lib/grounding/*`) | Quote verification, entailment floor, reverse audit, citation-ref resolution. Deterministic, no model calls. |
-| **Data model** (`lib/db/schema.ts`) | All 18 tables from `docs/PLAN-V1.md` §5, in Drizzle, with real migrations applied and CI running against a real ephemeral Postgres on every push. |
+| **Data model** (`lib/db/schema.ts` + `supabase/migrations/*.sql`) | 33 tables total: 25 in the grounding domain (Drizzle, `docs/PLAN-V1.md` §5), 8 in the platform domain (accounts, posts, comments, likes, follows, sessions). Real migrations applied to both, with CI running against a real ephemeral Postgres on every push. |
 | **UI** (`components/*`, `app/(app)/*`) | React Flow canvas (5 node types, ghost citation nodes, kind-coloured edges), doc-reader, outline, audit, learn, and share views -- all four reader subpages share one nav/spacing shell and a consistent guest banner. Renders the bundled fixture or any real ingested workspace alike. |
 | **Citation APIs** (`lib/services/related.ts`, `lib/services/citationExpand.ts`) | Real Semantic Scholar + OpenAlex calls (free, no key) for the related-papers rail and canvas citation expansion. Typed `ok`/`no_match`/`rate_limited`/`error` status, never fabricated fallback data. |
 | **LLM layer** (`lib/agents/*`) | Archetype classifier, archetype-conditioned pillar planner, and 19 of the 22 node generators, fanned out via `p-queue` with per-node failure isolation. Runs on **Groq (primary) + Featherless (fallback)**, not Anthropic: see [Configuration](#configuration). Every claimed quote is re-verified through the grounding spine before it becomes a real evidence row. Verified end to end against both live APIs, not just mocked. |
@@ -64,7 +64,7 @@ Early build, moving fast. Honest status:
 | **Node mutation** (`lib/services/nodes.ts`, `PATCH`/`DELETE /api/nodes/[id]`) | Editing a node's body re-verifies every citation against the edited text (downgrading/stripping one that no longer matches) and records a version history row; deleting cascades edges/evidence and marks referencing nodes stale. |
 | **Export & promote** (`GET /api/export`, `POST /api/chat/promote`) | Markdown and BibTeX export; promoting a chat answer that draws on more than one paper into a cross-paper thread node. |
 | **API** | `POST /api/verify`, `POST /api/audit`, `POST /api/chat`, `POST /api/ingest`, `POST /api/compare`, `POST /api/share`, `GET /api/jobs/[id]`, `GET /api/graph/[workspaceId]`, `GET /api/related`, `GET /api/expand`, `GET /api/export`, full `nodes`/`nodes/[id]` CRUD, `GET /api/papers/[paperId]/pdf` |
-| **Tooling** | Typecheck, lint, test, and build all gated in CI on every push and PR, against a real ephemeral Postgres service container. 318 Vitest cases across 36 files, including the LLM and chat layers tested against a hand-rolled mock model (no API key or network call needed). |
+| **Tooling** | Typecheck, lint, an em-dash style check, a generator-count consistency check, test, and build all gated in CI on every push and PR, against a real ephemeral Postgres service container. 405 Vitest cases across 47 files, including the LLM and chat layers tested against a hand-rolled mock model (no API key or network call needed). |
 
 ### Not built yet
 
@@ -95,7 +95,7 @@ Open **<http://localhost:3000/w/ws-1>**. `ws-1` is the only workspace id the fix
 
 No environment file, database, or API key is needed to run it: the app is fully functional against `fixtures/workspace.json`, which ships 3 papers, a contradiction pair, a cross-paper `cites` link, and one planted misattribution that the verifier correctly demotes to `unsupported`.
 
-Requires Node 20 or newer. Uploading a real PDF additionally needs Python 3 with PyMuPDF (`pip install -r scripts/requirements.txt`) and a `GROQ_API_KEY` (or `FEATHERLESS_API_KEY`) in `.env` -- neither is needed just to browse the fixture workspace.
+Requires Node 22 or newer (`.nvmrc` pins this). Uploading a real PDF additionally needs Python 3 with PyMuPDF (`pip install -r scripts/requirements.txt`) and a `GROQ_API_KEY` (or `FEATHERLESS_API_KEY`) in `.env` -- neither is needed just to browse the fixture workspace.
 
 ### Scripts
 
@@ -115,9 +115,9 @@ Requires Node 20 or newer. Uploading a real PDF additionally needs Python 3 with
 ## Architecture
 
 ```text
-Next.js 15 (App Router, TS, React 19)          -> Vercel
+Next.js 16 (App Router, TS, React 19)          -> Vercel
   app/api/*         HTTP surface for the UI
-  mcp/server.ts     MCP surface for Claude (stdio today, remote HTTP later)
+  mcp/*             MCP surface for Claude (stdio, and a remote OAuth-secured HTTP transport)
   lib/services/*    <- BOTH of the above call only this
   lib/grounding/*   deterministic verification, no model calls
   lib/agents/*      archetype classifier, pillar planner, node generators -> Groq, falling back to Featherless (lib/ai/client.ts)
@@ -212,19 +212,19 @@ Until that is done the button still renders and fails honestly: the callback bou
 
 ## Design system
 
-**Direction: Editorial Paper** (Are.na × Instapaper/NYT Reader), on top of the "lab notebook at night" thesis: dark chrome, a warm paper-white reading surface, pillar colour as a structural system. Full brief and the canonical palette: [`design/DIRECTIONS.md`](design/DIRECTIONS.md). Live token reference: `/dev/tokens`.
+**Direction: refractive dispersion on soft-body organic geometry**, rebuilt 2026-08-23 off `design/brand/README.txt` and the `design/capsules/` token-lab and brand-kit capsules, on top of the "lab notebook at night" thesis: dark chrome, a warm paper reading surface, pillar colour as a structural system. Violet is the primary interactive accent (buttons, active states, focus rings), derived as its own contrast-safe ramp rather than used as the raw swatch; amber, green, and bone remain valid secondary/decorative accents. Full brief: [`design/brand/README.txt`](design/brand/README.txt); canonical palette and rationale: the header comment in `app/globals.css`. Live token reference: `/dev/tokens`.
 
 | Layer | Where |
 | --- | --- |
 | Tokens (color, spacing, radius, elevation, motion, layout dims) | `app/globals.css`, `tailwind.config.ts` |
-| Fonts (Source Serif 4, Inter, JetBrains Mono via `next/font`) | `app/layout.tsx` |
+| Fonts (Source Serif 4, Geist, Geist Mono via `next/font`) | `app/layout.tsx` |
 | Primitives (Button, Input, Dialog, Drawer, Tooltip, Popover, Tabs, Menu, Toast, Skeleton, ErrorBanner, Badge, Icon, Logo, ...) | `components/ui/` |
 | Icons | Lucide, only through `components/ui/Icon.tsx` (never a raw `lucide-react` import in a feature component) |
 | Brand assets (favicon, app icon, OG image) | `app/favicon.ico`, `app/icon.png`, `app/apple-icon.png`, `app/opengraph-image.png`, `app/twitter-image.png` |
-| Image-gen prompts (brand kit + all 8 app surfaces) | `design/prompts/`, zipped at `design/pepiros-editorial-paper-prompts.zip` |
+| Brand kit (glyph geometry, logos, social/OG renders, posters) | `design/brand/` |
 | Platform-vision scope (accounts, publish, discovery, discussion) | [`docs/PLAN-V1.md`](docs/PLAN-V1.md) §22 |
 
-Two conventions worth knowing before adding a component: pillar hues have two accessors in `components/ui/PillarChip.tsx`, `pillarColor()` for borders/dots/edge strokes (canonical hex, 3:1 threshold) and `pillarTextColor()` for anywhere a pillar hue is literal text colour (lightened for WCAG AA's 4.5:1, three of the seven canonical hues fail it unmixed). And motion reaches for `lib/motion.ts`'s named helpers or the keyframes in `globals.css`, never a hand-picked duration: Editorial Paper is ease-out only, never spring.
+Two conventions worth knowing before adding a component: pillar hues have two accessors in `components/ui/PillarChip.tsx`, `pillarColor()` for borders/dots/edge strokes (canonical hex, 3:1 threshold) and `pillarTextColor()` for anywhere a pillar hue is literal text colour (lightened for WCAG AA's 4.5:1, three of the seven canonical hues fail it unmixed). And motion reaches for `lib/motion.ts`'s named helpers or the keyframes in `globals.css`, never a hand-picked duration: ease-out only, never spring.
 
 ---
 

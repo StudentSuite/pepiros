@@ -1,6 +1,6 @@
 # Contributing to Pepiros
 
-Thanks for looking at this. Pepiros is an early-stage hackathon build (see [`docs/PLAN-V1.md`](docs/PLAN-V1.md) for the full spec and schedule). Expect things to move fast and change shape.
+Thanks for looking at this. Pepiros moves fast and its surface area is still growing; see [`docs/PLAN-V1.md`](docs/PLAN-V1.md) for the full spec, and `docs/` for formal project documentation (overview, installation, user manual, technical reference).
 
 ## Getting set up
 
@@ -12,7 +12,7 @@ cp .env.example .env   # only needed if you have a Supabase project or a Feather
 npm run dev
 ```
 
-Node 20+. There's no live database or model provider wired up by default. See [`CLAUDE.md`](CLAUDE.md)'s "current data seam" section for how `lib/services/workspace.ts`'s `fetchWorkspace()` is the one place that changes when a real backend exists.
+Node 22+ (`.nvmrc` and `package.json`'s `engines` field both pin this; CI runs Node 22). There's no live database or model provider wired up by default. See [`CLAUDE.md`](CLAUDE.md)'s "current data seam" section for how `lib/services/workspace.ts`'s `fetchWorkspace()` is the one place that changes when a real backend exists.
 
 ## Before opening a PR
 
@@ -20,11 +20,12 @@ Node 20+. There's no live database or model provider wired up by default. See [`
 npm run typecheck
 npm run lint
 npm run check:no-em-dashes
+npm run check:generator-count
 npm test
 npm run build
 ```
 
-All five should pass, and CI runs exactly these. `npm test` is Vitest over `lib/**/*.test.ts` (322 cases: the grounding spine, layout, graph visibility, citation parsing, the service layer, and the LLM/chat agents against a mock model); it is not the same thing as `evals/`, which is reserved for golden-paper generator eval cases and is still a stub. Anything touching `lib/grounding/*` should arrive with a test, since that code is the product.
+All six should pass, and CI runs exactly these (against a real ephemeral Postgres service container). `npm test` is Vitest over `lib/**/*.test.ts` (405 cases across 47 files: the grounding spine, layout, graph visibility, citation parsing, the service layer, and the LLM/chat agents against a mock model); it is a different thing from `evals/`, which runs a starting set of real golden test cases against the actual generator pipeline (structural invariants -- does a claim survive re-verification, are banned generic-critique phrases absent -- not prose-quality judgment, which stays a human review task) and is still growing, not a stub. Anything touching `lib/grounding/*` should arrive with a test, since that code is the product.
 
 Two habits this repo has earned the hard way:
 

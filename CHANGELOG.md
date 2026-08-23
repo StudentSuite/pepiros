@@ -4,6 +4,15 @@ All notable changes to this project are documented here. Format follows [Keep a 
 
 ## [Unreleased]
 
+### Fixed (documentation)
+
+A pass over every GitHub-facing doc for staleness and tone, none of it behavior-changing:
+
+- **README's design-system section described a design that no longer exists.** It named "Editorial Paper (Are.na x Instapaper/NYT Reader)" and linked `design/DIRECTIONS.md`, both stale since the token rebuild documented in `app/globals.css`'s own header comment ("refractive dispersion on soft-body organic geometry," rebuilt 2026-08-23); `design/DIRECTIONS.md` and `design/prompts/` no longer exist on disk. Repointed to the real brief (`design/brand/README.txt`, the `design/capsules/` token-lab and brand-kit capsules) and named the actual accent rule (violet as the derived primary accent, not the raw swatch).
+- **README's data-model, test-count, Node-version, Next.js-version, and font claims were all out of date**: "18 tables" -> 33 (25 grounding-domain + 8 platform-domain, both counted directly from `lib/db/schema.ts` and `supabase/migrations/*.sql`), "318 Vitest cases across 36 files" -> 405 across 47, "Node 20+" -> 22 (`.nvmrc`), "Next.js 15" -> 16, and Inter -> Geist (`app/layout.tsx`'s actual imports). Same test-count and stub-language fixes applied to `CONTRIBUTING.md` and `CLAUDE.md`, which had drifted to the same stale numbers. `CLAUDE.md` also still said `pillar-1..6`; there are 7 (`app/globals.css`).
+- **This extends #224's copy cleanup to `README.md`/`SECURITY.md`**, which that pass deliberately left alone as "dev-facing." `README.md`'s "Early build, moving fast. Honest status" became a plain feature-by-feature framing, matching `/status`'s existing tone. `SECURITY.md` was rewritten outright: it claimed the project was "not yet deployed anywhere with live user data" and that the MCP layer was "not yet implemented," both false against the project's real, currently-deployed state.
+- `CONTRIBUTING.md` was missing `npm run check:generator-count` from its pre-PR checklist despite CI running it, and undercounted the pre-PR gate as five checks instead of six.
+
 Still stubbed (see the `TODO` comment at the top of each file): OCR fallback for scanned/image-only PDFs (`scripts/ocr_fallback.py` -- ingest now fails those loudly instead of silently, but doesn't recover text from one yet), `scripts/seed.ts`, 1 of the ~22 node generators (`concept_links` -- already solved a different way, see below), 2 of 6 synthesis node types (Dataset Overlap, Open Questions -- need signals nothing extracts yet), session refresh (revocation is real; silent renewal isn't), and `evals/`/drop-rate measurement.
 
 ### Fixed (MCP security, chat grounding, accessibility)
