@@ -65,7 +65,7 @@ export function CatalogBrowser({ papers }: { papers: CatalogPaper[] }) {
               href={`/paper/${paper.slug}`}
               className="flex items-baseline justify-between gap-s-3 py-s-3 transition-colors duration-fast ease-out hover:bg-surface-sunken"
             >
-              <span className="truncate font-serif text-[15px] text-ink">{paper.title}</span>
+              <span className="truncate font-sans text-[15px] text-ink">{paper.title}</span>
               <span className="shrink-0 font-mono text-xs text-ink-faint">
                 {paper.authors[0]}
                 {paper.authors.length > 1 ? " et al." : ""}, {paper.year}
