@@ -214,6 +214,16 @@
      effectively invisible -- when reused as a ring. */
   --glow-accent: 0 0 0 2px var(--surface-raised), 0 0 0 5px var(--accent);
 
+  /* Issue #307: the one place the shader/dispersion vocabulary enters the
+     product outside a Band (design/anti-slop.md's "shader stays a bookend"
+     rule) -- deliberate, called out explicitly in the canvas retune plan.
+     A `filter`, not a `box-shadow`: canvas nodes already carry their own
+     elevation shadow (shadow-lg / shadow-e-*, differs per node type), and a
+     hover box-shadow would just replace that value outright. A drop-shadow
+     filter composes independently of box-shadow, so it layers on top of
+     whatever elevation a given node already has instead of fighting it. */
+  --glow-dispersion: drop-shadow(0 0 8px rgba(var(--disp-amber-rgb), 0.4));
+
   /* Grain. Heavy matte film noise over everything is non-negotiable in this
      material language: without it the whole thing reads as generic 3D-render
      gloss. Multiply darkens correctly on a light ground; on the dark theme it

@@ -25,7 +25,10 @@ export function PillarNode({ data }: NodeProps<PepirosNode>) {
   return (
     <div
       className={clsx(
-        "w-52 animate-[node-appear_var(--dur-base)_var(--ease-out)_backwards] rounded border-2 bg-surface-raised px-3 py-2 transition-opacity",
+        "w-52 animate-[node-appear_var(--dur-base)_var(--ease-out)_backwards] rounded border-2 bg-surface-raised px-3 py-2",
+        // Issue #307: faint dispersion glow on hover, the one deliberate
+        // exception to "shader stays a bookend" (design/anti-slop.md).
+        "transition-[opacity,filter] duration-fast ease-out hover:[filter:var(--glow-dispersion)]",
         node.stale && "opacity-50",
       )}
       style={{

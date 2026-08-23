@@ -27,7 +27,10 @@ export function LeafNode({ data }: NodeProps<PepirosNode>) {
   return (
     <div
       className={clsx(
-        "w-48 animate-[node-appear_var(--dur-base)_var(--ease-out)_backwards] rounded border bg-surface-raised px-2.5 py-2 text-xs transition-opacity",
+        "w-48 animate-[node-appear_var(--dur-base)_var(--ease-out)_backwards] rounded border bg-surface-raised px-2.5 py-2 text-xs",
+        // Issue #307: faint dispersion glow on hover, the one deliberate
+        // exception to "shader stays a bookend" (design/anti-slop.md).
+        "transition-[opacity,filter] duration-fast ease-out hover:[filter:var(--glow-dispersion)]",
         node.stale && "opacity-50",
       )}
       style={{ borderColor: color, animationDelay: `${appearDelayMs ?? 0}ms` }}
