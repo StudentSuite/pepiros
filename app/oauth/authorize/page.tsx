@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { getOAuthClient } from "@/lib/services/mcpOAuth";
 import { Button } from "@/components/ui/Button";
+import { AuthShell } from "@/components/auth/AuthShell";
 import { decideAuthorization } from "./actions";
 
 export const metadata: Metadata = { title: "Authorize access" };
@@ -66,16 +67,21 @@ export default async function AuthorizePage({
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center p-s-5">
-      <div className="rounded-lg border border-border bg-surface-raised p-6">
-        <h1 className="font-sans font-bold text-xl text-ink">Authorize access</h1>
-        <p className="mt-2 font-sans text-sm leading-relaxed text-ink-muted">
+    // Issue #311: matches the AuthShell pattern #301 established for
+    // /login, /signup, /reset-password* -- same auth-flow, centered-card,
+    // minimal-chrome family. This route has no (platform)-group layout
+    // ancestor, so, like /auth/reset-callback, it supplies its own <main>
+    // landmark rather than relying on one further up the tree.
+    <main id="main-content">
+      <AuthShell>
+        <h1 className="mt-s-5 font-sans font-bold text-xl text-ink">Authorize access</h1>
+        <p className="mt-s-2 font-sans text-sm leading-relaxed text-ink-muted">
           <strong className="text-ink">{client.clientName ?? "An application"}</strong> wants to access your
           Pepiros account (<span className="text-ink">{profile.username}</span>) over MCP -- searching papers,
           checking claims, and (if you allow write access) creating nodes on your behalf.
         </p>
 
-        <form action={decideAuthorization} className="mt-5 space-y-4">
+        <form action={decideAuthorization} className="mt-s-5 flex flex-col gap-s-4">
           <input type="hidden" name="client_id" value={clientId} />
           <input type="hidden" name="redirect_uri" value={redirectUri} />
           <input type="hidden" name="code_challenge" value={codeChallenge} />
@@ -92,7 +98,7 @@ export default async function AuthorizePage({
           <input type="hidden" name="code_challenge_method" value="S256" />
           {state && <input type="hidden" name="state" value={state} />}
 
-          <fieldset className="space-y-2">
+          <fieldset className="flex flex-col gap-s-2">
             <legend className="font-sans text-xs font-medium uppercase tracking-wide text-ink-faint">
               Access level
             </legend>
@@ -115,8 +121,8 @@ export default async function AuthorizePage({
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </AuthShell>
+    </main>
   );
 }
 
@@ -126,11 +132,11 @@ function firstValue(value: string | string[] | undefined): string | undefined {
 
 function ErrorScreen({ title, detail }: { title: string; detail: string }) {
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center p-s-5">
-      <div className="rounded-lg border border-unsupported/40 bg-surface-raised p-6">
-        <h1 className="font-sans font-bold text-lg text-unsupported">{title}</h1>
-        <p className="mt-2 font-sans text-sm text-ink-muted">{detail}</p>
-      </div>
-    </div>
+    <main id="main-content">
+      <AuthShell>
+        <h1 className="mt-s-5 font-sans font-bold text-lg text-unsupported">{title}</h1>
+        <p className="mt-s-2 font-sans text-sm text-ink-muted">{detail}</p>
+      </AuthShell>
+    </main>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { AuthShell } from "@/components/auth/AuthShell";
 
 /**
  * Where a password-reset email's link lands (lib/data/supabase-adapter.ts's
@@ -57,8 +58,15 @@ export default function ResetCallbackPage() {
   }, [failed, router]);
 
   return (
-    <main className="flex min-h-[50vh] items-center justify-center p-s-5">
-      <p className="font-sans text-sm text-ink-muted">Confirming your reset link…</p>
+    // Issue #311: unlike /login, /signup, /reset-password* (all under the
+    // (platform) route group, whose layout.tsx already supplies a <main
+    // id="main-content">), this route has no such ancestor -- AuthShell
+    // itself is a plain <div>, so without one this page would lose the
+    // landmark its old bare <main> wrapper had.
+    <main id="main-content">
+      <AuthShell>
+        <p className="mt-s-5 font-sans text-sm text-ink-muted">Confirming your reset link…</p>
+      </AuthShell>
     </main>
   );
 }
