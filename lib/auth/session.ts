@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { getAdapter } from "@/lib/data/adapter";
 import type { Profile } from "@/lib/data/types";
@@ -232,8 +233,22 @@ export async function parseSession(token: string | undefined): Promise<string | 
   return parsed?.subject ?? null;
 }
 
-/** Current signed-in profile, or null. Server components and route handlers. */
-export async function getSession(): Promise<Profile | null> {
+/**
+ * Current signed-in profile, or null. Server components and route handlers.
+ *
+ * REQUEST-DEDUPED via React.cache(). One render of a page like /u/[username]
+ * asks for the session from several independent places (the layout, the tab's
+ * own loader, resolveProfile's follow-state branch), and none of them can
+ * reasonably know the others exist -- that is the point of a session helper.
+ * Uncached, each call re-read the cookie, re-verified the HMAC, and made its
+ * own adapter round trip, so a single page view spent several database
+ * queries answering the same question.
+ *
+ * cache() scopes the memo to ONE request, which is the only correct lifetime
+ * here: a longer-lived cache would serve one visitor's session to another.
+ * There is no invalidation to think about for the same reason.
+ */
+export const getSession = cache(async function getSession(): Promise<Profile | null> {
   const store = await cookies();
   const parsed = await parseSessionFull(store.get(COOKIE)?.value);
   if (!parsed) return null;
@@ -247,4 +262,4 @@ export async function getSession(): Promise<Profile | null> {
   if (sessionId && (await getAdapter().isSessionRevoked(sessionId))) return null;
 
   return getAdapter().getProfile(subject);
-}
+});
