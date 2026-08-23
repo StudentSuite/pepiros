@@ -38,6 +38,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/shadcn/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/shadcn/avatar";
+import { DispersionGlow } from "@/components/site/DispersionGlow";
+import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/data/types";
 
 /**
@@ -94,6 +96,16 @@ export function AppSidebar({
     if (href === "/settings") return false;
     return pathname.startsWith(`${href}/`);
   };
+
+  /**
+   * The active state's own soft fill (data-[active=true]:bg-sidebar-accent,
+   * components/shadcn/sidebar.tsx) plus a dispersion-tinted left edge --
+   * issue #303. `pl-[calc(0.5rem-2px)]` compensates the button's own `p-2`
+   * so adding a 2px border doesn't nudge the icon/label right versus every
+   * inactive row beside it.
+   */
+  const activeEdge = (href: string) =>
+    cn(isActive(href) && "border-l-2 border-l-[var(--disp-amber)] pl-[calc(0.5rem-2px)]");
 
   async function signOut() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -156,7 +168,12 @@ export function AppSidebar({
             <SidebarMenu>
               {READING.map((item) => (
                 <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton asChild isActive={isActive(item.href)} tooltip={item.label}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.href)}
+                    tooltip={item.label}
+                    className={activeEdge(item.href)}
+                  >
                     <Link href={item.href}>
                       <item.icon />
                       <span>{item.label}</span>
@@ -184,7 +201,12 @@ export function AppSidebar({
                 const tooltip = hasUnread ? `${item.label} (${unreadComments} unread)` : item.label;
                 return (
                   <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild isActive={isActive(item.href)} tooltip={tooltip}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive(item.href)}
+                      tooltip={tooltip}
+                      className={activeEdge(item.href)}
+                    >
                       <Link href={item.href}>
                         <item.icon />
                         <span>{item.label}</span>
@@ -204,7 +226,12 @@ export function AppSidebar({
             <SidebarMenu>
               {CONNECT.map((item) => (
                 <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton asChild isActive={isActive(item.href)} tooltip={item.label}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.href)}
+                    tooltip={item.label}
+                    className={activeEdge(item.href)}
+                  >
                     <Link href={item.href}>
                       <item.icon />
                       <span>{item.label}</span>
@@ -218,12 +245,24 @@ export function AppSidebar({
       </SidebarContent>
 
       {/* Least-used links, pinned to the bottom rather than mixed into the
-          groups above. */}
-      <SidebarFooter>
+          groups above.
+
+          The one place the shader vocabulary appears in this shell at all
+          (issue #303: "barely appear at all", never behind dense content) --
+          a DispersionGlow, not a full <Band>, since a real shader canvas
+          band here would be exactly the opposite of "barely." relative so
+          the glow (position: absolute) anchors to this footer specifically. */}
+      <SidebarFooter className="relative overflow-hidden">
+        <DispersionGlow tone="amber" className="-bottom-8 -right-8" opacity={0.08} />
         <SidebarMenu>
           {BOTTOM.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <SidebarMenuButton asChild isActive={isActive(item.href)} tooltip={item.label}>
+              <SidebarMenuButton
+                asChild
+                isActive={isActive(item.href)}
+                tooltip={item.label}
+                className={activeEdge(item.href)}
+              >
                 <Link href={item.href}>
                   <item.icon />
                   <span>{item.label}</span>

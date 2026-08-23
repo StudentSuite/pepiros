@@ -15,16 +15,26 @@
 export function DispersionGlow({
   tone = "amber",
   className = "",
+  /**
+   * Default matches every existing usage. Exposed (not just another
+   * Tailwind class in `className`) because a second `opacity-[…]` utility
+   * appended after this component's own would collide with it at equal
+   * specificity -- which one wins depends on Tailwind's generated
+   * stylesheet order, not the order in the class string, so overriding it
+   * that way is unreliable. An inline style always wins cleanly.
+   */
+  opacity = 0.15,
 }: {
   tone?: "amber" | "green" | "violet";
   className?: string;
+  opacity?: number;
 }) {
   const color = `var(--disp-${tone})`;
   return (
     <div
       aria-hidden="true"
-      className={`pointer-events-none absolute -z-10 h-64 w-64 rounded-full opacity-[0.15] blur-3xl ${className}`}
-      style={{ background: color }}
+      className={`pointer-events-none absolute -z-10 h-64 w-64 rounded-full blur-3xl ${className}`}
+      style={{ background: color, opacity }}
     />
   );
 }
