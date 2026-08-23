@@ -170,7 +170,14 @@ void main() {
     p += w * u_warp * 0.25;
   }
 
-  float sharpness = 6.0 / (1.0 + u_soften * 3.0);
+  // Base raised 6.0 -> 14.0 (2026-08-23): at 6.0, 8 blobs' Gaussian falloffs
+  // overlapped broadly enough that the running weighted-average (below)
+  // pulled most of the frame toward a blend of all 4 stops at once -- a
+  // muddy near-gray rather than visibly violet, confirmed by sampling raw
+  // shader output directly via readPixels. Tighter falloff means fewer
+  // blobs contribute meaningfully at any one point, so a region reads as
+  // one or two stops blending, not four averaged together.
+  float sharpness = 14.0 / (1.0 + u_soften * 3.0);
 
   vec3 accum = vec3(0.0);
   float weightSum = 0.0;
