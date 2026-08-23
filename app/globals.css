@@ -597,7 +597,18 @@
 
 /* Paper grain, per the material language's "heavy matte film noise" rule.
    Real generated brand asset, tiled from public/paper-grain.png -- not a
-   coded/data-URI substitute. */
+   coded/data-URI substitute.
+
+   background-size: auto (was a hardcoded 300px 300px, 2026-08-23): the
+   asset shrank from 300x300 RGBA (196KB) to 128x128 grayscale+alpha
+   (19.8KB, a real perf win -- issue #320) with no visible quality loss at
+   its own native tile size, since grain/noise has no large-scale
+   structure that a smaller tile period changes. A hardcoded pixel size
+   here is a silent trap the moment the asset's own dimensions change
+   again: it would upscale-and-blur the new file to fill the old
+   dimensions instead of tiling it at native resolution, exactly what a
+   first pass of this fix did before catching it. auto decouples the two
+   permanently. */
 .paper-grain {
   position: relative;
 }
@@ -609,7 +620,7 @@
   opacity: var(--grain-opacity);
   mix-blend-mode: var(--grain-blend);
   background-image: url("/paper-grain.png");
-  background-size: 300px 300px;
+  background-size: auto;
   background-repeat: repeat;
 }
 
