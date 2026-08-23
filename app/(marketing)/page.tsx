@@ -1,300 +1,230 @@
 import Link from "next/link";
 import { Hero } from "@/components/site/Hero";
-import { StatsCounters } from "@/components/site/StatsCounters";
-import { CatalogMarquee } from "@/components/site/CatalogMarquee";
+import { FrontDoorField } from "@/components/site/FrontDoorField";
+import { SourceStrip } from "@/components/site/SourceStrip";
 import { CapabilityCards } from "@/components/site/CapabilityCards";
-import { StickyDemoPanel } from "@/components/site/StickyDemoPanel";
 import { MechanismDemo } from "@/components/site/MechanismDemo";
-import { PacingStrip } from "@/components/site/PacingStrip";
+import { DisciplineGrid } from "@/components/site/DisciplineGrid";
+import { CapabilityTabs } from "@/components/site/CapabilityTabs";
+import { NewsGrid } from "@/components/site/NewsGrid";
+import { DispersionGlow } from "@/components/site/DispersionGlow";
 import { Reveal } from "@/components/ui/Reveal";
-import { buttonClassName } from "@/components/ui/Button";
+import { Band } from "@/components/chrome/Band";
+import { bandButtonClassName } from "@/components/chrome/band-button";
 import { ReadingColumn } from "@/components/reading/Article";
 import { ReaderMock, AgentMock } from "@/components/mockups/ReaderMock";
-import { LIVE_TOOLS } from "@/lib/mcp/registry";
 import { CATALOG } from "@/lib/data/papers";
 import { isPdfIngestSupportedHere } from "@/lib/services/ingest";
-import workspaceFixture from "@/fixtures/workspace.json";
-
-const CLAIMS_ANCHORED_IN_DEMO = workspaceFixture.evidence.filter((e) => e.anchor).length;
 
 /**
- * Landing page (issue #296, superseding #246/#247).
+ * Landing page, rebuilt per the approved plan's §6.1 (2026-08-23): eleven
+ * blocks in Cohere's own section order, adapted where the plan itself calls
+ * for an honest replacement rather than a borrowed pattern (§6.1's "two
+ * slots get honest replacements": the trust carousel and the testimonial).
  *
- * Editorial rather than marketing-grid: one measure, hairline section breaks,
- * and a single idea per section. The argument runs: here is the front door,
- * here is the problem shown live (StickyDemoPanel), here is the mechanism in
- * detail (MechanismDemo), here is what it looks like, here is what it cannot
- * do, here is what it means for agents. The limits section is deliberately
- * on the landing page rather than buried, on the grounds that a product
- * about not overclaiming should not overclaim first.
+ * REVISED 2026-08-23 after a first pass read as generic AI-template output.
+ * See design/anti-slop.md for the checklist this and every later phase gets
+ * built against. Three changes from the first pass, all driven by that
+ * checklist:
+ *
+ *   1. The shader is now a BOOKEND (hero, closing CTA), not the page's
+ *      default surface. Blocks 5 and 8 were dark `<Band>`s with the mesh
+ *      gradient behind them; both are now plain surface sections, same as
+ *      every other block. "Not every page must have the gradient design" --
+ *      a gradient on every other section stops reading as a deliberate
+ *      accent and starts reading as the one visual idea the page has.
+ *   2. `<Reveal>` (scroll fade-and-lift) no longer wraps every section.
+ *      Wrapping all ten meant every element on the page entered the same
+ *      way on scroll, which is its own template tell ("fade-up on nearly
+ *      every element"). It now sits on exactly two sections, the ones
+ *      where a scroll-triggered reveal genuinely earns its keep (the
+ *      mechanism demo, because it is the one live product screenshot; the
+ *      evidence guarantee, because it is the page's actual argument). Every
+ *      other section renders plainly, present on first paint.
+ *   3. CapabilityCards (block 4) no longer reads as the generic
+ *      three-icon-in-a-ring feature grid: see that component's own comment
+ *      for what changed.
+ *
+ * SCOPE NOTE. `StickyDemoPanel` and `PacingStrip` are listed in the plan as
+ * "restyled not rewritten" but are not assigned to any of the eleven named
+ * blocks in §6.1 -- Cohere's structure has no slot for either. Rather than
+ * invent a twelfth block the plan doesn't ask for, this page omits both;
+ * they remain built and available (components/site/StickyDemoPanel.tsx,
+ * components/site/PacingStrip.tsx) if a later pass finds them a real home.
+ *
+ * `DisciplineGrid` (block 6) is an honest adaptation of the plan's own
+ * spec, not a literal implementation of it -- see that component's header
+ * comment for why forcing exactly seven tiles onto pillar colours would
+ * have meant inventing a discipline taxonomy that does not exist in this
+ * codebase.
  */
 
 function Section({
   kicker,
   title,
   children,
-  media,
-  layout = "stack",
-  revealVariant,
+  className,
 }: {
   kicker?: string;
-  title: string;
+  title?: string;
   children: React.ReactNode;
-  media?: React.ReactNode;
-  /** "side-by-side" puts text and media in a two-column grid on larger
-   *  screens instead of stacking media below -- a deliberate break from the
-   *  repeating stack, used once (the mechanism section) rather than as a
-   *  second copy-pasted template.
-   *
-   *  "media-wide" stacks like the default but lets the media break out past
-   *  the reading column. The reading column is sized for prose, and a piece
-   *  of media that is itself laid out in columns cannot also fit inside a
-   *  measure meant for one. Used by the mechanism demo, which needs to put a
-   *  claim and its source beside each other. */
-  layout?: "stack" | "side-by-side" | "media-wide";
-  revealVariant?: "lift" | "slide";
+  className?: string;
 }) {
-  const text = (
-    <>
-      {kicker && (
-        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
-          {kicker}
-        </p>
-      )}
-      <h2 className="mt-s-3 max-w-2xl font-serif text-[1.75rem] font-semibold leading-snug tracking-[-0.01em] text-ink sm:text-[2.1rem]">
-        {title}
-      </h2>
-      <div className="mt-s-4 max-w-2xl font-sans text-[1.0625rem] leading-[1.75] text-ink-muted [&>*+*]:mt-s-4">
-        {children}
-      </div>
-    </>
-  );
-
   return (
-    <Reveal variant={revealVariant}>
-      <section className="border-t border-border py-s-6">
-        <ReadingColumn wide>
-          {layout === "side-by-side" && media ? (
-            <div className="grid gap-s-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-center">
-              <div>{text}</div>
-              <div>{media}</div>
-            </div>
-          ) : (
-            <>
-              {text}
-              {media && layout !== "media-wide" && <div className="mt-s-6">{media}</div>}
-            </>
-          )}
-        </ReadingColumn>
-
-        {/* Outside ReadingColumn, so it is measured against the section rather
-            than the prose measure. See the `layout` doc comment above. */}
-        {layout === "media-wide" && media && (
-          <div className="mx-auto mt-s-6 w-full max-w-4xl px-s-5">{media}</div>
+    <section className={`relative border-t border-border py-s-7 ${className ?? ""}`}>
+      <ReadingColumn wide>
+        {kicker && <p className="kicker">{kicker}</p>}
+        {title && (
+          <h2 className="mt-s-3 max-w-2xl font-sans text-[1.75rem] font-semibold leading-snug tracking-[-0.01em] text-ink sm:text-[2.1rem]">
+            {title}
+          </h2>
         )}
-      </section>
-    </Reveal>
+        <div className="mt-s-6">{children}</div>
+      </ReadingColumn>
+    </section>
   );
 }
 
 export default function MarketingPage() {
+  const ingestSupported = isPdfIngestSupportedHere();
+
   return (
     <main className="flex flex-col">
-      <Hero ingestSupported={isPdfIngestSupportedHere()} papers={CATALOG} />
+      {/* Block 1: hero. Shader bookend #1. */}
+      <Hero />
 
-      <Reveal>
-        <section className="border-t border-border py-s-6">
-          <ReadingColumn wide>
-            <StatsCounters
-              papersInCatalog={CATALOG.length}
-              claimsAnchored={CLAIMS_ANCHORED_IN_DEMO}
-              mcpToolsLive={LIVE_TOOLS.length}
-            />
-          </ReadingColumn>
-        </section>
-      </Reveal>
-
-      <div className="border-t border-border py-s-4">
-        <CatalogMarquee papers={CATALOG} />
+      {/* Block 2: front-door field, a frosted card overlapping the hero's
+          bottom edge. */}
+      <div className="relative z-10 mx-auto -mt-s-8 w-full max-w-xl px-6">
+        <div
+          className="rounded-xl p-px"
+          style={{
+            background:
+              "conic-gradient(from 180deg, var(--disp-amber), var(--disp-green), var(--disp-violet), var(--disp-amber))",
+          }}
+        >
+          <div className="glass rounded-[19px] p-s-5">
+            <FrontDoorField ingestSupported={ingestSupported} />
+          </div>
+        </div>
       </div>
 
-      <Section kicker="What it is" title="Two things, in one place.">
-        <p>
-          <strong className="text-ink">A publication.</strong> Researchers post
-          the papers they have read, with their own write-up. Readers follow
-          people whose judgement they trust, and the library fills with papers
-          someone has actually worked through rather than a search index.
-        </p>
-        <p>
-          <strong className="text-ink">A summariser you can check.</strong> Each
-          write-up is generated from the paper and then verified against it. Every
-          claim shows the exact sentence it came from, at the page it came from,
-          or says plainly that it has none.
-        </p>
-        <p>
-          The second part is what makes the first part worth reading. A feed of
-          AI summaries nobody can check is just a faster way to spread a
-          misreading.
-        </p>
+      {/* Block 3: source strip. */}
+      <SourceStrip />
 
-        <div className="mt-s-6">
-          <CapabilityCards />
-        </div>
+      {/* Block 4: three value props. Plain section, no scroll reveal --
+          this is above the fold on most screens and should just be there. */}
+      <Section title="Located. Traceable. Yours.">
+        <DispersionGlow tone="amber" className="-left-12 top-0" />
+        <CapabilityCards />
       </Section>
 
-      {/* Issue #296: the sticky demo panel -- the problem shown live rather
-          than only argued in prose. Three stages (locate a quote, show its
-          tier, show a claim that fails) advance as the copy beside it
-          scrolls past, using the same real ws-1 demo evidence the rest of
-          the site draws on. */}
+      {/* Block 5: reader showcase. Plain section now, not a shader band --
+          the mechanism demo screenshot is the thing worth looking at here,
+          not a moving background behind it. This is the one section still
+          worth a scroll reveal: it is the page's first real product
+          screenshot, and a fade-in gives a beat of attention it would not
+          get sitting flush with the section above it. */}
       <Reveal>
-        <section className="border-t border-border py-s-6">
+        <section className="border-t border-border py-s-8">
           <ReadingColumn wide>
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
-              The problem
-            </p>
-            <h2 className="mt-s-3 max-w-2xl font-serif text-[1.75rem] font-semibold leading-snug tracking-[-0.01em] text-ink sm:text-[2.1rem]">
-              You can&apos;t tell if a summary is accurate by reading it.
-            </h2>
-            <p className="mt-s-4 max-w-2xl font-sans text-[1.0625rem] leading-[1.75] text-ink-muted">
-              Ask a model to summarise a paper and you get fluent prose that sounds exactly like
-              the paper. Whether it is faithful is invisible from the output. Scroll to watch what
-              Pepiros shows instead.
-            </p>
-            <div className="mt-s-8">
-              <StickyDemoPanel />
+            <div className="grid gap-s-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-center">
+              <div>
+                <p className="kicker">The mechanism</p>
+                <h2 className="mt-s-3 font-sans text-[1.75rem] font-semibold leading-snug text-ink sm:text-[2.1rem]">
+                  Every claim, one click from its text.
+                </h2>
+                <p className="mt-s-4 font-sans text-[1.0625rem] leading-[1.75] text-ink-muted">
+                  Each claim is matched against the exact sentence it cites,
+                  and scored. Above 0.92 it is quote located and shows its
+                  quote, page and citation id. Between 0.75 and 0.92 it is
+                  paraphrase. Below that the anchor is dropped and the
+                  citation is stripped rather than left dangling.
+                </p>
+              </div>
+              <MechanismDemo />
             </div>
           </ReadingColumn>
         </section>
       </Reveal>
 
-      <Section
-        kicker="The mechanism"
-        title="Every claim is matched against its source sentence and scored."
-        media={<MechanismDemo />}
-        layout="media-wide"
-        revealVariant="slide"
-      >
-        <p>
-          Each claim is matched against the exact sentence it cites, and scored.
-          Above 0.92 it is <strong className="text-ink">quote located</strong>{" "}
-          and shows its quote, page and citation id. Between 0.75 and 0.92 it is{" "}
-          <strong className="text-ink">paraphrase</strong>. Below that the anchor
-          is dropped and the citation is stripped rather than left dangling.
-        </p>
-        <p>
-          No second model grades the first one&apos;s work. A deterministic
-          string match does that instead, so the same claim always gets the
-          same score.
-        </p>
+      {/* Block 6: discipline grid. */}
+      <Section kicker="Discover" title="Grounded across the literature.">
+        <DispersionGlow tone="green" className="right-0 top-0" />
+        <DisciplineGrid papers={CATALOG} />
       </Section>
 
-      {/* Issue #247: still ReaderMock (grey skeleton bars) rather than a
-          real screenshot -- the issue itself gates the swap on #228
-          landing (real ingested papers replacing the fixture), which is
-          blocked in this environment (needs the production Supabase
-          project, IPv6-only and unreachable from this sandbox). Left as
-          the honest wireframe rather than faked with a mockup that
-          pretends to be a real capture. */}
-      <Section
-        kicker="What you read"
-        title="The claim and its source, side by side."
-        media={<ReaderMock />}
-      >
-        <p>
-          A grounded claim sits next to its quote, not on top of a tooltip
-          containing it. That is a deliberate choice: putting them adjacent is
-          what lets you decide whether the claim actually follows.
-        </p>
-        <p>
-          Claims with nothing behind them are labelled{" "}
-          <strong className="text-ink">inference</strong> and carry no citation
-          at all, rather than a hedge that looks like one.
-        </p>
+      {/* Block 7: tabbed capability overview. */}
+      <Section kicker="What it can do" title="Tools your agent can call directly.">
+        <CapabilityTabs />
       </Section>
 
-      <Section kicker="Ingest" title="No blank loading screen.">
-        <p>
-          The page is never a spinner. The skeleton graph appears first, then
-          related work, then metadata, then the summary and pillars, then the
-          rest of the generators.
-        </p>
-        {/* Issue #116: variant="full" adds a full sentence per stop, which
-            at 5 columns wraps badly at every width under ~1400px -- and is
-            largely redundant with the paragraph just above, which already
-            narrates the same sequence. "teaser" (label + timing, the
-            component's own documented intent for this page) reads cleaner
-            and sidesteps the layout problem entirely rather than fixing
-            breakpoints for content that repeats itself. */}
-        <div className="mt-s-5 rounded-lg border border-border p-s-5">
-          <PacingStrip />
+      {/* Block 8: developer band. Plain section, matching block 5's
+          reasoning -- the code panel is the content, not the background
+          behind it. */}
+      <Section kicker="For agents" title="Your agent can check its own claims before it answers.">
+        <div className="grid gap-s-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-center">
+          <div>
+            <p className="font-sans text-[1.0625rem] leading-[1.75] text-ink-muted">
+              Connect over MCP and your agent calls verify_claim on its own
+              sentences before asserting them. When one comes back
+              unsupported, it says so in the same breath.
+            </p>
+            <Link
+              href="/mcp"
+              className="mt-s-4 inline-block font-sans text-sm text-accent-text underline underline-offset-2"
+            >
+              See the tools
+            </Link>
+          </div>
+          <AgentMock />
         </div>
       </Section>
 
-      <Section
-        kicker="For agents"
-        title="Your agent can check its own claims before it answers."
-        media={<AgentMock />}
-      >
-        <p>
-          Connect over MCP and your agent calls{" "}
-          <code className="font-mono text-[0.95em] text-ink">verify_claim</code>{" "}
-          on its own sentences before asserting them. When one comes back
-          unsupported, it says so in the same breath.
-        </p>
-        <p>
-          <Link
-            href="/mcp"
-            className="text-accent-text underline underline-offset-2"
-          >
-            See the {LIVE_TOOLS.length} tools
-          </Link>
-          .
-        </p>
-      </Section>
-
-      <Section
-        kicker="Limits"
-        title="What this does not prove."
-      >
-        <p>
-          A fuzzy-matched quote proves quotation provenance, not entailment. A
-          model can attach a real Methods sentence to a wrong conclusion and
-          still score 1.0 on the match.
-        </p>
-        <p>
-          So the badge always reads <strong className="text-ink">quote
-          located</strong>, and never <strong className="text-ink">verified</strong>.
-          Saying that here, rather than in a footnote, is the point.
-        </p>
-      </Section>
-
+      {/* Block 9: the evidence guarantee. The page's actual argument, and
+          the second (last) place a scroll reveal earns its keep. */}
       <Reveal>
-        <section className="border-t border-border py-s-6">
-          <ReadingColumn>
-            <div className="text-center">
-              <h2 className="font-serif text-[1.75rem] leading-snug text-ink">
-                Browse papers other people have already read.
-              </h2>
-              <p className="mx-auto mt-s-3 max-w-md font-sans text-[15px] leading-relaxed text-ink-muted">
-                The library is open. Every paper in it opens into a write-up
-                where each claim sits next to its source.
+        <Section
+          kicker="The guarantee"
+          title="We do not say verified. We show you where it says it."
+        >
+          <div className="grid gap-s-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-center">
+            <div className="font-sans text-[1.0625rem] leading-[1.75] text-ink-muted">
+              <p>
+                A fuzzy-matched quote proves quotation provenance, not
+                entailment. A model can attach a real Methods sentence to a
+                wrong conclusion and still score 1.0 on the match.
               </p>
-              <div className="mt-s-5 flex flex-wrap items-center justify-center gap-s-3">
-                <Link href="/discover" className={buttonClassName("primary")}>
-                  Browse the library
-                </Link>
-                <Link
-                  href="/w/ws-1"
-                  className={buttonClassName("secondary")}
-                >
-                  Try the demo workspace
-                </Link>
-              </div>
+              <p className="mt-s-4">
+                So the badge always reads{" "}
+                <strong className="text-ink">quote located</strong>, and never{" "}
+                <strong className="text-ink">verified</strong>. Saying that
+                here, rather than in a footnote, is the point.
+              </p>
             </div>
-          </ReadingColumn>
-        </section>
+            <ReaderMock />
+          </div>
+        </Section>
       </Reveal>
+
+      {/* Block 10: news grid. */}
+      <Section kicker="Recent" title="What changed.">
+        <DispersionGlow tone="violet" className="-left-8 bottom-0" />
+        <NewsGrid />
+      </Section>
+
+      {/* Block 11: CTA band. Shader bookend #2. SiteFooter renders directly
+          beneath this, from app/(marketing)/layout.tsx. */}
+      <Band as="section" className="border-t border-border px-6 py-s-9 text-center">
+        <h2 className="font-sans text-[1.75rem] font-semibold leading-snug text-brand-ink-reversed sm:text-[2.4rem]">
+          Ready to check your sources?
+        </h2>
+        <div className="mt-s-6">
+          <Link href="/discover" className={bandButtonClassName("primary")}>
+            Browse the library
+          </Link>
+        </div>
+      </Band>
     </main>
   );
 }
