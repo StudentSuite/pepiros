@@ -112,7 +112,7 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
         <Link href="/" aria-label="Pepiros home" className="mb-s-6">
           <Logo />
         </Link>
-        <h1 className="font-serif text-xl text-ink">This workspace doesn&apos;t exist</h1>
+        <h1 className="font-sans font-bold text-xl text-ink">This workspace doesn&apos;t exist</h1>
         <p className="mt-s-3 font-sans text-sm text-ink-muted">
           The link you followed doesn&apos;t resolve to a workspace. It may have been mistyped, or the workspace may no longer exist.
         </p>

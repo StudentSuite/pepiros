@@ -32,7 +32,7 @@ export default async function LearnPage({
       <main id="main-content" className="mx-auto max-w-6xl p-s-5">
         <header className="mb-s-5 flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h1 className="font-serif text-2xl text-ink">Learn</h1>
+            <h1 className="font-sans font-bold text-2xl text-ink">Learn</h1>
             <p className="mt-1 font-sans text-xs text-ink-faint">{workspace.name}</p>
           </div>
           <ReaderTabsNav workspaceId={workspaceId} active="learn" />

@@ -44,7 +44,7 @@ function Stat({
   return (
     <div className="rounded border border-border bg-surface-raised p-3">
       <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">{label}</p>
-      <p className={clsx("mt-1 font-serif text-2xl", accentClassName ?? "text-ink")}>{value}</p>
+      <p className={clsx("mt-1 font-mono text-2xl tabular-nums", accentClassName ?? "text-ink")}>{value}</p>
     </div>
   );
 }
@@ -190,7 +190,7 @@ export function AuditClient({ workspaceId }: { workspaceId: string }) {
     <main id="main-content" className="mx-auto max-w-6xl p-s-5">
       <header className="mb-s-5 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="font-serif text-2xl text-ink">Audit</h1>
+          <h1 className="font-sans font-bold text-2xl text-ink">Audit</h1>
           {/* Issue #147: no workspace/paper identity anywhere on this page
               -- a user with two workspaces open in different tabs had no
               way to tell them apart. */}

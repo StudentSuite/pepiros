@@ -112,7 +112,7 @@ export function ShareClient({ workspaceId }: { workspaceId: string }) {
         <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
           {workspace.name}
         </p>
-        <h1 className="font-serif text-xl text-ink">{activePaper.title}</h1>
+        <h1 className="font-sans font-bold text-xl text-ink">{activePaper.title}</h1>
       </header>
 
       <div className="grid gap-s-5 p-s-5 lg:grid-cols-[200px_1fr]">
@@ -129,7 +129,7 @@ export function ShareClient({ workspaceId }: { workspaceId: string }) {
                       type="button"
                       onClick={() => setActivePaperId(paper.id)}
                       className={clsx(
-                        "w-full truncate rounded px-2 py-1.5 text-left font-serif text-sm transition duration-fast ease-out",
+                        "w-full truncate rounded px-2 py-1.5 text-left font-sans text-sm transition duration-fast ease-out",
                         paper.id === activePaper.id
                           ? "bg-surface-sunken text-ink"
                           : "text-ink-muted hover:bg-surface-sunken hover:text-ink",

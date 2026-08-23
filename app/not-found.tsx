@@ -29,7 +29,7 @@ export default function NotFound() {
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-surface p-s-5 text-center">
       <LogoMark size="md" />
       <p className="mt-s-2 font-mono text-xs uppercase tracking-widest text-ink-faint">404</p>
-      <h1 className="font-serif text-2xl text-ink">This page has no source.</h1>
+      <h1 className="font-sans font-bold text-2xl text-ink">This page has no source.</h1>
       <p className="max-w-sm font-sans text-sm text-ink-muted">
         Nothing here to cite, no paper, no workspace. It may have moved or never existed.
       </p>

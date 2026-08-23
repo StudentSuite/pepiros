@@ -68,7 +68,7 @@ export default async function AuthorizePage({
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center p-s-5">
       <div className="rounded-lg border border-border bg-surface-raised p-6">
-        <h1 className="font-serif text-xl text-ink">Authorize access</h1>
+        <h1 className="font-sans font-bold text-xl text-ink">Authorize access</h1>
         <p className="mt-2 font-sans text-sm leading-relaxed text-ink-muted">
           <strong className="text-ink">{client.clientName ?? "An application"}</strong> wants to access your
           Pepiros account (<span className="text-ink">{profile.username}</span>) over MCP -- searching papers,
@@ -128,7 +128,7 @@ function ErrorScreen({ title, detail }: { title: string; detail: string }) {
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center p-s-5">
       <div className="rounded-lg border border-unsupported/40 bg-surface-raised p-6">
-        <h1 className="font-serif text-lg text-unsupported">{title}</h1>
+        <h1 className="font-sans font-bold text-lg text-unsupported">{title}</h1>
         <p className="mt-2 font-sans text-sm text-ink-muted">{detail}</p>
       </div>
     </div>
