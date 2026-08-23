@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 96"><g transform="translate(0,0) scale(0.62)"><g stroke="#181511" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round">
+<rect x="12" y="18" width="72" height="94" rx="2.5"></rect>
+<line x1="22" y1="46" x2="74" y2="46"></line><line x1="22" y1="57" x2="74" y2="57"></line><line x1="22" y1="68" x2="74" y2="68"></line>
+<line x1="22" y1="79" x2="74" y2="79"></line><line x1="22" y1="90" x2="74" y2="90"></line><line x1="22" y1="101" x2="52" y2="101"></line>
+<path d="M39 15.5 H57 L59.5 33.5 M39 15.5 L36.5 33.5"></path>
+<path d="M43 16 C43 6.5 45.2 3.4 48 3.4 C50.8 3.4 53 6.5 53 16"></path>
+</g></g><text x="92" y="66" font-family="Geist, Helvetica, Arial, sans-serif" font-weight="700" font-size="40" letter-spacing="6" fill="#181511">PEPIROS</text></svg>

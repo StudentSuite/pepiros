@@ -1,0 +1,28 @@
+{
+  "_comment": "Drop into app/manifest.ts -- fixes background_color/theme_color (old #0d0e11/#14161a matched no token) and adds the maskable icon.",
+  "background_color": "#14120F",
+  "theme_color": "#14120F",
+  "icons": [
+    {
+      "src": "/brand/app-icons/android-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/brand/app-icons/android-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/brand/app-icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/brand/app-icons/apple-touch-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
