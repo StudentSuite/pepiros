@@ -31,6 +31,23 @@ const config: Config = {
   				sunk: 'rgb(var(--accent-sunk-rgb) / <alpha-value>)',
   				wash: 'var(--accent-wash)'
   			},
+  			// The dispersion palette, the only legal source of a UI accent
+  			// (see the purple rule at the top of app/globals.css). `violet` is
+  			// exposed for atmosphere -- gradients, fringes, glows -- and must
+  			// never be used as a flat fill or a button background.
+  			disp: {
+  				amber: 'rgb(var(--disp-amber-rgb) / <alpha-value>)',
+  				green: 'rgb(var(--disp-green-rgb) / <alpha-value>)',
+  				violet: 'rgb(var(--disp-violet-rgb) / <alpha-value>)',
+  				bone: 'rgb(var(--disp-bone-rgb) / <alpha-value>)'
+  			},
+  			// One call site by design: components/ui/Logo.tsx. Kept out of the
+  			// accent scale so it cannot be reached for by accident.
+  			'logo-quote-bar': 'var(--logo-quote-bar)',
+  			// Theme-invariant on purpose: a lockup's treatment is chosen by the
+  			// ground it sits on, not by the reader's colour scheme.
+  			'brand-ink': 'rgb(var(--brand-ink-rgb) / <alpha-value>)',
+  			'brand-ink-reversed': 'rgb(var(--brand-ink-reversed-rgb) / <alpha-value>)',
   			pillar: {
   				'1': 'rgb(var(--pillar-1-rgb) / <alpha-value>)',
   				'2': 'rgb(var(--pillar-2-rgb) / <alpha-value>)',
@@ -98,16 +115,22 @@ const config: Config = {
   			}
   		},
   		fontFamily: {
+  			// --font-serif is Source Serif 4 and is for LONG-FORM ARTICLE BODY
+  			// COPY ONLY: never the wordmark, never a heading, never UI chrome.
   			serif: [
   				'var(--font-serif)',
   				'Georgia',
   				'serif'
   			],
+  			// --font-grotesque is Geist (was Inter). All UI, headlines, nav,
+  			// buttons, labels, and the wordmark.
   			sans: [
   				'var(--font-grotesque)',
   				'system-ui',
   				'sans-serif'
   			],
+  			// --font-mono is Geist Mono (was JetBrains Mono). Citation IDs,
+  			// evidence chips, DOIs, computed figures, and the .kicker eyebrow.
   			mono: [
   				'var(--font-mono)',
   				'ui-monospace',
