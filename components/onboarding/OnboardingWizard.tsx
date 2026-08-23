@@ -433,7 +433,10 @@ export function OnboardingWizard({
 
             <div className="mt-s-5 flex flex-col gap-s-2">
               <label className="font-sans text-sm text-ink-muted" htmlFor="field-freetext">
-                What do you actually work on? The six buckets earlier are broad.
+                {/* Issue #319: hardcoded "six" went stale when RESEARCH_FIELDS
+                    grew to its current length -- reading the array's own
+                    length here means this can't happen again. */}
+                What do you actually work on? The {RESEARCH_FIELDS.length} buckets earlier are broad.
               </label>
               <Input
                 id="field-freetext"

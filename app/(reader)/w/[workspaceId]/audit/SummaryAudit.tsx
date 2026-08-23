@@ -67,8 +67,16 @@ const RAIL = {
  * rule: green for a located quote, amber for a paraphrase, rose for an
  * unsupported claim, matching the evidence tokens the rest of the app uses.
  */
+// Issue #319: "Supported" used to be quote_located's label here, the one
+// tab whose whole purpose is auditing grounding honesty -- everywhere else
+// in the app the exact same tier reads "quote located" (EvidenceBadge.tsx,
+// lib/graph/legend.ts's TIER_MEANINGS). It also created a real
+// contradiction inside this file's own exportReport(): the summary line
+// counted "Supported: N" as quote_located + paraphrase together, while the
+// per-sentence headers right below printed this label, "Paraphrase," for
+// half of that same N -- one exported file claiming two different things.
 const TIER_RAIL: Record<EvidenceTier, { bar: string; label: string; text: string }> = {
-  quote_located: { bar: "bg-pillar-5", label: "Supported", text: "text-pillar-text-5" },
+  quote_located: { bar: "bg-pillar-5", label: "Quote located", text: "text-pillar-text-5" },
   paraphrase: { bar: "bg-pillar-2", label: "Paraphrase", text: "text-pillar-text-2" },
   unsupported: { bar: "bg-pillar-4", label: "Unsupported", text: "text-pillar-text-4" },
 };
@@ -186,10 +194,14 @@ export function SummaryAudit({ workspace }: { workspace: Workspace }) {
     }
   }
 
-  const supportedCount = useMemo(
-    () => result?.sentences.filter((s) => s.tier !== "unsupported").length ?? 0,
-    [result],
-  );
+  // Per-tier, not a collapsed "supported/unsupported" binary: the summary
+  // line and the per-sentence headers below it both read TIER_RAIL's own
+  // labels now, so the two can't disagree about what a sentence's tier was.
+  const tierCounts = useMemo(() => {
+    const counts: Record<EvidenceTier, number> = { quote_located: 0, paraphrase: 0, unsupported: 0 };
+    for (const s of result?.sentences ?? []) counts[s.tier] += 1;
+    return counts;
+  }, [result]);
 
   function exportReport() {
     if (!result) return;
@@ -197,8 +209,9 @@ export function SummaryAudit({ workspace }: { workspace: Workspace }) {
       `# Reverse audit: ${workspace.name}`,
       "",
       `Sentences: ${result.sentences.length}`,
-      `Supported: ${supportedCount}`,
-      `Unsupported: ${result.sentences.length - supportedCount}`,
+      `${TIER_RAIL.quote_located.label}: ${tierCounts.quote_located}`,
+      `${TIER_RAIL.paraphrase.label}: ${tierCounts.paraphrase}`,
+      `${TIER_RAIL.unsupported.label}: ${tierCounts.unsupported}`,
       `Drop rate: ${Math.round(result.dropRate * 100)}%`,
       "",
       "---",

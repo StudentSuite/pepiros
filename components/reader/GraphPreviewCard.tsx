@@ -1,18 +1,32 @@
 import Link from "next/link";
 import { Panel } from "@/components/ui/Panel";
 import { buttonClassName } from "@/components/ui/Button";
+import { EDGE_KIND_MEANINGS } from "@/lib/graph/legend";
+import type { EdgeKind } from "@/types/anchor";
 
-// Matches components/canvas/GraphEdge.tsx's actual baseColor()/DASH exactly --
-// a legend that drifts from the real rendering is worse than no legend.
 // Structural "contains" and same-kind "shares_method"/"derived_from" left out:
-// this card is about the cross-paper relational signal, not the full 8-kind set.
-const LEGEND: { label: string; color: string; dash?: string }[] = [
-  { label: "agrees", color: "var(--located)" },
-  { label: "contradicts", color: "var(--unsupported)", dash: "6 6" },
-  { label: "extends", color: "var(--ink-muted)", dash: "2 3" },
-  { label: "relates", color: "var(--ink-muted)", dash: "6 4" },
-  { label: "cites", color: "var(--ink-muted)" },
-];
+// this card is about the cross-paper relational signal, not the full 8-kind
+// set. Colour still matches GraphEdge.tsx's baseColor() by hand (that
+// function isn't itself importable data), but issue #319 found the dash
+// values here had drifted from the real DASH table anyway (extends "2 3" vs
+// the real "1 3", relates "6 4" vs the real "9 4") despite this file's own
+// comment insisting they couldn't -- dash now reads from
+// lib/graph/legend.ts's EDGE_KIND_MEANINGS directly, the same source
+// GraphEdge.tsx's own DASH table and CanvasLegend.tsx are kept in sync
+// against, so a hand-copied number can't go stale here again.
+const SHOWN_KINDS: EdgeKind[] = ["agrees", "contradicts", "extends", "relates", "cites"];
+const KIND_COLOR: Partial<Record<EdgeKind, string>> = {
+  agrees: "var(--located)",
+  contradicts: "var(--unsupported)",
+};
+const LEGEND = SHOWN_KINDS.map((kind) => {
+  const meaning = EDGE_KIND_MEANINGS.find((m) => m.kind === kind)!;
+  return {
+    label: meaning.label,
+    color: KIND_COLOR[kind] ?? "var(--ink-muted)",
+    dash: meaning.dash ?? undefined,
+  };
+});
 
 /**
  * Compact right-rail summary of the full canvas -- a real link into

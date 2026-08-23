@@ -55,11 +55,19 @@ npm run mcp:stdio`}</Code>
   }
 }`}</Code>
         <p>
+          {/* Issue #319: this used to point at /mcp "for the connector URL
+              and setup flow" -- /mcp only asserted the transport was live,
+              it never actually stated one. The endpoint really is just the
+              deployment's own origin plus /api/mcp (app/api/mcp/route.ts);
+              a client that speaks OAuth-authenticated streamable-HTTP MCP
+              walks discovery, dynamic registration, and PKCE from there on
+              its own. */}
           A remote streamable-HTTP transport with OAuth 2.1 (dynamic client
           registration, PKCE) is also live now, for clients that can only
           reach a hosted connector rather than spawning a local process --
-          see <Link href="/mcp">the agents page</Link> for the connector URL
-          and setup flow.
+          point one at <code className="font-mono text-xs">/api/mcp</code> on
+          this deployment&rsquo;s own origin, and it discovers the rest from{" "}
+          <code className="font-mono text-xs">/.well-known/oauth-authorization-server</code>.
         </p>
       </Section>
 

@@ -8,8 +8,15 @@ import type { ChatMessageCitation } from "./MessageList";
 /**
  * Small popover shown for a citation id: the tier badge plus the located
  * quote (or, for the "unsupported"/dropped case, an honest note instead of a
- * quote -- never render "verified" here, see plan.md §4). Positioning,
- * outside-click, and Escape now come from the shared Popover primitive.
+ * quote). The banned-word rule (docs/PLAN-V1.md §4) is narrower than "never
+ * render the string 'verified'": a claim's TIER must always read "quote
+ * located"/"paraphrase"/"unsupported", never "verified" -- but "dropped on
+ * re-verification" below describes the deterministic recheck ACTION itself
+ * (the same mechanism lib/services/verify.ts and the verify_claim MCP tool
+ * are named after), not a status asserted about the claim, and is used
+ * identically in NodeInspector.tsx and EvidenceList.tsx for the same event.
+ * Positioning, outside-click, and Escape come from the shared Popover
+ * primitive.
  *
  * Issue #210: takes this message's own re-verified ChatMessageCitation, not
  * a graph Evidence row -- see CitationChip's doc comment for why a global

@@ -14,7 +14,7 @@ export default function TermsPage() {
       kicker="Terms"
       title="Terms of use"
       intro="Short, because the product is small and the honest version fits on one page."
-      updated="15 August 2026"
+      updated="24 August 2026"
     >
       <Section title="What Pepiros is">
         <p>

@@ -155,7 +155,7 @@ export async function UserProfile({
   activeHref: string;
   children: React.ReactNode;
 }) {
-  const { displayName, bio, papers, initials, followers, followState } =
+  const { profile, displayName, bio, papers, initials, followers, followState } =
     await resolveProfile(username);
 
   return (
@@ -180,7 +180,15 @@ export async function UserProfile({
       meta={[
         { icon: <UserRound className="size-4" />, label: `${followers.toLocaleString()} followers` },
         { icon: <FileText className="size-4" />, label: `${papers.length} posted` },
-        { icon: <CalendarDays className="size-4" />, label: "Reads and publishes on Pepiros" },
+        {
+          // Issue #319: this always read the same generic tagline next to
+          // a calendar icon that invites "joined on X" -- a real account
+          // actually has a joinedAt date to show there; a catalog persona
+          // (no signup, no profile row) keeps the tagline since it has no
+          // date to be honest about.
+          icon: <CalendarDays className="size-4" />,
+          label: profile ? `Joined ${profile.joinedAt}` : "Reads and publishes on Pepiros",
+        },
       ]}
     >
       {children}

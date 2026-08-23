@@ -13,7 +13,7 @@ export default function SecurityPage() {
       kicker="Security"
       title="Reporting a vulnerability"
       intro="If you have found something, we would rather hear it from you than from someone else."
-      updated="15 August 2026"
+      updated="24 August 2026"
     >
       <Section title="How to report">
         <p>
