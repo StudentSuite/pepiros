@@ -16,6 +16,13 @@ const eslintConfig = [
       "dist/**",
       "next-env.d.ts",
       "lib/db/migrations/**",
+      // design/ is reference material, not source: the brand kit, the token
+      // lab capsules, and the reference images. capsules/support.js in
+      // particular is a vendored bundle that ships its own React 17-era
+      // ReactDOM.render call, and linting somebody else's bundle to a
+      // standard it was never written against just produces noise CI has to
+      // learn to ignore.
+      "design/**",
     ],
   },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
