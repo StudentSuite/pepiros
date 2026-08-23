@@ -219,8 +219,14 @@ export const MESH_DRIFT_DEFAULTS = {
   warp: 0,
   soften: 0,
   oklab: 1,
-  /** Matches the plan's own note verbatim: `seconds * 0.73`. */
-  timeScale: 0.73,
+  // Was 0.73 (the plan's own note, verbatim). Raised 2026-08-23: at 0.73 a
+  // viewer glancing at the hero for a few seconds could miss that the
+  // background was animated at all, especially after the sharpness pass
+  // (blob-center-fix commit) made blobs more distinct and slower-blending
+  // into each other. 1.15 keeps the same "calm" character -- still a slow
+  // drift, not a strobe -- while making the motion itself unmistakable
+  // within a normal glance.
+  timeScale: 1.15,
   cursorPresence: 0,
 } as const;
 

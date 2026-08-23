@@ -56,11 +56,20 @@ type LogoSize = "sm" | "md" | "lg";
  * `sm` bottoms out at 28px deliberately. That is the size this glyph was cut
  * for (see the file header) and it is the floor: below it the page rules start
  * to composite and the mark goes back to reading as a speck.
+ *
+ * BUMPED ~14% ABOVE THE KIT'S 1.11x RATIO, 2026-08-23. The glyph's own
+ * viewBox carries real internal margin (content spans roughly y=3 to
+ * y=112 of a 118-tall box), so at exactly 1.11x the rendered ink read
+ * smaller than the wordmark's cap-height beside it despite the box
+ * technically being taller. WORDMARK_SIZE below is deliberately left at
+ * the kit's own values -- only the glyph grows, which is what pushes the
+ * mark to visibly read as bigger than its wordmark rather than merely
+ * equal to it.
  */
 const GLYPH_SIZE: Record<LogoSize, string> = {
-  sm: "h-7", // 28px -- site header, sidebar
-  md: "h-[30px]", // footer, auth cards
-  lg: "h-11", // 44px -- hero, onboarding
+  sm: "h-8", // 32px -- site header, sidebar
+  md: "h-[34px]", // footer, auth cards
+  lg: "h-[50px]", // hero, onboarding
 };
 
 const WORDMARK_SIZE: Record<LogoSize, string> = {
