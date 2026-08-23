@@ -4,13 +4,15 @@ import { useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/shadcn/input";
 import { Button } from "@/components/shadcn/button";
-import { Dot, FeedItem } from "@/components/reading/Article";
+import { FeedItem } from "@/components/reading/Article";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { EvidenceBadge } from "@/components/ui/EvidenceBadge";
 import { RESEARCH_FIELDS } from "@/lib/data/types";
 import { paperDek } from "@/lib/data/paperContent";
 import { isOpenAccess } from "@/lib/data/papers";
 import type { CatalogPaper } from "@/lib/data/papers";
 import type { CatalogStats } from "@/lib/data/seed";
+import type { EvidenceTier } from "@/types/anchor";
 import { cn } from "@/lib/utils";
 
 type SortKey = "latest" | "top" | "discussed";
@@ -23,21 +25,18 @@ const SORTS: { value: SortKey; label: string }[] = [
 
 const PAGE = 10;
 
-const compact = (n: number) =>
-  n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : String(n);
+/** Real claim count and dominant grounding tier for an indexed paper (see discover/page.tsx's realGrounding). Null for a paper with no workspace yet. */
+export interface FeedGrounding {
+  claimCount: number;
+  dominantTier: EvidenceTier;
+}
 
-const ago = (days: number) =>
-  days === 0
-    ? "today"
-    : days === 1
-      ? "yesterday"
-      : days < 30
-        ? `${days}d ago`
-        : days < 365
-          ? `${Math.round(days / 30)}mo ago`
-          : `${Math.round(days / 365)}y ago`;
+export type FeedEntry = CatalogPaper & { stats: CatalogStats; grounding: FeedGrounding | null };
 
-export type FeedEntry = CatalogPaper & { stats: CatalogStats };
+function authorLine(authors: string[]): string {
+  if (authors.length <= 2) return authors.join(" & ");
+  return `${authors[0]} et al.`;
+}
 
 /**
  * The public library, as a publication feed.
@@ -89,8 +88,9 @@ export function FeedClient({ items }: { items: FeedEntry[] }) {
 
   return (
     <div>
-      {/* Controls */}
-      <div className="flex flex-wrap items-center gap-s-4 border-b border-border pb-s-4">
+      {/* Controls -- sticky just below the site header (--topbar), so sort
+          and search stay reachable while scanning a long feed. */}
+      <div className="sticky top-[var(--topbar)] z-10 flex flex-wrap items-center gap-s-4 border-b border-border bg-surface pb-s-4 pt-s-4">
         <div className="flex items-center gap-s-4">
           {SORTS.map((s) => (
             <button
@@ -180,7 +180,7 @@ export function FeedClient({ items }: { items: FeedEntry[] }) {
                 dek={paperDek(p)}
                 tags={
                   <>
-                    <span className="font-mono text-[10px] uppercase tracking-wider text-ink-faint">
+                    <span className="rounded-full border border-border px-s-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-ink-faint">
                       {p.field}
                     </span>
                     {/* Issue #285: only shown for a licence that actually
@@ -193,26 +193,30 @@ export function FeedClient({ items }: { items: FeedEntry[] }) {
                     )}
                   </>
                 }
-                meta={
-                  <>
-                    <span>@{p.stats.postedBy}</span>
-                    <Dot />
-                    <span>{ago(p.stats.postedDaysAgo)}</span>
-                    <Dot />
-                    {/* Issues #253/#259: reading time and "% grounded" were
-                        both fabricated here (a hash, and lib/data/seed.ts
-                        respectively), not measured by the verifier. */}
-                    <span>{p.stats.comments} comments</span>
-                  </>
-                }
+                meta={<span>{authorLine(p.authors)}</span>}
                 aside={
-                  <div className="w-24 text-right">
-                    <p className="font-mono text-lg tabular-nums text-ink">
-                      {compact(p.stats.score)}
-                    </p>
-                    <p className="font-mono text-[10px] uppercase tracking-wider text-ink-faint">
-                      readers
-                    </p>
+                  // Real claim count + the paper's dominant grounding tier
+                  // (issue #299) -- not the fabricated "readers" score this
+                  // replaced. A paper with no workspace yet says so plainly
+                  // rather than showing an invented number.
+                  <div className="w-28 text-right">
+                    {p.grounding ? (
+                      <>
+                        <p className="font-mono text-lg tabular-nums text-ink">
+                          {p.grounding.claimCount}
+                        </p>
+                        <p className="font-mono text-[10px] uppercase tracking-wider text-ink-faint">
+                          claims
+                        </p>
+                        <div className="mt-1 flex justify-end">
+                          <EvidenceBadge tier={p.grounding.dominantTier} />
+                        </div>
+                      </>
+                    ) : (
+                      <p className="font-mono text-[10px] uppercase tracking-wider text-ink-faint">
+                        Not yet indexed
+                      </p>
+                    )}
                   </div>
                 }
               />
