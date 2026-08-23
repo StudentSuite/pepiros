@@ -7,6 +7,7 @@ import { WalkthroughStep } from "@/components/site/WalkthroughStep";
 import { EvidenceBadge } from "@/components/ui/EvidenceBadge";
 import { RefChip } from "@/components/ui/RefChip";
 import { ReaderMock, GraphMock, AgentMock } from "@/components/mockups/ReaderMock";
+import { PageHeaderBand } from "@/components/site/PageHeaderBand";
 
 export const metadata: Metadata = {
   title: "How It Works",
@@ -30,19 +31,11 @@ const LIMITATIONS = [
 export default function HowItWorksPage() {
   return (
     <main className="flex flex-col">
-      {/* Hero */}
-      <section className="mx-auto w-full max-w-3xl p-s-5 text-center">
-        <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">
-          How it works
-        </p>
-        <h1 className="mt-s-4 font-sans font-bold text-4xl leading-tight text-ink sm:text-5xl">
-          How each claim gets checked against its source.
-        </h1>
-        <p className="mx-auto mt-s-4 max-w-xl font-sans text-base leading-relaxed text-ink-muted">
-          Every claim is matched against the exact sentence it cites and
-          scored. No second model grades the first one&apos;s work.
-        </p>
-      </section>
+      <PageHeaderBand
+        kicker="How it works"
+        title="How each claim gets checked against its source."
+        dek="Every claim is matched against the exact sentence it cites and scored. No second model grades the first one's work."
+      />
 
       <WalkthroughStep
         index={1}

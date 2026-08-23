@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef, type ReactNode } from "react";
-import { Band } from "@/components/chrome/Band";
 import { LegalPageIndex } from "@/components/site/LegalPageIndex";
+import { PageHeaderBand } from "@/components/site/PageHeaderBand";
 
 /**
  * Shared frame for the eight plain-prose pages (privacy, terms, security,
@@ -35,16 +35,7 @@ export function LegalPage({
 
   return (
     <>
-      <Band as="section" variant="dark" className="px-6 py-s-6">
-        <div className="mx-auto w-full max-w-3xl">
-          <p className="font-mono text-xs uppercase tracking-widest text-brand-ink-reversed/60">
-            {kicker}
-          </p>
-          <h1 className="mt-s-2 font-sans font-bold text-2xl leading-tight text-brand-ink-reversed sm:text-3xl">
-            {title}
-          </h1>
-        </div>
-      </Band>
+      <PageHeaderBand kicker={kicker} title={title} />
 
       {/* A <div>, not a second <main>: app/(marketing)/layout.tsx already
           wraps every page in <main id="main-content">. This file's root
