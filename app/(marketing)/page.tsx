@@ -72,19 +72,10 @@ function Section({
 }) {
   return (
     <section
-      // Was min-h-[72vh]. Even after adding real content to every block this
-      // wraps (stat lines, a summary count, a real install command, all 4
-      // changelog entries instead of 3), a full-page screenshot still showed
-      // each section as a small content block over a few hundred px of dead
-      // space -- these blocks just don't have enough real, non-fabricated
-      // content to justify 72vh, and padding further would mean inventing
-      // filler, which is exactly what this product's own honesty stance
-      // argues against. 48vh is close to what the enriched content actually
-      // fills at 1440px; MechanismDemo and the evidence-guarantee section
-      // (both custom markup, not this helper) keep their fuller heights,
-      // they earn it with a real interactive demo and the page's actual
-      // argument.
-      className={`relative flex min-h-[48vh] flex-col justify-center border-t border-border py-s-8 ${className ?? ""}`}
+      // Every section pinned to ~100vh (2026-08-28, Anay's call) so the page
+      // reads as a deliberate one-section-per-screen scroll rhythm rather
+      // than content-driven heights that vary block to block.
+      className={`relative flex min-h-screen flex-col justify-center border-t border-border py-s-8 ${className ?? ""}`}
     >
       <ReadingColumn wide>
         {kicker && <p className="kicker">{kicker}</p>}
@@ -135,7 +126,7 @@ export default function MarketingPage() {
           screenshot, and a fade-in gives a beat of attention it would not
           get sitting flush with the section above it. */}
       <Reveal>
-        <section className="flex min-h-[72vh] flex-col justify-center border-t border-border py-s-8">
+        <section className="flex min-h-screen flex-col justify-center border-t border-border py-s-8">
           {/* Widened past ReadingColumn's default "wide" (max-w-3xl, 768px):
               at that width the right column only had ~358px to give
               MechanismDemo, whose own internal 3-column beam layout needs
@@ -242,7 +233,7 @@ export default function MarketingPage() {
           beneath this, from app/(marketing)/layout.tsx. */}
       <Band
         as="section"
-        className="flex min-h-[62vh] flex-col items-center justify-center border-t border-border px-6 py-s-8 text-center"
+        className="flex min-h-screen flex-col items-center justify-center border-t border-border px-6 py-s-8 text-center"
       >
         <h2 className="font-sans text-[1.75rem] font-semibold leading-snug text-brand-ink-reversed sm:text-[2.4rem]">
           Ready to check your sources?
