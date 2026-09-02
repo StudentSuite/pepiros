@@ -237,10 +237,24 @@ export default function MarketingPage() {
       </Section>
 
       {/* Block 11: CTA band. Shader bookend #2. SiteFooter renders directly
-          beneath this, from app/(marketing)/layout.tsx. */}
+          beneath this, from app/(marketing)/layout.tsx.
+
+          Deliberately SHORTER than the shared Section floor above. Every other
+          block on this page carries real content (a grid, a demo, a walkthrough)
+          and earns a near-viewport floor. This one is a heading and a button,
+          roughly 8rem of content, and at min(100dvh, 56rem) it was a full
+          screen of mostly empty band, immediately followed by the footer: the
+          page ended with two consecutive screens of almost nothing.
+
+          Not collapsed to fit its content either. This is one of only two
+          places the shader is allowed to show (design/anti-slop.md's bookend
+          rule), so the band needs enough height for the gradient to read as
+          atmosphere rather than as a stripe. ~55dvh, capped at 30rem, is the
+          balance: unmistakably a closing beat rather than another full
+          section, with room for the ramp to breathe. */}
       <Band
         as="section"
-        className="flex min-h-[min(100dvh,56rem)] flex-col items-center justify-center border-t border-border px-6 py-s-8 text-center"
+        className="flex min-h-[min(55dvh,30rem)] flex-col items-center justify-center border-t border-border px-6 py-s-8 text-center"
       >
         <h2 className="font-sans text-[1.75rem] font-semibold leading-snug text-brand-ink-reversed sm:text-[2.4rem]">
           Ready to check your sources?
