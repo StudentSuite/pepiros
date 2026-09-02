@@ -84,7 +84,12 @@ export default function RootLayout({
             gives its content wrapper id="main-content" to match. */}
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-s-4 focus:top-s-4 focus:z-50 focus:rounded-md focus:bg-ink focus:px-s-4 focus:py-s-2 focus:font-sans focus:text-sm focus:text-surface focus:shadow-lg"
+          // Issue #373: the skip link is the first thing a keyboard user
+          // reaches on every page, by definition -- z-[80] is deliberately
+          // above every other layer in the app (OfflineBanner's z-[70] is
+          // the current highest), so a focused skip link is never rendered
+          // invisible behind something else.
+          className="sr-only focus:not-sr-only focus:fixed focus:left-s-4 focus:top-s-4 focus:z-[80] focus:rounded-md focus:bg-ink focus:px-s-4 focus:py-s-2 focus:font-sans focus:text-sm focus:text-surface focus:shadow-lg"
         >
           Skip to content
         </a>
