@@ -24,7 +24,7 @@ export default async function SharePage({
     // a dense working surface (design/anti-slop.md).
     return (
       <main id="main-content" className="w-full">
-        <Band as="div" variant="dark" className="flex min-h-[70vh] w-full items-center justify-center p-s-5">
+        <Band as="div" variant="dark" className="flex min-h-[var(--centered-page-min-h)] w-full items-center justify-center p-s-5">
           <div className="mx-auto flex w-full max-w-md flex-col items-center text-center">
             <Link href="/" aria-label="Pepiros home" className="mb-s-6">
               <Logo variant="chrome" />

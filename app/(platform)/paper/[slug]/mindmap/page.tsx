@@ -52,7 +52,7 @@ export default async function PaperMindmapPage({
     // supplies <main id="main-content"> -- matching app/(platform)/paper/
     // [slug]/page.tsx's own plain <main> here rather than nesting a second
     // id="main-content" landmark inside it.
-    <main className="mx-auto flex min-h-[70vh] w-full max-w-[64rem] flex-col px-s-5 pb-s-8">
+    <main className="mx-auto flex min-h-[var(--centered-page-min-h)] w-full max-w-[64rem] flex-col px-s-5 pb-s-8">
       <ArticleHeader kicker="Mindmap" title={paper.title} />
 
       {outline?.markdown ? (

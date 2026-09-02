@@ -264,6 +264,12 @@
   --chat-collapsed: 56px;
   --chat-open: min(46vh, 420px);
   --topbar: 52px;
+  /* Issue #367: "centre a short page in the viewport" (an error page, an
+     auth form, a loading fallback, a share-link dead end) had eight call
+     sites split across three different height values, two of them
+     unexplained outliers. One token now, so a caller can't drift to a
+     fourth value by copying whichever of the eight it found first. */
+  --centered-page-min-h: 70dvh;
 
   /* ---- shadcn/ui bridge ----------------------------------------------
      shadcn's generated components address colour through its own token
@@ -704,6 +710,17 @@ body {
   background-color: var(--surface);
   color: var(--ink);
   font-family: var(--font-grotesque);
+}
+
+/* Issue #374: every sticky header on the site (SiteHeader, the signed-in
+   shell's header) is exactly --topbar tall, so any element an in-page anchor
+   can land on -- the skip link's #main-content, LegalPageIndex's dynamically
+   assigned h2 ids -- needs this much clearance or the target renders behind
+   the header instead of below it. A bare selector, not a class, because
+   LegalPageIndex assigns ids at runtime to whatever h2s a given page
+   happens to render; there is no shared class to hang this off instead. */
+[id] {
+  scroll-margin-top: var(--topbar);
 }
 
 /* Selection inverts cleanly in both themes without a second pair of tokens:

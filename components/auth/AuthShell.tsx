@@ -20,7 +20,7 @@ import { Band } from "@/components/chrome/Band";
 export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="bg-surface lg:grid lg:min-h-[calc(100vh-var(--topbar))] lg:grid-cols-2">
-      <div className="mx-auto flex min-h-[70vh] w-full max-w-[400px] flex-col justify-center p-s-5 lg:min-h-0 lg:max-w-none lg:px-s-8">
+      <div className="mx-auto flex min-h-[var(--centered-page-min-h)] w-full max-w-[400px] flex-col justify-center p-s-5 lg:min-h-0 lg:max-w-none lg:px-s-8">
         <Logo size="md" />
         {children}
       </div>

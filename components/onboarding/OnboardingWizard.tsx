@@ -482,7 +482,7 @@ export function OnboardingWizard({
   );
 
   return (
-    <div className="mx-auto flex min-h-[80vh] w-full max-w-xl flex-col justify-center p-s-5">
+    <div className="mx-auto flex min-h-[var(--centered-page-min-h)] w-full max-w-xl flex-col justify-center p-s-5">
       <Logo size="md" />
 
       <div className="mt-s-5 flex items-center gap-s-3">
