@@ -30,3 +30,23 @@ export function Panel({
 /** Semantic alias -- same primitive, use whichever name reads better at the
  * call site (a "panel" of app chrome vs. a "card" in a list/grid). */
 export { Panel as Card };
+
+/**
+ * Issue #349: the dashboard (StatCard, ReachCharts, AnalyticsClient) used
+ * shadcn/card instead, every call site already overriding its
+ * border-border bg-card back toward this app's own tokens -- these three
+ * slots (the only ones any real consumer used; no CardDescription/CardFooter
+ * call site existed) let them move onto the one Card without losing the
+ * header/title structure they relied on.
+ */
+export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={clsx("flex flex-col gap-s-1 p-s-4 pb-0", className)} {...props} />;
+}
+
+export function CardTitle({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={clsx("font-sans font-semibold leading-none tracking-tight text-ink", className)} {...props} />;
+}
+
+export function CardContent({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={clsx("p-s-4 pt-0", className)} {...props} />;
+}

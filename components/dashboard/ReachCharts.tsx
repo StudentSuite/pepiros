@@ -20,7 +20,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/shadcn/chart";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Panel";
 import { ToggleGroup, ToggleGroupItem } from "@/components/shadcn/toggle-group";
 import { EmptyState } from "@/components/ui/EmptyState";
 import type { RangeKey, ReachSummary } from "@/lib/data/types";
@@ -76,7 +76,7 @@ export function ReachOverTime({
   onRangeChange: (r: RangeKey) => void;
 }) {
   return (
-    <Card className="border-border bg-card">
+    <Card>
       <CardHeader className="flex-row flex-wrap items-start justify-between gap-s-4 space-y-0 pb-s-2">
         <div>
           <CardTitle className="whitespace-nowrap font-mono text-[11px] font-normal uppercase tracking-widest text-ink-faint">
@@ -185,7 +185,7 @@ export function EngagementByPost({ reach }: { reach: ReachSummary }) {
   }));
 
   return (
-    <Card className="border-border bg-card">
+    <Card>
       <CardHeader className="pb-s-2">
         <CardTitle className="font-mono text-[11px] font-normal uppercase tracking-widest text-ink-faint">
           Engagement by post

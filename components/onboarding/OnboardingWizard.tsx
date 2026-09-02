@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 // via asChild), which ui/Button can't do -- every other Button in this file
 // moved to ui/Button, the canonical one.
 import { Button as ShadcnButton } from "@/components/shadcn/button";
-import { Card } from "@/components/shadcn/card";
+import { Card } from "@/components/ui/Panel";
 import { Input } from "@/components/ui/Input";
 import { Progress } from "@/components/shadcn/progress";
 import { Band } from "@/components/chrome/Band";
@@ -510,7 +510,7 @@ export function OnboardingWizard({
           <div className="rounded-md bg-surface p-s-6 text-ink">{stepBody}</div>
         </Band>
       ) : (
-        <Card className="mt-s-4 border-border bg-card p-s-6">{stepBody}</Card>
+        <Card className="mt-s-4 p-s-6">{stepBody}</Card>
       )}
 
       <button
