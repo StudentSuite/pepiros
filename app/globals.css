@@ -503,7 +503,18 @@
  *
  * Migration target is `bg-paper text-ink`, which IS theme-aware. Each surface
  * moves as it gets rebuilt; when the last call site is gone, this block goes
- * with it. Do not add new usages.
+ * with it.
+ *
+ * Issue #378 audit (2026-09-02): every remaining call site enumerated --
+ * components/reader/PdfPane.tsx (the real reading surface), FlashcardDeck.tsx
+ * (a card showing an actual located quote), ReaderMock.tsx (a marketing
+ * mockup deliberately mirroring PdfPane's real light-in-both-themes
+ * behaviour, not a stray reach-for), and dev/tokens/page.tsx (the swatch
+ * demonstrating this exact token). All four are genuinely "a page of the
+ * source paper," not app chrome that drifted onto this by accident -- none
+ * migrate to bg-paper text-ink, since that's theme-aware and these
+ * specifically must not be. The auth pages already moved off this in #126.
+ * Still do not add a new usage without the same justification.
  */
 .surface-reading {
   background-color: #f5f1e6;
