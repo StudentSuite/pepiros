@@ -20,7 +20,7 @@ export function AuthCardSkeleton({ fields = 2 }: { fields?: number }) {
       aria-busy="true"
       aria-label="Loading"
     >
-      <div className="mx-auto flex min-h-[70vh] w-full max-w-[400px] flex-col justify-center p-s-5 lg:min-h-0 lg:max-w-none lg:px-s-8">
+      <div className="mx-auto flex min-h-[var(--centered-page-min-h)] w-full max-w-[400px] flex-col justify-center p-s-5 lg:min-h-0 lg:max-w-none lg:px-s-8">
         <Skeleton className="h-7 w-28" />
 
         <Skeleton className="mt-s-5 h-7 w-2/3" />

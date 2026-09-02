@@ -337,6 +337,12 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
     // new workspace object on every edit, which used to re-run this (and
     // re-zoom the viewport) on every save from the inspector, not just an
     // actual workspace switch.
+    //
+    // Issue #389: getViewport/setViewport are also omitted -- both come
+    // from the same useReactFlow() call as fitView (already a dep), and
+    // React Flow guarantees all three are referentially stable across
+    // renders for the life of one <ReactFlowProvider>, the same reason
+    // fitView itself is safe to list without triggering re-fits it shouldn't.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [legendOpen, workspace?.id, fitView]);
 

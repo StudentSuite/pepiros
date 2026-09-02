@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Copy, Plug, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/shadcn/label";
 import {
   Table,
@@ -97,7 +97,7 @@ export function McpTokens({ initial, readOnly = false }: { initial: McpTokenMeta
             </code>
             <Button
               size="sm"
-              variant="outline"
+              variant="secondary"
               className="gap-1.5"
               onClick={async () => {
                 // Issue #216: writeText throws on an insecure context, in an
@@ -210,7 +210,7 @@ export function McpTokens({ initial, readOnly = false }: { initial: McpTokenMeta
             <option value="write">Read + write</option>
           </select>
         </div>
-        <Button type="submit" disabled={pending || readOnly}>
+        <Button type="submit" variant="primary" disabled={pending || readOnly}>
           {pending ? "Generating…" : "Generate token"}
         </Button>
       </form>

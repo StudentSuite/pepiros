@@ -4,8 +4,8 @@ import { useMemo, useOptimistic, useState, useTransition } from "react";
 import Link from "next/link";
 import { FileText, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Input } from "@/components/shadcn/input";
-import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import {
   AlertDialog,
@@ -164,7 +164,7 @@ export function PostsList({
             {selected.size} selected
           </span>
           <Button
-            variant="destructive"
+            variant="danger"
             size="sm"
             className="ml-auto gap-1.5"
             onClick={() => setConfirming(true)}

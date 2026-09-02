@@ -121,17 +121,21 @@ export function ProfileShell({
                   <span className="shrink-0 text-ink-faint" aria-hidden>
                     {item.icon}
                   </span>
+                  {/* Issue #369: a flex item's min-width defaults to auto (its
+                      content's own width), not 0 -- without min-w-0 here,
+                      truncate never actually engages on a long item.label,
+                      and the row grows past this list's width instead. */}
                   {item.href ? (
                     <a
                       href={item.href}
                       target={item.href.startsWith("http") ? "_blank" : undefined}
                       rel={item.href.startsWith("http") ? "noopener noreferrer" : undefined}
-                      className="truncate transition-colors duration-fast ease-out hover:text-accent"
+                      className="min-w-0 flex-1 truncate transition-colors duration-fast ease-out hover:text-accent"
                     >
                       {item.label}
                     </a>
                   ) : (
-                    <span className="truncate">{item.label}</span>
+                    <span className="min-w-0 flex-1 truncate">{item.label}</span>
                   )}
                 </li>
               ))}

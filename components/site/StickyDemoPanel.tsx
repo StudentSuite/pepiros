@@ -85,7 +85,15 @@ export function StickyDemoPanel() {
 
   return (
     <div className="grid gap-s-8 lg:grid-cols-2 lg:items-start">
-      <div className="flex flex-col gap-[40vh] lg:gap-[50vh]">
+      {/* Issue #365: a pure vh gap ties "how far you scroll per stage" to
+          the viewport alone, decoupled from the step copy it's meant to
+          isolate for the IntersectionObserver above. Text-size preferences
+          scale the copy (rem) but not a vh gap, so larger text can run two
+          stages together; a tall monitor at low zoom turns the same vh
+          into an unreadable stretch of nothing. clamp() keeps the vh as
+          the normal-case value while a rem floor guarantees enough room
+          for the copy and a rem ceiling caps the empty-scroll extreme. */}
+      <div className="flex flex-col gap-[clamp(20rem,40vh,40rem)] lg:gap-[clamp(24rem,50vh,48rem)]">
         {STAGES.map((s, i) => (
           <div
             key={i}

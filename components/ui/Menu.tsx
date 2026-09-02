@@ -54,6 +54,18 @@ export function Menu({
       close();
       return;
     }
+    // Issue #385: Home/End are required alongside Arrow navigation, not
+    // just a nice-to-have (that's typeahead, which this still doesn't do).
+    if (e.key === "Home") {
+      e.preventDefault();
+      itemRefs.current[0]?.focus();
+      return;
+    }
+    if (e.key === "End") {
+      e.preventDefault();
+      itemRefs.current[items.length - 1]?.focus();
+      return;
+    }
     if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
     e.preventDefault();
     const current = itemRefs.current.findIndex((el) => el === document.activeElement);

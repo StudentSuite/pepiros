@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Button } from "@/components/shadcn/button";
-import { Textarea } from "@/components/shadcn/textarea";
+import { Button } from "@/components/ui/Button";
+import { Textarea } from "@/components/ui/Input";
 import { addCommentAction } from "../../actions";
 
 /**
@@ -57,7 +57,7 @@ export function CommentForm({ postId, slug, signedIn }: { postId: string; slug: 
       />
       {error && <p className="font-sans text-[13px] text-unsupported">{error}</p>}
       <div>
-        <Button type="submit" size="sm" disabled={pending || !body.trim()}>
+        <Button type="submit" variant="primary" size="sm" disabled={pending || !body.trim()}>
           {pending ? "Posting…" : "Post comment"}
         </Button>
       </div>

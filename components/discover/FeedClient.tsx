@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
-import { Input } from "@/components/shadcn/input";
-import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 import { FeedItem } from "@/components/reading/Article";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { EvidenceBadge } from "@/components/ui/EvidenceBadge";
@@ -227,7 +227,7 @@ export function FeedClient({ items }: { items: FeedEntry[] }) {
 
       {visible < filtered.length && (
         <div className="flex justify-center pt-s-6">
-          <Button variant="outline" onClick={() => setVisible((v) => v + PAGE)}>
+          <Button variant="secondary" onClick={() => setVisible((v) => v + PAGE)}>
             Load more
           </Button>
         </div>

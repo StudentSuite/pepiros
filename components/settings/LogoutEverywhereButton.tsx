@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldOff } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/shadcn/button";
+import { Button } from "@/components/ui/Button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,7 +49,7 @@ export function LogoutEverywhereButton() {
 
   return (
     <>
-      <Button variant="outline" className="gap-1.5" onClick={() => setOpen(true)}>
+      <Button variant="secondary" className="gap-1.5" onClick={() => setOpen(true)}>
         <ShieldOff className="size-4" />
         Sign out everywhere
       </Button>

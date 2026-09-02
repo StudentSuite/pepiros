@@ -1,5 +1,5 @@
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
-import { Card, CardContent } from "@/components/shadcn/card";
+import { Card, CardContent } from "@/components/ui/Panel";
 import { cn } from "@/lib/utils";
 
 /**
@@ -29,7 +29,7 @@ export function StatCard({
   const DeltaIcon = dir === "up" ? ArrowUpRight : dir === "down" ? ArrowDownRight : Minus;
 
   return (
-    <Card className={cn("border-border bg-card", className)}>
+    <Card className={className}>
       <CardContent className="p-s-4">
         <p className="font-mono text-[11px] uppercase tracking-widest text-ink-faint">
           {label}

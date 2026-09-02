@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/shadcn/button";
+import { Button } from "@/components/ui/Button";
 
 /**
  * Issue #217: this used to have no pending state and no error handling,
@@ -35,7 +35,7 @@ export function SignOutButton() {
   }
 
   return (
-    <Button variant="outline" className="gap-1.5" disabled={pending} onClick={() => void run()}>
+    <Button variant="secondary" className="gap-1.5" disabled={pending} onClick={() => void run()}>
       <LogOut className="size-4" />
       {pending ? "Signing out…" : "Sign out"}
     </Button>

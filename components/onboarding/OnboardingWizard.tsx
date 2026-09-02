@@ -4,9 +4,13 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Check, ChevronsUpDown } from "lucide-react";
-import { Button } from "@/components/shadcn/button";
-import { Card } from "@/components/shadcn/card";
-import { Input } from "@/components/shadcn/input";
+import { Button } from "@/components/ui/Button";
+// Issue #344: kept for the one Radix-composed case below (a Popover trigger
+// via asChild), which ui/Button can't do -- every other Button in this file
+// moved to ui/Button, the canonical one.
+import { Button as ShadcnButton } from "@/components/shadcn/button";
+import { Card } from "@/components/ui/Panel";
+import { Input } from "@/components/ui/Input";
 import { Progress } from "@/components/shadcn/progress";
 import { Band } from "@/components/chrome/Band";
 import {
@@ -281,7 +285,7 @@ export function OnboardingWizard({
                     className={cn(
                       "rounded-full border px-s-3 py-1.5 font-sans text-xs transition-colors duration-fast ease-out",
                       active
-                        ? "border-accent bg-accent text-white"
+                        ? "border-accent bg-accent text-paper"
                         : "border-border text-ink-muted hover:border-border-strong hover:text-ink",
                     )}
                   >
@@ -333,7 +337,7 @@ export function OnboardingWizard({
                     className={cn(
                       "rounded-full border px-s-3 py-1.5 font-sans text-xs transition-colors duration-fast ease-out",
                       active
-                        ? "border-accent bg-accent text-white"
+                        ? "border-accent bg-accent text-paper"
                         : "border-border text-ink-muted hover:border-border-strong hover:text-ink",
                     )}
                   >
@@ -473,7 +477,7 @@ export function OnboardingWizard({
               Back
             </Button>
           )}
-          <Button onClick={next} disabled={!canAdvance || saving} className="ml-auto gap-1.5">
+          <Button variant="primary" onClick={next} disabled={!canAdvance || saving} className="ml-auto gap-1.5">
             {step === STEP_COUNT ? (saving ? "Finishing…" : "Finish") : "Continue"}
             {step < STEP_COUNT && <ArrowRight className="size-3.5" />}
           </Button>
@@ -482,7 +486,7 @@ export function OnboardingWizard({
   );
 
   return (
-    <div className="mx-auto flex min-h-[80vh] w-full max-w-xl flex-col justify-center p-s-5">
+    <div className="mx-auto flex min-h-[var(--centered-page-min-h)] w-full max-w-xl flex-col justify-center p-s-5">
       <Logo size="md" />
 
       <div className="mt-s-5 flex items-center gap-s-3">
@@ -506,7 +510,7 @@ export function OnboardingWizard({
           <div className="rounded-md bg-surface p-s-6 text-ink">{stepBody}</div>
         </Band>
       ) : (
-        <Card className="mt-s-4 border-border bg-card p-s-6">{stepBody}</Card>
+        <Card className="mt-s-4 p-s-6">{stepBody}</Card>
       )}
 
       <button
@@ -570,7 +574,7 @@ function Choices<T extends string>({
                 active ? "border-accent bg-accent" : "border-border-strong",
               )}
             >
-              {active && <Check className="size-2.5 text-white" strokeWidth={3} />}
+              {active && <Check className="size-2.5 text-paper" strokeWidth={3} />}
             </span>
             <span className="min-w-0">
               <span className="block font-sans text-sm text-ink">{o.label}</span>
@@ -596,7 +600,7 @@ function CountryCombobox({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
+        <ShadcnButton
           variant="outline"
           role="combobox"
           aria-expanded={open}
@@ -604,7 +608,7 @@ function CountryCombobox({
         >
           {value ?? "Select a country"}
           <ChevronsUpDown className="size-4 opacity-50" />
-        </Button>
+        </ShadcnButton>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <Command>

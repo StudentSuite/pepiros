@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Source_Serif_4, Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
-import { Toaster } from "@/components/ui/Toaster";
+import { Toaster } from "@/components/shadcn/sonner";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ShaderCanvas } from "@/components/chrome/ShaderCanvas";
@@ -76,7 +76,7 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${sourceSerif.variable} ${geist.variable} ${geistMono.variable}`}
     >
-      <body className="flex min-h-screen flex-col">
+      <body className="flex min-h-dvh flex-col">
         {/* Issue #120 (WCAG 2.4.1 Bypass Blocks): the first focusable element
             on every page, so a keyboard/screen-reader user doesn't have to
             tab through the header's nav links, theme toggle, and auth
@@ -84,7 +84,12 @@ export default function RootLayout({
             gives its content wrapper id="main-content" to match. */}
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-s-4 focus:top-s-4 focus:z-50 focus:rounded-md focus:bg-ink focus:px-s-4 focus:py-s-2 focus:font-sans focus:text-sm focus:text-surface focus:shadow-lg"
+          // Issue #373: the skip link is the first thing a keyboard user
+          // reaches on every page, by definition -- z-[80] is deliberately
+          // above every other layer in the app (OfflineBanner's z-[70] is
+          // the current highest), so a focused skip link is never rendered
+          // invisible behind something else.
+          className="sr-only focus:not-sr-only focus:fixed focus:left-s-4 focus:top-s-4 focus:z-[80] focus:rounded-md focus:bg-ink focus:px-s-4 focus:py-s-2 focus:font-sans focus:text-sm focus:text-surface focus:shadow-lg"
         >
           Skip to content
         </a>

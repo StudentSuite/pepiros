@@ -37,7 +37,15 @@ export function CitationChip({ refId, citation }: { refId: string; citation: Cha
 
   return (
     <span className="relative inline-block" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
-      <button type="button" onClick={() => setOpen((o) => !o)} className="align-baseline">
+      {/* Issue #385: no aria-expanded/aria-haspopup on the trigger for
+          SourcePopover (a role="dialog" floating panel this button opens). */}
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className="align-baseline"
+      >
         <RefChip refId={refId} className="cursor-pointer hover:border-ink-muted hover:text-ink" />
       </button>
       {open && citation && <SourcePopover citation={citation} onClose={() => setOpen(false)} />}

@@ -74,8 +74,15 @@ function Section({
     <section
       // Every section pinned to ~100vh (2026-08-28, Anay's call) so the page
       // reads as a deliberate one-section-per-screen scroll rhythm rather
-      // than content-driven heights that vary block to block.
-      className={`relative flex min-h-screen flex-col justify-center border-t border-border py-s-8 ${className ?? ""}`}
+      // than content-driven heights that vary block to block. Capped at
+      // 56rem and keyed to dvh, not vh (issue #358/#359): a bare
+      // `min-h-screen` doesn't change with zoom, so a short section became
+      // mostly empty at 100% and overflowed its own centring past 150%, and
+      // `vh` on mobile counts the URL bar's space before it hides. The cap
+      // keeps the rhythm on any normal viewport while letting a short
+      // section stop growing once it's clearly full height rather than
+      // chasing an ever-taller floor at low zoom.
+      className={`relative flex min-h-[min(100dvh,56rem)] flex-col justify-center border-t border-border py-s-8 ${className ?? ""}`}
     >
       <ReadingColumn wide>
         {kicker && <p className="kicker">{kicker}</p>}
@@ -126,7 +133,7 @@ export default function MarketingPage() {
           screenshot, and a fade-in gives a beat of attention it would not
           get sitting flush with the section above it. */}
       <Reveal>
-        <section className="flex min-h-screen flex-col justify-center border-t border-border py-s-8">
+        <section className="flex min-h-[min(100dvh,56rem)] flex-col justify-center border-t border-border py-s-8">
           {/* Widened past ReadingColumn's default "wide" (max-w-3xl, 768px):
               at that width the right column only had ~358px to give
               MechanismDemo, whose own internal 3-column beam layout needs
@@ -233,7 +240,7 @@ export default function MarketingPage() {
           beneath this, from app/(marketing)/layout.tsx. */}
       <Band
         as="section"
-        className="flex min-h-screen flex-col items-center justify-center border-t border-border px-6 py-s-8 text-center"
+        className="flex min-h-[min(100dvh,56rem)] flex-col items-center justify-center border-t border-border px-6 py-s-8 text-center"
       >
         <h2 className="font-sans text-[1.75rem] font-semibold leading-snug text-brand-ink-reversed sm:text-[2.4rem]">
           Ready to check your sources?

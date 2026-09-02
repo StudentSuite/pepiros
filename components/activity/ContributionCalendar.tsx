@@ -108,39 +108,45 @@ export function ContributionCalendar({
         {total} {total === 1 ? noun.replace(/s$/, "") : noun} in the last year
       </h2>
 
-      <div className="mt-s-4 overflow-x-auto pb-s-2">
+      {/* Issue #354: font-size set once here, every dimension below is `em`
+          against it (11px/3px/18px at this component's original 10px basis
+          -> 1.1em/0.3em/1.8em) instead of each being independently pixel
+          locked. A text-size change now moves the whole grid together --
+          before, the grid stayed exactly 11px while the labels beside it
+          grew, so the two drifted out of alignment. */}
+      <div className="mt-s-4 overflow-x-auto pb-s-2 font-mono text-[10px]">
         <div className="inline-flex gap-s-2">
           {/* Day-of-week rail. Only Mon/Wed/Fri are labelled, same as GitHub:
               seven labels at this cell size collide. */}
           <div
-            className="mt-[18px] grid shrink-0 gap-[3px] font-mono text-[10px] text-ink-faint"
+            className="mt-[1.8em] grid shrink-0 gap-[0.3em] text-ink-faint"
             aria-hidden
           >
             {["", "Mon", "", "Wed", "", "Fri", ""].map((label, i) => (
-              <div key={i} className="h-[11px] leading-[11px]">
+              <div key={i} className="h-[1.1em] leading-[1.1em]">
                 {label}
               </div>
             ))}
           </div>
 
           <div>
-            <div className="flex gap-[3px]" aria-hidden>
+            <div className="flex gap-[0.3em]" aria-hidden>
               {monthLabels.map((label, i) => (
                 <div
                   key={i}
-                  className="w-[11px] font-mono text-[10px] leading-[18px] text-ink-faint"
+                  className="w-[1.1em] leading-[1.8em] text-ink-faint"
                 >
                   {label ? <span className="whitespace-nowrap">{label}</span> : null}
                 </div>
               ))}
             </div>
 
-            <div className="flex gap-[3px]">
+            <div className="flex gap-[0.3em]">
               {weeks.map((week, wi) => (
-                <div key={wi} className="grid gap-[3px]">
+                <div key={wi} className="grid gap-[0.3em]">
                   {week.map(({ date, iso, count }) => {
                     if (date > end) {
-                      return <div key={iso} className="h-[11px] w-[11px]" />;
+                      return <div key={iso} className="h-[1.1em] w-[1.1em]" />;
                     }
                     const label = `${count} ${count === 1 ? noun.replace(/s$/, "") : noun} on ${MONTHS[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
                     return (
@@ -148,7 +154,7 @@ export function ContributionCalendar({
                         key={iso}
                         title={label}
                         className={clsx(
-                          "h-[11px] w-[11px] rounded-[2px]",
+                          "h-[1.1em] w-[1.1em] rounded-[0.2em]",
                           LEVEL_CLASS[level(count, max)]
                         )}
                       />
@@ -166,7 +172,7 @@ export function ContributionCalendar({
         {[0, 1, 2, 3, 4].map((l) => (
           <span
             key={l}
-            className={clsx("h-[11px] w-[11px] rounded-[2px]", LEVEL_CLASS[l])}
+            className={clsx("h-[1.1em] w-[1.1em] rounded-[0.2em]", LEVEL_CLASS[l])}
           />
         ))}
         <span>More</span>

@@ -82,7 +82,7 @@ export default function McpPage() {
         <div className="mt-s-5 flex flex-col gap-s-6">
           {TOOLS.map((group) => (
             <section key={group.group}>
-              <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+              <h3 className="kicker">
                 {group.group}
               </h3>
               <ul className="mt-s-3 flex flex-col">
@@ -107,7 +107,7 @@ export default function McpPage() {
 
         {PLANNED_TOOLS.length > 0 && (
           <div className="mt-s-6 rounded-md border border-dashed border-border p-s-4">
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+            <p className="kicker">
               Planned, not yet registered
             </p>
             <p className="mt-s-2 font-sans text-[14px] leading-relaxed text-ink-muted">

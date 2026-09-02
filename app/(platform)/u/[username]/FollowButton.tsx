@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/shadcn/button";
+import { Button } from "@/components/ui/Button";
 import { toggleFollowAction } from "../../actions";
 
 interface FollowButtonProps {
@@ -45,7 +45,7 @@ export function FollowButton({ real }: FollowButtonProps) {
   return (
     <div className="flex flex-col items-center gap-1">
       <Button
-        variant={following ? "outline" : "default"}
+        variant={following ? "secondary" : "primary"}
         size="sm"
         onClick={() => void toggle()}
         disabled={pending}

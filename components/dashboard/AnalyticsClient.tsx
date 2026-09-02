@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { MessageSquare } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Panel";
 import { Avatar, AvatarFallback } from "@/components/shadcn/avatar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { StatCard } from "./StatCard";
@@ -71,7 +71,7 @@ export function AnalyticsClient({
       </div>
 
       {/* Row 2, right */}
-      <Card className="border-border bg-card">
+      <Card>
         <CardHeader className="pb-s-2">
           <CardTitle className="font-mono text-[11px] font-normal uppercase tracking-widest text-ink-faint">
             Recent comments

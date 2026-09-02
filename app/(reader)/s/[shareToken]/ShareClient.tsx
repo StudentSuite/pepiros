@@ -9,6 +9,7 @@ import { PdfPane } from "@/components/reader/PdfPane";
 import { NodeInspector } from "@/components/inspector/NodeInspector";
 import { Logo } from "@/components/ui/Logo";
 import { buttonClassName } from "@/components/ui/Button";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import type { Highlight } from "@/components/reader/HighlightLayer";
 
 /**
@@ -62,6 +63,15 @@ export function ShareClient({ workspaceId }: { workspaceId: string }) {
     selectNode(null);
     // Resets to this paper's own first chunk whenever the selected paper
     // changes, rather than only filling in an empty activeChunkId once.
+    //
+    // Issue #389: deliberately keyed on activePaperId alone, not on
+    // paperChunks/selectNode too. paperChunks is derived from
+    // workspace+activePaperId in the same render this effect responds to,
+    // so by the time this runs it already reflects the new paper -- adding
+    // it here would also re-fire this reset on any *other* recompute of
+    // paperChunks (an unrelated node edit), fighting a reader's own chunk
+    // selection even when they haven't switched papers. selectNode is a
+    // zustand action, stable across renders.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activePaperId]);
 
@@ -73,7 +83,7 @@ export function ShareClient({ workspaceId }: { workspaceId: string }) {
 
   if (!workspace || !activePaper) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-dvh">
         <SiteNav />
         <p className="p-8 font-sans text-sm text-ink-faint">Loading shared workspace...</p>
       </div>
@@ -97,7 +107,7 @@ export function ShareClient({ workspaceId }: { workspaceId: string }) {
   const leafNodes = workspace.nodes.filter((n) => n.type === "leaf" && n.paperId === activePaper.id);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-dvh">
       <SiteNav />
 
       <div className="border-b border-border bg-surface-sunken px-s-5 py-s-3 text-center font-sans text-xs text-ink-faint">
@@ -202,7 +212,11 @@ function SiteNav() {
       <Link href="/" aria-label="Pepiros home">
         <Logo />
       </Link>
+      {/* Issue #375: (reader) has no layout.tsx of its own, so this
+          locally-defined nav is the only chrome a share-link visitor
+          gets -- the one place to reach the toggle from this route. */}
       <div className="flex items-center gap-s-4">
+        <ThemeToggle />
         <Link href="/how-it-works" className="font-sans text-sm text-ink-muted hover:text-ink">
           What is this?
         </Link>

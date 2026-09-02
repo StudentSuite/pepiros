@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { Button } from "@/components/shadcn/button";
+import { buttonClassName } from "@/components/ui/Button";
 
 /**
  * Page-level action bar.
@@ -32,12 +32,13 @@ export function PageHeader({
       <div className="flex items-center gap-s-2">
         {children}
         {primaryAction && (
-          <Button asChild size="sm" className="gap-1.5">
-            <Link href={primaryAction.href}>
-              <Plus className="size-3.5" />
-              {primaryAction.label}
-            </Link>
-          </Button>
+          <Link
+            href={primaryAction.href}
+            className={buttonClassName("primary", "sm", "gap-1.5")}
+          >
+            <Plus className="size-3.5" />
+            {primaryAction.label}
+          </Link>
         )}
       </div>
     </div>

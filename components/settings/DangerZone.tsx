@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/shadcn/label";
 import {
   AlertDialog,
@@ -131,7 +131,7 @@ function Row({
         <p className="font-sans text-sm text-ink">{title}</p>
         <p className="mt-0.5 font-sans text-xs text-ink-faint">{description}</p>
       </div>
-      <Button variant="destructive" size="sm" onClick={onClick}>
+      <Button variant="danger" size="sm" onClick={onClick}>
         {cta}
       </Button>
     </div>

@@ -38,8 +38,12 @@ export function InlineRefs({
   if (refs.length === 0) return null;
   return (
     <div className={className ?? "flex flex-wrap gap-1"}>
+      {/* Issue #388: title alone doesn't reach touch (no hover) or most
+          screen readers navigating by touch/swipe -- aria-label carries
+          the same quote preview into the accessibility tree instead of
+          being the only channel for it. */}
       {refs.map((ev) => (
-        <span key={ev.id} title={tooltipFor(ev)}>
+        <span key={ev.id} title={tooltipFor(ev)} aria-label={tooltipFor(ev)}>
           <RefChip refId={ev.refId} />
         </span>
       ))}

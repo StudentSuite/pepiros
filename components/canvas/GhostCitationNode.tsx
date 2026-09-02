@@ -117,13 +117,14 @@ export function GhostCitationNode({ data }: NodeProps<GhostCitationNodeType>) {
       {state === "queued" && (
         <p className="mt-1.5 font-sans text-[10px] leading-snug text-ink-faint">Parsing this paper…</p>
       )}
+      {/* Issue #386: neither was announced to a screen reader. */}
       {state === "done" && (
-        <p className="mt-1.5 font-sans text-[10px] leading-snug text-located">
+        <p role="status" className="mt-1.5 font-sans text-[10px] leading-snug text-located">
           Added -- refresh the canvas to see it.
         </p>
       )}
       {state === "error" && error && (
-        <p className="mt-1.5 font-sans text-[10px] leading-snug text-unsupported">{error}</p>
+        <p role="alert" className="mt-1.5 font-sans text-[10px] leading-snug text-unsupported">{error}</p>
       )}
       <Handle type="source" position={Position.Bottom} className="!bg-ink-faint" />
     </div>

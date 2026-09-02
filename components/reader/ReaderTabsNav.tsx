@@ -4,10 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import clsx from "clsx";
-import { useToastStore } from "@/lib/store/toast";
+import { toast } from "sonner";
 import { buttonClassName } from "@/components/ui/Button";
 import { Menu } from "@/components/ui/Menu";
 import { Icon } from "@/components/ui/Icon";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 const TABS = [
   ["outline", "Outline"],
@@ -47,7 +48,6 @@ export function ReaderTabsNav({
   workspaceId: string;
   active: "reader" | "outline" | "audit" | "learn" | "canvas";
 }) {
-  const pushToast = useToastStore((s) => s.push);
   const [sharing, setSharing] = useState(false);
 
   async function shareWorkspace() {
@@ -61,9 +61,9 @@ export function ReaderTabsNav({
       if (!res.ok) throw new Error(`Share failed (${res.status}).`);
       const { url } = (await res.json()) as { url: string };
       await navigator.clipboard.writeText(url);
-      pushToast("Read-only share link copied to clipboard.", "success");
+      toast.success("Read-only share link copied to clipboard.");
     } catch (err) {
-      pushToast(err instanceof Error ? err.message : "Could not create a share link.", "error");
+      toast.error(err instanceof Error ? err.message : "Could not create a share link.");
     } finally {
       setSharing(false);
     }
@@ -139,6 +139,13 @@ export function ReaderTabsNav({
           },
         ]}
       />
+
+      {/* Issue #375: (reader) has no layout.tsx of its own and renders no
+          SiteHeader/AppTopbar, so this shared nav (already on every /w/*
+          route: reader, outline, audit, learn, canvas) is the one place
+          that reaches all of them without adding a layout that would
+          affect the breakpoint question #363 is still open on. */}
+      <ThemeToggle className="ml-auto" />
     </nav>
   );
 }

@@ -25,7 +25,7 @@ export default function AppError({
   }, [error]);
 
   return (
-    <main className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col justify-center p-s-5 text-center">
+    <main className="mx-auto flex min-h-[var(--centered-page-min-h)] w-full max-w-md flex-col justify-center p-s-5 text-center">
       <p className="font-mono text-xs uppercase tracking-widest text-ink-faint">
         Something broke
       </p>

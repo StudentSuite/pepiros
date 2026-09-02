@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Check, FileText, UploadCloud } from "lucide-react";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/shadcn/label";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
@@ -101,16 +101,25 @@ function JobProgressView({ progress }: { progress: JobProgress }) {
         ))}
       </ol>
 
+      {/* Issue #386: three status messages (error/success/progress), none
+          announced -- a screen reader user got no notification any of them
+          appeared. role="alert" implies aria-live="assertive" (the failure
+          needs immediate attention); role="status" implies "polite" (the
+          other two are routine updates, not interruptions). */}
       {progress.status === "failed" ? (
-        <p className="mt-s-4 font-sans text-[13px] leading-relaxed text-unsupported">
+        <p role="alert" className="mt-s-4 font-sans text-[13px] leading-relaxed text-unsupported">
           {progress.error ?? "Ingest failed."}
         </p>
       ) : progress.status === "done" ? (
-        <p className="mt-s-4 font-sans text-[13px] leading-relaxed text-located">
+        <p role="status" className="mt-s-4 font-sans text-[13px] leading-relaxed text-located">
           Ready. <Link href={`/w/${WORKSPACE_ID}`} className="underline underline-offset-2">Open the workspace</Link>.
         </p>
       ) : (
-        latestMessage && <p className="mt-s-4 font-sans text-[13px] leading-relaxed text-ink-faint">{latestMessage}</p>
+        latestMessage && (
+          <p role="status" className="mt-s-4 font-sans text-[13px] leading-relaxed text-ink-faint">
+            {latestMessage}
+          </p>
+        )
       )}
     </div>
   );
@@ -255,7 +264,7 @@ export function UploadForm({
     <main className="pb-s-5">
       <ReadingColumn wide>
         <header className="py-s-7">
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+          <p className="kicker">
             Add a paper
           </p>
           <h1 className="mt-s-3 font-sans font-bold text-[1.9rem] leading-tight text-ink">
@@ -285,7 +294,7 @@ export function UploadForm({
             disagree. */}
         {!ingestSupported && (
           <div className="mb-s-4 rounded-md border border-border-strong bg-surface-sunken p-s-4">
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+            <p className="kicker">
               Ingest needs Storage configured
             </p>
             <p className="mt-s-2 font-sans text-[14px] leading-relaxed text-ink-muted">
@@ -304,7 +313,7 @@ export function UploadForm({
         )}
 
         <div className="rounded-md border border-dashed border-border p-s-4">
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+          <p className="kicker">
             What happens to your file
           </p>
           <p className="mt-s-2 font-sans text-[14px] leading-relaxed text-ink-muted">
@@ -494,7 +503,7 @@ export function UploadForm({
           {progress && <JobProgressView progress={progress} />}
 
           <div>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" variant="primary" disabled={pending}>
               {pending ? "Checking…" : "Add paper"}
             </Button>
           </div>
