@@ -119,10 +119,10 @@ export default function StatusPage() {
         <table className="w-full text-left">
           <thead>
             <tr className="border-b border-border">
-              <th className="px-s-4 py-s-3 font-mono text-[11px] uppercase tracking-widest text-ink-faint">
+              <th className="px-s-4 py-s-3 kicker">
                 Area
               </th>
-              <th className="px-s-4 py-s-3 font-mono text-[11px] uppercase tracking-widest text-ink-faint">
+              <th className="px-s-4 py-s-3 kicker">
                 State
               </th>
             </tr>

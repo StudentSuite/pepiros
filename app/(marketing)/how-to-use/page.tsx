@@ -36,7 +36,7 @@ export default function HowToUsePage() {
   return (
     <main className="flex flex-col pb-s-5">
       <section className="mx-auto w-full max-w-[46rem] p-s-5">
-        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+        <p className="kicker">
           Guide
         </p>
         <h1 className="mt-s-3 font-sans font-bold text-[2.1rem] leading-tight text-ink">
@@ -200,7 +200,7 @@ export default function HowToUsePage() {
       <section className="border-t border-border">
         <div className="mx-auto w-full max-w-3xl p-s-5">
           <div className="rounded-md border border-dashed border-border p-s-4">
-            <h2 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+            <h2 className="kicker">
               One thing worth repeating
             </h2>
             <p className="mt-s-2 font-sans text-[15px] leading-relaxed text-ink-muted">

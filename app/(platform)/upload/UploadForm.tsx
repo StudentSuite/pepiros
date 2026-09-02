@@ -264,7 +264,7 @@ export function UploadForm({
     <main className="pb-s-5">
       <ReadingColumn wide>
         <header className="py-s-7">
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+          <p className="kicker">
             Add a paper
           </p>
           <h1 className="mt-s-3 font-sans font-bold text-[1.9rem] leading-tight text-ink">
@@ -294,7 +294,7 @@ export function UploadForm({
             disagree. */}
         {!ingestSupported && (
           <div className="mb-s-4 rounded-md border border-border-strong bg-surface-sunken p-s-4">
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+            <p className="kicker">
               Ingest needs Storage configured
             </p>
             <p className="mt-s-2 font-sans text-[14px] leading-relaxed text-ink-muted">
@@ -313,7 +313,7 @@ export function UploadForm({
         )}
 
         <div className="rounded-md border border-dashed border-border p-s-4">
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
+          <p className="kicker">
             What happens to your file
           </p>
           <p className="mt-s-2 font-sans text-[14px] leading-relaxed text-ink-muted">

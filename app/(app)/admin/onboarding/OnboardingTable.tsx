@@ -49,7 +49,7 @@ function Breakdown({
 }) {
   return (
     <Panel padded>
-      <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">{title}</p>
+      <p className="kicker">{title}</p>
       {rows.length === 0 ? (
         <p className="mt-2 font-sans text-sm text-ink-faint">No answers.</p>
       ) : (
@@ -196,11 +196,11 @@ export function OnboardingTable({
     <div className="flex flex-col gap-s-6">
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Panel padded>
-          <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">Responses</p>
+          <p className="kicker">Responses</p>
           <p className="mt-1 font-mono text-2xl tabular-nums text-ink">{total}</p>
         </Panel>
         <Panel padded>
-          <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">Completed</p>
+          <p className="kicker">Completed</p>
           <p className="mt-1 font-mono text-2xl tabular-nums text-ink">
             {completedCount}
             <span className="ml-1 font-sans text-sm text-ink-faint">
@@ -209,13 +209,13 @@ export function OnboardingTable({
           </p>
         </Panel>
         <Panel padded>
-          <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+          <p className="kicker">
             Told us a story
           </p>
           <p className="mt-1 font-mono text-2xl tabular-nums text-ink">{storyCount}</p>
         </Panel>
         <Panel padded>
-          <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+          <p className="kicker">
             Contact opt-in
           </p>
           <p className="mt-1 font-mono text-2xl tabular-nums text-ink">
@@ -293,7 +293,7 @@ export function OnboardingTable({
                   own words is the thing this product exists to argue against. */}
               {r.wrongSummaryStory && (
                 <div className="mt-s-3">
-                  <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+                  <p className="kicker">
                     What went wrong
                   </p>
                   <p className="mt-1 font-serif text-[15px] leading-relaxed text-ink">
@@ -304,7 +304,7 @@ export function OnboardingTable({
 
               {r.weeklyTrigger && (
                 <div className="mt-s-3">
-                  <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+                  <p className="kicker">
                     Would use it weekly if
                   </p>
                   <p className="mt-1 font-serif text-[15px] leading-relaxed text-ink">

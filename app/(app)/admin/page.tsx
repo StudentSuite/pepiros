@@ -39,7 +39,7 @@ function Stat({
 }) {
   return (
     <Panel padded>
-      <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">{label}</p>
+      <p className="kicker">{label}</p>
       <p className="mt-1 font-mono text-2xl tabular-nums text-ink">{value}</p>
       {hint && <p className="mt-0.5 font-sans text-xs text-ink-faint">{hint}</p>}
     </Panel>
