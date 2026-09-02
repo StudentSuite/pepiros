@@ -4,6 +4,34 @@ const config: Config = {
   darkMode: ["class"],
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
+  	// ---- radius (issue #393) --------------------------------------------
+  	// NOT in `extend`, deliberately. This REPLACES Tailwind's radius scale
+  	// instead of merging with it.
+  	//
+  	// The scale used to sit in `extend` and mapped sm/md/lg/xl/full to the
+  	// tokens, which left Tailwind's own `2xl` (1rem) and `3xl` (1.5rem)
+  	// still resolving underneath: two off-scale radii available by accident,
+  	// sitting between xl (20px) and nothing. design/anti-slop.md names
+  	// `rounded-2xl` specifically as an AI-slop tell.
+  	//
+  	// MEASURED BEFORE CHANGING: `rounded-2xl` and `rounded-3xl` have ZERO
+  	// occurrences across app/ and components/. The full census is
+  	// rounded-full 101, rounded-md 88, rounded-lg 51, rounded-sm 14,
+  	// rounded-xl 9, rounded-none 3. Every radius in the codebase was already
+  	// on-scale, so this was a latent gap rather than an active defect, and
+  	// closing it needs no call-site sweep and carries no visual change.
+  	//
+  	// `none` is kept because rounded-none has 3 real call sites. Anything
+  	// outside this list now fails to resolve, which is the point.
+  	borderRadius: {
+  		none: '0px',
+  		DEFAULT: 'var(--r-md)',
+  		sm: 'var(--r-sm)',
+  		md: 'var(--r-md)',
+  		lg: 'var(--r-lg)',
+  		xl: 'var(--r-xl)',
+  		full: 'var(--r-full)'
+  	},
   	extend: {
   		colors: {
   			surface: {
@@ -51,6 +79,11 @@ const config: Config = {
   			// ground it sits on, not by the reader's colour scheme.
   			'brand-ink': 'rgb(var(--brand-ink-rgb) / <alpha-value>)',
   			'brand-ink-reversed': 'rgb(var(--brand-ink-reversed-rgb) / <alpha-value>)',
+  			// Theme-invariant, like brand-ink above. One call site by design:
+  			// components/chrome/Band.tsx. It tracks the atmosphere ramp's
+  			// ground stop, NOT a surface token, so it is deliberately not
+  			// reachable from the surface scale.
+  			'band-scrim': 'rgb(var(--band-scrim-rgb) / <alpha-value>)',
   			pillar: {
   				'1': 'rgb(var(--pillar-1-rgb) / <alpha-value>)',
   				'2': 'rgb(var(--pillar-2-rgb) / <alpha-value>)',
@@ -140,6 +173,46 @@ const config: Config = {
   				'monospace'
   			]
   		},
+  		// ---- type scale (issue #351) -------------------------------------
+  		// This key did not exist. Every other axis of the system was
+  		// tokenized and enforced; type was not, so 60+ call sites reached for
+  		// arbitrary `text-[13px]` / `text-[15px]` / `text-[10px]` because
+  		// there was no token to reach for instead. Pixel font sizes do not
+  		// respond to the browser's own text-size setting, which is what made
+  		// this an accessibility problem and not just an inconsistency.
+  		//
+  		// AUTHORED IN REM, deliberately, at a 16px root. A user who sets a
+  		// larger default text size now scales every one of these.
+  		//
+  		// The existing Tailwind names keep their existing values, so nothing
+  		// currently using text-xs / text-sm / text-base / text-lg and up
+  		// changes appearance. Only `2xs` is new.
+  		//
+  		// CONVERSION TABLE for issue #352, which does the call-site sweep:
+  		//     text-[9px], text-[10px], text-[11px]  ->  text-2xs
+  		//     text-[13px]                           ->  text-sm  (or xs when dense)
+  		//     text-[14px]                           ->  text-sm
+  		//     text-[15px], text-[16px]              ->  text-base
+  		// 13px and 15px are half-steps and do not survive. A scale exists to
+  		// remove half-steps; keeping them would just re-create the problem
+  		// with token names on it.
+  		//
+  		// 2xs at 11px is the FLOOR (issue #353). Nothing renders smaller.
+  		// The 9px in SynthesisNode and the 10px mono eyebrows both land here.
+  		fontSize: {
+  			'2xs': ['0.6875rem', { lineHeight: '1rem' }],      // 11px  mono eyebrow, chips, meta
+  			xs: ['0.75rem', { lineHeight: '1rem' }],           // 12px  captions, dense cells
+  			sm: ['0.875rem', { lineHeight: '1.25rem' }],       // 14px  secondary body, form hints
+  			base: ['1rem', { lineHeight: '1.5rem' }],          // 16px  body
+  			lg: ['1.125rem', { lineHeight: '1.75rem' }],       // 18px
+  			xl: ['1.25rem', { lineHeight: '1.75rem' }],        // 20px
+  			'2xl': ['1.5rem', { lineHeight: '2rem' }],         // 24px
+  			'3xl': ['1.875rem', { lineHeight: '2.25rem' }],    // 30px
+  			'4xl': ['2.25rem', { lineHeight: '2.5rem' }],      // 36px
+  			'5xl': ['3rem', { lineHeight: '1' }],              // 48px
+  			'6xl': ['3.75rem', { lineHeight: '1' }],           // 60px
+  			'7xl': ['4.5rem', { lineHeight: '1' }]             // 72px
+  		},
   		spacing: {
   			's-1': 'var(--s-1)',
   			's-2': 'var(--s-2)',
@@ -156,13 +229,21 @@ const config: Config = {
   			'chat-open': 'var(--chat-open)',
   			topbar: 'var(--topbar)'
   		},
-  		borderRadius: {
-  			DEFAULT: 'var(--r-md)',
-  			sm: 'var(--r-sm)',
-  			md: 'var(--r-md)',
-  			lg: 'var(--r-lg)',
-  			xl: 'var(--r-xl)',
-  			full: 'var(--r-full)'
+  		// ---- stacking order (issue #370) ---------------------------------
+  		// Eleven ad-hoc layers were in use with no scale and no written
+  		// ordering, which is how MobileNav and the toaster ended up tied at
+  		// z-[60] (#371) and the skip link ended up below both (#373).
+  		// Definitions and the ordering rationale live in app/globals.css.
+  		zIndex: {
+  			raised: 'var(--z-raised)',
+  			sticky: 'var(--z-sticky)',
+  			header: 'var(--z-header)',
+  			dock: 'var(--z-dock)',
+  			overlay: 'var(--z-overlay)',
+  			nav: 'var(--z-nav)',
+  			toast: 'var(--z-toast)',
+  			banner: 'var(--z-banner)',
+  			skip: 'var(--z-skip)'
   		},
   		boxShadow: {
   			'e-1': 'var(--e-1)',

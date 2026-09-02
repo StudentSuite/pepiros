@@ -260,15 +260,61 @@ export const MESH_DRIFT_DEFAULTS = {
 } as const;
 
 /**
- * The 4 lavender stops, low to high, exactly as given in the plan's palette
- * table (§1). Unlike the shader source itself, this table WAS a concrete,
- * checkable spec, so these are copied rather than authored.
+ * The 4 atmosphere stops, low to high.
+ *
+ * Repalette 2026-09-02 (issue #335). Was the lavender ramp
+ * ["#0E0A14", "#6D4AA8", "#B58ACF", "#F0E6D8"], copied from the plan's §1
+ * palette table. Now a high-chroma neon ramp: near-black ground, electric
+ * green, orange, magenta-violet.
+ *
+ * SCOPE. This array is the atmosphere and nothing else. It reaches the page
+ * only through `<Band>` (hero and closing CTA, per design/anti-slop.md's
+ * "shader stays a bookend" rule) and `<DispersionGlow>`. It is NOT connected
+ * to the token system: --paper, --ink, --accent, the 7 pillars and the 5
+ * evidence tiers are all unchanged and stay warm. Do not derive UI colour
+ * from this array.
+ *
+ * A MEASURED NOTE, because it inverts the obvious assumption. The old ramp's
+ * lightest stop was #F0E6D8, a near-white bone at relative luminance 0.801.
+ * The new ramp's lightest stop is #00E58C at 0.579. Neon reads as "brighter"
+ * because it is far more saturated, but in luminance terms this ramp is
+ * DARKER than the one it replaces, which is why Band.tsx's scrim could come
+ * down rather than up. See the scrim comment in that file for the numbers.
  *
  * Exported as hex so `Band.tsx`'s zero-JS CSS gradient fallback can build the
- * exact same ramp the shader draws, and both stay in sync from one array
- * rather than two hand-kept copies.
+ * same ramp the shader draws, and both stay in sync from one array rather
+ * than two hand-kept copies.
  */
-export const MESH_DRIFT_PALETTE_HEX = ["#0E0A14", "#6D4AA8", "#B58ACF", "#F0E6D8"] as const;
+export const MESH_DRIFT_PALETTE_HEX = ["#050308", "#00E58C", "#FF7A18", "#B04CFF"] as const;
+
+/**
+ * The CSS gradient fallback's stop list, with midpoints (issue #339).
+ *
+ * The shader interpolates in OKLab (`u_oklab`, see `mixSpace()` above). A CSS
+ * `linear-gradient` interpolates in gamma-encoded sRGB. On the old lavender
+ * ramp that difference was invisible: those four stops sat close together in
+ * hue and chroma, so both paths took nearly the same route.
+ *
+ * On this ramp it is not invisible. sRGB interpolation between #00E58C and
+ * #FF7A18 passes through roughly #7FAF52, a desaturated olive that appears
+ * nowhere in the ramp and reads as a dirty band across the middle of the
+ * gradient. OKLab keeps chroma up and passes through a clean yellow-green
+ * instead. The same happens, less severely, between orange and violet.
+ *
+ * The fix stays on the fallback side of the line the shader draws: the two
+ * midpoints below are OKLab-derived samples inserted as extra sRGB stops, so
+ * the gradient is forced through the route the shader would have taken. The
+ * shader's own `u_colors[4]` is untouched and still receives exactly the four
+ * stops above.
+ */
+export const MESH_DRIFT_GRADIENT_STOPS = [
+  `${MESH_DRIFT_PALETTE_HEX[0]} 0%`,
+  `${MESH_DRIFT_PALETTE_HEX[1]} 45%`,
+  "#A9C63C 60%", // OKLab midpoint, green -> orange. sRGB would give #7FAF52.
+  `${MESH_DRIFT_PALETTE_HEX[2]} 75%`,
+  "#E0619F 88%", // OKLab midpoint, orange -> violet.
+  `${MESH_DRIFT_PALETTE_HEX[3]} 100%`,
+].join(", ");
 
 /** Hex -> [0,1] float triple, for feeding the palette into `u_colors`. */
 export function hexToVec3(hex: string): [number, number, number] {

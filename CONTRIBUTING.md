@@ -34,10 +34,10 @@ Two habits this repo has earned the hard way:
 
 ## Code conventions
 
-- Read [`docs/PLAN-V1.md`](docs/PLAN-V1.md) §2 ("locked decisions") and §20 (cut list) before proposing pgvector/embeddings, elkjs/auto-layout, a deployed Python service, a light theme, or spaced-repetition scheduling. These were deliberately killed, not overlooked.
+- Read [`docs/PLAN-V1.md`](docs/PLAN-V1.md) §2 ("locked decisions") and §20 (cut list) before proposing pgvector/embeddings, elkjs/auto-layout, a deployed Python service, or spaced-repetition scheduling. These were deliberately killed, not overlooked. Note that §14.2's token block and the "light theme" cut-list row are both marked superseded: both themes ship, and `app/globals.css` is the authority on the design system.
 - The grounding spine (`lib/grounding/*`) is deterministic on purpose: fuzzy quote matching + a numeric entailment floor, no LLM judge. Don't replace a threshold check with a model call to make something "smarter."
 - Never write UI copy, API responses, or comments that call a grounded claim "verified." The only tier labels are quote located / paraphrase / unsupported (docs/PLAN-V1.md §4).
-- Use the existing design tokens (`app/globals.css`, `tailwind.config.ts`): no new colors, no light theme.
+- Use the existing design tokens (`app/globals.css`, `tailwind.config.ts`): no new colors, and no arbitrary value where a token exists. `text-[13px]`, `rounded-2xl` and `z-[60]` all have token equivalents (`text-sm`, `rounded-xl`, `z-nav`). Check any new surface in **both** themes, light and dark.
 - TypeScript strict mode is on; keep it passing rather than reaching for `any` or `@ts-ignore`.
 - Match the existing comment style: none by default, one line only when it explains a non-obvious constraint or invariant (see any file under `lib/grounding/` for the tone).
 - No em dashes (Unicode U+2014) anywhere in this project's own authored text: comments, docs, UI copy. Use a comma, colon, semicolon, or a double-hyphen (" -- ", this codebase's own convention throughout) instead. `npm run check:no-em-dashes` (`scripts/check-no-em-dashes.ts`) enforces this in CI.

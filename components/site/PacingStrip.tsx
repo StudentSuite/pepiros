@@ -57,14 +57,38 @@ const PACING_STOPS: PacingStop[] = [
  */
 export function PacingStrip({ variant = "teaser" }: { variant?: "teaser" | "full" }) {
   return (
-    <ol className="flex flex-col gap-s-5 sm:flex-row sm:gap-s-4">
+    // Intrinsic columns, not a viewport breakpoint.
+    //
+    // This was `flex flex-col sm:flex-row` with `flex-1` per stop, which laid
+    // all 5 stops side by side from the `sm` breakpoint up. A breakpoint reads
+    // the VIEWPORT, and this strip's problem is its CONTAINER: on
+    // /how-it-works the `full` variant sits in a narrow right-hand panel, so a
+    // wide screen still gave each stop about 75px. "Generators + graph
+    // expansion" then wrapped to one word per line and the whole strip read as
+    // five columns of confetti.
+    //
+    // auto-fit + minmax lets the grid decide how many columns actually fit in
+    // whatever width it is handed, so it degrades to 2 columns or 1 in a
+    // narrow panel without knowing anything about the viewport. The `full`
+    // variant reserves more because it also carries a sentence of detail.
+    //
+    // Container queries would express this more directly, but Tailwind v3
+    // needs a plugin for those and this needs none.
+    <ol
+      className={clsx(
+        "grid gap-x-s-4 gap-y-s-4",
+        variant === "full"
+          ? "grid-cols-[repeat(auto-fit,minmax(13rem,1fr))]"
+          : "grid-cols-[repeat(auto-fit,minmax(9rem,1fr))]",
+      )}
+    >
       {PACING_STOPS.map((stop, index) => (
         <li
           key={stop.label}
-          className={clsx(
-            "flex flex-1 flex-col gap-1.5",
-            index > 0 && "border-t border-border pt-s-3 sm:border-l sm:border-t-0 sm:pl-s-4 sm:pt-0",
-          )}
+          // Rule ABOVE every stop rather than a divider between them. A left
+          // border on "not the first" is wrong the moment the grid wraps: the
+          // first stop on the second row would draw one against nothing.
+          className="flex flex-col gap-1.5 border-t border-border pt-s-3"
         >
           <div className="flex items-center gap-2">
             <span
