@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type RefObject } from "react";
 import { leafNodesCitingChunks } from "@/lib/reader/selectionAudit";
-import { useToastStore } from "@/lib/store/toast";
+import { toast } from "sonner";
 import type { Evidence, GraphNode } from "@/types/anchor";
 
 interface AuditResponse {
@@ -39,7 +39,6 @@ export function SelectionAudit({
   onFoundClaim: (nodeId: string) => void;
   onAsk: (text: string) => void;
 }) {
-  const pushToast = useToastStore((s) => s.push);
   const [selection, setSelection] = useState<{ text: string; rect: DOMRect } | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -84,15 +83,15 @@ export function SelectionAudit({
       );
       const matches = leafNodesCitingChunks(leafNodes, evidence, chunkIds);
       if (matches.length === 0) {
-        pushToast("No claims cite this passage yet.", "info");
+        toast("No claims cite this passage yet.");
       } else {
         onFoundClaim(matches[0]!.id);
         if (matches.length > 1) {
-          pushToast(`${matches.length} claims cite this -- showing the first.`, "success");
+          toast.success(`${matches.length} claims cite this -- showing the first.`);
         }
       }
     } catch (err) {
-      pushToast(err instanceof Error ? err.message : "Could not check this passage.", "error");
+      toast.error(err instanceof Error ? err.message : "Could not check this passage.");
     } finally {
       setPending(false);
       clearSelection();

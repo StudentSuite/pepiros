@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import clsx from "clsx";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { useWorkspaceStore } from "@/lib/store/workspace";
-import { useToastStore } from "@/lib/store/toast";
 import type { Evidence, GraphEdge, GraphNode } from "@/types/anchor";
 import { RefChip } from "@/components/ui/RefChip";
 import { PillarChip } from "@/components/ui/PillarChip";
@@ -182,9 +182,9 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
       const body = (await res.json().catch(() => null)) as { detail?: string; staleNodeIds?: string[] } | null;
       if (!res.ok) throw new Error(body?.detail ?? `Could not delete this node (${res.status}).`);
       removeNode(nodeId, body?.staleNodeIds ?? []);
-      useToastStore.getState().push("Deleted", "success");
+      toast.success("Deleted");
     } catch (err) {
-      useToastStore.getState().push(err instanceof Error ? err.message : "Could not delete this node.", "error");
+      toast.error(err instanceof Error ? err.message : "Could not delete this node.");
     } finally {
       setDeleting(false);
       setConfirmingDelete(false);
@@ -272,9 +272,9 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
                 };
                 updateNodeBody(node.id, savedNode.bodyMd, savedEvidence);
                 setEditing(false);
-                useToastStore.getState().push("Saved", "success");
+                toast.success("Saved");
               } catch {
-                useToastStore.getState().push("Couldn't save, try again", "error");
+                toast.error("Couldn't save, try again");
               } finally {
                 setSaving(false);
               }
