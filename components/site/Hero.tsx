@@ -18,10 +18,14 @@ import { StatsCounters } from "@/components/site/StatsCounters";
  * a `.surface-chrome` panel -- a permanently-dark surface that pins its own
  * `--accent*` tokens regardless of site theme, so the panel's inputs and
  * buttons render correctly even when the rest of the page is in light
- * theme. `min-h-[86vh]` (not 100vh) accounts for the sticky header sitting
- * above this in normal flow, so the visible hero still clears 75vh at
- * realistic viewport heights -- confirmed in a real browser per plan §8,
- * not just by arithmetic.
+ * theme. `min-h-[calc(100dvh-var(--topbar))]` (not a flat 86vh) accounts for
+ * the sticky header sitting above this in normal flow the same way
+ * `AuthShell.tsx` already does. The old 86 was a ratio derived from the
+ * header's height as a share of one particular viewport (issue #364):
+ * `--topbar` is a fixed 52px, so as the viewport shrinks (or zoom reduces
+ * the CSS viewport) the header claims a bigger share of it and a flat
+ * percentage stops covering the header's actual height, letting the hero
+ * overflow its own centring.
  */
 export function Hero({
   papersInCatalog,
@@ -37,7 +41,7 @@ export function Hero({
   return (
     <Band
       as="section"
-      className="flex min-h-[86vh] flex-col items-center justify-center px-s-5 pb-s-8 pt-s-8 text-center"
+      className="flex min-h-[calc(100dvh-var(--topbar))] flex-col items-center justify-center px-s-5 pb-s-8 pt-s-8 text-center"
     >
       <h1 className="-mr-[0.15em] font-sans text-5xl font-bold uppercase leading-none tracking-[0.15em] text-brand-ink-reversed sm:text-6xl md:text-7xl">
         Pepiros
