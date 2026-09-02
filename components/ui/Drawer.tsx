@@ -29,9 +29,15 @@ function useBodyScrollLock(locked: boolean) {
 
 /**
  * Right-anchored slide-in panel -- same portal/backdrop/focus-trap/Escape
- * behavior as Dialog, different geometry. Sized off the --inspector token
- * (design/DIRECTIONS.md, docs/PLAN-V1.md §14.2) so it matches the
- * inspector's spec'd width everywhere it's used.
+ * behavior as Dialog, different geometry. Sized off the --inspector token in
+ * app/globals.css, which is the authority; the docs/PLAN-V1.md §14.2
+ * reference this comment used to carry is superseded (see the notice on that
+ * section, issue #394) and its token block describes nothing that ships.
+ *
+ * This is --inspector's ONLY consumer. That matters for anyone changing the
+ * token: it sizes an overlay, not a column, so it is bounded by the viewport
+ * rather than by what it sits next to. See the token's own comment for the
+ * resolved widths (issue #362).
  */
 export function Drawer({
   open,
