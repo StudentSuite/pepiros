@@ -19,9 +19,20 @@ import clsx from "clsx";
  *  issue: vary at least one section's entrance). */
 type RevealVariant = "lift" | "slide";
 
+/*
+ * Travel distances halved 2026-09-03 (lift 12px -> 6px, slide 16px -> 8px) as
+ * part of the "slow, soft, subtle" motion retune.
+ *
+ * These fire on scroll, on section after section, so they set the felt
+ * character of the whole marketing site more than any single interaction
+ * does. At 12/16px combined with the old expo-out curve, a section did not
+ * arrive so much as get thrown into place. Halved, and with the quad-out and
+ * longer --dur-slow in app/globals.css, the opacity now leads and the
+ * transform is only a hint of direction.
+ */
 const HIDDEN: Record<RevealVariant, string> = {
-  lift: "translate-y-3 opacity-0",
-  slide: "translate-x-4 opacity-0",
+  lift: "translate-y-1.5 opacity-0",
+  slide: "translate-x-2 opacity-0",
 };
 const VISIBLE: Record<RevealVariant, string> = {
   lift: "translate-y-0 opacity-100",

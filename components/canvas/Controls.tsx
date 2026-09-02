@@ -1,6 +1,7 @@
 "use client";
 
 import { Panel as FlowPanel, useReactFlow } from "@xyflow/react";
+import { MOTION_MS } from "@/lib/motion";
 
 // h-11 w-11 = 44px, the WCAG 2.5.5/2.5.8 touch-target minimum -- was h-7 w-7
 // (28px). Focus ring comes from globals.css's global `button:focus-visible`
@@ -9,9 +10,9 @@ const buttonClass =
   "flex h-11 w-11 items-center justify-center rounded font-sans text-sm leading-none text-ink-muted hover:bg-surface-sunken hover:text-ink";
 
 // React Flow's fitView takes a raw ms number, not a CSS class, so this can't
-// read `duration-canvas` directly -- kept numerically equal to --dur-canvas
-// (590ms, app/globals.css) instead of an arbitrary raw value.
-const FIT_VIEW_DURATION_MS = 590;
+// read `duration-canvas` directly. Was a local 590 hand-matched to the token;
+// now comes from lib/motion.ts so a token retune reaches it (see that file).
+const FIT_VIEW_DURATION_MS = MOTION_MS.canvas;
 
 /**
  * A themed replacement for React Flow's default `<Controls/>` -- same zoomIn/

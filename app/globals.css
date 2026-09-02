@@ -263,14 +263,32 @@
   --grain-blend: multiply;
   --grain-opacity: 0.09;
 
-  /* Motion: durations +40% over the base thesis, ease-out only, never spring.
-     --ease-spring stays defined for token completeness (other directions used
-     it) but nothing in this build should reference it. */
-  --dur-fast: 170ms;
-  --dur-base: 280ms;
-  --dur-slow: 450ms;
-  --dur-canvas: 590ms;
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  /* ---- motion: slow, soft, subtle (retuned 2026-09-03) ------------------
+     Ease-out only, never spring. --ease-spring stays defined for token
+     completeness but nothing in this build should reference it.
+
+     THE CURVE MATTERED MORE THAN THE DURATIONS. --ease-out was
+     cubic-bezier(0.16, 1, 0.3, 1), an expo-out: it leaves the start at very
+     high velocity and slams into the end. That shape reads as punchy and
+     heavy no matter how long you make it, because the eye reads the
+     acceleration profile, not the elapsed time. Lengthening an expo-out just
+     produces a longer slam.
+
+     Replaced with a quad-out. It decelerates evenly from the first frame, so
+     nothing lurches, and it is the curve doing most of the work of making
+     this feel soft. Durations are then lengthened on top of that, which is
+     what makes it feel slow rather than merely gentle.
+
+       was  170 / 280 / 450 / 590 with expo-out
+       now  220 / 420 / 700 / 820 with quad-out
+
+     --dur-fast is also the value the prefers-reduced-motion block below
+     clamps every animation and transition to, so it stays the shortest. */
+  --dur-fast: 220ms;
+  --dur-base: 420ms;
+  --dur-slow: 700ms;
+  --dur-canvas: 820ms;
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
   --ease-inout: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
@@ -940,11 +958,22 @@ button:focus-visible {
   border-radius: var(--r-sm);
 }
 
-/* Motion vocabulary (docs/PLAN-V1.md 14.3): ease-out only, never spring. */
+/* Motion vocabulary (docs/PLAN-V1.md 14.3): ease-out only, never spring.
+ *
+ * Retuned 2026-09-03 for "slow, soft, subtle". The distances came down hard:
+ * an 8-10% scale jump is a big visual event, and at the longer durations
+ * above it would have read as sluggish AND heavy rather than calm. The rule
+ * applied throughout is that motion should be led by OPACITY, with transform
+ * as a hint of direction rather than the main event. Anything still readable
+ * as "a thing moved across the screen" is too much for this vocabulary.
+ *
+ *   node-appear  scale .92    -> .98
+ *   expand-in    scale .9  +4px -> .985 + 2px
+ */
 @keyframes node-appear {
   from {
     opacity: 0;
-    transform: scale(0.92);
+    transform: scale(0.98);
   }
   to {
     opacity: 1;
@@ -955,7 +984,7 @@ button:focus-visible {
 @keyframes expand-in {
   from {
     opacity: 0;
-    transform: scale(0.9) translateY(4px);
+    transform: scale(0.985) translateY(2px);
   }
   to {
     opacity: 1;
@@ -963,19 +992,22 @@ button:focus-visible {
   }
 }
 
-/* The PDF highlight "money shot" (docs/PLAN-V1.md 14.3): fade in over
-   180ms (0-40% of --dur-slow's 450ms), then one opacity pulse .6->1->.85. */
+/* The PDF highlight (docs/PLAN-V1.md 14.3).
+ *
+ * Was a double bounce: 0 -> 1 -> .6 -> 1 -> .85, a flash, a dip, a second
+ * flash. Two direction reversals in one animation is the most attention
+ * -grabbing shape in this whole file, and it fought the "slow, soft, subtle"
+ * retune harder than anything else: at the longer --dur-slow it stopped
+ * reading as a pulse and started reading as a flicker, like a failing bulb.
+ *
+ * Now a single settle: up to full, then ease back to the resting .85. The
+ * highlight still announces itself (it is the one moment the app says "here
+ * is the sentence"), but it says it once instead of stuttering. */
 @keyframes highlight-pulse {
   0% {
     opacity: 0;
   }
-  40% {
-    opacity: 1;
-  }
-  60% {
-    opacity: 0.6;
-  }
-  80% {
+  55% {
     opacity: 1;
   }
   100% {
@@ -1006,14 +1038,24 @@ button:focus-visible {
     transparent 100%
   );
   background-size: 200% 100%;
-  animation: shimmer 1.6s ease-out infinite;
+  /* linear, not ease-out. An eased curve on a LOOPING animation decelerates
+     into the end of each cycle and then restarts at full speed, so the loop
+     visibly stutters once per pass -- the opposite of subtle, and it was the
+     reason skeletons read as busy. A loop has no beginning or end to ease
+     against, so it wants constant velocity. Slowed 1.6s -> 2.4s with the
+     rest of the retune. */
+  animation: shimmer 2.4s linear infinite;
 }
 
 /* Contradiction edge dash-offset march (docs/PLAN-V1.md 9.1). Disable above
    4 visible such edges -- Stage C1 wires that count check. */
 .motion-dash-march {
   stroke-dasharray: 6 6;
-  animation: dash-march 3s linear infinite;
+  /* Slowed 3s -> 4.5s. This one runs CONTINUOUSLY on contradiction edges
+     rather than firing once, so it is the animation most likely to sit in
+     peripheral vision for minutes at a time. A marching dash is a legibility
+     signal, not an alarm; at 3s it pulled the eye off the document. */
+  animation: dash-march 4.5s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
