@@ -281,7 +281,7 @@ export function OnboardingWizard({
                     className={cn(
                       "rounded-full border px-s-3 py-1.5 font-sans text-xs transition-colors duration-fast ease-out",
                       active
-                        ? "border-accent bg-accent text-white"
+                        ? "border-accent bg-accent text-paper"
                         : "border-border text-ink-muted hover:border-border-strong hover:text-ink",
                     )}
                   >
@@ -333,7 +333,7 @@ export function OnboardingWizard({
                     className={cn(
                       "rounded-full border px-s-3 py-1.5 font-sans text-xs transition-colors duration-fast ease-out",
                       active
-                        ? "border-accent bg-accent text-white"
+                        ? "border-accent bg-accent text-paper"
                         : "border-border text-ink-muted hover:border-border-strong hover:text-ink",
                     )}
                   >
@@ -570,7 +570,7 @@ function Choices<T extends string>({
                 active ? "border-accent bg-accent" : "border-border-strong",
               )}
             >
-              {active && <Check className="size-2.5 text-white" strokeWidth={3} />}
+              {active && <Check className="size-2.5 text-paper" strokeWidth={3} />}
             </span>
             <span className="min-w-0">
               <span className="block font-sans text-sm text-ink">{o.label}</span>

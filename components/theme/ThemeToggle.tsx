@@ -54,8 +54,14 @@ export function ThemeToggle({ className }: { className?: string }) {
             className={cn(
               "grid h-7 w-7 place-items-center rounded-full",
               "transition-colors duration-fast ease-out",
+              // Issue #376: --accent inverts between themes (dark violet in
+              // light mode, light violet in dark mode) -- a hardcoded
+              // text-white read fine in light mode and failed AA badly
+              // (~2.2:1) in dark mode, on the one control that switches
+              // into dark mode in the first place. text-paper inverts with
+              // --accent instead of fighting it.
               selected
-                ? "bg-accent text-white shadow-e-1"
+                ? "bg-accent text-paper shadow-e-1"
                 : "text-ink-faint hover:text-ink hover:bg-subtle",
             )}
           >

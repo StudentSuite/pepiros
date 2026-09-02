@@ -45,7 +45,7 @@ export function ProfileForm({
         description="Generated from your initials. Image upload is not available yet."
       >
         <Avatar className="size-12">
-          <AvatarFallback className="bg-accent font-mono text-sm text-white">
+          <AvatarFallback className="bg-accent font-mono text-sm text-paper">
             {profile.avatarInitials}
           </AvatarFallback>
         </Avatar>

@@ -122,7 +122,7 @@ export function AppSidebar({
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent">
                   <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarFallback className="rounded-lg bg-accent font-mono text-xs text-white">
+                    <AvatarFallback className="rounded-lg bg-accent font-mono text-xs text-paper">
                       {profile.avatarInitials}
                     </AvatarFallback>
                   </Avatar>
