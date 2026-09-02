@@ -673,7 +673,21 @@ Three deliberate anti-generic moves:
 }
 ```
 
-Dark only for v1. Light theme is cut (§20).
+> **SUPERSEDED, 2026-09-02 (issue #394). The token block in 14.2 above is historical and does not describe what ships.**
+>
+> `app/globals.css` is the source of truth for the design system. It was rebuilt on 2026-08-23 from `design/brand/README.txt` and `design/capsules/Pepiros Token Lab.dc.html`, and every value in 14.2 changed. Read the block above as a record of the original direction, not as a spec to implement against.
+>
+> | 14.2 says | Ships |
+> |---|---|
+> | `--accent: #5B8DEF` (blue) | `#7254A1` light / `#B99BED` dark (violet, separately derived, see THE ACCENT RULE) |
+> | cyan / violet / rose pillars | 7 warm theme-invariant pillars, `--pillar-1..7`, plus a separate `--pillar-N-text` ramp |
+> | `#0B0C0E` surfaces | `#F5F1E6` light / `#14120F` dark |
+> | Inter + JetBrains Mono | Geist + Geist Mono + Source Serif 4 |
+> | `--dur-base: 200ms` | `280ms` (durations were widened ~40%) |
+> | `--glow-accent: 0 0 0 3px var(--accent-wash)` | `0 0 0 2px var(--surface-raised), 0 0 0 5px var(--accent)` (accent-wash at 8% computed to ~1.05:1 as a ring) |
+> | "Dark only for v1. Light theme is cut (§20)." | Both themes ship. Light is the default `:root`; `ThemeToggle` is a three-way Light/System/Dark control. |
+>
+> The layout dimensions in the block above are the one part that survived unchanged in value, though they are now authored in `rem` rather than `px` (issue #361).
 
 ### 14.3 Motion
 | Event | Animation |
@@ -816,7 +830,7 @@ Explicit, so nothing creeps back. Cut on merit, not on schedule.
 | **`takeaways` generator** | Third overlapping variant of `summary` plus `contributions`. Reads as padding. |
 | **`strengths` generator** | Nobody reads a paper to learn it is good, and it is a sycophancy magnet. Real signal folded into `novelty`. |
 | **Version history diff UI** (History tab) | `node_versions` table stays and backs the provenance badge. The diff viewer is a second full UI nobody opens. |
-| **Light theme** | Design thesis is dark-first. A token swap looks worse and costs an afternoon of dual-mode contrast audits. |
+| ~~**Light theme**~~ **UNCUT 2026-08-23** | Original reasoning: "Design thesis is dark-first. A token swap looks worse and costs an afternoon of dual-mode contrast audits." The dual-mode contrast audit was done and the light theme shipped as the default `:root` block. This row is kept for the record; do not treat it as current. |
 | **Minimap** | At 6 papers with fit-to-view and cmd-K it is decoration. Hours go to the highlight animation instead. |
 | **pgvector, embeddings, BM25, RRF, neighbour expansion, section boost** | One paper is 8-20k tokens. Retrieval machinery for a corpus that fits in context. Stable citation ids kept. |
 | **elkjs** | Async layout jitter on first paint, hours of tuning, judges perceive nothing. |

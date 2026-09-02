@@ -27,8 +27,24 @@ export default function manifest(): MetadataRoute.Manifest {
       "A publishing platform for researchers, with a summariser you can check: publish the papers you read, and every claim stays bound to the sentence it came from.",
     start_url: "/",
     display: "standalone",
-    background_color: "#14120F",
-    theme_color: "#14120F",
+    // 2026-09-02, issue #340. Was #14120F, the dark theme's --surface.
+    //
+    // These two are what Android paints on the PWA splash and what mobile
+    // browsers tint their own chrome with. Neither can follow the theme
+    // toggle: the manifest is static, read once at install time, so this is
+    // a choice about which surface represents the product, not a token
+    // reference.
+    //
+    // The atmosphere ramp's ground stop is the better answer than either
+    // theme's --surface. The splash is the one moment the product is a brand
+    // rather than a reading surface, and it is the same near-black the hero
+    // band opens on, so install-then-launch is continuous instead of
+    // stepping through a different dark. Kept in sync by hand with
+    // MESH_DRIFT_PALETTE_HEX[0] in components/chrome/mesh-drift.frag.ts;
+    // there is no import path from a metadata route to a client shader
+    // module worth opening for one hex.
+    background_color: "#050308",
+    theme_color: "#050308",
     icons: [
       { src: "/brand/app-icons/android-192.png", sizes: "192x192", type: "image/png" },
       { src: "/brand/app-icons/android-512.png", sizes: "512x512", type: "image/png" },

@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { MESH_DRIFT_PALETTE_HEX } from "./mesh-drift.frag";
+import { MESH_DRIFT_GRADIENT_STOPS } from "./mesh-drift.frag";
 import { useShaderBand } from "./useShaderBand";
 export { bandButtonClassName } from "./band-button";
 
@@ -72,7 +72,11 @@ export function Band({
         className,
       )}
       style={{
-        backgroundImage: `linear-gradient(160deg, ${MESH_DRIFT_PALETTE_HEX[0]}, ${MESH_DRIFT_PALETTE_HEX[1]} 45%, ${MESH_DRIFT_PALETTE_HEX[2]} 75%, ${MESH_DRIFT_PALETTE_HEX[3]})`,
+        // Six stops, not four: the two extra are OKLab-derived midpoints that
+        // keep this sRGB gradient on the route the shader takes. See
+        // MESH_DRIFT_GRADIENT_STOPS in mesh-drift.frag.ts for why the neon
+        // ramp needs them and the old lavender one did not (issue #339).
+        backgroundImage: `linear-gradient(160deg, ${MESH_DRIFT_GRADIENT_STOPS})`,
         "--grain-blend": "overlay",
         "--grain-opacity": "0.10",
       } as React.CSSProperties}
@@ -100,17 +104,35 @@ export function Band({
        * white) stays comfortably above 4.5:1 even when the shader
        * underneath it is at its own lightest, animated extreme.
        *
-       * 60%, not the ~55% that JUST clears the floor: computed against the
-       * worst case (text over the palette's own lightest stop, #F0E6D8, the
-       * one colour a blob's Gaussian weighting could in principle push a
-       * pixel arbitrarily close to), 55% opacity measures 4.78:1 -- legal,
-       * but close enough to WCAG AA's 4.5:1 floor that ordinary alpha-
-       * compositing rounding differences between this approximation and a
-       * real browser's gamma-correct blend could tip it under. 62%
-       * measures ~6.1:1 against the same worst case, real margin rather
-       * than a number that only just clears the bar today.
+       * RE-MEASURED 2026-09-02 for the neon ramp (issue #336), and the
+       * result inverts what the issue assumed. Neon reads as brighter
+       * because it is far more saturated, but saturation is not luminance:
+       *
+       *   old lightest stop  #F0E6D8   relative luminance 0.801
+       *   new lightest stop  #00E58C   relative luminance 0.579
+       *
+       * The worst case this scrim defends against therefore got EASIER, not
+       * harder, so the scrim comes down rather than up.
+       *
+       * Measured against the new worst case (--brand-ink-reversed, #FAF8F4,
+       * over the palette's lightest stop #00E58C, the one colour a blob's
+       * Gaussian weighting could in principle push a pixel arbitrarily close
+       * to), with the scrim composited in gamma-encoded sRGB the way a
+       * browser does it:
+       *
+       *   45%  ->  4.75:1   legal, no margin
+       *   55%  ->  6.40:1   <- chosen
+       *   60%  ->  7.47:1   the old value, now over-darkens the ramp
+       *
+       * 55% holds the same "real margin, not a number that only just clears
+       * the bar" standard the previous 62%/6.1:1 note set, while letting
+       * appreciably more of the ramp through. Holding 60% here would have
+       * spent the whole luminance saving on a scrim nobody asked for.
+       *
+       * The scrim colour is now --band-scrim rather than a literal hex, so
+       * it tracks the ramp's ground stop from one place in app/globals.css.
        */}
-      <div className="absolute inset-0 bg-[#0E0A14]/60" />
+      <div className="absolute inset-0 bg-band-scrim/55" />
 
       <div className="relative z-10">{children}</div>
     </Component>

@@ -107,6 +107,23 @@
   --brand-ink: #1b1812;
   --brand-ink-reversed: #faf8f4;
 
+  /* ---- band scrim, THEME-INVARIANT -------------------------------------
+     The contrast scrim laid between the shader and any text sitting on a
+     <Band>. Theme-invariant for the same reason --brand-ink is: the shader
+     itself does not flip with the theme, so neither can the layer that makes
+     text legible over it.
+
+     Value is the atmosphere ramp's own ground stop
+     (MESH_DRIFT_PALETTE_HEX[0] in components/chrome/mesh-drift.frag.ts).
+     Keep the two in step: a scrim in a different family from the ramp it
+     covers reads as a grey wash rather than as the ramp going dark.
+
+     Opacity lives at the call site (components/chrome/Band.tsx, currently
+     /55) because that is where the measurement it was derived from is
+     written down. Added 2026-09-02, issue #336, replacing a literal
+     bg-[#0E0A14]/60. */
+  --band-scrim: #050308;
+
   /* Accent -- interactive/focus/link. Dispersion violet's own hue/chroma
      (oklch 66% .12 300), walked down in OKLCH lightness until it clears AA
      against every light surface, worst case included (--surface-sunken):
@@ -257,19 +274,48 @@
   --ease-inout: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* Layout dimensions */
-  --rail-left: 64px;
-  --panel-papers: 256px;
-  --inspector: clamp(400px, 34vw, 560px);
-  --chat-collapsed: 56px;
-  --chat-open: min(46vh, 420px);
-  --topbar: 52px;
+  /* ---- layout dimensions (issue #361) ---------------------------------
+     AUTHORED IN REM, not px, as of 2026-09-02. Every value below resolves
+     to exactly what it did before at a 16px root, so nothing moves today.
+     What changes is that a rail holding text now grows when the reader
+     raises their browser's default text size, instead of keeping its old
+     pixel box and clipping the larger text inside it.
+
+     --topbar was the sharpest case: 52px holding a SidebarTrigger, a
+     Separator and the three-way ThemeToggle is already tight, and it was
+     the one dimension guaranteed to clip first once issue #352 moves the
+     type off pixels.
+
+     The two gutters that hold no text of their own could have stayed in
+     px, but are in rem anyway so the whole block reads in one unit and
+     nobody has to work out which is which. */
+  --rail-left: 4rem; /* 64px */
+  --panel-papers: 16rem; /* 256px */
+  --chat-collapsed: 3.5rem; /* 56px */
+  --chat-open: min(46vh, 26.25rem); /* 420px */
+  --topbar: 3.25rem; /* 52px */
+
   /* Issue #367: "centre a short page in the viewport" (an error page, an
      auth form, a loading fallback, a share-link dead end) had eight call
      sites split across three different height values, two of them
      unexplained outliers. One token now, so a caller can't drift to a
-     fourth value by copying whichever of the eight it found first. */
+     fourth value by copying whichever of the eight it found first.
+     Stays in dvh rather than moving to rem with the rails above: this one
+     is deliberately a share OF THE VIEWPORT, not a box sized to hold
+     text, so it is not what issue #361 was about. */
   --centered-page-min-h: 70dvh;
+
+  /* PARKED, issue #362. The 34vw preferred value is responsive; the 400px
+     (now 25rem) floor is not, so below roughly a 1176px viewport this stops
+     giving space back and the PDF pane it shares the reader with drops under
+     350px. Browser zoom reaches that range on hardware that looks fine on
+     paper: a 1440px screen at 150% is a 960px CSS viewport.
+
+     The floor is NOT being changed here. What the inspector should become
+     below that width -- a drawer, a tab, or something else -- is issue #363,
+     and the number depends on that answer. Converted to rem with the rest of
+     the block and otherwise left alone deliberately. */
+  --inspector: clamp(25rem, 34vw, 35rem); /* 400px, 560px */
 
   /* Issue #380: the three shadcn overlays (dialog, alert-dialog, sheet)
      shipped bg-black/80, the vendor's neutral-grey default. Pure black
@@ -280,8 +326,55 @@
      theme-invariant dark ground (see that class below), at 80% to match
      the opacity being replaced. Theme-invariant on purpose: a scrim dims
      the page behind it and should read as dark in both themes, unlike
-     page content which flips. */
+     page content which flips.
+
+     SIBLING, NOT A DUPLICATE of --band-scrim above. Two scrims, two jobs:
+     this one dims the PAGE behind an overlay and is keyed to the warm
+     product ground; --band-scrim darkens the SHADER behind band text and
+     is keyed to the atmosphere ramp's ground stop. They are different
+     colours because they cover different things. Do not collapse them. */
   --overlay-scrim: rgb(20 18 15 / 0.8);
+
+  /* ---- stacking order (issue #370) ------------------------------------
+     Eleven ad-hoc layers were in use across the app with no scale and no
+     written ordering. `z-50` alone held ten unrelated components, and the
+     two arbitrary values above it (`z-[60]`, `z-[70]`) were picked to win
+     specific fights rather than to sit anywhere in particular.
+
+     Read top to bottom, the rule is: the further up this list, the more the
+     layer is about telling the user something they did not ask to be told.
+
+       raised    in-flow elevation. Canvas hints, the PdfPane page counter,
+                 the workspace sidebar.
+       sticky    in-page sticky strips that scroll with a section: the
+                 discover filter bar, GuestBanner.
+       header    a route's own header. (app) and (reader) shells.
+       dock      persistent product chrome that floats over content:
+                 SiteHeader, ChatDock.
+       overlay   anything modal or transient the user opened themselves:
+                 dialogs, drawers, sheets, popovers, menus, tooltips.
+       nav       full-screen mobile navigation. Above overlay because it
+                 replaces the page rather than sitting on it.
+       toast     above nav, which settles the z-[60] tie in issue #371.
+                 A toast the user cannot see has failed at its only job.
+       banner    connectivity and system state. Outranks toast because it
+                 explains why the toasts stopped arriving.
+       skip      the skip link. Top of the stack by definition: it is the
+                 first thing a keyboard user reaches on every page, and a
+                 focused control rendered behind something else is worse
+                 than no skip link at all (issue #373).
+
+     Gaps of 10 are deliberate, so a layer can be slipped between two of
+     these later without renumbering the file. */
+  --z-raised: 10;
+  --z-sticky: 20;
+  --z-header: 30;
+  --z-dock: 40;
+  --z-overlay: 50;
+  --z-nav: 60;
+  --z-toast: 70;
+  --z-banner: 80;
+  --z-skip: 90;
 
   /* ---- shadcn/ui bridge ----------------------------------------------
      shadcn's generated components address colour through its own token
@@ -346,6 +439,10 @@
   --accent-sunk-rgb: 85 55 128;
   --brand-ink-rgb: 27 24 18;
   --brand-ink-reversed-rgb: 250 248 244;
+  /* Theme-invariant, so this one is NOT repeated in .dark below. Band.tsx
+     applies it as bg-band-scrim/55, which is an opacity modifier, so the
+     channel form is the one that actually resolves. */
+  --band-scrim-rgb: 5 3 8;
   --disp-amber-rgb: 215 159 76;
   --disp-green-rgb: 118 175 119;
   --disp-violet-rgb: 158 128 209;
@@ -566,6 +663,34 @@
  * Same contract as `.surface-reading`: BOTH the hex vars and their -rgb
  * companions must be pinned, because Tailwind's colour utilities resolve
  * through the channel triplets while CSS and inline styles read the hex.
+ *
+ * ---- KEEP/KILL RESOLVED, 2026-09-02 (issue #379) ----------------------
+ * The question raised was whether 76 lines of pinned tokens earn their place
+ * for a single call site, or whether this should be inlined into
+ * SummaryAudit.tsx and deleted from here.
+ *
+ * IT STAYS, and it is a pattern rather than a one-off. Three reasons:
+ *
+ *   1. It is not additive. This block REPLACED ten hardcoded hex values in
+ *      SummaryAudit.tsx, six of which existed nowhere else in the system.
+ *      Inlining it would restore exactly the second vocabulary it was
+ *      written to delete, and the line count would follow it there.
+ *   2. The failure it prevents is real and was observed, not theoretical.
+ *      A pinned pane that does NOT also pin --accent renders the wrong
+ *      theme's accent against it, measured at 2.89:1. Anything that pins a
+ *      ground has to pin the full ramp, and that is what makes the block
+ *      long. Doing this per call site means getting it wrong per call site.
+ *   3. "One consumer" is a count of today, not of the contract. An
+ *      always-dark verdict pane is a legitimate recurring shape: a rail that
+ *      renders a judgement about the document beside it, held in one palette
+ *      so it does not read as more of the same prose.
+ *
+ * WHEN TO REACH FOR IT: a surface whose job is to be visibly not-the-
+ * -document, in both themes. NOT for a surface that merely looks better dark;
+ * that is what the theme is for. Contrast with `.surface-reading`, which is
+ * FROZEN and is being migrated out (issue #378) precisely because it fails
+ * that test: it pins a light ground for panes that should simply have
+ * followed the theme.
  */
 .surface-chrome {
   background-color: #14120f;
