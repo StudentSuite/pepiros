@@ -1,11 +1,31 @@
 "use client";
 
-import { useRef, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import clsx from "clsx";
 import { usePanelBehavior } from "./Dialog";
 import { IconButton } from "./IconButton";
 import { X } from "lucide-react";
+
+/**
+ * Issue #384: the five things a modal must do -- focus trap, role="dialog"
+ * aria-modal, Escape closes, focus restores to the trigger, and body scroll
+ * locks -- usePanelBehavior already covered the first four; this was the
+ * one gap, verified against the checklist. Not folded into usePanelBehavior
+ * itself: Popover (the hook's other consumer) is deliberately not a true
+ * modal -- it's dismissible while the page behind it stays interactive --
+ * so locking body scroll there would be wrong.
+ */
+function useBodyScrollLock(locked: boolean) {
+  useEffect(() => {
+    if (!locked) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [locked]);
+}
 
 /**
  * Right-anchored slide-in panel -- same portal/backdrop/focus-trap/Escape
@@ -38,6 +58,7 @@ export function Drawer({
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   usePanelBehavior(open, onClose, panelRef);
+  useBodyScrollLock(open);
 
   if (!open) return null;
 
