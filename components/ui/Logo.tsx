@@ -66,16 +66,35 @@ type LogoSize = "sm" | "md" | "lg";
  * mark to visibly read as bigger than its wordmark rather than merely
  * equal to it.
  */
+/*
+ * REDUCED 2026-09-03 for the nav and footer lockups, which were carrying more
+ * weight than a persistent chrome element should. `lg` is untouched: the hero
+ * and onboarding are where the mark is the subject rather than the furniture.
+ *
+ *   sm  glyph 32 -> 28,  wordmark 25 -> 21   (site header, sidebar, mobile nav)
+ *   md  glyph 34 -> 30,  wordmark 27 -> 23   (footer, auth cards)
+ *
+ * 28px IS THE FLOOR AND sm NOW SITS ON IT. Per the file header, that is the
+ * size this glyph was cut for; below it the drawn page rules begin to
+ * composite into each other and the mark reads as a speck rather than as a
+ * document. The nav lockup cannot get smaller than this without a new cut of
+ * the glyph, so shrink the wordmark alone if it still reads large.
+ *
+ * The 2026-08-23 note below about the glyph being bumped ~14% above the kit's
+ * 1.11x ratio still holds, and holds harder now: at sm the glyph is pinned to
+ * its floor while the wordmark came down, so the ratio is 1.33x rather than
+ * the old 1.28x. That is a consequence of the floor, not a new decision.
+ */
 const GLYPH_SIZE: Record<LogoSize, string> = {
-  sm: "h-8", // 32px -- site header, sidebar
-  md: "h-[34px]", // footer, auth cards
-  lg: "h-[50px]", // hero, onboarding
+  sm: "h-7", // 28px -- site header, sidebar. The floor, see above.
+  md: "h-[30px]", // footer, auth cards
+  lg: "h-[50px]", // hero, onboarding -- unchanged
 };
 
 const WORDMARK_SIZE: Record<LogoSize, string> = {
-  sm: "text-[25px]", // 28 / 1.11
-  md: "text-[27px]", // 30 / 1.11
-  lg: "text-[40px]", // 44 / 1.11, the kit's own figure
+  sm: "text-[21px]",
+  md: "text-[23px]",
+  lg: "text-[40px]", // 44 / 1.11, the kit's own figure -- unchanged
 };
 
 /**
@@ -88,9 +107,9 @@ const WORDMARK_SIZE: Record<LogoSize, string> = {
  * arithmetic is the rendered height and not an approximation of it.
  */
 const TAGLINE_GLYPH_SIZE: Record<LogoSize, string> = {
-  sm: "h-[38px]", // 25 + 3 + 10
-  md: "h-[40px]", // 27 + 3 + 10
-  lg: "h-[53px]", // 40 + 3 + 10
+  sm: "h-[34px]", // 21 + 3 + 10
+  md: "h-[36px]", // 23 + 3 + 10
+  lg: "h-[53px]", // 40 + 3 + 10 -- unchanged
 };
 
 /**

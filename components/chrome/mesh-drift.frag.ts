@@ -115,13 +115,41 @@ vec3 srgbToLinear(vec3 c) {
   return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(0.04045, c));
 }
 vec3 linearToSrgb(vec3 c) {
+  /* THE BLACK SPECKLE FIX.
+   *
+   * Interpolating two colours through OKLab can land outside the sRGB gamut,
+   * and oklabToLinear() then returns linear RGB with a NEGATIVE channel. That
+   * is normal and expected for a wide interpolation; what is not survivable is
+   * feeding it to pow().
+   *
+   * GLSL leaves pow(x, y) UNDEFINED for x < 0, and in practice it returns NaN.
+   * The step() below looks like it guards the pow branch, but it does not:
+   * mix(a, b, t) is a * (1 - t) + b * t, so b is evaluated regardless, and
+   * NaN * 0.0 is still NaN. One negative channel anywhere therefore poisons
+   * the pixel, and a NaN fragment rasterises black.
+   *
+   * That is the field of black specks that appeared over the saturated purple
+   * region of the band. It is not a dither and not the paper grain: it arrived
+   * with the neon ramp (issue #335), because the previous lavender stops were
+   * close enough together in gamut that the interpolation never went negative.
+   * Wide, saturated stops cross out of gamut constantly.
+   *
+   * Clamping to zero first is the standard fix and is also the correct colour
+   * answer: an out-of-gamut negative channel means "more saturated than sRGB
+   * can represent", and clipping it to the gamut boundary is what any sane
+   * conversion does. */
+  c = max(c, 0.0);
   return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c));
 }
 vec3 linearToOklab(vec3 c) {
   float l = 0.4122214708 * c.r + 0.5363325363 * c.g + 0.0514459929 * c.b;
   float m = 0.2119034982 * c.r + 0.6806995451 * c.g + 0.1073969566 * c.b;
   float s = 0.0883024619 * c.r + 0.2817188376 * c.g + 0.6299787005 * c.b;
-  vec3 lms = pow(vec3(l, m, s), vec3(1.0 / 3.0));
+  /* Belt and braces for the same reason as above. These three are non-negative
+     for any non-negative linear RGB (every coefficient here is positive), but
+     accum feeds back through this function every iteration, so one bad frame
+     would otherwise persist rather than self-correct. */
+  vec3 lms = pow(max(vec3(l, m, s), 0.0), vec3(1.0 / 3.0));
   return vec3(
     0.2104542553 * lms.x + 0.7936177850 * lms.y - 0.0040720468 * lms.z,
     1.9779984951 * lms.x - 2.4285922050 * lms.y + 0.4505937099 * lms.z,
@@ -235,7 +263,10 @@ void main() {
   float edge = length(uv - 0.5);
   accum = mixColour(accum, u_colors[0], smoothstep(0.55, 0.95, edge) * 0.35);
 
-  gl_FragColor = vec4(accum, 1.0);
+  /* Final clamp. accum is fed back through mixColour() every iteration, so a
+     single out-of-range value would compound rather than wash out. Cheap
+     insurance on top of the gamut clamp in linearToSrgb(). */
+  gl_FragColor = vec4(clamp(accum, 0.0, 1.0), 1.0);
 }
 `;
 
