@@ -197,7 +197,7 @@ export function ChatDock({
     // below, rather than sitting over the reading/inspector surface by
     // default the way the old always-rendered bar did.
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-4 sm:inset-x-auto sm:right-4 sm:justify-end sm:px-0">
-      <div className="glass pointer-events-auto flex max-h-[85vh] w-full max-w-2xl flex-col rounded-lg sm:max-h-[32rem] sm:w-96">
+      <div className="glass pointer-events-auto flex max-h-[85vh] w-full max-w-2xl flex-col rounded-lg sm:max-h-[min(32rem,80vh)] sm:w-96">
         <div className="flex items-center justify-between border-b border-border px-3 py-2">
           <div className="flex items-center gap-2">
             <span className="font-sans text-sm font-medium text-ink">Ask</span>
