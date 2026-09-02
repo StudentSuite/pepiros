@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { buttonClassName } from "@/components/ui/Button";
 import { Menu } from "@/components/ui/Menu";
 import { Icon } from "@/components/ui/Icon";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 const TABS = [
   ["outline", "Outline"],
@@ -138,6 +139,13 @@ export function ReaderTabsNav({
           },
         ]}
       />
+
+      {/* Issue #375: (reader) has no layout.tsx of its own and renders no
+          SiteHeader/AppTopbar, so this shared nav (already on every /w/*
+          route: reader, outline, audit, learn, canvas) is the one place
+          that reaches all of them without adding a layout that would
+          affect the breakpoint question #363 is still open on. */}
+      <ThemeToggle className="ml-auto" />
     </nav>
   );
 }

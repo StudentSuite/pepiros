@@ -9,6 +9,7 @@ import { PdfPane } from "@/components/reader/PdfPane";
 import { NodeInspector } from "@/components/inspector/NodeInspector";
 import { Logo } from "@/components/ui/Logo";
 import { buttonClassName } from "@/components/ui/Button";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import type { Highlight } from "@/components/reader/HighlightLayer";
 
 /**
@@ -211,7 +212,11 @@ function SiteNav() {
       <Link href="/" aria-label="Pepiros home">
         <Logo />
       </Link>
+      {/* Issue #375: (reader) has no layout.tsx of its own, so this
+          locally-defined nav is the only chrome a share-link visitor
+          gets -- the one place to reach the toggle from this route. */}
       <div className="flex items-center gap-s-4">
+        <ThemeToggle />
         <Link href="/how-it-works" className="font-sans text-sm text-ink-muted hover:text-ink">
           What is this?
         </Link>
