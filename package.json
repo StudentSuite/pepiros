@@ -100,7 +100,7 @@
     "postgres": "^3.4.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-pdf": "^9.2.1",
+    "react-pdf": "^10.5.0",
     "recharts": "^3.10.1",
     "server-only": "^0.0.1",
     "sonner": "^2.0.8",
