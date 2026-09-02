@@ -34,6 +34,24 @@ import type { Highlight } from "@/components/reader/HighlightLayer";
  * preview + real edge-kind legend replace the old two-line header, pill-tab
  * switcher, and bare node list. Canvas is reached only via "Explore graph" --
  * this view never renders the full React Flow canvas itself.
+ *
+ * Issue #363: breakpoint behaviour for the three-pane composition, written
+ * down once rather than left to be inferred from three separate pieces of
+ * state. Below `md` (shadcn Sidebar's own useIsMobile breakpoint), the
+ * papers/pillars rail collapses to an offcanvas Sheet, triggered by
+ * SidebarTrigger in the header -- not a bespoke solution, the same one
+ * every shadcn-Sidebar consumer in the app gets for free. Below `lg`,
+ * `mobilePane` replaces the side-by-side source/claims grid with a
+ * Source/Claims segmented control (one pane visible at a time, since two
+ * ~400px+ panes can't both fit legibly); at `lg` and up both always show
+ * and the control itself disappears. Within the claims pane, `railTab`
+ * is a second, independent toggle (Claims vs. More: graph preview,
+ * related papers, numeric chart) that applies at every width, not just
+ * narrow ones -- those three widgets were a permanent column before #242
+ * regardless of viewport. NodeInspector renders inline at the bottom of
+ * the same claims pane (in Panel), not as a separate overlay here --
+ * GraphCanvas.tsx's Drawer-based inspector is the canvas view's own,
+ * different composition, reached only via "Explore graph".
  */
 export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: string; isGuest?: boolean }) {
   const workspace = useWorkspaceStore((s) => s.workspace);
