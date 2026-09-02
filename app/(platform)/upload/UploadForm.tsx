@@ -101,16 +101,25 @@ function JobProgressView({ progress }: { progress: JobProgress }) {
         ))}
       </ol>
 
+      {/* Issue #386: three status messages (error/success/progress), none
+          announced -- a screen reader user got no notification any of them
+          appeared. role="alert" implies aria-live="assertive" (the failure
+          needs immediate attention); role="status" implies "polite" (the
+          other two are routine updates, not interruptions). */}
       {progress.status === "failed" ? (
-        <p className="mt-s-4 font-sans text-[13px] leading-relaxed text-unsupported">
+        <p role="alert" className="mt-s-4 font-sans text-[13px] leading-relaxed text-unsupported">
           {progress.error ?? "Ingest failed."}
         </p>
       ) : progress.status === "done" ? (
-        <p className="mt-s-4 font-sans text-[13px] leading-relaxed text-located">
+        <p role="status" className="mt-s-4 font-sans text-[13px] leading-relaxed text-located">
           Ready. <Link href={`/w/${WORKSPACE_ID}`} className="underline underline-offset-2">Open the workspace</Link>.
         </p>
       ) : (
-        latestMessage && <p className="mt-s-4 font-sans text-[13px] leading-relaxed text-ink-faint">{latestMessage}</p>
+        latestMessage && (
+          <p role="status" className="mt-s-4 font-sans text-[13px] leading-relaxed text-ink-faint">
+            {latestMessage}
+          </p>
+        )
       )}
     </div>
   );
