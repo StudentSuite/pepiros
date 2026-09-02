@@ -271,6 +271,18 @@
      fourth value by copying whichever of the eight it found first. */
   --centered-page-min-h: 70dvh;
 
+  /* Issue #380: the three shadcn overlays (dialog, alert-dialog, sheet)
+     shipped bg-black/80, the vendor's neutral-grey default. Pure black
+     over this product's warm ground (--surface is #f5f1e6 in light,
+     #14120f in dark) reads as a hole punched in the page rather than the
+     page dimming, and "design tokens only" (CLAUDE.md) rules out a raw
+     colour anyway. Same warm-black .surface-chrome already uses as its
+     theme-invariant dark ground (see that class below), at 80% to match
+     the opacity being replaced. Theme-invariant on purpose: a scrim dims
+     the page behind it and should read as dark in both themes, unlike
+     page content which flips. */
+  --overlay-scrim: rgb(20 18 15 / 0.8);
+
   /* ---- shadcn/ui bridge ----------------------------------------------
      shadcn's generated components address colour through its own token
      names, in space-separated HSL triplets consumed as hsl(var(--x)).
