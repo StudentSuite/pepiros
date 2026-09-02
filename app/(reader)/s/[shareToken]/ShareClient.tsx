@@ -73,7 +73,7 @@ export function ShareClient({ workspaceId }: { workspaceId: string }) {
 
   if (!workspace || !activePaper) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-dvh">
         <SiteNav />
         <p className="p-8 font-sans text-sm text-ink-faint">Loading shared workspace...</p>
       </div>
@@ -97,7 +97,7 @@ export function ShareClient({ workspaceId }: { workspaceId: string }) {
   const leafNodes = workspace.nodes.filter((n) => n.type === "leaf" && n.paperId === activePaper.id);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-dvh">
       <SiteNav />
 
       <div className="border-b border-border bg-surface-sunken px-s-5 py-s-3 text-center font-sans text-xs text-ink-faint">
