@@ -62,6 +62,15 @@ export function ShareClient({ workspaceId }: { workspaceId: string }) {
     selectNode(null);
     // Resets to this paper's own first chunk whenever the selected paper
     // changes, rather than only filling in an empty activeChunkId once.
+    //
+    // Issue #389: deliberately keyed on activePaperId alone, not on
+    // paperChunks/selectNode too. paperChunks is derived from
+    // workspace+activePaperId in the same render this effect responds to,
+    // so by the time this runs it already reflects the new paper -- adding
+    // it here would also re-fire this reset on any *other* recompute of
+    // paperChunks (an unrelated node edit), fighting a reader's own chunk
+    // selection even when they haven't switched papers. selectNode is a
+    // zustand action, stable across renders.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activePaperId]);
 

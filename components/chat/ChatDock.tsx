@@ -69,6 +69,12 @@ export function ChatDock({
     setDraft(pendingQuestion);
     setOpen(true);
     onPendingQuestionHandled?.();
+    // Issue #389: keyed on pendingQuestion alone, not onPendingQuestionHandled
+    // too. ReaderClient passes a new closure identity for it every render
+    // (`() => setPendingChatQuestion(null)`), which would re-fire this effect
+    // on every unrelated parent re-render if it were a dep -- safe to omit
+    // since the closure always does the same identity-independent thing
+    // regardless of which render's copy of it this effect captured.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingQuestion]);
 
