@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Source_Serif_4, Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
-import { Toaster } from "@/components/ui/Toaster";
+import { Toaster } from "@/components/shadcn/sonner";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ShaderCanvas } from "@/components/chrome/ShaderCanvas";
@@ -76,7 +76,7 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${sourceSerif.variable} ${geist.variable} ${geistMono.variable}`}
     >
-      <body className="flex min-h-screen flex-col">
+      <body className="flex min-h-dvh flex-col">
         {/* Issue #120 (WCAG 2.4.1 Bypass Blocks): the first focusable element
             on every page, so a keyboard/screen-reader user doesn't have to
             tab through the header's nav links, theme toggle, and auth
