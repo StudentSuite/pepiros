@@ -5,9 +5,11 @@ import Link from "next/link";
 import clsx from "clsx";
 import { ChevronRight } from "lucide-react";
 import { useWorkspaceStore } from "@/lib/store/workspace";
+import { useIsOffline } from "@/hooks/useIsOffline";
 import { Sidebar } from "@/components/app/Sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/shadcn/sidebar";
 import { ReaderTabsNav } from "@/components/reader/ReaderTabsNav";
+import { ReaderSkeleton } from "@/components/reader/ReaderSkeleton";
 import { PdfPane } from "@/components/reader/PdfPane";
 import { AnchorStepper } from "@/components/reader/AnchorStepper";
 import { CoverageGutter } from "@/components/reader/CoverageGutter";
@@ -20,7 +22,7 @@ import { NodeInspector } from "@/components/inspector/NodeInspector";
 import { NumericChart } from "@/components/viz/NumericChart";
 import { Icon } from "@/components/ui/Icon";
 import { Panel } from "@/components/ui/Panel";
-import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { Logo } from "@/components/ui/Logo";
 import { buttonClassName } from "@/components/ui/Button";
 import type { Highlight } from "@/components/reader/HighlightLayer";
@@ -39,6 +41,12 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
   const loadError = useWorkspaceStore((s) => s.loadError);
   const selectedNodeId = useWorkspaceStore((s) => s.selectedNodeId);
   const selectNode = useWorkspaceStore((s) => s.selectNode);
+  // Issue #372: this header is sticky at the same top edge OfflineBanner
+  // docks to at a higher z-index (fixed inset-x-0 top-0 z-[70]) -- without
+  // tracking online/offline state itself, it renders underneath the banner
+  // instead of below it, same fix components/site/SiteHeader.tsx already
+  // has (top-7 while offline).
+  const offline = useIsOffline();
 
   useEffect(() => {
     loadWorkspace(workspaceId);
@@ -108,7 +116,7 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
     // the loading state forever instead of surfacing that, matching what
     // /s/[shareToken] already does for an invalid share token.
     return (
-      <main id="main-content" className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col items-center justify-center p-s-5 text-center">
+      <main id="main-content" className="mx-auto flex min-h-[var(--centered-page-min-h)] w-full max-w-md flex-col items-center justify-center p-s-5 text-center">
         <Link href="/" aria-label="Pepiros home" className="mb-s-6">
           <Logo />
         </Link>
@@ -129,22 +137,9 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
   }
 
   if (!workspace) {
-    // Skeleton shaped like the real layout below, not a bare spinner (§14.5).
-    return (
-      <div className="flex min-h-screen" role="status" aria-label="Loading workspace">
-        <Skeleton className="h-screen w-60 shrink-0" />
-        <div className="flex-1 p-s-5">
-          <Skeleton className="h-6 w-80" />
-          <div className="mt-s-5 grid gap-s-5 lg:grid-cols-[1fr_280px]">
-            <div className="flex flex-col gap-s-4">
-              <Skeleton className="aspect-[612/792] w-full max-w-xl" />
-              <SkeletonText lines={4} />
-            </div>
-            <Skeleton className="h-64" />
-          </div>
-        </div>
-      </div>
-    );
+    // Same skeleton the route-level loading.tsx shows before the client
+    // bundle even hydrates (issue #390); shared so the two can't drift.
+    return <ReaderSkeleton />;
   }
 
   const activePaper = workspace.papers.find((p) => p.id === activePaperId) ?? workspace.papers[0];
@@ -189,11 +184,17 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
         }}
       />
 
-      <div className="flex min-w-0 min-h-screen flex-1 flex-col pb-32">
+      <div className="flex min-w-0 min-h-dvh flex-1 flex-col pb-32">
         {/* Reader chrome. Soft glass, so it reads as tooling sitting over the
             page rather than as part of the document, and sticky so the paper
             title stays available while reading. */}
-        <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-s-3 border-b border-[var(--glass-edge)] bg-[var(--glass-bg)] px-s-5 py-s-3 backdrop-blur-[var(--glass-blur)] backdrop-saturate-150">
+        <header
+          className={clsx(
+            "sticky z-20 flex flex-wrap items-center justify-between gap-s-3 border-b border-[var(--glass-edge)] bg-[var(--glass-bg)] px-s-5 py-s-3 backdrop-blur-[var(--glass-blur)] backdrop-saturate-150",
+            "transition-[top] duration-fast ease-out",
+            offline ? "top-7" : "top-0",
+          )}
+        >
           <nav
             aria-label="Breadcrumb"
             className="flex min-w-0 items-center gap-1.5 font-sans text-[13px]"
