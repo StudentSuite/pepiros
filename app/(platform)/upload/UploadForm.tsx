@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Check, FileText, UploadCloud } from "lucide-react";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/shadcn/label";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
@@ -503,7 +503,7 @@ export function UploadForm({
           {progress && <JobProgressView progress={progress} />}
 
           <div>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" variant="primary" disabled={pending}>
               {pending ? "Checking…" : "Add paper"}
             </Button>
           </div>

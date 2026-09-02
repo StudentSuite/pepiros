@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Textarea } from "@/components/shadcn/textarea";
+import { Button } from "@/components/ui/Button";
+import { Input, Textarea } from "@/components/ui/Input";
 import { Avatar, AvatarFallback } from "@/components/shadcn/avatar";
 import { SettingsRow } from "./SettingsRow";
 import type { Profile } from "@/lib/data/types";
@@ -100,7 +99,7 @@ export function ProfileForm({
       </SettingsRow>
 
       <div className="flex items-center gap-s-3 pt-s-5">
-        <Button type="submit" disabled={saving || !dirty}>
+        <Button type="submit" variant="primary" disabled={saving || !dirty}>
           {saving ? "Saving…" : "Save changes"}
         </Button>
         {dirty && !saving && (

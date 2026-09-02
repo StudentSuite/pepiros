@@ -4,9 +4,13 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Check, ChevronsUpDown } from "lucide-react";
-import { Button } from "@/components/shadcn/button";
+import { Button } from "@/components/ui/Button";
+// Issue #344: kept for the one Radix-composed case below (a Popover trigger
+// via asChild), which ui/Button can't do -- every other Button in this file
+// moved to ui/Button, the canonical one.
+import { Button as ShadcnButton } from "@/components/shadcn/button";
 import { Card } from "@/components/shadcn/card";
-import { Input } from "@/components/shadcn/input";
+import { Input } from "@/components/ui/Input";
 import { Progress } from "@/components/shadcn/progress";
 import { Band } from "@/components/chrome/Band";
 import {
@@ -473,7 +477,7 @@ export function OnboardingWizard({
               Back
             </Button>
           )}
-          <Button onClick={next} disabled={!canAdvance || saving} className="ml-auto gap-1.5">
+          <Button variant="primary" onClick={next} disabled={!canAdvance || saving} className="ml-auto gap-1.5">
             {step === STEP_COUNT ? (saving ? "Finishing…" : "Finish") : "Continue"}
             {step < STEP_COUNT && <ArrowRight className="size-3.5" />}
           </Button>
@@ -596,7 +600,7 @@ function CountryCombobox({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
+        <ShadcnButton
           variant="outline"
           role="combobox"
           aria-expanded={open}
@@ -604,7 +608,7 @@ function CountryCombobox({
         >
           {value ?? "Select a country"}
           <ChevronsUpDown className="size-4 opacity-50" />
-        </Button>
+        </ShadcnButton>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <Command>

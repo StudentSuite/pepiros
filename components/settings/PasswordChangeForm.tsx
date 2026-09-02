@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { FormField } from "@/components/ui/FormField";
 
 interface FieldErrors {
@@ -85,7 +85,7 @@ export function PasswordChangeForm() {
           placeholder="Confirm new password"
         />
       </FormField>
-      <Button type="submit" size="sm" disabled={saving || !password || !confirmPassword} className="self-start">
+      <Button type="submit" variant="primary" size="sm" disabled={saving || !password || !confirmPassword} className="self-start">
         {saving ? "Updating…" : "Update password"}
       </Button>
     </form>
