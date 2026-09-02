@@ -6,7 +6,7 @@ import { getSession } from "@/lib/auth/session";
 import { getAdapter } from "@/lib/data/adapter";
 import { Card } from "@/components/ui/Panel";
 import { Avatar, AvatarFallback } from "@/components/shadcn/avatar";
-import { Badge } from "@/components/shadcn/badge";
+import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 
@@ -74,16 +74,14 @@ export default async function CommentsPage() {
                       </Link>
                       {!c.read && (
                         <Badge
-                          variant="outline"
-                          className="border-accent/40 font-mono text-[10px] uppercase tracking-wider text-accent-text"
+                          variant="tag"
+                          className="border-accent/40 uppercase tracking-wider text-accent-text"
                         >
                           New
                         </Badge>
                       )}
                       {c.claimRef && (
-                        <Badge variant="outline" className="font-mono text-[10px]">
-                          on {c.claimRef}
-                        </Badge>
+                        <Badge variant="tag">on {c.claimRef}</Badge>
                       )}
                       <span className="ml-auto font-mono text-[10px] text-ink-faint">
                         {c.createdAt}
