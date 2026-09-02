@@ -36,11 +36,17 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
   reverse = false, // Include the reverse prop
   duration = 5,
   delay = 0,
-  pathColor = "gray",
+  // Issue #341: these were the upstream Magic UI defaults (gray path, an
+  // orange-to-purple gradient), off this product's palette in every
+  // direction. The one real call site (MechanismDemo.tsx) already overrides
+  // all three explicitly, so these defaults are dead in practice today --
+  // pointed at real tokens anyway so a future call site that forgets to
+  // pass them doesn't silently reintroduce the vendor colors.
+  pathColor = "var(--border-strong)",
   pathWidth = 2,
   pathOpacity = 0.2,
-  gradientStartColor = "#ffaa40",
-  gradientStopColor = "#9c40ff",
+  gradientStartColor = "var(--accent)",
+  gradientStopColor = "var(--accent)",
   repeat = Infinity,
   repeatDelay = 0,
   startXOffset = 0,
