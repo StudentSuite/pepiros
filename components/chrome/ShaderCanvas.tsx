@@ -223,8 +223,66 @@ function runMeshDrift(
   let rafId = 0;
   const startedAt = performance.now();
 
+  /*
+   * Clip the canvas to the visible bands.
+   *
+   * THE BUG THIS FIXES. This canvas is `position: fixed; z-index: -1` and a
+   * band reveals it by turning its own background transparent. That only
+   * works if nothing between the canvas and the band paints an opaque colour
+   * -- and `body` did. Paint order inside the root stacking context puts
+   * negative-z positioned descendants (this canvas) BELOW the backgrounds of
+   * in-flow block descendants (body), so body's `background-color` covered
+   * the canvas everywhere and no band ever showed the shader. The gradient
+   * simply never appeared.
+   *
+   * Making body transparent reveals the canvas, but then it shows through
+   * EVERY unstyled section too, because those sections were relying on
+   * inheriting body's opaque colour. That is the /privacy bleed-through the
+   * html-background comment in app/globals.css describes. The two failures
+   * are the same mechanism seen from opposite sides, and no combination of
+   * background colours on html/body fixes both: the canvas either covers
+   * everything or nothing.
+   *
+   * So the canvas stops being full-bleed. body goes transparent (html keeps
+   * the opaque --surface, so ordinary sections show a flat surface), and this
+   * clips the canvas to exactly the rects of the bands that are on screen.
+   * Outside a band the canvas paints nothing at all, which is what makes
+   * bleed-through structurally impossible rather than something a future
+   * unstyled section can reintroduce.
+   *
+   * Viewport coordinates need no conversion: the canvas is `fixed inset-0`,
+   * so its own box already IS the viewport and getBoundingClientRect() is in
+   * the same space. Rects are rounded outwards so a fractional layout never
+   * leaves a hairline of surface along a band edge.
+   */
+  let lastClip = "";
+  const CLIP_NOTHING = "inset(50%)";
+  canvas.style.clipPath = CLIP_NOTHING;
+
+  function updateClip() {
+    let d = "";
+    for (const el of intersecting) {
+      const r = el.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0) continue;
+      const x0 = Math.floor(r.left);
+      const y0 = Math.floor(r.top);
+      const x1 = Math.ceil(r.right);
+      const y1 = Math.ceil(r.bottom);
+      // One closed subpath per band. path() takes several, so disjoint bands
+      // (a hero and a closing CTA both on screen) clip correctly without
+      // needing the degenerate bridging edges a single polygon() would.
+      d += `M${x0} ${y0}H${x1}V${y1}H${x0}Z`;
+    }
+    if (d === lastClip) return;
+    lastClip = d;
+    canvas.style.clipPath = d ? `path("${d}")` : CLIP_NOTHING;
+  }
+
   function frame(now: number) {
     rafId = requestAnimationFrame(frame);
+    // Before the early return, not after: when the last band scrolls out the
+    // clip has to collapse, and that is exactly the frame the draw is skipped.
+    updateClip();
     if (tabHidden || intersecting.size === 0) return;
 
     const elapsedSeconds = (now - startedAt) / 1000;

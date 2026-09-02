@@ -305,17 +305,35 @@
      text, so it is not what issue #361 was about. */
   --centered-page-min-h: 70dvh;
 
-  /* PARKED, issue #362. The 34vw preferred value is responsive; the 400px
-     (now 25rem) floor is not, so below roughly a 1176px viewport this stops
-     giving space back and the PDF pane it shares the reader with drops under
-     350px. Browser zoom reaches that range on hardware that looks fine on
-     paper: a 1440px screen at 150% is a 960px CSS viewport.
+  /* Issue #362, resolved 2026-09-03 once #363 documented the reader's actual
+     composition. The issue's own premise was wrong and worth correcting here,
+     because the wrong version invites the wrong fix.
 
-     The floor is NOT being changed here. What the inspector should become
-     below that width -- a drawer, a tab, or something else -- is issue #363,
-     and the number depends on that answer. Converted to rem with the rest of
-     the block and otherwise left alone deliberately. */
-  --inspector: clamp(25rem, 34vw, 35rem); /* 400px, 560px */
+     The issue said this floor "does not fit beside the PDF pane". It never
+     sits beside it. --inspector has exactly ONE consumer, `w-inspector` on
+     components/ui/Drawer.tsx, and that Drawer is a right-hand OVERLAY opened
+     from GraphCanvas. It does not compete with anything for width. In the
+     reader (#363) NodeInspector renders inline at the bottom of the claims
+     pane and never reads this token at all, and below `lg` that pane is
+     behind a Source/Claims segmented control anyway.
+
+     So the failure is not "the reader gets crushed at 1176px". It is that an
+     overlay whose width has a FIXED FLOOR is wider than the viewport once the
+     viewport drops under that floor:
+
+       390px phone   ->  a 400px drawer, 10px wider than the screen
+       720px (200% zoom on a 1440 screen)  ->  400px, 56% of the screen
+
+     A drawer wider than its viewport has no visible scrim left, so the one
+     affordance saying "this is dismissable, the page is still behind it" is
+     gone, and it can push the document horizontally.
+
+     The fix keeps the existing sizing everywhere it already worked and only
+     adds a viewport ceiling, so the drawer always leaves a 3rem strip of
+     scrim. Resolved widths: 1707px -> 560 (unchanged), 960px -> 400
+     (unchanged), 720px -> 400 (unchanged), 390px -> 342 (was 400, overflowed).
+     Only the last of those moves. */
+  --inspector: min(clamp(25rem, 34vw, 35rem), calc(100vw - 3rem)); /* 400px floor, 560px cap */
 
   /* Issue #380: the three shadcn overlays (dialog, alert-dialog, sheet)
      shipped bg-black/80, the vendor's neutral-grey default. Pure black
@@ -822,40 +840,55 @@ body {
 }
 
 /*
- * html gets its own explicit background, matching body's -- NOT a duplicate
- * declaration for safety, a fix for a real CSS spec interaction.
+ * WHICH ELEMENT PAINTS THE SURFACE, and why body must not.
  *
- * Per the CSS Backgrounds spec's canvas-background propagation rule: when the
- * root element (html) has NO background of its own and body does, the UA
- * "propagates" body's background up to paint the document canvas -- the very
- * bottom paint layer -- and BODY'S OWN BOX THEN PAINTS AS THOUGH IT WERE
- * TRANSPARENT. Ordinarily this is invisible: nothing sits between that
- * propagated canvas layer and body's (now-transparent) descendants, so pages
- * look identical either way.
+ * html carries the opaque surface. body is deliberately TRANSPARENT. Both
+ * halves are load-bearing and this has been got wrong in both directions.
  *
- * It stops being invisible the moment something occupies exactly that gap --
- * which is precisely what components/chrome/ShaderCanvas.tsx is: a
- * `position: fixed; z-index: -1` element sized to the full viewport. With
- * propagation active, that canvas paints ABOVE the propagated root
- * background but BELOW body's now-transparent box, so any page section
- * that relies on inheriting body's opaque colour through an unstyled
- * ancestor (nearly every plain section on this site does) shows the shader
- * bleeding through it instead of the surface colour -- confirmed live on
- * /privacy, where a section outside any <Band> rendered the mesh gradient
- * across the whole page instead of the flat surface it should have been.
+ * Background: components/chrome/ShaderCanvas.tsx is one shared
+ * `position: fixed; z-index: -1` canvas, and a <Band> reveals it by turning
+ * its own background transparent (see the [data-shader-active] rule at the
+ * bottom of this file).
  *
- * Declaring html's OWN background stops propagation from triggering at all:
- * the root element no longer has "no background of its own", so body keeps
- * painting its colour locally like any ordinary element, and the fixed
- * z-index:-1 canvas goes back to being visible only where a `.shader-band`
- * deliberately makes its own background transparent for it.
+ *   FAILURE 1, body transparent AND html unstyled. Per the CSS Backgrounds
+ *   spec, when the root element has no background of its own and body does,
+ *   the UA propagates body's background up to paint the document canvas and
+ *   body's own box then paints as though transparent. The fixed z-index:-1
+ *   canvas lands in the gap that opens up, above the propagated root
+ *   background and below body's descendants, so the shader bled through
+ *   every plain section. Confirmed live on /privacy.
+ *
+ *   FAILURE 2, the fix for failure 1, overcorrected. Giving BODY an opaque
+ *   background stops propagation, but paint order inside the root stacking
+ *   context puts negative-z positioned descendants (the canvas) BELOW the
+ *   backgrounds of in-flow block descendants (body). So body's colour
+ *   covered the canvas everywhere and NO band ever showed the shader. The
+ *   gradient simply never appeared. This shipped, and looked like a flat
+ *   grey band, which reads as "the shader is broken" rather than as a
+ *   stacking problem.
+ *
+ * No pair of background colours on html/body fixes both, because the canvas
+ * is full-bleed: it either covers everything or is covered by everything.
+ * The resolution is to stop it being full-bleed. ShaderCanvas now clips
+ * itself to the rects of the bands actually on screen, so:
+ *
+ *   - html paints the opaque surface, which also stops propagation, so
+ *     failure 1 cannot return.
+ *   - body is transparent, so it cannot cover the canvas: failure 2 is gone.
+ *   - outside a band the canvas paints nothing at all, so an unstyled
+ *     section shows html's flat surface. Bleed-through is now structurally
+ *     impossible rather than something a future section can reintroduce by
+ *     forgetting a background class.
+ *
+ * Do not give body a background colour again. If a section needs to be a
+ * different colour from --surface it sets its own, as any element would.
  */
 html {
   background-color: var(--surface);
 }
 
 body {
-  background-color: var(--surface);
+  background-color: transparent;
   color: var(--ink);
   font-family: var(--font-grotesque);
 }
