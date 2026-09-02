@@ -290,7 +290,12 @@ export function OnboardingTable({
               </p>
 
               {/* Free text in full, never truncated: a summary of somebody's
-                  own words is the thing this product exists to argue against. */}
+                  own words is the thing this product exists to argue against.
+                  Issue #355: font-serif ruling -- this qualifies as long-form
+                  body copy (a person's own written account, read as
+                  continuous prose) despite living in an admin table rather
+                  than components/reading/; the rule is about content type,
+                  not file location. */}
               {r.wrongSummaryStory && (
                 <div className="mt-s-3">
                   <p className="kicker">
