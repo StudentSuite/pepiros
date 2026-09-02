@@ -5,6 +5,7 @@ import type { IPureNode } from "markmap-common";
 import type { Markmap } from "markmap-view";
 import { pillarColor } from "@/components/ui/PillarChip";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { MOTION_MS } from "@/lib/motion";
 
 /**
  * Stamps a pillar index onto a branch and every one of its descendants via
@@ -63,7 +64,7 @@ export function MindmapView({
         markmap = MarkmapCtor.create(
           svgRef.current,
           {
-            duration: 300,
+            duration: MOTION_MS.base,
             // Same pillar hues GraphCanvas uses for the same node, keyed off
             // the payload stampPillar attached above, not path/id parsing.
             color: (node) => pillarColor((node.payload?.pillarIndex as number | null | undefined) ?? null),

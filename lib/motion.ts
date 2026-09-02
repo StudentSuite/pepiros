@@ -1,32 +1,37 @@
 /**
- * Motion foundation (docs/PLAN-V1.md §14.3). CSS-native rather than a
- * physics library on purpose: Editorial Paper's motion character is
- * ease-out-only, never spring, so there's nothing here that needs a
- * runtime physics engine. Keyframes live in app/globals.css; these are the
- * class-name helpers components reach for so nobody hand-picks a duration.
+ * The motion durations, in milliseconds, for the handful of callers that
+ * cannot use the CSS tokens.
+ *
+ * app/globals.css is the source of truth (`--dur-fast` and friends), and
+ * everything that can express itself in CSS should use the Tailwind classes
+ * that map to them: `duration-fast`, `duration-base`, `duration-slow`,
+ * `duration-canvas`. Those follow the tokens automatically and, importantly,
+ * are covered by the global `prefers-reduced-motion` rule that clamps every
+ * transition-duration down to `--dur-fast`.
+ *
+ * React Flow's imperative viewport API (`fitView`, `setViewport`) takes a real
+ * number and animates in JS, so it cannot read a custom property. Before this
+ * module those numbers were written inline at four call sites, hand-matched to
+ * the token values at the time (590 for --dur-canvas, 320 for --dur-base, 160
+ * for --dur-fast). That duplication went stale the moment the tokens were
+ * retuned on 2026-09-03: the canvas kept animating at the old, faster speeds
+ * while every CSS transition around it had slowed, which is exactly the kind
+ * of drift a token system exists to prevent.
+ *
+ * KEEP THESE IN SYNC WITH app/globals.css BY HAND. There is no build-time link
+ * between the two, so changing a `--dur-*` value means changing it here too.
+ *
+ * REDUCED MOTION IS NOT AUTOMATIC HERE either. The CSS rule cannot reach a JS
+ * animation, so a caller that should honour it must check
+ * `hooks/usePrefersReducedMotion` and pass 0.
  */
-
-export const transition = {
-  fast: "transition duration-fast ease-out",
-  base: "transition duration-base ease-out",
-  slow: "transition duration-slow ease-out",
-  canvas: "transition duration-canvas ease-out",
+export const MOTION_MS = {
+  /** Mirrors --dur-fast. */
+  fast: 220,
+  /** Mirrors --dur-base. */
+  base: 420,
+  /** Mirrors --dur-slow. */
+  slow: 700,
+  /** Mirrors --dur-canvas. Graph viewport moves: fit, focus, recentre. */
+  canvas: 820,
 } as const;
-
-export const animation = {
-  /** Node appears on the canvas: scale .92->1, opacity 0->1. */
-  nodeAppear: "animate-[node-appear_var(--dur-base)_var(--ease-out)]",
-  /** Generic entrance for expanding UI (pillar children, popovers). */
-  expandIn: "animate-[expand-in_var(--dur-canvas)_var(--ease-out)]",
-  /** The PDF highlight "money shot": fade in, then one opacity pulse. */
-  highlightPulse: "animate-[highlight-pulse_var(--dur-slow)_var(--ease-out)]",
-  /** Loading skeleton shimmer sweep. */
-  shimmer: "motion-shimmer",
-  /** Contradiction edge dash-offset march. Disable above 4 visible edges. */
-  dashMarch: "motion-dash-march",
-} as const;
-
-/** 40ms-per-sibling stagger, per §14.3's node-appear spec. */
-export function staggerDelay(index: number, stepMs = 40) {
-  return { animationDelay: `${index * stepMs}ms` };
-}

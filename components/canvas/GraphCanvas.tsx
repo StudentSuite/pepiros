@@ -33,6 +33,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { buttonClassName } from "@/components/ui/Button";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { MOTION_MS } from "@/lib/motion";
 import type { PepirosNode, PepirosEdge, GhostCitationNodeType } from "./types";
 
 type AnyPepirosNode = PepirosNode | GhostCitationNodeType;
@@ -317,7 +318,7 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
         // rendering, and the canvas opened as a field of blank rectangles.
         // Fitting to LOD_FULL_THRESHOLD instead means it opens legible.
         minZoom: LOD_FULL_THRESHOLD,
-        duration: 320,
+        duration: MOTION_MS.base,
       }).then((didFit) => {
         // A flat pixel pan, not more padding: it shifts every node right by
         // exactly the panel's footprint regardless of what zoom the fit above
@@ -328,7 +329,7 @@ function GraphCanvasInner({ workspaceId }: { workspaceId: string }) {
         // "pan to see more."
         if (!didFit || !legendOpen) return;
         const vp = getViewport();
-        setViewport({ ...vp, x: vp.x + LEGEND_RESERVED_PX }, { duration: 160 });
+        setViewport({ ...vp, x: vp.x + LEGEND_RESERVED_PX }, { duration: MOTION_MS.fast });
       });
     });
     return () => cancelAnimationFrame(id);

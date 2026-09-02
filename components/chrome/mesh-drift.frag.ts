@@ -248,14 +248,21 @@ export const MESH_DRIFT_DEFAULTS = {
   warp: 0.55,
   soften: 0,
   oklab: 1,
-  // Was 0.73 (the plan's own note, verbatim). Raised 2026-08-23: at 0.73 a
-  // viewer glancing at the hero for a few seconds could miss that the
-  // background was animated at all, especially after the sharpness pass
-  // (blob-center-fix commit) made blobs more distinct and slower-blending
-  // into each other. 1.15 keeps the same "calm" character -- still a slow
-  // drift, not a strobe -- while making the motion itself unmistakable
-  // within a normal glance.
-  timeScale: 1.15,
+  // 0.73 originally (the plan's own note, verbatim), raised to 1.15 on
+  // 2026-08-23 so a viewer glancing at the hero could not miss that the
+  // background was animated at all.
+  //
+  // Back down to 0.65 on 2026-09-03, and this deliberately reverses that
+  // call rather than drifting away from it by accident. Two things changed
+  // since: the ramp is now high-chroma neon (issue #335) rather than muted
+  // lavender, and saturated colour makes the same movement read as far more
+  // movement; and the whole motion vocabulary was retuned slow and soft, so
+  // a hero drifting faster than every transition on top of it was the one
+  // thing left fighting that.
+  //
+  // "Unmistakable within a glance" is no longer the goal for this surface.
+  // The shader is the room's lighting, not something to notice.
+  timeScale: 0.65,
   cursorPresence: 0,
 } as const;
 
