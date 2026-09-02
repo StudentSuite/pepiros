@@ -46,7 +46,10 @@ export function SynthesisNode({ data }: NodeProps<PepirosNode>) {
                 type="button"
                 title={p.label}
                 aria-label={`Open ${p.label}`}
-                className="nodrag nopan relative flex h-5 w-5 items-center justify-center rounded-full border border-surface-raised bg-surface-sunken font-mono text-[9px] text-ink-muted transition-colors before:absolute before:-inset-2 before:content-[''] hover:bg-accent-wash hover:text-accent-text focus-visible:z-10 focus-visible:outline-none focus-visible:shadow-glow-accent"
+                // Issue #353: was text-[9px], below the readable floor. p.label
+                // is always a 2-char paper id ("P1", "P2", ...), so 10px still
+                // fits this h-5 w-5 (20px) circle comfortably.
+                className="nodrag nopan relative flex h-5 w-5 items-center justify-center rounded-full border border-surface-raised bg-surface-sunken font-mono text-[10px] text-ink-muted transition-colors before:absolute before:-inset-2 before:content-[''] hover:bg-accent-wash hover:text-accent-text focus-visible:z-10 focus-visible:outline-none focus-visible:shadow-glow-accent"
                 onClick={(event) => {
                   event.stopPropagation();
                   selectNode(p.id);
