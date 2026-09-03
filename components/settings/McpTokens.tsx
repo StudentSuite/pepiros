@@ -84,7 +84,7 @@ export function McpTokens({ initial, readOnly = false }: { initial: McpTokenMeta
     <div className="flex flex-col gap-s-5">
       {revealed && (
         <div className="rounded-md border border-accent/40 bg-accent-wash p-s-4">
-          <p className="font-mono text-[11px] uppercase tracking-widest text-accent-text">
+          <p className="font-mono text-2xs uppercase tracking-widest text-accent-text">
             Copy this now
           </p>
           <p className="mt-s-2 font-sans text-xs text-ink-muted">
@@ -117,7 +117,7 @@ export function McpTokens({ initial, readOnly = false }: { initial: McpTokenMeta
               Copy
             </Button>
           </div>
-          <p className="mt-s-3 font-sans text-[11px] leading-relaxed text-ink-faint">
+          <p className="mt-s-3 font-sans text-2xs leading-relaxed text-ink-faint">
             Set this as <code className="text-ink">PEPIROS_MCP_TOKEN</code> in
             the environment of whatever runs <code className="text-ink">pepiros-mcp</code>
             /<code className="text-ink">npm run mcp:stdio</code>.
@@ -144,16 +144,16 @@ export function McpTokens({ initial, readOnly = false }: { initial: McpTokenMeta
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead className="font-mono text-[11px] uppercase tracking-widest">
+                <TableHead className="font-mono text-2xs uppercase tracking-widest">
                   Label
                 </TableHead>
-                <TableHead className="font-mono text-[11px] uppercase tracking-widest">
+                <TableHead className="font-mono text-2xs uppercase tracking-widest">
                   Scope
                 </TableHead>
-                <TableHead className="font-mono text-[11px] uppercase tracking-widest">
+                <TableHead className="font-mono text-2xs uppercase tracking-widest">
                   Created
                 </TableHead>
-                <TableHead className="font-mono text-[11px] uppercase tracking-widest">
+                <TableHead className="font-mono text-2xs uppercase tracking-widest">
                   Last used
                 </TableHead>
                 <TableHead className="w-14" />

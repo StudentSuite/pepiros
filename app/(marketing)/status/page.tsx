@@ -106,7 +106,7 @@ export default function StatusPage() {
       intro="A feature-by-feature breakdown of what's live, in progress, or planned, kept here so nobody has to find out by clicking."
       updated="24 August 2026"
     >
-      <div className="mb-s-5 flex flex-wrap gap-s-5 font-mono text-[13px] text-ink-faint">
+      <div className="mb-s-5 flex flex-wrap gap-s-5 font-mono text-sm text-ink-faint">
         {COUNTS.filter((c) => c.count > 0).map((c) => (
           <span key={c.state} className="flex items-center gap-s-2">
             <span className={`size-1.5 rounded-full ${DOT[c.state]}`} />
@@ -135,7 +135,7 @@ export default function StatusPage() {
                   <p className="mt-0.5 font-sans text-xs text-ink-faint">{r.note}</p>
                 </td>
                 <td className="whitespace-nowrap px-s-4 py-s-3 align-top">
-                  <span className="flex items-center gap-s-2 font-mono text-[11px] text-ink-muted">
+                  <span className="flex items-center gap-s-2 font-mono text-2xs text-ink-muted">
                     <span className={`size-1.5 rounded-full ${DOT[r.state]}`} />
                     {LABEL[r.state]}
                   </span>

@@ -156,7 +156,7 @@ export function GraphEdge({
             // Borrowed styling rather than the Tooltip/Popover primitives: both
             // anchor to a wrapping trigger element, and an SVG path has no
             // wrapper at its midpoint to anchor to.
-            className="pointer-events-none absolute rounded border border-border-strong bg-surface-sunken px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-ink-muted shadow-e-2"
+            className="pointer-events-none absolute rounded border border-border-strong bg-surface-sunken px-1.5 py-0.5 font-mono text-2xs uppercase tracking-wide text-ink-muted shadow-e-2"
             style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
           >
             {KIND_LABEL[edge.kind]}

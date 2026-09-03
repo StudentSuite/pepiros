@@ -22,7 +22,7 @@ function TreeItem({
   return (
     <li>
       <div className="flex items-center gap-2">
-        <span className="rounded border border-border px-1 py-0.5 font-mono text-[9px] uppercase text-ink-faint">
+        <span className="rounded border border-border px-1 py-0.5 font-mono text-2xs uppercase text-ink-faint">
           {node.type}
         </span>
         {node.pillarIndex !== null && (
@@ -109,7 +109,7 @@ export function OutlineClient({ workspaceId }: { workspaceId: string }) {
 
       {looseNodes.length > 0 && (
         <div className="mt-s-6 max-w-3xl border-t border-border pt-s-6">
-          <h2 className="mb-s-3 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+          <h2 className="mb-s-3 font-mono text-2xs uppercase tracking-widest text-ink-faint">
             Cross-paper nodes
           </h2>
           <ul className="flex flex-col gap-2">

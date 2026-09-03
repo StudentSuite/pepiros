@@ -30,7 +30,7 @@ function Chrome({
         <span className="size-2 rounded-full bg-pillar-5/50" />
         <span className="size-2 rounded-full bg-pillar-6/50" />
         <span className="size-2 rounded-full bg-pillar-3/50" />
-        <span className="ml-s-2 font-mono text-[10px] text-ink-faint">{label}</span>
+        <span className="ml-s-2 font-mono text-2xs text-ink-faint">{label}</span>
       </div>
       {children}
     </div>
@@ -65,7 +65,7 @@ export function ReaderMock({ className }: { className?: string }) {
             dark-on-light here even when the dark theme is active -- no
             hardcoded hex needed. */}
         <div className="surface-reading p-s-4">
-          <p className="font-mono text-[9px] uppercase tracking-widest text-ink/45">
+          <p className="font-mono text-2xs uppercase tracking-widest text-ink/45">
             Okafor &amp; Lindqvist, 2022 &middot; p.4
           </p>
           <div className="mt-s-3">
@@ -85,7 +85,7 @@ export function ReaderMock({ className }: { className?: string }) {
 
         {/* Claim pane */}
         <div className="bg-surface-raised p-s-4">
-          <p className="font-mono text-[9px] uppercase tracking-widest text-ink-faint">
+          <p className="font-mono text-2xs uppercase tracking-widest text-ink-faint">
             Key finding
           </p>
 
@@ -96,14 +96,14 @@ export function ReaderMock({ className }: { className?: string }) {
           </div>
 
           <div className="mt-s-4 flex items-center gap-s-2">
-            <span className="flex items-center gap-1 rounded-full border border-pillar-7/40 px-2 py-0.5 font-mono text-[9px] text-pillar-text-7">
+            <span className="flex items-center gap-1 rounded-full border border-pillar-7/40 px-2 py-0.5 font-mono text-2xs text-pillar-text-7">
               <span className="size-1 rounded-full bg-pillar-7" />
               quote located
             </span>
-            <span className="rounded border border-border px-1.5 py-0.5 font-mono text-[9px] text-ink-faint">
+            <span className="rounded border border-border px-1.5 py-0.5 font-mono text-2xs text-ink-faint">
               C7
             </span>
-            <span className="font-mono text-[9px] text-ink-faint">0.97</span>
+            <span className="font-mono text-2xs text-ink-faint">0.97</span>
           </div>
 
           <div className="mt-s-4 border-t border-border pt-s-3">
@@ -112,10 +112,10 @@ export function ReaderMock({ className }: { className?: string }) {
               <div className="h-1.5 w-[64%] rounded-full bg-ink/12" />
             </div>
             <div className="mt-s-3 flex items-center gap-s-2">
-              <span className="rounded-full border border-border px-2 py-0.5 font-mono text-[9px] text-ink-faint">
+              <span className="rounded-full border border-border px-2 py-0.5 font-mono text-2xs text-ink-faint">
                 inference
               </span>
-              <span className="font-mono text-[9px] text-ink-faint">no source excerpt</span>
+              <span className="font-mono text-2xs text-ink-faint">no source excerpt</span>
             </div>
           </div>
         </div>
@@ -137,7 +137,7 @@ export function GraphMock({ className }: { className?: string }) {
     <Chrome label="canvas" className={className}>
       <div className="relative bg-surface-sunken/60 p-s-5">
         <div className="mx-auto w-fit rounded-md border border-border bg-surface-raised px-s-3 py-s-2 text-center">
-          <p className="font-mono text-[9px] uppercase tracking-widest text-ink-faint">
+          <p className="font-mono text-2xs uppercase tracking-widest text-ink-faint">
             Paper
           </p>
           <div className="mx-auto mt-1 h-1 w-16 rounded-full bg-ink/25" />
@@ -166,7 +166,7 @@ export function GraphMock({ className }: { className?: string }) {
               key={p.label}
               className="rounded-md border border-border bg-surface-raised p-s-2"
             >
-              <span className="flex items-center gap-1 font-mono text-[9px] text-ink-muted">
+              <span className="flex items-center gap-1 font-mono text-2xs text-ink-muted">
                 <span className={cn("size-1.5 rounded-full", p.tone)} />
                 {p.label}
               </span>
@@ -188,7 +188,7 @@ export function AgentMock({ className }: { className?: string }) {
     <Chrome label="agent" className={className}>
       <div className="flex flex-col gap-s-3 p-s-4">
         <div className="max-w-[85%] rounded-lg rounded-tl-sm border border-border bg-surface p-s-3">
-          <p className="font-mono text-[9px] uppercase tracking-widest text-ink-faint">
+          <p className="font-mono text-2xs uppercase tracking-widest text-ink-faint">
             Agent
           </p>
           <p className="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted">
@@ -198,16 +198,16 @@ export function AgentMock({ className }: { className?: string }) {
         </div>
 
         <div className="flex items-center gap-s-2 self-center">
-          <span className="rounded border border-accent/40 bg-accent-wash px-2 py-0.5 font-mono text-[9px] text-accent-text">
+          <span className="rounded border border-accent/40 bg-accent-wash px-2 py-0.5 font-mono text-2xs text-accent-text">
             verify_claim
           </span>
-          <span className="font-mono text-[9px] text-ink-faint">
+          <span className="font-mono text-2xs text-ink-faint">
             checks it against C7
           </span>
         </div>
 
         <div className="max-w-[85%] self-end rounded-lg rounded-tr-sm border border-pillar-5/40 bg-pillar-5/10 p-s-3">
-          <span className="rounded-full border border-pillar-5/50 px-2 py-0.5 font-mono text-[9px] text-pillar-text-5">
+          <span className="rounded-full border border-pillar-5/50 px-2 py-0.5 font-mono text-2xs text-pillar-text-5">
             unsupported
           </span>
           <p className="mt-1.5 font-sans text-xs leading-relaxed text-ink-muted">

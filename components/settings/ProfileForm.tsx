@@ -92,7 +92,7 @@ export function ProfileForm({
             disabled={readOnly}
             className="resize-none"
           />
-          <p className="mt-1.5 text-right font-mono text-[11px] tabular-nums text-ink-faint">
+          <p className="mt-1.5 text-right font-mono text-2xs tabular-nums text-ink-faint">
             {bio.length} / {BIO_MAX}
           </p>
         </div>

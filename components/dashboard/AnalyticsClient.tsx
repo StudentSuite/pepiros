@@ -73,7 +73,7 @@ export function AnalyticsClient({
       {/* Row 2, right */}
       <Card>
         <CardHeader className="pb-s-2">
-          <CardTitle className="font-mono text-[11px] font-normal uppercase tracking-widest text-ink-faint">
+          <CardTitle className="font-mono text-2xs font-normal uppercase tracking-widest text-ink-faint">
             Recent comments
           </CardTitle>
         </CardHeader>
@@ -94,17 +94,17 @@ export function AnalyticsClient({
                   <div className={i > 0 ? "" : "pb-s-3"}>
                     <div className="flex items-center gap-s-2">
                       <Avatar className="size-6">
-                        <AvatarFallback className="bg-subtle font-mono text-[10px]">
+                        <AvatarFallback className="bg-subtle font-mono text-2xs">
                           {c.authorInitials}
                         </AvatarFallback>
                       </Avatar>
                       <span className="font-sans text-xs text-ink">{c.authorName}</span>
                       {c.claimRef && (
-                        <span className="font-mono text-[10px] text-ink-faint">
+                        <span className="font-mono text-2xs text-ink-faint">
                           on {c.claimRef}
                         </span>
                       )}
-                      <span className="ml-auto font-mono text-[10px] text-ink-faint">
+                      <span className="ml-auto font-mono text-2xs text-ink-faint">
                         {c.createdAt}
                       </span>
                     </div>

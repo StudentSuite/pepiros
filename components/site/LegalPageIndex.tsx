@@ -65,7 +65,7 @@ export function LegalPageIndex({ containerRef }: { containerRef: React.RefObject
             <a
               href={`#${item.id}`}
               className={clsx(
-                "block border-l-2 py-1 pl-s-3 font-sans text-[13px] leading-snug transition-colors duration-fast ease-out",
+                "block border-l-2 py-1 pl-s-3 font-sans text-sm leading-snug transition-colors duration-fast ease-out",
                 activeId === item.id
                   ? "border-accent text-ink"
                   : "border-transparent text-ink-muted hover:text-ink",

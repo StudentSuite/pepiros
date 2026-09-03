@@ -63,7 +63,7 @@ export default function LegalPage() {
         </ArticleBody>
 
         <pre className="mt-s-4 overflow-x-auto rounded-md border border-border bg-surface-sunken/60 p-s-4">
-          <code className="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-ink-muted">
+          <code className="whitespace-pre-wrap font-mono text-xs leading-relaxed text-ink-muted">
             {LICENSE_TEXT}
           </code>
         </pre>

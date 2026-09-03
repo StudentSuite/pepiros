@@ -257,7 +257,7 @@ export function SummaryAudit({ workspace }: { workspace: Workspace }) {
       {/* Paper side: the summary under audit, marked in place.             */}
       {/* ---------------------------------------------------------------- */}
       <section className="bg-paper px-s-5 py-s-5 lg:px-s-6">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+        <p className="font-mono text-2xs uppercase tracking-widest text-ink-faint">
           Reverse audit
         </p>
         <h2 className="mt-2 font-sans font-semibold text-3xl text-ink">AI summary under audit</h2>
@@ -280,7 +280,7 @@ export function SummaryAudit({ workspace }: { workspace: Workspace }) {
               placeholder="Paste the summary here."
               className={clsx(
                 "mt-s-4 w-full resize-y rounded-md border border-border bg-surface p-s-4",
-                "font-serif text-[15px] leading-relaxed text-ink placeholder:text-ink-faint",
+                "font-serif text-base leading-relaxed text-ink placeholder:text-ink-faint",
                 "focus-visible:border-accent focus-visible:outline-none",
               )}
             />
@@ -309,13 +309,13 @@ export function SummaryAudit({ workspace }: { workspace: Workspace }) {
               {result.sentences.map((s, i) => (
                 <p
                   key={`${i}-${s.sentence.slice(0, 24)}`}
-                  className="mb-s-4 font-serif text-[17px] leading-[1.7] text-ink"
+                  className="mb-s-4 font-serif text-base leading-[1.7] text-ink"
                 >
                   {/* The rail's row number, repeated here, is the whole
                       reason the two columns can be read together. */}
                   <span
                     aria-hidden
-                    className="mr-2 align-super font-mono text-[10px] text-ink-faint"
+                    className="mr-2 align-super font-mono text-2xs text-ink-faint"
                   >
                     {i + 1}
                   </span>
@@ -357,7 +357,7 @@ export function SummaryAudit({ workspace }: { workspace: Workspace }) {
       >
         <p
           className={clsx(
-            "border-b px-s-4 py-s-4 font-mono text-[10px] uppercase tracking-widest",
+            "border-b px-s-4 py-s-4 font-mono text-2xs uppercase tracking-widest",
             RAIL.edge,
             RAIL.faint,
           )}
@@ -387,7 +387,7 @@ export function SummaryAudit({ workspace }: { workspace: Workspace }) {
                       <div className="flex items-baseline justify-between gap-s-3">
                         <span
                           className={clsx(
-                            "font-mono text-[11px] uppercase tracking-widest",
+                            "font-mono text-2xs uppercase tracking-widest",
                             tier.text,
                           )}
                         >

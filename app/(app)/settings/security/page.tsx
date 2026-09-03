@@ -22,7 +22,7 @@ export default async function SecurityPage() {
       {/* Issue #142: same reasoning as settings/profile/page.tsx's header. */}
       <header className="pb-s-5">
         <h2 className="font-sans font-semibold text-lg text-ink">Security</h2>
-        <p className="mt-1 max-w-prose font-sans text-[13px] leading-relaxed text-ink-faint">
+        <p className="mt-1 max-w-prose font-sans text-sm leading-relaxed text-ink-faint">
           Your password and active sessions.
         </p>
       </header>

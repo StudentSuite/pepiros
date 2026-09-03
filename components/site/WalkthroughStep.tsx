@@ -42,7 +42,7 @@ export function WalkthroughStep({
           <div className="flex items-center gap-s-3">
             <span
               aria-hidden
-              className="grid size-7 shrink-0 place-items-center rounded-full border border-border font-mono text-[11px] text-ink-faint"
+              className="grid size-7 shrink-0 place-items-center rounded-full border border-border font-mono text-2xs text-ink-faint"
             >
               {index}
             </span>

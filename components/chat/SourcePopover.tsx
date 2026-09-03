@@ -39,7 +39,7 @@ export function SourcePopover({
         <IconButton icon={X} label="Close" onClick={onClose} className="h-6 w-6" />
       </div>
       {citation.quote ? (
-        <p className="font-serif text-[13px] italic leading-snug text-ink">
+        <p className="font-serif text-sm italic leading-snug text-ink">
           &ldquo;{citation.quote}&rdquo;
         </p>
       ) : (
@@ -49,7 +49,7 @@ export function SourcePopover({
         </p>
       )}
       {/* Issue #324: 10px was below the accessible text-size floor. */}
-      <p className="mt-2 font-mono text-[11px] text-ink-faint">
+      <p className="mt-2 font-mono text-2xs text-ink-faint">
         match {Math.round(citation.matchScore * 100)}%
       </p>
     </Popover>

@@ -38,8 +38,8 @@ export function GraphPreviewCard({ workspaceId, nodeCount }: { workspaceId: stri
   return (
     <Panel padded className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h3 className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">Citation graph</h3>
-        <span className="font-mono text-[10px] text-ink-faint">{nodeCount} nodes</span>
+        <h3 className="font-mono text-2xs uppercase tracking-widest text-ink-faint">Citation graph</h3>
+        <span className="font-mono text-2xs text-ink-faint">{nodeCount} nodes</span>
       </div>
 
       <ul className="flex flex-col gap-1">

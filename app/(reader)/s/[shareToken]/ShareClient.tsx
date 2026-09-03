@@ -119,7 +119,7 @@ export function ShareClient({ workspaceId }: { workspaceId: string }) {
       </div>
 
       <header className="border-b border-border px-s-5 py-s-4">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+        <p className="font-mono text-2xs uppercase tracking-widest text-ink-faint">
           {workspace.name}
         </p>
         <h1 className="font-sans font-bold text-xl text-ink">{activePaper.title}</h1>
@@ -129,7 +129,7 @@ export function ShareClient({ workspaceId }: { workspaceId: string }) {
         <aside className="flex flex-col gap-s-4">
           {workspace.papers.length > 1 && (
             <div className="flex flex-col gap-1">
-              <h2 className="px-1 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+              <h2 className="px-1 font-mono text-2xs uppercase tracking-widest text-ink-faint">
                 Papers &middot; {workspace.papers.length}
               </h2>
               <ul className="flex flex-col gap-0.5">

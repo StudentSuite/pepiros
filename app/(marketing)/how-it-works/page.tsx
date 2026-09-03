@@ -108,7 +108,7 @@ export default function HowItWorksPage() {
               </p>
 
               <div className="mt-s-4 border-t border-border pt-s-4">
-                <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+                <p className="font-mono text-2xs uppercase tracking-widest text-ink-faint">
                   Source excerpt
                 </p>
                 <p className="mt-s-2 font-serif text-sm leading-relaxed text-ink-muted">
@@ -137,7 +137,7 @@ export default function HowItWorksPage() {
                   style={{ left: `${WORKED_SCORE * 100}%` }}
                 />
               </div>
-              <div className="mt-s-2 flex justify-between font-mono text-[10px] text-ink-faint">
+              <div className="mt-s-2 flex justify-between font-mono text-2xs text-ink-faint">
                 <span>0.0 dropped</span>
                 <span>0.75 paraphrase</span>
                 <span>0.92 quote located</span>

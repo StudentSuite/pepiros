@@ -146,7 +146,7 @@ function LoginForm() {
 
         <div className="my-s-4 flex items-center gap-s-3">
           <span className="h-px flex-1 bg-border" />
-          <span className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+          <span className="font-mono text-2xs uppercase tracking-widest text-ink-faint">
             or
           </span>
           <span className="h-px flex-1 bg-border" />
@@ -192,7 +192,7 @@ function LoginForm() {
             "Forgot password?" directly above -- issue #132, two small tap
             targets sat close together on a form-heavy mobile flow. */}
         <div className="mt-s-5 rounded-md border border-dashed border-border p-s-3">
-          <p className="font-mono text-[11px] uppercase tracking-widest text-ink-faint">
+          <p className="font-mono text-2xs uppercase tracking-widest text-ink-faint">
             Just looking?
           </p>
           <p className="mt-s-2 font-sans text-xs leading-relaxed text-ink-muted">

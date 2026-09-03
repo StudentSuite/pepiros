@@ -264,7 +264,7 @@ function MegaTrigger({
                         <span className="block font-sans text-sm font-medium text-ink">
                           {entry.label}
                         </span>
-                        <span className="mt-[2px] block font-sans text-[13px] leading-snug text-ink-muted">
+                        <span className="mt-[2px] block font-sans text-sm leading-snug text-ink-muted">
                           {entry.description}
                         </span>
                       </Link>

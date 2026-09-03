@@ -33,7 +33,7 @@ export function TokenValue({ token }: { token: string }) {
   return (
     // Non-breaking space before hydration so the row does not change height
     // when the real value lands.
-    <span className="font-mono text-[10px] text-ink-faint" suppressHydrationWarning>
+    <span className="font-mono text-2xs text-ink-faint" suppressHydrationWarning>
       {value || "\u00a0"}
     </span>
   );

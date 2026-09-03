@@ -58,7 +58,7 @@ export function ClaimsList({
             aria-checked={order === opt.value}
             onClick={() => setOrder(opt.value)}
             className={clsx(
-              "flex-1 rounded-full px-2 py-1 font-sans text-[11px] transition-colors duration-fast ease-out",
+              "flex-1 rounded-full px-2 py-1 font-sans text-2xs transition-colors duration-fast ease-out",
               order === opt.value
                 ? "bg-surface-raised text-ink shadow-e-1"
                 : "text-ink-faint hover:text-ink",
@@ -92,18 +92,18 @@ export function ClaimsList({
                     aria-hidden
                   />
                 )}
-                <span className="font-sans text-[13px] font-medium leading-snug text-ink">
+                <span className="font-sans text-sm font-medium leading-snug text-ink">
                   {node.title}
                 </span>
               </div>
-              <p className="mt-1 line-clamp-2 font-serif text-[13px] leading-snug text-ink-muted">
+              <p className="mt-1 line-clamp-2 font-serif text-sm leading-snug text-ink-muted">
                 {stripRefMarkers(node.bodyMd)}
               </p>
               {/* Issue #324: 10px is below the accessible text-size floor
                   for page-number/match-score labels; 11px is the floor
                   used everywhere else in this same meta-row pattern
                   (e.g. GroundedArticle.tsx's figcaption). */}
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px]">
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-2xs">
                 {weakestTier ? (
                   <>
                     <EvidenceBadge tier={weakestTier} />

@@ -187,7 +187,7 @@ export default function MarketingPage() {
             {/* Real, working command -- same one /mcp's own install section
                 gives, not a shortened or paraphrased version. */}
             <pre className="mt-s-5 overflow-x-auto rounded-md border border-border bg-surface-sunken/60 px-s-4 py-s-3">
-              <code className="font-mono text-[13px] text-ink">npx -y pepiros-mcp</code>
+              <code className="font-mono text-sm text-ink">npx -y pepiros-mcp</code>
             </pre>
             <p className="mt-s-2 font-sans text-xs text-ink-faint">
               Published on npm. Points Claude, Codex, or Cursor at Pepiros directly, no clone required.

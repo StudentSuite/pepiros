@@ -31,7 +31,7 @@ export function StatCard({
   return (
     <Card className={className}>
       <CardContent className="p-s-4">
-        <p className="font-mono text-[11px] uppercase tracking-widest text-ink-faint">
+        <p className="font-mono text-2xs uppercase tracking-widest text-ink-faint">
           {label}
         </p>
         <div className="mt-s-2 flex items-baseline gap-s-2">
@@ -39,7 +39,7 @@ export function StatCard({
           {dir && (
             <span
               className={cn(
-                "flex items-center gap-0.5 font-mono text-[11px]",
+                "flex items-center gap-0.5 font-mono text-2xs",
                 dir === "up" && "text-pillar-text-7",
                 dir === "down" && "text-pillar-text-5",
                 dir === "flat" && "text-ink-faint",

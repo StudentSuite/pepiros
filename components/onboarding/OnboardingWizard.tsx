@@ -294,7 +294,7 @@ export function OnboardingWizard({
                 );
               })}
             </div>
-            <p className="mt-s-3 font-mono text-[11px] text-ink-faint">
+            <p className="mt-s-3 font-mono text-2xs text-ink-faint">
               {draft.fields.length} of {MAX_FIELDS} selected
             </p>
           </Step>
@@ -361,7 +361,7 @@ export function OnboardingWizard({
               placeholder="It said the trial found an effect. It didn't."
               className={cn(
                 "w-full resize-y rounded-md border border-border bg-surface p-s-3",
-                "font-serif text-[15px] leading-relaxed text-ink placeholder:text-ink-faint",
+                "font-serif text-base leading-relaxed text-ink placeholder:text-ink-faint",
                 "focus-visible:border-accent focus-visible:outline-none",
               )}
             />
@@ -491,7 +491,7 @@ export function OnboardingWizard({
 
       <div className="mt-s-5 flex items-center gap-s-3">
         <Progress value={(step / STEP_COUNT) * 100} className="h-1.5" />
-        <span className="shrink-0 font-mono text-[11px] text-ink-faint">
+        <span className="shrink-0 font-mono text-2xs text-ink-faint">
           {step} / {STEP_COUNT}
         </span>
       </div>

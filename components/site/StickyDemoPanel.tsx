@@ -118,10 +118,10 @@ export function StickyDemoPanel() {
           </div>
           {active.quote ? (
             <div className="mt-s-4 rounded-lg border border-border bg-paper-muted p-s-4">
-              <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+              <p className="font-mono text-2xs uppercase tracking-widest text-ink-faint">
                 Source excerpt
               </p>
-              <p className="mt-s-2 rounded-sm bg-located/25 px-0.5 font-serif text-[15px] leading-relaxed text-ink transition-colors duration-slow ease-out">
+              <p className="mt-s-2 rounded-sm bg-located/25 px-0.5 font-serif text-base leading-relaxed text-ink transition-colors duration-slow ease-out">
                 {active.quote}
               </p>
               {active.showTier && (
@@ -132,7 +132,7 @@ export function StickyDemoPanel() {
             </div>
           ) : (
             <div className="mt-s-4 rounded-lg border border-dashed border-unsupported/40 bg-unsupported/10 p-s-4">
-              <p className="font-sans text-[13px] leading-relaxed text-ink-muted">
+              <p className="font-sans text-sm leading-relaxed text-ink-muted">
                 No source sentence cleared the verifier&rsquo;s floor. The citation is stripped, not
                 shown pointing at a weak match.
               </p>

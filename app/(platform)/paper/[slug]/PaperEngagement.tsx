@@ -59,7 +59,7 @@ export function PaperEngagement({ initialScore, real }: PaperEngagementProps) {
         aria-label={liked ? "Remove like" : "Like this paper"}
         className={cn(
           "flex items-center gap-1.5 rounded-full border px-s-3 py-1.5",
-          "font-mono text-[11px] tabular-nums transition-colors duration-fast ease-out disabled:opacity-60",
+          "font-mono text-2xs tabular-nums transition-colors duration-fast ease-out disabled:opacity-60",
           liked
             ? "border-pillar-5/50 bg-pillar-5/10 text-pillar-text-5"
             : "border-border text-ink-faint hover:border-border-strong hover:text-ink",
@@ -68,7 +68,7 @@ export function PaperEngagement({ initialScore, real }: PaperEngagementProps) {
         <Heart className={cn("size-3.5", liked && "fill-current")} strokeWidth={1.5} />
         {count.toLocaleString()}
       </button>
-      {error && <span className="font-sans text-[11px] text-unsupported">{error}</span>}
+      {error && <span className="font-sans text-2xs text-unsupported">{error}</span>}
     </div>
   );
 }

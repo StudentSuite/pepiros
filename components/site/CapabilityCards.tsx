@@ -57,7 +57,7 @@ export function CapabilityCards({ mcpToolsLive }: { mcpToolsLive: number }) {
       {cards.map((card) => (
         <div key={card.title} className="py-s-4 first:pt-0 sm:px-s-5 sm:py-0 sm:first:pl-0 sm:last:pr-0">
           <h3 className="font-sans font-semibold text-base text-ink">{card.title}</h3>
-          <p className="mt-1 font-sans text-[13px] leading-relaxed text-ink-muted">{card.body}</p>
+          <p className="mt-1 font-sans text-sm leading-relaxed text-ink-muted">{card.body}</p>
           {card.stat && (
             <div className="mt-s-4 border-t border-border pt-s-3">
               <span className="font-mono text-lg text-ink">{card.stat}</span>

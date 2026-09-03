@@ -31,7 +31,7 @@ function EvidenceLine({ evidence, chunks }: { evidence: Evidence; chunks: Chunk[
   if (!evidence.anchor) {
     return (
       <div className="mt-s-3 border-l-2 border-border pl-s-4">
-        <p className="font-sans text-[13px] leading-relaxed text-ink-faint">
+        <p className="font-sans text-sm leading-relaxed text-ink-faint">
           The verifier could not locate a sentence supporting this claim, so its
           citation was stripped rather than left dangling.
         </p>
@@ -41,14 +41,14 @@ function EvidenceLine({ evidence, chunks }: { evidence: Evidence; chunks: Chunk[
 
   return (
     <figure className="mt-s-3 border-l-2 border-border-strong pl-s-4">
-      {/* One step down from the claim's own text-[15px] and on text-ink-muted
+      {/* One step down from the claim's own text-base and on text-ink-muted
           rather than text-ink -- subordinate to the claim, per issue #300,
           not the same visual weight as the thing it's supporting. Still
           never hidden: full quote, not truncated. */}
-      <blockquote className="font-serif text-[14px] italic leading-relaxed text-ink-muted">
+      <blockquote className="font-serif text-sm italic leading-relaxed text-ink-muted">
         &ldquo;{evidence.anchor.quote}&rdquo;
       </blockquote>
-      <figcaption className="mt-s-2 flex flex-wrap items-center gap-2 font-mono text-[11px] text-ink-faint">
+      <figcaption className="mt-s-2 flex flex-wrap items-center gap-2 font-mono text-2xs text-ink-faint">
         <RefChip refId={evidence.refId} />
         {chunk && <span>p.{chunk.page}</span>}
         {/* The score is the real token_set_ratio the matcher produced, not a
@@ -85,7 +85,7 @@ function Claim({
           below, so the claim reads as prose and its sources sit beside it
           rather than mid-sentence. font-serif: this is reading prose, not
           UI chrome (issue #300's font-role rule, same as ArticleBody). */}
-      <p className="mt-s-2 font-serif text-[15px] leading-relaxed text-ink-muted">
+      <p className="mt-s-2 font-serif text-base leading-relaxed text-ink-muted">
         {stripRefMarkers(node.bodyMd)}
       </p>
 
@@ -144,7 +144,7 @@ export function GroundedArticle({ workspace }: { workspace: Workspace }) {
         <section key={pillar.id} className="mt-s-7">
           <h2 className="font-sans font-semibold text-[1.45rem] leading-snug text-ink">{pillar.title}</h2>
           {pillar.bodyMd.trim() !== "" && (
-            <p className="mt-s-2 font-serif text-[15px] leading-relaxed text-ink-faint">
+            <p className="mt-s-2 font-serif text-base leading-relaxed text-ink-faint">
               {stripRefMarkers(pillar.bodyMd)}
             </p>
           )}

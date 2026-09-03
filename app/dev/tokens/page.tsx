@@ -133,7 +133,7 @@ function SwatchGrid({ title, note, swatches }: { title: string; note?: string; s
                 s.className,
               )}
             >
-              <span className={clsx("font-mono text-[10px]", s.textClassName ?? "text-ink")}>
+              <span className={clsx("font-mono text-2xs", s.textClassName ?? "text-ink")}>
                 {s.name}
               </span>
             </div>
@@ -363,7 +363,7 @@ export default function DesignTokensPage() {
             className="flex h-16 w-36 items-end rounded-md border border-border p-1.5"
             style={{ background: "var(--logo-quote-bar)" }}
           >
-            <span className="font-mono text-[10px] text-brand-ink-reversed">logo-quote-bar</span>
+            <span className="font-mono text-2xs text-brand-ink-reversed">logo-quote-bar</span>
           </div>
           <TokenValue token="--logo-quote-bar" />
         </div>
@@ -488,7 +488,7 @@ export default function DesignTokensPage() {
         <h2 className="kicker">Material</h2>
         <div className="grid gap-s-3 sm:grid-cols-3">
           <div className="paper-grain relative h-32 overflow-hidden rounded-lg bg-surface-raised">
-            <span className="absolute bottom-2 left-3 font-mono text-[11px] text-ink">grain</span>
+            <span className="absolute bottom-2 left-3 font-mono text-2xs text-ink">grain</span>
           </div>
           <div
             className="relative h-32 overflow-hidden rounded-lg"
@@ -498,7 +498,7 @@ export default function DesignTokensPage() {
             }}
           >
             <div className="glass absolute inset-0" />
-            <span className="absolute bottom-2 left-3 font-mono text-[11px] text-brand-ink-reversed">
+            <span className="absolute bottom-2 left-3 font-mono text-2xs text-brand-ink-reversed">
               glass
             </span>
           </div>
@@ -509,7 +509,7 @@ export default function DesignTokensPage() {
                 "conic-gradient(from 120deg, var(--disp-violet), var(--disp-green), var(--disp-amber), var(--disp-violet))",
             }}
           >
-            <span className="absolute bottom-2 left-3 font-mono text-[11px] text-brand-ink-reversed">
+            <span className="absolute bottom-2 left-3 font-mono text-2xs text-brand-ink-reversed">
               iridescence
             </span>
           </div>
@@ -522,7 +522,7 @@ export default function DesignTokensPage() {
           {SPACING.map((s) => (
             <div key={s.name} className="flex flex-col items-center gap-1">
               <div className={clsx("h-4 bg-accent", s.className)} />
-              <span className="font-mono text-[10px] text-ink-faint">{s.name}</span>
+              <span className="font-mono text-2xs text-ink-faint">{s.name}</span>
             </div>
           ))}
         </div>
@@ -534,7 +534,7 @@ export default function DesignTokensPage() {
           {RADII.map((r) => (
             <div key={r.name} className="flex flex-col items-center gap-1">
               <div className={clsx("h-12 w-12 bg-pillar-2", r.className)} />
-              <span className="font-mono text-[10px] text-ink-faint">{r.name}</span>
+              <span className="font-mono text-2xs text-ink-faint">{r.name}</span>
             </div>
           ))}
         </div>
@@ -546,7 +546,7 @@ export default function DesignTokensPage() {
           {SHADOWS.map((sh) => (
             <div key={sh.name} className="flex flex-col items-center gap-2">
               <div className={clsx("h-14 w-20 rounded-md bg-surface-raised", sh.className)} />
-              <span className="font-mono text-[10px] text-ink-faint">{sh.name}</span>
+              <span className="font-mono text-2xs text-ink-faint">{sh.name}</span>
             </div>
           ))}
         </div>
@@ -557,7 +557,7 @@ export default function DesignTokensPage() {
         <div className="flex flex-col gap-2 rounded-md border border-border bg-surface-raised p-s-4">
           {DURATIONS.map((d) => (
             <div key={d.name} className="flex items-center gap-3">
-              <span className="w-16 font-mono text-[10px] text-ink-faint">{d.name}</span>
+              <span className="w-16 font-mono text-2xs text-ink-faint">{d.name}</span>
               <TokenValue token={d.token} />
             </div>
           ))}
@@ -569,7 +569,7 @@ export default function DesignTokensPage() {
         <div className="flex flex-col gap-2 rounded-md border border-border bg-surface-raised p-s-4">
           {LAYOUT_DIMS.map((d) => (
             <div key={d.name} className="flex items-center gap-3">
-              <span className="w-32 font-mono text-[10px] text-ink-faint">{d.name}</span>
+              <span className="w-32 font-mono text-2xs text-ink-faint">{d.name}</span>
               <TokenValue token={d.token} />
             </div>
           ))}

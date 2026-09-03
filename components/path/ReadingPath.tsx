@@ -57,7 +57,7 @@ export function ReadingPath() {
     <div className="rounded border border-border bg-surface-raised p-3">
       <div className="mb-2 flex items-start justify-between gap-2">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+          <p className="font-mono text-2xs uppercase tracking-widest text-ink-faint">
             Reading path
           </p>
           <p className="font-sans text-sm text-ink">{thread.title}</p>
@@ -120,7 +120,7 @@ export function ReadingPath() {
         </button>
       </div>
 
-      <p className="mt-1.5 font-mono text-[10px] text-ink-faint">
+      <p className="mt-1.5 font-mono text-2xs text-ink-faint">
         {position + 1} of {steps.length}
       </p>
     </div>

@@ -193,7 +193,7 @@ function SignupForm() {
           instead.
         </p>
 
-        <p className="mt-s-3 font-sans text-[13px] text-ink-faint">
+        <p className="mt-s-3 font-sans text-sm text-ink-faint">
           Already have an account?{" "}
           <Link href={loginHref} className="text-accent-text underline underline-offset-2">
             Sign in

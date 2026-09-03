@@ -221,12 +221,12 @@ export function SiteSearch({ className }: { className?: string }) {
                                 {hit.title}
                               </span>
                               {hit.meta && (
-                                <span className="shrink-0 font-mono text-[11px] text-ink-faint">
+                                <span className="shrink-0 font-mono text-2xs text-ink-faint">
                                   {hit.meta}
                                 </span>
                               )}
                             </div>
-                            <p className="truncate font-sans text-[13px] text-ink-muted">
+                            <p className="truncate font-sans text-sm text-ink-muted">
                               {hit.subtitle}
                             </p>
                           </li>

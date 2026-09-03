@@ -30,10 +30,10 @@ export function ThreadNode({ data }: NodeProps<PepirosNode>) {
       aria-label={node.title}
     >
       <Handle type="target" position={Position.Top} className="!bg-ink-faint" />
-      <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+      <div className="flex items-center gap-1.5 font-mono text-2xs uppercase tracking-widest text-ink-faint">
         <span aria-hidden="true">↝</span> reading path
         {spannedPapers && spannedPapers.length > 0 && (
-          <span className="ml-auto flex items-center gap-1 font-mono text-[9px] normal-case tracking-normal text-ink-faint">
+          <span className="ml-auto flex items-center gap-1 font-mono text-2xs normal-case tracking-normal text-ink-faint">
             {spannedPapers.map((p, i) => (
               <span key={p.id} className="flex items-center gap-1">
                 {i > 0 && <span aria-hidden="true">·</span>}
@@ -55,7 +55,7 @@ export function ThreadNode({ data }: NodeProps<PepirosNode>) {
         )}
       </div>
       <div data-lod="title" className="mt-1 font-sans text-sm font-medium leading-snug text-ink">{node.title}</div>
-      <p data-lod="body" className="mt-1 font-serif text-[13px] leading-snug text-ink-muted">{stripRefMarkers(node.bodyMd)}</p>
+      <p data-lod="body" className="mt-1 font-serif text-sm leading-snug text-ink-muted">{stripRefMarkers(node.bodyMd)}</p>
       <InlineRefs bodyMd={node.bodyMd} evidence={evidence} className="mt-1.5 flex flex-wrap gap-1" />
       <Handle type="source" position={Position.Bottom} className="!bg-ink-faint" />
     </div>

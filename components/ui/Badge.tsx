@@ -30,7 +30,7 @@ export function Badge({
         "inline-flex items-center font-sans text-xs",
         variant === "pill"
           ? "gap-1.5 rounded-full border border-border px-2 py-0.5"
-          : "rounded border border-border-strong bg-surface-sunken px-1.5 py-0.5 font-mono text-[11px] text-ink-muted",
+          : "rounded border border-border-strong bg-surface-sunken px-1.5 py-0.5 font-mono text-2xs text-ink-muted",
         className,
       )}
     >

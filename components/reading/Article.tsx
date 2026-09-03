@@ -82,7 +82,7 @@ export function ArticleHeader({
       {kicker && (
         <p
           className={cn(
-            "mb-s-3 font-mono text-[11px] uppercase tracking-[0.14em]",
+            "mb-s-3 font-mono text-2xs uppercase tracking-[0.14em]",
             banded ? "text-brand-ink-reversed/60" : "text-ink-faint",
           )}
         >
@@ -139,7 +139,7 @@ export function Byline({
   return (
     <div className="flex items-center gap-s-3 border-y border-border py-s-4">
       <Avatar className="size-9 shrink-0">
-        <AvatarFallback className="bg-subtle font-mono text-[11px] text-ink-muted">
+        <AvatarFallback className="bg-subtle font-mono text-2xs text-ink-muted">
           {initials}
         </AvatarFallback>
       </Avatar>
@@ -154,7 +154,7 @@ export function Byline({
         ) : (
           <p className="truncate font-sans text-sm font-medium text-ink">{name}</p>
         )}
-        <p className="truncate font-sans text-[13px] text-ink-faint">{meta}</p>
+        <p className="truncate font-sans text-sm text-ink-faint">{meta}</p>
       </div>
       {action && <div className="shrink-0">{action}</div>}
     </div>
@@ -240,11 +240,11 @@ export function FeedItem({
             </Link>
           </h2>
           {dek && (
-            <p className="mt-s-2 line-clamp-2 font-sans text-[15px] leading-relaxed text-ink-muted">
+            <p className="mt-s-2 line-clamp-2 font-sans text-base leading-relaxed text-ink-muted">
               {dek}
             </p>
           )}
-          <div className="mt-s-3 flex flex-wrap items-center gap-x-s-3 gap-y-1 font-sans text-[13px] text-ink-faint">
+          <div className="mt-s-3 flex flex-wrap items-center gap-x-s-3 gap-y-1 font-sans text-sm text-ink-faint">
             {meta}
           </div>
         </div>

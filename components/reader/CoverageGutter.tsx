@@ -49,7 +49,7 @@ export function CoverageGutter({
           title={`Page ${page}${strongestTier ? ` -- strongest evidence: ${strongestTier.replace("_", " ")}` : " -- no grounded evidence"}`}
           aria-current={page === activePage ? "true" : undefined}
           className={clsx(
-            "flex h-4 w-6 shrink-0 items-center justify-center rounded-[3px] border-2 font-mono text-[8px] transition-colors duration-fast ease-out",
+            "flex h-4 w-6 shrink-0 items-center justify-center rounded-[3px] border-2 font-mono text-2xs transition-colors duration-fast ease-out",
             strongestTier && TIER_CLASS[strongestTier]
               ? TIER_CLASS[strongestTier]
               : "border-dashed border-border bg-surface-sunken text-ink-faint",

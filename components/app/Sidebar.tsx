@@ -78,7 +78,7 @@ export function Sidebar({
 
       <SidebarContent className="gap-6 px-4">
         <section className="flex flex-col gap-1">
-          <h2 className="px-1 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+          <h2 className="px-1 font-mono text-2xs uppercase tracking-widest text-ink-faint">
             {/* Issue #144: was always papers.length (the unfiltered total)
                 even though the list below renders filteredPapers -- typing
                 a query that matched 2 of 12 still showed "Library · 12"
@@ -114,7 +114,7 @@ export function Sidebar({
 
         {pillars.length > 0 && (
           <section className="flex flex-col gap-1.5">
-            <h2 className="px-1 font-mono text-[10px] uppercase tracking-widest text-ink-faint">Pillars</h2>
+            <h2 className="px-1 font-mono text-2xs uppercase tracking-widest text-ink-faint">Pillars</h2>
             <div className="flex flex-wrap gap-1.5 px-1">
               {pillars.map((pillar) => (
                 <PillarChip key={pillar.id} pillarIndex={pillar.pillarIndex} label={pillar.title} />
@@ -134,7 +134,7 @@ export function Sidebar({
             ReadingPath footer around, which is what read as the Reading
             Path panel overlapping the last visible NODES entries. */}
         <section className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
-          <h2 className="px-1 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+          <h2 className="px-1 font-mono text-2xs uppercase tracking-widest text-ink-faint">
             Nodes &middot;{" "}
             {filteredNodes.length === leafNodes.length
               ? leafNodes.length

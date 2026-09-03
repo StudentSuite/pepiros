@@ -99,7 +99,7 @@ export default async function HomePage() {
                       <span className="line-clamp-2 font-sans text-sm text-ink">
                         {post.title}
                       </span>
-                      <span className="mt-[2px] block font-mono text-[11px] text-ink-faint">
+                      <span className="mt-[2px] block font-mono text-2xs text-ink-faint">
                         {post.field} · {post.publishedAt}
                       </span>
                     </Link>
@@ -171,14 +171,14 @@ export default async function HomePage() {
                     <span className="min-w-0 flex-1">
                       <span className="block font-sans text-sm text-ink">{event.title}</span>
                       {event.detail && (
-                        <span className="mt-[2px] block truncate font-sans text-[13px] text-ink-muted">
+                        <span className="mt-[2px] block truncate font-sans text-sm text-ink-muted">
                           {event.detail}
                         </span>
                       )}
                     </span>
                     <time
                       dateTime={event.date}
-                      className="shrink-0 font-mono text-[11px] text-ink-faint"
+                      className="shrink-0 font-mono text-2xs text-ink-faint"
                     >
                       {event.date}
                     </time>
@@ -208,7 +208,7 @@ export default async function HomePage() {
 
             {/* Reads the same CHANGELOG the public /changelog page renders, so
                 the two cannot disagree about what shipped. */}
-            <p className="mt-s-3 font-mono text-[11px] text-ink-faint">{latest.date}</p>
+            <p className="mt-s-3 font-mono text-2xs text-ink-faint">{latest.date}</p>
             <h3 className="mt-s-1 font-sans text-sm font-semibold leading-snug text-ink">
               {latest.title}
             </h3>
@@ -216,7 +216,7 @@ export default async function HomePage() {
               {latest.items.slice(0, 4).map((item, i) => (
                 <li
                   key={i}
-                  className="border-l-2 border-border pl-s-3 font-sans text-[13px] leading-snug text-ink-muted"
+                  className="border-l-2 border-border pl-s-3 font-sans text-sm leading-snug text-ink-muted"
                 >
                   {item}
                 </li>

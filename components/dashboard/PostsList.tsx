@@ -138,7 +138,7 @@ export function PostsList({
               )}
             >
               {t.label}
-              <span className="ml-1.5 font-mono text-[10px] text-ink-faint">
+              <span className="ml-1.5 font-mono text-2xs text-ink-faint">
                 {counts[t.value] ?? 0}
               </span>
             </button>
@@ -160,7 +160,7 @@ export function PostsList({
       {/* Bulk bar appears only with a selection, so the resting state is calm. */}
       {selected.size > 0 && (
         <div className="flex items-center gap-s-3 border-b border-border py-s-3">
-          <span className="font-sans text-[13px] text-ink-muted">
+          <span className="font-sans text-sm text-ink-muted">
             {selected.size} selected
           </span>
           <Button
@@ -213,13 +213,13 @@ export function PostsList({
 
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-s-2">
-                    <span className="font-mono text-[10px] uppercase tracking-wider text-ink-faint">
+                    <span className="font-mono text-2xs uppercase tracking-wider text-ink-faint">
                       {post.field}
                     </span>
                     {post.status !== "published" && (
                       <span
                         className={cn(
-                          "font-mono text-[10px] uppercase tracking-wider",
+                          "font-mono text-2xs uppercase tracking-wider",
                           post.status === "draft"
                             ? "text-pillar-text-2"
                             : "text-ink-faint",
@@ -243,13 +243,13 @@ export function PostsList({
                     })()}
                   </h3>
 
-                  <p className="mt-1 truncate font-sans text-[13px] text-ink-faint">
+                  <p className="mt-1 truncate font-sans text-sm text-ink-faint">
                     {post.authors[0]}
                     {post.authors.length > 1 ? " et al." : ""} · {post.venue} ·{" "}
                     {post.year}
                   </p>
 
-                  <div className="mt-s-2 flex flex-wrap items-center gap-x-s-3 gap-y-1 font-sans text-[13px] text-ink-faint">
+                  <div className="mt-s-2 flex flex-wrap items-center gap-x-s-3 gap-y-1 font-sans text-sm text-ink-faint">
                     {/* Issue #282: both are verifier outputs, so both are
                         omitted rather than invented when there is no
                         measurement behind them. */}

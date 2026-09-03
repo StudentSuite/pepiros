@@ -133,14 +133,14 @@ export default async function PaperPage({
               asserted. Fabricated discussion presented as discussion
               undercuts that on the surface where it's most visible. */}
           {!post && (
-            <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+            <p className="font-mono text-2xs uppercase tracking-widest text-ink-faint">
               Sample author &amp; engagement, to show the format
             </p>
           )}
 
           {/* Source line. Kept immediately under the byline because the whole
               proposition is that the original is one click away. */}
-          <p className="mt-s-1 font-sans text-[13px] leading-relaxed text-ink-faint">
+          <p className="mt-s-1 font-sans text-sm leading-relaxed text-ink-faint">
             {byline} &middot; <span className="italic">{paper.venue}</span> &middot;{" "}
             {paper.year}
             {" · "}
@@ -183,7 +183,7 @@ export default async function PaperPage({
               </Link>
             </div>
           ) : (
-            <p className="mt-s-4 rounded-md border border-dashed border-border px-s-4 py-s-3 font-sans text-[13px] leading-relaxed text-ink-faint">
+            <p className="mt-s-4 rounded-md border border-dashed border-border px-s-4 py-s-3 font-sans text-sm leading-relaxed text-ink-faint">
               This paper isn&rsquo;t indexed for reading in Pepiros yet -- read the
               original at the source link above.
             </p>
@@ -199,7 +199,7 @@ export default async function PaperPage({
             <GroundedArticle workspace={workspace} />
 
             {grounding?.coverage !== null && grounding !== null && (
-              <p className="mt-s-6 rounded-md border border-dashed border-border px-s-4 py-s-3 font-mono text-[11px] leading-relaxed text-ink-faint">
+              <p className="mt-s-6 rounded-md border border-dashed border-border px-s-4 py-s-3 font-mono text-2xs leading-relaxed text-ink-faint">
                 {/* The denominators, not just the percentage: "93% grounded"
                     with nothing behind it is the kind of number this whole
                     milestone was about removing. */}
@@ -243,34 +243,34 @@ export default async function PaperPage({
 
               <dl className="mt-s-5 grid gap-s-3 sm:grid-cols-2">
                 <div>
-                  <dt className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+                  <dt className="font-mono text-2xs uppercase tracking-widest text-ink-faint">
                     Authors
                   </dt>
-                  <dd className="mt-1 font-sans text-[15px] leading-relaxed text-ink">
+                  <dd className="mt-1 font-sans text-base leading-relaxed text-ink">
                     {paper.authors.join(", ")}
                   </dd>
                 </div>
                 <div>
-                  <dt className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+                  <dt className="font-mono text-2xs uppercase tracking-widest text-ink-faint">
                     Published in
                   </dt>
-                  <dd className="mt-1 font-sans text-[15px] leading-relaxed text-ink">
+                  <dd className="mt-1 font-sans text-base leading-relaxed text-ink">
                     {paper.venue}, {paper.year}
                   </dd>
                 </div>
                 <div>
-                  <dt className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+                  <dt className="font-mono text-2xs uppercase tracking-widest text-ink-faint">
                     Field
                   </dt>
-                  <dd className="mt-1 font-sans text-[15px] leading-relaxed text-ink">
+                  <dd className="mt-1 font-sans text-base leading-relaxed text-ink">
                     {paper.field}
                   </dd>
                 </div>
                 <div>
-                  <dt className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+                  <dt className="font-mono text-2xs uppercase tracking-widest text-ink-faint">
                     Access
                   </dt>
-                  <dd className="mt-1 font-sans text-[15px] leading-relaxed text-ink">
+                  <dd className="mt-1 font-sans text-base leading-relaxed text-ink">
                     {licenceLabel(paper.licence)}
                   </dd>
                 </div>
@@ -288,13 +288,13 @@ export default async function PaperPage({
             <h2 className="font-sans font-semibold text-[1.45rem] leading-snug text-ink">
               Discussion
             </h2>
-            <span className="font-mono text-[11px] text-ink-faint">
+            <span className="font-mono text-2xs text-ink-faint">
               {comments.length}
             </span>
           </div>
 
           {!post && (
-            <p className="mt-s-2 font-sans text-[13px] italic text-ink-faint">
+            <p className="mt-s-2 font-sans text-sm italic text-ink-faint">
               Sample discussion, to show the format.
             </p>
           )}
@@ -308,7 +308,7 @@ export default async function PaperPage({
                 <div className={i > 0 ? "" : "pb-s-5"}>
                   <div className="flex items-center gap-s-3">
                     <Avatar className="size-7">
-                      <AvatarFallback className="bg-subtle font-mono text-[10px] text-ink-muted">
+                      <AvatarFallback className="bg-subtle font-mono text-2xs text-ink-muted">
                         {c.authorInitials}
                       </AvatarFallback>
                     </Avatar>
@@ -319,16 +319,16 @@ export default async function PaperPage({
                       {c.authorName}
                     </Link>
                     {c.claimRef && (
-                      <span className="rounded border border-border px-1.5 py-0.5 font-mono text-[10px] text-ink-faint">
+                      <span className="rounded border border-border px-1.5 py-0.5 font-mono text-2xs text-ink-faint">
                         on {c.claimRef}
                       </span>
                     )}
                     <Dot />
-                    <span className="font-sans text-[13px] text-ink-faint">
+                    <span className="font-sans text-sm text-ink-faint">
                       {c.createdAt}
                     </span>
                   </div>
-                  <p className="mt-s-2 pl-[2.5rem] font-sans text-[15px] leading-relaxed text-ink-muted">
+                  <p className="mt-s-2 pl-[2.5rem] font-sans text-base leading-relaxed text-ink-muted">
                     {c.body}
                   </p>
                 </div>
@@ -340,7 +340,7 @@ export default async function PaperPage({
           {post ? (
             <CommentForm postId={post.id} slug={slug} signedIn={Boolean(viewer)} />
           ) : (
-            <p className="mt-s-6 rounded-md border border-dashed border-border px-s-4 py-s-4 font-sans text-[13px] leading-relaxed text-ink-faint">
+            <p className="mt-s-6 rounded-md border border-dashed border-border px-s-4 py-s-4 font-sans text-sm leading-relaxed text-ink-faint">
               This paper hasn&rsquo;t been published on the live platform yet, so
               there&rsquo;s no real post to attach a comment to -- the discussion
               above is illustrative. Once it is (or on a paper someone has

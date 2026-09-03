@@ -54,7 +54,7 @@ export function MessageList({ messages }: { messages: ChatMessage[] }) {
               )}
             >
               {ungrounded && (
-                <div className="mb-1 font-mono text-[10px] uppercase tracking-wide text-paraphrase">
+                <div className="mb-1 font-mono text-2xs uppercase tracking-wide text-paraphrase">
                   No sources located
                 </div>
               )}

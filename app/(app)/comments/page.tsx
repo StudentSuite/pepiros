@@ -59,7 +59,7 @@ export default async function CommentsPage() {
               >
                 <div className="flex gap-s-3 p-s-4">
                   <Avatar className="mt-0.5 size-7 shrink-0">
-                    <AvatarFallback className="bg-subtle font-mono text-[10px]">
+                    <AvatarFallback className="bg-subtle font-mono text-2xs">
                       {c.authorInitials}
                     </AvatarFallback>
                   </Avatar>
@@ -83,7 +83,7 @@ export default async function CommentsPage() {
                       {c.claimRef && (
                         <Badge variant="tag">on {c.claimRef}</Badge>
                       )}
-                      <span className="ml-auto font-mono text-[10px] text-ink-faint">
+                      <span className="ml-auto font-mono text-2xs text-ink-faint">
                         {c.createdAt}
                       </span>
                     </div>
@@ -92,7 +92,7 @@ export default async function CommentsPage() {
                       {c.body}
                     </p>
 
-                    <p className="mt-s-2 truncate font-mono text-[11px] text-ink-faint">
+                    <p className="mt-s-2 truncate font-mono text-2xs text-ink-faint">
                       {titleFor.get(c.postId) ?? "Unknown paper"}
                     </p>
                   </div>

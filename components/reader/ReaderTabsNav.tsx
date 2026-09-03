@@ -70,7 +70,7 @@ export function ReaderTabsNav({
   }
 
   return (
-    <nav className="flex min-w-0 flex-wrap items-center gap-s-3 font-sans text-[13px] text-ink-faint">
+    <nav className="flex min-w-0 flex-wrap items-center gap-s-3 font-sans text-sm text-ink-faint">
       <Link
         href={`/w/${workspaceId}`}
         aria-current={active === "reader" ? "page" : undefined}
@@ -119,7 +119,7 @@ export function ReaderTabsNav({
 
       <Menu
         trigger={
-          <span className="flex items-center gap-1 rounded-full border border-border px-s-3 py-1 text-[13px] text-ink-faint transition-colors duration-fast ease-out hover:border-border-strong hover:text-ink">
+          <span className="flex items-center gap-1 rounded-full border border-border px-s-3 py-1 text-sm text-ink-faint transition-colors duration-fast ease-out hover:border-border-strong hover:text-ink">
             Export
             <Icon icon={ChevronDown} size="xs" />
           </span>

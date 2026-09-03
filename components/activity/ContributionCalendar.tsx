@@ -114,7 +114,7 @@ export function ContributionCalendar({
           locked. A text-size change now moves the whole grid together --
           before, the grid stayed exactly 11px while the labels beside it
           grew, so the two drifted out of alignment. */}
-      <div className="mt-s-4 overflow-x-auto pb-s-2 font-mono text-[10px]">
+      <div className="mt-s-4 overflow-x-auto pb-s-2 font-mono text-2xs">
         <div className="inline-flex gap-s-2">
           {/* Day-of-week rail. Only Mon/Wed/Fri are labelled, same as GitHub:
               seven labels at this cell size collide. */}
@@ -167,7 +167,7 @@ export function ContributionCalendar({
         </div>
       </div>
 
-      <div className="mt-s-2 flex items-center justify-end gap-s-2 font-mono text-[10px] text-ink-faint">
+      <div className="mt-s-2 flex items-center justify-end gap-s-2 font-mono text-2xs text-ink-faint">
         <span>Less</span>
         {[0, 1, 2, 3, 4].map((l) => (
           <span

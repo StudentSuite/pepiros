@@ -34,7 +34,7 @@ export function AnchorStepper({
   }
 
   return (
-    <div className="flex items-center gap-2 font-mono text-[11px] text-ink-faint">
+    <div className="flex items-center gap-2 font-mono text-2xs text-ink-faint">
       <button
         type="button"
         onClick={() => step(-1)}

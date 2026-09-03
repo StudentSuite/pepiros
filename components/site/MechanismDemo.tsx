@@ -179,13 +179,13 @@ export function MechanismDemo() {
   return (
     <div className="paper-grain relative overflow-hidden rounded-xl border border-border bg-paper p-s-5 text-ink shadow-e-3 sm:p-s-6">
       <div className="relative flex flex-wrap items-center justify-between gap-3">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+        <p className="font-mono text-2xs uppercase tracking-widest text-ink-faint">
           Grounding, live
         </p>
         <div className="flex items-center gap-3">
           <span
             className={clsx(
-              "font-mono text-[10px] uppercase tracking-widest",
+              "font-mono text-2xs uppercase tracking-widest",
               TIER_TEXT[beat.tier],
             )}
           >
@@ -222,7 +222,7 @@ export function MechanismDemo() {
         {/* The summary. Every claim visible, one under inspection.     */}
         {/* ---------------------------------------------------------- */}
         <div>
-          <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+          <p className="mb-2 font-mono text-2xs uppercase tracking-widest text-ink-faint">
             The summary
           </p>
           <ul className="flex flex-col gap-1.5">
@@ -249,7 +249,7 @@ export function MechanismDemo() {
                   >
                     <span
                       className={clsx(
-                        "font-serif text-[15px] leading-snug transition-colors duration-base ease-out",
+                        "font-serif text-base leading-snug transition-colors duration-base ease-out",
                         on ? "text-ink" : "text-ink-faint",
                       )}
                     >
@@ -284,7 +284,7 @@ export function MechanismDemo() {
         {/* ---------------------------------------------------------- */}
         <div className="rounded-lg border border-border bg-paper-muted p-s-4 sm:p-s-5">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+            <p className="font-mono text-2xs uppercase tracking-widest text-ink-faint">
               {beat.source ? "The paper" : "No such sentence"}
             </p>
             <RefChip refId={beat.refId} />
@@ -292,7 +292,7 @@ export function MechanismDemo() {
 
           {beat.source ? (
             <>
-              <p className="font-serif text-[15px] leading-relaxed text-ink-muted">
+              <p className="font-serif text-base leading-relaxed text-ink-muted">
                 {beat.source.before}
                 {/* Port sits at the head of the matched sentence, so the beam
                     lands on the sentence itself rather than on the card. */}
@@ -313,11 +313,11 @@ export function MechanismDemo() {
                 </mark>
                 {beat.source.after}
               </p>
-              <p className="mt-s-3 font-mono text-[11px] text-ink-faint">{beat.source.cite}</p>
+              <p className="mt-s-3 font-mono text-2xs text-ink-faint">{beat.source.cite}</p>
             </>
           ) : (
             <>
-              <p className="font-serif text-[15px] leading-relaxed text-ink-muted">
+              <p className="font-serif text-base leading-relaxed text-ink-muted">
                 <span
                   ref={targetRef}
                   aria-hidden
@@ -328,7 +328,7 @@ export function MechanismDemo() {
                 {beat.matchScore.toFixed(2)}, below the floor, so the anchor is dropped and the
                 citation is stripped rather than left dangling.
               </p>
-              <p className="mt-s-3 font-mono text-[11px] text-unsupported">
+              <p className="mt-s-3 font-mono text-2xs text-unsupported">
                 Citation removed, not guessed
               </p>
             </>

@@ -42,7 +42,7 @@ export default function HowToUsePage() {
         <h1 className="mt-s-3 font-sans font-bold text-[2.1rem] leading-tight text-ink">
           How to use Pepiros
         </h1>
-        <p className="mt-s-4 font-sans text-[16px] leading-relaxed text-ink-muted">
+        <p className="mt-s-4 font-sans text-base leading-relaxed text-ink-muted">
           Seven steps, in the order you&rsquo;d actually do them. If you want
           the argument for why the checking works the way it does,{" "}
           <Link href="/how-it-works" className="text-accent-text underline underline-offset-2">
@@ -203,7 +203,7 @@ export default function HowToUsePage() {
             <h2 className="kicker">
               One thing worth repeating
             </h2>
-            <p className="mt-s-2 font-sans text-[15px] leading-relaxed text-ink-muted">
+            <p className="mt-s-2 font-sans text-base leading-relaxed text-ink-muted">
               Nothing here is ever labelled <em>verified</em>. A matched quote
               proves the sentence exists in the paper; it doesn&rsquo;t prove the
               claim built on it is true. Pepiros does the part a machine can do

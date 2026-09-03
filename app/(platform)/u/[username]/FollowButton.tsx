@@ -54,7 +54,7 @@ export function FollowButton({ real }: FollowButtonProps) {
       >
         {following ? "Following" : "Follow"}
       </Button>
-      {error && <span className="font-sans text-[11px] text-unsupported">{error}</span>}
+      {error && <span className="font-sans text-2xs text-unsupported">{error}</span>}
     </div>
   );
 }

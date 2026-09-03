@@ -28,11 +28,11 @@ export function EvidenceList({ evidence }: { evidence: Evidence[] }) {
               <RefChip refId={e.refId} />
               <EvidenceBadge tier={e.tier} />
               {/* Issue #324: 10px was below the accessible text-size floor. */}
-              <span className="font-mono text-[11px] text-ink-faint">
+              <span className="font-mono text-2xs text-ink-faint">
                 match {Math.round(e.matchScore * 100)}%
               </span>
               {e.numericOk !== null && (
-                <span className="font-mono text-[11px] text-ink-faint">
+                <span className="font-mono text-2xs text-ink-faint">
                   numeric {e.numericOk ? "ok" : "mismatch"}
                 </span>
               )}

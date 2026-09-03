@@ -19,7 +19,7 @@ export default async function DangerPage() {
     <div>
       <header className="pb-s-2">
         <h2 className="font-sans font-semibold text-lg text-ink">Danger zone</h2>
-        <p className="mt-1 max-w-prose font-sans text-[13px] leading-relaxed text-ink-faint">
+        <p className="mt-1 max-w-prose font-sans text-sm leading-relaxed text-ink-faint">
           These cannot be undone. Read them twice.
         </p>
       </header>

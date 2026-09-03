@@ -169,7 +169,7 @@ function MockPdfPane({
             automated detector. Harmless while that div stays background-
             less, but that was accidental, not a stacking decision; z-10
             makes "this label always shows" an actual guarantee. */}
-        <div className="absolute right-3 top-2 z-10 font-mono text-[11px] text-ink/50">
+        <div className="absolute right-3 top-2 z-10 font-mono text-2xs text-ink/50">
           p. {chunk.page}
         </div>
         {/* Faint ruled lines under everything, the way an unwritten
@@ -182,11 +182,11 @@ function MockPdfPane({
           aria-hidden
           className="absolute inset-0 bg-[repeating-linear-gradient(to_bottom,transparent,transparent_23px,rgb(27_24_18_/_0.05)_23px,rgb(27_24_18_/_0.05)_24px)] [mask-image:linear-gradient(to_bottom,transparent,black_112px,black)]"
         />
-        <div className="absolute inset-0 overflow-hidden p-10 pt-8 font-serif text-[13px] leading-relaxed">
+        <div className="absolute inset-0 overflow-hidden p-10 pt-8 font-serif text-sm leading-relaxed">
           <p className="text-ink">{chunk.text}</p>
           {restOfPaper.map((c) => (
             <p key={c.id} className="mt-3 text-ink/50">
-              <span className="mr-1.5 font-mono text-[10px] uppercase tracking-wide text-ink/40">
+              <span className="mr-1.5 font-mono text-2xs uppercase tracking-wide text-ink/40">
                 p.{c.page}
               </span>
               {c.text}
@@ -202,7 +202,7 @@ function MockPdfPane({
           onSelectHighlight={onSelectHighlight}
         />
       </div>
-      <p className="font-sans text-[11px] text-ink-faint">
+      <p className="font-sans text-2xs text-ink-faint">
         Mock page render (no PDF binary is stored for this paper -- either it&rsquo;s the bundled
         demo workspace, whose papers are synthetic, or it predates issue #76&rsquo;s PDF storage) --
         highlight position is re-anchored to this chunk&rsquo;s own text (issue #323), not measured

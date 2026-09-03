@@ -79,7 +79,7 @@ export function ReachOverTime({
     <Card>
       <CardHeader className="flex-row flex-wrap items-start justify-between gap-s-4 space-y-0 pb-s-2">
         <div>
-          <CardTitle className="whitespace-nowrap font-mono text-[11px] font-normal uppercase tracking-widest text-ink-faint">
+          <CardTitle className="whitespace-nowrap font-mono text-2xs font-normal uppercase tracking-widest text-ink-faint">
             Reach over time
           </CardTitle>
           <p className="mt-s-2 font-mono text-3xl tabular-nums leading-none text-ink">
@@ -101,7 +101,7 @@ export function ReachOverTime({
               key={r.value}
               value={r.value}
               aria-label={`Show ${r.label}`}
-              className="px-s-2 font-mono text-[11px]"
+              className="px-s-2 font-mono text-2xs"
             >
               {r.label}
             </ToggleGroupItem>
@@ -126,7 +126,7 @@ export function ReachOverTime({
               tickMargin={8}
               minTickGap={28}
               tickFormatter={shortDate}
-              className="font-mono text-[10px]"
+              className="font-mono text-2xs"
             />
             <YAxis
               tickLine={false}
@@ -134,7 +134,7 @@ export function ReachOverTime({
               tickMargin={6}
               width={38}
               tickFormatter={compact}
-              className="font-mono text-[10px]"
+              className="font-mono text-2xs"
             />
             <ChartTooltip
               content={<ChartTooltipContent labelFormatter={(v) => shortDate(String(v))} />}
@@ -187,7 +187,7 @@ export function EngagementByPost({ reach }: { reach: ReachSummary }) {
   return (
     <Card>
       <CardHeader className="pb-s-2">
-        <CardTitle className="font-mono text-[11px] font-normal uppercase tracking-widest text-ink-faint">
+        <CardTitle className="font-mono text-2xs font-normal uppercase tracking-widest text-ink-faint">
           Engagement by post
         </CardTitle>
         <p className="mt-s-1 font-sans text-xs text-ink-faint">
@@ -219,7 +219,7 @@ export function EngagementByPost({ reach }: { reach: ReachSummary }) {
               tickLine={false}
               axisLine={false}
               tickFormatter={compact}
-              className="font-mono text-[10px]"
+              className="font-mono text-2xs"
             />
             <YAxis
               type="category"
@@ -227,7 +227,7 @@ export function EngagementByPost({ reach }: { reach: ReachSummary }) {
               tickLine={false}
               axisLine={false}
               width={150}
-              className="font-sans text-[11px]"
+              className="font-sans text-2xs"
             />
             <ChartTooltip
               cursor={false}

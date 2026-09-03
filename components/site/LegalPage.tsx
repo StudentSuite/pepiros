@@ -51,7 +51,7 @@ export function LegalPage({
               <p className="font-sans text-base leading-relaxed text-ink-muted">{intro}</p>
             )}
             {updated && (
-              <p className="mt-s-3 font-mono text-[11px] text-ink-faint">Last updated {updated}</p>
+              <p className="mt-s-3 font-mono text-2xs text-ink-faint">Last updated {updated}</p>
             )}
 
             <div ref={contentRef} className="mt-s-7 flex flex-col gap-s-6">

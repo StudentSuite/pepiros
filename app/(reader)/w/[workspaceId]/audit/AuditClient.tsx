@@ -43,7 +43,7 @@ function Stat({
 }) {
   return (
     <div className="rounded border border-border bg-surface-raised p-3">
-      <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">{label}</p>
+      <p className="font-mono text-2xs uppercase tracking-widest text-ink-faint">{label}</p>
       <p className={clsx("mt-1 font-mono text-2xl tabular-nums", accentClassName ?? "text-ink")}>{value}</p>
     </div>
   );
@@ -212,7 +212,7 @@ export function AuditClient({ workspaceId }: { workspaceId: string }) {
             aria-selected={mode === value}
             onClick={() => setMode(value)}
             className={clsx(
-              "rounded-full border px-s-3 py-1 font-sans text-[13px]",
+              "rounded-full border px-s-3 py-1 font-sans text-sm",
               "transition-colors duration-fast ease-out",
               mode === value
                 ? "border-border-strong font-medium text-ink"

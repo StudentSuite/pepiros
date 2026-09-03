@@ -17,7 +17,7 @@ export default function ChangelogPage() {
       {CHANGELOG.map((e) => (
         <section key={e.date}>
           <div className="flex items-baseline gap-s-3">
-            <span className="font-mono text-[11px] text-ink-faint">{e.date}</span>
+            <span className="font-mono text-2xs text-ink-faint">{e.date}</span>
             <h2 className="font-sans font-semibold text-lg text-ink">{e.title}</h2>
           </div>
           <ul className="mt-s-3 ml-s-4 list-disc space-y-s-2 font-sans text-sm leading-relaxed text-ink-muted">

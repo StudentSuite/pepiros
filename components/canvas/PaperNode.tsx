@@ -32,17 +32,17 @@ export function PaperNode({ data }: NodeProps<PepirosNode>) {
       aria-label={node.title}
     >
       <Handle type="target" position={Position.Top} className="!bg-border-strong" />
-      <div className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">Paper</div>
+      <div className="font-mono text-2xs uppercase tracking-widest text-ink-faint">Paper</div>
       <div data-lod="title" className="mt-1 font-sans text-base font-semibold leading-snug text-ink">{node.title}</div>
       <p data-lod="body" className="mt-1.5 font-serif text-sm leading-snug text-ink-muted">{stripRefMarkers(node.bodyMd)}</p>
       {node.stale && (
-        <div className="mt-2 font-sans text-[11px] text-ink-faint">stale: source paper removed</div>
+        <div className="mt-2 font-sans text-2xs text-ink-faint">stale: source paper removed</div>
       )}
       {onToggleGhosts && (
         <button
           type="button"
           // nodrag/nopan or React Flow swallows the click as a drag start.
-          className="nodrag nopan mt-2 flex items-center gap-1.5 rounded font-mono text-[10px] uppercase tracking-wide text-ink-faint transition-colors hover:text-ink disabled:opacity-60"
+          className="nodrag nopan mt-2 flex items-center gap-1.5 rounded font-mono text-2xs uppercase tracking-wide text-ink-faint transition-colors hover:text-ink disabled:opacity-60"
           onClick={(event) => {
             event.stopPropagation();
             onToggleGhosts();

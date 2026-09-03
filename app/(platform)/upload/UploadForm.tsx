@@ -75,7 +75,7 @@ function JobProgressView({ progress }: { progress: JobProgress }) {
             <span
               aria-hidden="true"
               className={cn(
-                "z-10 grid size-[19px] shrink-0 place-items-center rounded-full border font-mono text-[10px]",
+                "z-10 grid size-[19px] shrink-0 place-items-center rounded-full border font-mono text-2xs",
                 s.state === "done" && "border-located bg-located text-surface",
                 s.state === "current" && "border-accent bg-surface text-accent",
                 s.state === "pending" && "border-border-strong bg-surface text-ink-faint",
@@ -107,16 +107,16 @@ function JobProgressView({ progress }: { progress: JobProgress }) {
           needs immediate attention); role="status" implies "polite" (the
           other two are routine updates, not interruptions). */}
       {progress.status === "failed" ? (
-        <p role="alert" className="mt-s-4 font-sans text-[13px] leading-relaxed text-unsupported">
+        <p role="alert" className="mt-s-4 font-sans text-sm leading-relaxed text-unsupported">
           {progress.error ?? "Ingest failed."}
         </p>
       ) : progress.status === "done" ? (
-        <p role="status" className="mt-s-4 font-sans text-[13px] leading-relaxed text-located">
+        <p role="status" className="mt-s-4 font-sans text-sm leading-relaxed text-located">
           Ready. <Link href={`/w/${WORKSPACE_ID}`} className="underline underline-offset-2">Open the workspace</Link>.
         </p>
       ) : (
         latestMessage && (
-          <p role="status" className="mt-s-4 font-sans text-[13px] leading-relaxed text-ink-faint">
+          <p role="status" className="mt-s-4 font-sans text-sm leading-relaxed text-ink-faint">
             {latestMessage}
           </p>
         )
@@ -270,7 +270,7 @@ export function UploadForm({
           <h1 className="mt-s-3 font-sans font-bold text-[1.9rem] leading-tight text-ink">
             Start from a PDF or a link.
           </h1>
-          <p className="mt-s-3 font-sans text-[15px] leading-relaxed text-ink-muted">
+          <p className="mt-s-3 font-sans text-base leading-relaxed text-ink-muted">
             Pepiros parses the paper into sections, plans its pillars from the
             content, and binds every generated claim to a located quote.
           </p>
@@ -297,12 +297,12 @@ export function UploadForm({
             <p className="kicker">
               Ingest needs Storage configured
             </p>
-            <p className="mt-s-2 font-sans text-[14px] leading-relaxed text-ink-muted">
+            <p className="mt-s-2 font-sans text-sm leading-relaxed text-ink-muted">
               Parsing a paper now runs on this deployment too, but it hands the
               file to the parser through Supabase Storage, and Storage isn&apos;t
               configured here. This is a setting, not an architectural limit.
               Run Pepiros locally with{" "}
-              <code className="font-mono text-[13px] text-ink">npm run dev</code>{" "}
+              <code className="font-mono text-sm text-ink">npm run dev</code>{" "}
               to ingest your own papers, or browse{" "}
               <Link href="/discover" className="text-accent-text underline underline-offset-2">
                 the library
@@ -316,7 +316,7 @@ export function UploadForm({
           <p className="kicker">
             What happens to your file
           </p>
-          <p className="mt-s-2 font-sans text-[14px] leading-relaxed text-ink-muted">
+          <p className="mt-s-2 font-sans text-sm leading-relaxed text-ink-muted">
             Your paper is checked for real: file type, size, page count, whether
             it has a text layer, and whether this workspace already has it.
             Accepted, it&rsquo;s actually parsed (PyMuPDF) and its pillars and notes
@@ -426,7 +426,7 @@ export function UploadForm({
                       <p className="max-w-full truncate font-sans text-sm text-ink">
                         {file.name}
                       </p>
-                      <p className="font-mono text-[11px] text-ink-faint">
+                      <p className="font-mono text-2xs text-ink-faint">
                         {(file.size / 1024 / 1024).toFixed(1)} MB
                       </p>
                     </>
@@ -436,10 +436,10 @@ export function UploadForm({
                       <p className="font-sans text-sm text-ink">
                         Drag a PDF here, or click to browse
                       </p>
-                      <p className="font-mono text-[11px] text-ink-faint">
+                      <p className="font-mono text-2xs text-ink-faint">
                         PDF only, up to {formatMb(MAX_UPLOAD_BYTES)}, {MAX_PAGES} pages
                       </p>
-                      <p className="max-w-[26rem] font-sans text-[11px] text-ink-faint">
+                      <p className="max-w-[26rem] font-sans text-2xs text-ink-faint">
                         Papers under ~{FAST_PATH_MAX_CHARS.toLocaleString()} characters (about 8,000 tokens)
                         process fastest and most reliably. Longer papers still ingest, just slower and
                         less consistently, since our fast-tier model provider rate-limits by tokens per
@@ -477,7 +477,7 @@ export function UploadForm({
                   finds a PDF when a legally free copy exists. Saying so here
                   is the difference between an option that sometimes cannot
                   work and one the reader is told will always work. */}
-              <p className="font-sans text-[13px] text-ink-faint">
+              <p className="font-sans text-sm text-ink-faint">
                 arXiv, PMC, or a direct PDF link. A DOI works when the paper has
                 an open-access copy.
               </p>
@@ -490,7 +490,7 @@ export function UploadForm({
               onCheckedChange={(v) => setLicensed(Boolean(v))}
               className="mt-0.5"
             />
-            <span className="font-sans text-[13px] leading-relaxed text-ink-muted">
+            <span className="font-sans text-sm leading-relaxed text-ink-muted">
               This paper is open-access or CC-licensed, or I understand it stays
               private to my workspace and is never added to the public library.
             </span>

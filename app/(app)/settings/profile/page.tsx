@@ -22,7 +22,7 @@ export default async function ProfileSettingsPage() {
           screen-reader heading navigation. */}
       <header className="pb-s-5">
         <h2 className="font-sans font-semibold text-lg text-ink">Profile</h2>
-        <p className="mt-1 max-w-prose font-sans text-[13px] leading-relaxed text-ink-faint">
+        <p className="mt-1 max-w-prose font-sans text-sm leading-relaxed text-ink-faint">
           Your display name and bio, shown on your public profile.
         </p>
       </header>

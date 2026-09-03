@@ -103,7 +103,7 @@ export function PromoteButton({ message }: { message: ChatMessage }) {
 
   if (state === "done" && result) {
     return (
-      <div className="flex items-center gap-2 font-sans text-[11px]">
+      <div className="flex items-center gap-2 font-sans text-2xs">
         <span
           className={clsx(
             "inline-flex items-center gap-1.5 rounded border px-2 py-1",
@@ -127,14 +127,14 @@ export function PromoteButton({ message }: { message: ChatMessage }) {
         disabled={state === "pending"}
         onClick={() => void promote()}
         className={clsx(
-          "inline-flex items-center gap-1.5 rounded border px-2 py-1 font-sans text-[11px] transition duration-fast ease-out",
+          "inline-flex items-center gap-1.5 rounded border px-2 py-1 font-sans text-2xs transition duration-fast ease-out",
           "border-border-strong text-ink-muted hover:border-ink-muted hover:text-ink disabled:opacity-60",
         )}
       >
         {state === "pending" && <Icon icon={Loader2} size="xs" className="animate-spin" />}
         {state === "pending" ? "Verifying…" : "Promote to node"}
       </button>
-      {error && <span className="max-w-[220px] font-sans text-[11px] text-unsupported">{error}</span>}
+      {error && <span className="max-w-[220px] font-sans text-2xs text-unsupported">{error}</span>}
     </div>
   );
 }

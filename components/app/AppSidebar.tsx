@@ -130,7 +130,7 @@ export function AppSidebar({
                     <span className="truncate font-sans text-sm font-medium">
                       {profile.displayName}
                     </span>
-                    <span className="truncate font-mono text-[11px] text-ink-faint">
+                    <span className="truncate font-mono text-2xs text-ink-faint">
                       @{profile.username}
                     </span>
                   </div>
@@ -277,7 +277,7 @@ export function AppSidebar({
             <SidebarMenuButton asChild tooltip="Pepiros home" size="sm">
               <Link href="/">
                 <Home className="opacity-60" />
-                <span className="font-mono text-[11px] text-ink-faint">
+                <span className="font-mono text-2xs text-ink-faint">
                   pepiros.dev
                 </span>
               </Link>

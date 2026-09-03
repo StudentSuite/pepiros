@@ -97,7 +97,7 @@ export function FlashcardDeck() {
         </button>
       </div>
 
-      <p className="font-sans text-[11px] text-ink-faint">
+      <p className="font-sans text-2xs text-ink-faint">
         Click the card (or press space) to flip.
       </p>
 

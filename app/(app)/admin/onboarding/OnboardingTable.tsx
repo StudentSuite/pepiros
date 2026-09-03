@@ -267,7 +267,7 @@ export function OnboardingTable({
                   {r.displayName}{" "}
                   <span className="text-ink-faint">@{r.username}</span>
                 </p>
-                <p className="font-mono text-[11px] text-ink-faint">
+                <p className="font-mono text-2xs text-ink-faint">
                   joined {r.joinedAt}
                   {r.completedAt
                     ? ` · completed ${r.completedAt}`
@@ -276,7 +276,7 @@ export function OnboardingTable({
                 </p>
               </div>
 
-              <p className="mt-1.5 font-sans text-[13px] text-ink-faint">
+              <p className="mt-1.5 font-sans text-sm text-ink-faint">
                 {[
                   r.role,
                   r.experience,
@@ -301,7 +301,7 @@ export function OnboardingTable({
                   <p className="kicker">
                     What went wrong
                   </p>
-                  <p className="mt-1 font-serif text-[15px] leading-relaxed text-ink">
+                  <p className="mt-1 font-serif text-base leading-relaxed text-ink">
                     {r.wrongSummaryStory}
                   </p>
                 </div>
@@ -312,14 +312,14 @@ export function OnboardingTable({
                   <p className="kicker">
                     Would use it weekly if
                   </p>
-                  <p className="mt-1 font-serif text-[15px] leading-relaxed text-ink">
+                  <p className="mt-1 font-serif text-base leading-relaxed text-ink">
                     {r.weeklyTrigger}
                   </p>
                 </div>
               )}
 
               {(r.verifyMethod.length > 0 || r.verifyMethodOther) && (
-                <p className="mt-s-3 font-sans text-[13px] text-ink-muted">
+                <p className="mt-s-3 font-sans text-sm text-ink-muted">
                   <span className="text-ink-faint">Verifies by:</span>{" "}
                   {[...r.verifyMethod.map((m) => m.replace(/_/g, " ")), r.verifyMethodOther]
                     .filter(Boolean)

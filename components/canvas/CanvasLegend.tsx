@@ -51,7 +51,7 @@ export function CanvasLegend({
   return (
     <div className="absolute bottom-4 left-4 z-10 max-h-[min(70vh,32rem)] w-72 overflow-y-auto rounded-lg border border-border-strong bg-surface-raised shadow-e-3">
       <div className="sticky top-0 flex items-center justify-between border-b border-border bg-surface-raised px-3 py-2">
-        <h2 className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-faint">
+        <h2 className="font-mono text-2xs uppercase tracking-[0.14em] text-ink-faint">
           Reading this graph
         </h2>
         <button
@@ -76,7 +76,7 @@ export function CanvasLegend({
 
         {pillars.length > 0 && (
           <Section title="Colours">
-            <p className="mb-1.5 font-sans text-[11px] leading-relaxed text-ink-faint">
+            <p className="mb-1.5 font-sans text-2xs leading-relaxed text-ink-faint">
               A colour is a theme. A claim carries its pillar&rsquo;s colour, so
               you can see what a line belongs to without following it.
             </p>
@@ -87,7 +87,7 @@ export function CanvasLegend({
                   style={{ backgroundColor: pillarColor(p.index) }}
                   aria-hidden
                 />
-                <span className="font-sans text-[11px] text-ink">{p.title}</span>
+                <span className="font-sans text-2xs text-ink">{p.title}</span>
               </div>
             ))}
           </Section>
@@ -117,9 +117,9 @@ export function CanvasLegend({
                     strokeLinecap="round"
                   />
                 </svg>
-                <span className="font-sans text-[11px] font-medium text-ink">{e.label}</span>
+                <span className="font-sans text-2xs font-medium text-ink">{e.label}</span>
               </div>
-              <p className="ml-[30px] font-sans text-[11px] leading-relaxed text-ink-faint">
+              <p className="ml-[30px] font-sans text-2xs leading-relaxed text-ink-faint">
                 {e.meaning}
               </p>
             </div>
@@ -135,9 +135,9 @@ export function CanvasLegend({
                   style={{ backgroundColor: `var(--${t.tier.replace("quote_located", "located")})` }}
                   aria-hidden
                 />
-                <span className="font-sans text-[11px] font-medium text-ink">{t.label}</span>
+                <span className="font-sans text-2xs font-medium text-ink">{t.label}</span>
               </div>
-              <p className="ml-[18px] font-sans text-[11px] leading-relaxed text-ink-faint">
+              <p className="ml-[18px] font-sans text-2xs leading-relaxed text-ink-faint">
                 {t.meaning}
               </p>
             </div>
@@ -151,7 +151,7 @@ export function CanvasLegend({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h3 className="mb-1 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-faint">
+      <h3 className="mb-1 font-mono text-2xs uppercase tracking-[0.14em] text-ink-faint">
         {title}
       </h3>
       {children}
@@ -162,8 +162,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Row({ label, meaning }: { label: string; meaning: string }) {
   return (
     <div className="py-0.5">
-      <span className="font-sans text-[11px] font-medium text-ink">{label}</span>
-      <p className="font-sans text-[11px] leading-relaxed text-ink-faint">{meaning}</p>
+      <span className="font-sans text-2xs font-medium text-ink">{label}</span>
+      <p className="font-sans text-2xs leading-relaxed text-ink-faint">{meaning}</p>
     </div>
   );
 }

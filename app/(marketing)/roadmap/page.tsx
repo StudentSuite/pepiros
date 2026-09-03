@@ -66,7 +66,7 @@ export default function RoadmapPage() {
     >
       {GROUPS.map((g) => (
         <section key={g.horizon}>
-          <h2 className="font-mono text-[11px] uppercase tracking-widest text-ink-faint">
+          <h2 className="font-mono text-2xs uppercase tracking-widest text-ink-faint">
             {g.horizon}
           </h2>
           <ul className="mt-s-3 flex flex-col gap-s-3">

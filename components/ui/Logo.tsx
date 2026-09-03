@@ -91,6 +91,13 @@ const GLYPH_SIZE: Record<LogoSize, string> = {
   lg: "h-[50px]", // hero, onboarding -- unchanged
 };
 
+// Issue #352: deliberately excluded from the app-wide text-[Npx] -> scale
+// migration. These three are brand-kit-measured wordmark proportions (lg's
+// own comment names the exact kit figure this was derived from), not a
+// readability concern the type scale addresses -- a logotype is a fixed
+// identity mark by convention, the same reason it doesn't reflow with
+// browser zoom in most design systems, and forcing it onto the nearest
+// scale step would silently drop the kit's own measured proportions.
 const WORDMARK_SIZE: Record<LogoSize, string> = {
   sm: "text-[21px]",
   md: "text-[23px]",
@@ -285,7 +292,7 @@ export function Logo({
           Pepiros
         </span>
         {tagline && (
-          <span className="font-mono text-[10px] uppercase leading-none tracking-widest text-ink-faint">
+          <span className="font-mono text-2xs uppercase leading-none tracking-widest text-ink-faint">
             Be the source.
           </span>
         )}

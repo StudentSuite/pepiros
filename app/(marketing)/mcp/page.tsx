@@ -59,7 +59,7 @@ export default function McpPage() {
             lib/grounding/verify.ts so this can't drift from the real
             thresholds, same pattern CapabilityCards.tsx uses on the
             homepage. */}
-        <div className="mt-s-5 flex flex-wrap gap-s-5 font-mono text-[13px] text-ink-faint">
+        <div className="mt-s-5 flex flex-wrap gap-s-5 font-mono text-sm text-ink-faint">
           <span>
             <span className="text-ink">&ge; {QUOTE_LOCATED_THRESHOLD}</span> match score reads quote
             located
@@ -92,10 +92,10 @@ export default function McpPage() {
                         characters and an unbreakable inline pair pushed the
                         page past the viewport at 320 and 390px. */}
                     <code className="block font-mono text-sm text-ink">{t.name}</code>
-                    <code className="mt-0.5 block break-words font-mono text-[11px] leading-relaxed text-ink-faint">
+                    <code className="mt-0.5 block break-words font-mono text-2xs leading-relaxed text-ink-faint">
                       ({t.args})
                     </code>
-                    <p className="mt-1 font-sans text-[14px] leading-relaxed text-ink-muted">
+                    <p className="mt-1 font-sans text-sm leading-relaxed text-ink-muted">
                       {t.description}
                     </p>
                   </li>
@@ -110,14 +110,14 @@ export default function McpPage() {
             <p className="kicker">
               Planned, not yet registered
             </p>
-            <p className="mt-s-2 font-sans text-[14px] leading-relaxed text-ink-muted">
+            <p className="mt-s-2 font-sans text-sm leading-relaxed text-ink-muted">
               {PLANNED_TOOLS.map((t) => (
-                <code key={t.name} className="mr-2 inline-block break-words font-mono text-[13px] text-ink">
+                <code key={t.name} className="mr-2 inline-block break-words font-mono text-sm text-ink">
                   {t.name}
                 </code>
               ))}
             </p>
-            <p className="mt-s-2 font-sans text-[13px] leading-relaxed text-ink-faint">
+            <p className="mt-s-2 font-sans text-sm leading-relaxed text-ink-faint">
               Listed here so an agent does not discover their absence by calling one.
             </p>
           </div>
@@ -132,7 +132,7 @@ export default function McpPage() {
             or Cursor at it directly, no clone required:
           </p>
           <pre className="overflow-x-auto rounded-md border border-border bg-surface-sunken/60 px-s-4 py-s-3">
-            <code className="font-mono text-[13px] text-ink">npx -y pepiros-mcp</code>
+            <code className="font-mono text-sm text-ink">npx -y pepiros-mcp</code>
           </pre>
           <p>
             A remote streamable-HTTP transport with OAuth 2.1 (dynamic client

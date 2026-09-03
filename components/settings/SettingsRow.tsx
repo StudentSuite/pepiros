@@ -44,7 +44,7 @@ export function SettingsRow({
           {label}
         </Label>
         {description && (
-          <p className="mt-1 max-w-prose font-sans text-[13px] leading-relaxed text-ink-faint">
+          <p className="mt-1 max-w-prose font-sans text-sm leading-relaxed text-ink-faint">
             {description}
           </p>
         )}
@@ -75,7 +75,7 @@ export function SettingsGroup({
         <div className="mb-s-2">
           <h2 className="font-sans font-semibold text-lg text-ink">{title}</h2>
           {description && (
-            <p className="mt-1 max-w-prose font-sans text-[13px] leading-relaxed text-ink-faint">
+            <p className="mt-1 max-w-prose font-sans text-sm leading-relaxed text-ink-faint">
               {description}
             </p>
           )}

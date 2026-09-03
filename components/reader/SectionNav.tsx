@@ -40,7 +40,7 @@ export function SectionNav({
 
   return (
     <nav aria-label="Paper sections" className="flex flex-col gap-1">
-      <h3 className="mb-1 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+      <h3 className="mb-1 font-mono text-2xs uppercase tracking-widest text-ink-faint">
         Sections
       </h3>
       <ul className="flex flex-col gap-0.5">

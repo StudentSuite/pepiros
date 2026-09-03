@@ -140,14 +140,14 @@ export function FeedClient({ items }: { items: FeedEntry[] }) {
                 setVisible(PAGE);
               }}
               className={cn(
-                "rounded-full border px-s-3 py-1 font-sans text-[13px] transition-colors duration-fast ease-out",
+                "rounded-full border px-s-3 py-1 font-sans text-sm transition-colors duration-fast ease-out",
                 active
                   ? "border-ink bg-ink text-surface"
                   : "border-border text-ink-faint hover:border-border-strong hover:text-ink",
               )}
             >
               {f}
-              <span className="ml-1.5 font-mono text-[10px] opacity-60">{count}</span>
+              <span className="ml-1.5 font-mono text-2xs opacity-60">{count}</span>
             </button>
           );
         })}
@@ -155,7 +155,7 @@ export function FeedClient({ items }: { items: FeedEntry[] }) {
           <button
             type="button"
             onClick={() => setField(null)}
-            className="flex items-center gap-1 font-sans text-[13px] text-ink-faint underline underline-offset-2"
+            className="flex items-center gap-1 font-sans text-sm text-ink-faint underline underline-offset-2"
           >
             <X className="size-3" />
             Clear
@@ -180,14 +180,14 @@ export function FeedClient({ items }: { items: FeedEntry[] }) {
                 dek={paperDek(p)}
                 tags={
                   <>
-                    <span className="rounded-full border border-border px-s-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-ink-faint">
+                    <span className="rounded-full border border-border px-s-2 py-0.5 font-mono text-2xs uppercase tracking-wider text-ink-faint">
                       {p.field}
                     </span>
                     {/* Issue #285: only shown for a licence that actually
                         supports the claim. An unverified entry gets no badge
                         rather than an optimistic one. */}
                     {isOpenAccess(p.licence) && (
-                      <span className="font-mono text-[10px] uppercase tracking-wider text-pillar-text-7">
+                      <span className="font-mono text-2xs uppercase tracking-wider text-pillar-text-7">
                         Open access
                       </span>
                     )}
@@ -205,7 +205,7 @@ export function FeedClient({ items }: { items: FeedEntry[] }) {
                         <p className="font-mono text-lg tabular-nums text-ink">
                           {p.grounding.claimCount}
                         </p>
-                        <p className="font-mono text-[10px] uppercase tracking-wider text-ink-faint">
+                        <p className="font-mono text-2xs uppercase tracking-wider text-ink-faint">
                           claims
                         </p>
                         <div className="mt-1 flex justify-end">
@@ -213,7 +213,7 @@ export function FeedClient({ items }: { items: FeedEntry[] }) {
                         </div>
                       </>
                     ) : (
-                      <p className="font-mono text-[10px] uppercase tracking-wider text-ink-faint">
+                      <p className="font-mono text-2xs uppercase tracking-wider text-ink-faint">
                         Not yet indexed
                       </p>
                     )}
@@ -233,7 +233,7 @@ export function FeedClient({ items }: { items: FeedEntry[] }) {
         </div>
       )}
       {shown.length > 0 && visible >= filtered.length && (
-        <p className="pt-s-6 text-center font-sans text-[13px] text-ink-faint">
+        <p className="pt-s-6 text-center font-sans text-sm text-ink-faint">
           That is every paper in the library.
         </p>
       )}

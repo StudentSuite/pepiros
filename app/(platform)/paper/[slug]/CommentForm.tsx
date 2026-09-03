@@ -20,7 +20,7 @@ export function CommentForm({ postId, slug, signedIn }: { postId: string; slug: 
 
   if (!signedIn) {
     return (
-      <p className="mt-s-6 rounded-md border border-dashed border-border px-s-4 py-s-4 font-sans text-[13px] leading-relaxed text-ink-faint">
+      <p className="mt-s-6 rounded-md border border-dashed border-border px-s-4 py-s-4 font-sans text-sm leading-relaxed text-ink-faint">
         <Link href="/login" className="text-accent-text underline underline-offset-2">
           Sign in
         </Link>{" "}
@@ -55,7 +55,7 @@ export function CommentForm({ postId, slug, signedIn }: { postId: string; slug: 
         rows={3}
         maxLength={4000}
       />
-      {error && <p className="font-sans text-[13px] text-unsupported">{error}</p>}
+      {error && <p className="font-sans text-sm text-unsupported">{error}</p>}
       <div>
         <Button type="submit" variant="primary" size="sm" disabled={pending || !body.trim()}>
           {pending ? "Posting…" : "Post comment"}

@@ -74,7 +74,7 @@ function renderBodyWithCitations(bodyMd: string, evidence: Evidence[]): ReactNod
         <span
           key={key++}
           title="This citation marker has no matching evidence row"
-          className="mx-0.5 rounded border border-unsupported/60 px-1 font-mono text-[11px] text-unsupported"
+          className="mx-0.5 rounded border border-unsupported/60 px-1 font-mono text-2xs text-unsupported"
         >
           {match[0]}
         </span>,
@@ -194,12 +194,12 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded border border-border px-1.5 py-0.5 font-mono text-[10px] uppercase text-ink-faint">
+        <span className="rounded border border-border px-1.5 py-0.5 font-mono text-2xs uppercase text-ink-faint">
           {node.type}
         </span>
         {node.pillarIndex !== null && <PillarChip pillarIndex={node.pillarIndex} label={`pillar ${node.pillarIndex}`} />}
         {node.stale && (
-          <span className="rounded border border-unsupported/60 px-1.5 py-0.5 font-sans text-[10px] text-unsupported">
+          <span className="rounded border border-unsupported/60 px-1.5 py-0.5 font-sans text-2xs text-unsupported">
             stale
           </span>
         )}
@@ -283,7 +283,7 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
         ) : (
           // Node bodies are read, not scanned, so they use the same measure and
           // leading as an article body rather than panel-sized text.
-          <p className="max-w-[38rem] font-sans text-[15px] leading-[1.7] text-ink">
+          <p className="max-w-[38rem] font-sans text-base leading-[1.7] text-ink">
             {renderBodyWithCitations(node.bodyMd, nodeEvidence)}
           </p>
         ))}
@@ -293,7 +293,7 @@ export function NodeInspector({ readOnly = false }: { readOnly?: boolean }) {
           re-verification contract as create_node -- not a canned response. */}
       {tab === "content" && !editing && !readOnly && node.followups && node.followups.length > 0 && (
         <div className="flex flex-col gap-1.5 border-t border-border pt-3">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">Go deeper</p>
+          <p className="font-mono text-2xs uppercase tracking-widest text-ink-faint">Go deeper</p>
           <div className="flex flex-wrap gap-1.5">
             {node.followups.map((question) => (
               <button

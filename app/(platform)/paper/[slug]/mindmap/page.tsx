@@ -63,7 +63,7 @@ export default async function PaperMindmapPage({
         // Same honest-empty-state pattern as /paper/[slug] itself: a paper
         // with no workspace (or one whose graph has no pillars yet) shows
         // that plainly rather than an empty canvas pretending to be a map.
-        <p className="mt-s-5 rounded-md border border-dashed border-border px-s-4 py-s-3 font-sans text-[13px] leading-relaxed text-ink-faint">
+        <p className="mt-s-5 rounded-md border border-dashed border-border px-s-4 py-s-3 font-sans text-sm leading-relaxed text-ink-faint">
           This paper isn&rsquo;t indexed for a mindmap yet -- it needs a real claim graph first,
           which the weekly catalog indexer builds automatically.
         </p>

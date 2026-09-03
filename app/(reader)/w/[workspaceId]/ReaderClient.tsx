@@ -215,7 +215,7 @@ export function ReaderClient({ workspaceId, isGuest = false }: { workspaceId: st
         >
           <nav
             aria-label="Breadcrumb"
-            className="flex min-w-0 items-center gap-1.5 font-sans text-[13px]"
+            className="flex min-w-0 items-center gap-1.5 font-sans text-sm"
           >
             <SidebarTrigger className="-ml-1 shrink-0" />
             {/* Issue #98: /workspaces is auth-protected (middleware.ts), but

@@ -41,14 +41,14 @@ export function NewsGrid() {
           </span>
           <ul className="relative mt-s-3 flex flex-col gap-1.5">
             {entry.items.slice(0, 2).map((item) => (
-              <li key={item} className="flex gap-2 font-sans text-[13px] leading-relaxed text-ink-muted">
+              <li key={item} className="flex gap-2 font-sans text-sm leading-relaxed text-ink-muted">
                 <span className="mt-2 size-1 shrink-0 rounded-full bg-ink-faint" aria-hidden />
                 <span className="line-clamp-2">{item}</span>
               </li>
             ))}
           </ul>
           {entry.items.length > 2 && (
-            <span className="relative mt-s-2 font-mono text-[11px] text-ink-faint">
+            <span className="relative mt-s-2 font-mono text-2xs text-ink-faint">
               +{entry.items.length - 2} more
             </span>
           )}

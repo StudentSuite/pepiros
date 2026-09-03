@@ -50,7 +50,7 @@ export function PillarNode({ data }: NodeProps<PepirosNode>) {
       <div className="flex items-start justify-between gap-2">
         <div
           data-lod="title"
-          className="font-mono text-[10px] font-medium uppercase tracking-widest"
+          className="font-mono text-2xs font-medium uppercase tracking-widest"
           style={{ color: pillarTextColor(node.pillarIndex) }}
         >
           {node.title}
@@ -62,7 +62,7 @@ export function PillarNode({ data }: NodeProps<PepirosNode>) {
             // node drag and the click never lands. Visible box stays small to
             // fit this cramped card header; before: expands the invisible hit
             // area out to the WCAG 44px touch-target minimum instead.
-            className="nodrag nopan relative -mr-1 -mt-0.5 flex shrink-0 items-center gap-1 rounded px-1 py-0.5 font-mono text-[10px] text-ink-muted transition-colors before:absolute before:-inset-[13px] before:content-[''] hover:bg-surface-sunken hover:text-ink"
+            className="nodrag nopan relative -mr-1 -mt-0.5 flex shrink-0 items-center gap-1 rounded px-1 py-0.5 font-mono text-2xs text-ink-muted transition-colors before:absolute before:-inset-[13px] before:content-[''] hover:bg-surface-sunken hover:text-ink"
             onClick={(event) => {
               event.stopPropagation();
               onToggleCollapse!();

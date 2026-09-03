@@ -48,7 +48,7 @@ export default async function DiscoverPage() {
           <h1 className="font-sans font-bold text-[2rem] leading-tight text-ink sm:text-[2.4rem]">
             Discover
           </h1>
-          <p className="mx-auto mt-s-3 max-w-md font-sans text-[15px] leading-relaxed text-ink-muted">
+          <p className="mx-auto mt-s-3 max-w-md font-sans text-base leading-relaxed text-ink-muted">
             Open-access papers, read closely. Every claim sits next to the
             sentence it came from, or says plainly that it has none.
           </p>

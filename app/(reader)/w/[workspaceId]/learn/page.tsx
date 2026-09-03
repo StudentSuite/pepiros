@@ -40,12 +40,12 @@ export default async function LearnPage({
 
         <div className="flex max-w-3xl flex-col gap-s-6">
           <section className="flex flex-col gap-3">
-            <h2 className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">Flashcards</h2>
+            <h2 className="font-mono text-2xs uppercase tracking-widest text-ink-faint">Flashcards</h2>
             <FlashcardDeck />
           </section>
 
           <section className="flex flex-col gap-3 border-t border-border pt-s-6">
-            <h2 className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">Quiz</h2>
+            <h2 className="font-mono text-2xs uppercase tracking-widest text-ink-faint">Quiz</h2>
             <QuizRunner workspaceId={workspaceId} />
           </section>
         </div>

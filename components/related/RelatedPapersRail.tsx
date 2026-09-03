@@ -51,7 +51,7 @@ export function RelatedPapersRail({ workspaceId, paperId }: { workspaceId: strin
     // one <Panel padded>. Matched that so the rail reads as one system
     // instead of three different card idioms bolted together.
     <Panel padded className="flex flex-col gap-2">
-      <h3 className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+      <h3 className="font-mono text-2xs uppercase tracking-widest text-ink-faint">
         Related papers
       </h3>
 
@@ -102,7 +102,7 @@ function RelatedPaperCard({ paper }: { paper: RelatedPaper }) {
           {paper.title}
         </a>
         {paper.tldr && <p className="mt-1 font-sans text-xs text-ink-muted">{paper.tldr}</p>}
-        <p className="mt-1.5 font-mono text-[10px] text-ink-faint">{paper.citationCount} citations</p>
+        <p className="mt-1.5 font-mono text-2xs text-ink-faint">{paper.citationCount} citations</p>
       </div>
     </li>
   );

@@ -44,7 +44,7 @@ export function CanvasHeader({ workspaceId, isGuest }: { workspaceId: string; is
 
   return (
     <header className="flex shrink-0 flex-wrap items-center justify-between gap-s-3 border-b border-border px-s-5 py-s-3">
-      <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 font-sans text-[13px]">
+      <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 font-sans text-sm">
         <button
           type="button"
           onClick={() => setSheetOpen(true)}
@@ -78,7 +78,7 @@ export function CanvasHeader({ workspaceId, isGuest }: { workspaceId: string; is
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent side="left" className="w-72 p-0">
           <SheetHeader className="border-b border-border px-s-4 py-s-3 text-left">
-            <SheetTitle className="font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+            <SheetTitle className="font-mono text-2xs uppercase tracking-widest text-ink-faint">
               Papers &amp; nodes
             </SheetTitle>
             <SheetDescription className="sr-only">
@@ -88,7 +88,7 @@ export function CanvasHeader({ workspaceId, isGuest }: { workspaceId: string; is
 
           <div className="flex flex-col gap-4 overflow-y-auto p-s-4">
             <div className="flex flex-col gap-1">
-              <h2 className="px-1 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+              <h2 className="px-1 font-mono text-2xs uppercase tracking-widest text-ink-faint">
                 Papers &middot; {workspace?.papers.length ?? 0}
               </h2>
               <ul className="flex flex-col gap-0.5">
@@ -109,7 +109,7 @@ export function CanvasHeader({ workspaceId, isGuest }: { workspaceId: string; is
             </div>
 
             <div className="flex flex-col gap-1">
-              <h2 className="px-1 font-mono text-[10px] uppercase tracking-widest text-ink-faint">
+              <h2 className="px-1 font-mono text-2xs uppercase tracking-widest text-ink-faint">
                 Claims
               </h2>
               <ul className="flex flex-col gap-0.5">

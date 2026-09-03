@@ -34,7 +34,7 @@ export function SynthesisNode({ data }: NodeProps<PepirosNode>) {
     >
       <Handle type="target" position={Position.Top} className="!bg-border-strong" />
       <div className="flex items-center justify-between">
-        <div className="font-mono text-[10px] uppercase tracking-widest text-ink-muted">Synthesis</div>
+        <div className="font-mono text-2xs uppercase tracking-widest text-ink-muted">Synthesis</div>
         {spannedPapers && spannedPapers.length > 0 && (
           <div className="flex -space-x-1.5">
             {spannedPapers.map((p) => (
@@ -46,10 +46,10 @@ export function SynthesisNode({ data }: NodeProps<PepirosNode>) {
                 type="button"
                 title={p.label}
                 aria-label={`Open ${p.label}`}
-                // Issue #353: was text-[9px], below the readable floor. p.label
+                // Issue #353: was text-2xs, below the readable floor. p.label
                 // is always a 2-char paper id ("P1", "P2", ...), so 10px still
                 // fits this h-5 w-5 (20px) circle comfortably.
-                className="nodrag nopan relative flex h-5 w-5 items-center justify-center rounded-full border border-surface-raised bg-surface-sunken font-mono text-[10px] text-ink-muted transition-colors before:absolute before:-inset-2 before:content-[''] hover:bg-accent-wash hover:text-accent-text focus-visible:z-10 focus-visible:outline-none focus-visible:shadow-glow-accent"
+                className="nodrag nopan relative flex h-5 w-5 items-center justify-center rounded-full border border-surface-raised bg-surface-sunken font-mono text-2xs text-ink-muted transition-colors before:absolute before:-inset-2 before:content-[''] hover:bg-accent-wash hover:text-accent-text focus-visible:z-10 focus-visible:outline-none focus-visible:shadow-glow-accent"
                 onClick={(event) => {
                   event.stopPropagation();
                   selectNode(p.id);
@@ -65,7 +65,7 @@ export function SynthesisNode({ data }: NodeProps<PepirosNode>) {
       <p data-lod="body" className="mt-1.5 font-serif text-sm leading-snug text-ink-muted">{stripRefMarkers(node.bodyMd)}</p>
       <InlineRefs bodyMd={node.bodyMd} evidence={evidence} className="mt-2 flex flex-wrap gap-1" />
       {node.stale && (
-        <div className="mt-2 font-sans text-[11px] text-ink-faint">stale: a source paper was removed</div>
+        <div className="mt-2 font-sans text-2xs text-ink-faint">stale: a source paper was removed</div>
       )}
       <Handle type="source" position={Position.Bottom} className="!bg-border-strong" />
     </div>
