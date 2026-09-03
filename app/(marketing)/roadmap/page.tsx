@@ -66,9 +66,11 @@ export default function RoadmapPage() {
     >
       {GROUPS.map((g) => (
         <section key={g.horizon}>
-          <h2 className="font-mono text-2xs uppercase tracking-widest text-ink-faint">
-            {g.horizon}
-          </h2>
+          {/* Issue #357: was a hand-rolled duplicate of .kicker (font-weight
+              unset, tracking-widest instead of .kicker's 0.14em) -- missed by
+              #356's sweep. h2 is still the right level (a real section
+              heading under the page's h1), only the styling was ad hoc. */}
+          <h2 className="kicker">{g.horizon}</h2>
           <ul className="mt-s-3 flex flex-col gap-s-3">
             {g.items.map((it) => (
               <li key={it.title} className="rounded-md border border-border p-s-4">
