@@ -1,17 +1,37 @@
+import { MESH_DRIFT_PALETTE_HEX } from "@/components/chrome/mesh-drift.frag";
+
 /**
  * A soft, blurred colour wash behind a section heading -- the cheapest real
- * way to carry the dispersion material language (§1's amber/green/violet
- * fringe) into the plain light/dark sections between shader bands, without
- * building the full authored chrome layer (§3, still flagged as follow-up
- * work). Not a substitute for that layer: it is one blurred radial gradient,
- * not refractive glass or RGB fringing. It exists so those sections read as
- * part of the same material system instead of generic bordered boxes, which
- * is the gap between what shipped and the plan's own visual intent.
+ * way to carry the shader's own material language into the plain light/dark
+ * sections between shader bands, without building the full authored chrome
+ * layer (§3, still flagged as follow-up work). Not a substitute for that
+ * layer: it is one blurred radial gradient, not refractive glass or RGB
+ * fringing. It exists so those sections read as part of the same material
+ * system instead of generic bordered boxes, which is the gap between what
+ * shipped and the plan's own visual intent.
+ *
+ * Issue #338: after #335 the bookend bands went from a warm amber/green/
+ * violet ramp to a high-chroma neon one (near-black ground, electric green,
+ * orange, purple -- MESH_DRIFT_PALETTE_HEX), so a mid-page glow still keyed
+ * to the old --disp-* tokens no longer matched the sections it sits between.
+ * Pointed at the shader's own exported hex stops instead of the retired
+ * tokens, so it can't drift from the ramp a second time -- one array, not
+ * a hand-kept copy of it.
  *
  * Purely decorative (aria-hidden), absolutely positioned behind its
  * section's content, and never a fill any interactive element sits on --
- * the purple rule still holds: this is atmosphere, not a swatch.
+ * this is atmosphere, not a swatch.
  */
+const TONE_HEX = {
+  // Warm-hued call sites: the new ramp has no amber stop, orange is its
+  // closest warm hue.
+  amber: MESH_DRIFT_PALETTE_HEX[2],
+  green: MESH_DRIFT_PALETTE_HEX[1],
+  // "violet" kept as the prop name (existing call sites), pointed at the
+  // ramp's purple stop -- the closest cool hue to what it replaces.
+  violet: MESH_DRIFT_PALETTE_HEX[3],
+} as const;
+
 export function DispersionGlow({
   tone = "amber",
   className = "",
@@ -29,7 +49,7 @@ export function DispersionGlow({
   className?: string;
   opacity?: number;
 }) {
-  const color = `var(--disp-${tone})`;
+  const color = TONE_HEX[tone];
   return (
     <div
       aria-hidden="true"
