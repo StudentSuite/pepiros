@@ -2,7 +2,6 @@
 
 import clsx from "clsx";
 import { MESH_DRIFT_GRADIENT_STOPS } from "./mesh-drift.frag";
-import { STARFIELD_BACKGROUND_IMAGE, STARFIELD_TILE_SIZE } from "./starfield";
 import { useShaderBand } from "./useShaderBand";
 export { bandButtonClassName } from "./band-button";
 
@@ -66,37 +65,6 @@ export function Band({
         backgroundImage: `linear-gradient(160deg, ${MESH_DRIFT_GRADIENT_STOPS})`,
       } as React.CSSProperties}
     >
-
-      {/*
-       * Issue #337: a sparse starfield behind the gradient, on top of both
-       * this band's own opaque fallback AND the live shader.
-       *
-       * It has to live on ITS OWN sibling element, not folded into this
-       * root's `backgroundImage` above: the `[data-shader-active] .shader-band`
-       * rule at the bottom of app/globals.css blanks this root's own
-       * background-image the moment the real shader takes over, and the
-       * starfield is meant to keep showing in both states, not just the
-       * fallback one. `mix-blend-mode: screen` is what makes "on top of"
-       * read as "behind": screen only ever brightens, so sparkles vanish
-       * into anything already bright and only pick out the darker ground,
-       * the same effect a layer genuinely painted behind the gradient would
-       * give, at a fraction of the cost of actually compositing one.
-       *
-       * The twinkle is a single CSS animation, not JS -- the reduced-motion
-       * gate for it is `.motion-starfield-twinkle` in the same stylesheet
-       * hard-stop list as `.motion-dash-march`/`.motion-sweep`, not the
-       * usePrefersReducedMotion hook (see that hook's own docstring: it
-       * exists for motion CSS can't reach on its own, and this is plain CSS).
-       */}
-      <div
-        aria-hidden="true"
-        className="motion-starfield-twinkle absolute inset-0 mix-blend-screen"
-        style={{
-          backgroundImage: STARFIELD_BACKGROUND_IMAGE,
-          backgroundSize: STARFIELD_TILE_SIZE,
-          backgroundRepeat: "repeat",
-        }}
-      />
 
       {/*
        * The contrast scrim, and why it is not optional.

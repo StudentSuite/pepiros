@@ -112,6 +112,17 @@ float valueNoise(vec2 p) {
 
 /* ---- sRGB <-> OKLab, standard coefficients ------------------------------- */
 vec3 srgbToLinear(vec3 c) {
+  /* Same guard as linearToSrgb's own "BLACK SPECKLE FIX" below, mirrored:
+   * this had no guard at all. accum is fed back into mixColour() every loop
+   * iteration and is only clamped to [0,1] ONCE, after the loop -- not
+   * between iterations -- and OKLab round-trips can legitimately push it
+   * slightly negative mid-loop (same out-of-gamut interpolation
+   * linearToSrgb's own comment describes). mix()'s pow() branch still
+   * evaluates unconditionally even when step() picks the other branch, so
+   * pow(negative, 2.4) is a real risk here the same way it was there.
+   * Defensive, not a confirmed fix for any specific bug -- see issue #TODO
+   * for a black-canvas repro this alone did not resolve. */
+  c = max(c, 0.0);
   return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(0.04045, c));
 }
 vec3 linearToSrgb(vec3 c) {
@@ -148,8 +159,16 @@ vec3 linearToOklab(vec3 c) {
   /* Belt and braces for the same reason as above. These three are non-negative
      for any non-negative linear RGB (every coefficient here is positive), but
      accum feeds back through this function every iteration, so one bad frame
-     would otherwise persist rather than self-correct. */
-  vec3 lms = pow(max(vec3(l, m, s), 0.0), vec3(1.0 / 3.0));
+     would otherwise persist rather than self-correct.
+   *
+   * +0.001: accum starts at exactly vec3(0.0), so the very first iteration
+   * hits pow(0.0, 1.0/3.0) here. That is well-defined (0 raised to a
+   * positive power is 0), but some pow() implementations compute
+   * exp(y*log(x)) internally, and log(0) in mediump's narrow range is a
+   * plausible NaN source on some GPUs. Cheap insurance, not a confirmed fix
+   * -- see issue #TODO for a black-canvas repro this alone did not
+   * resolve. */
+  vec3 lms = pow(max(vec3(l, m, s), 0.0) + 0.001, vec3(1.0 / 3.0));
   return vec3(
     0.2104542553 * lms.x + 0.7936177850 * lms.y - 0.0040720468 * lms.z,
     1.9779984951 * lms.x - 2.4285922050 * lms.y + 0.4505937099 * lms.z,

@@ -1058,20 +1058,6 @@ button:focus-visible {
   }
 }
 
-/* Issue #337: the shader band starfield's twinkle. One shared opacity pulse
-   across the whole tiled layer -- cheaper than staggering each sparkle
-   individually, and at this sparseness a synchronized breathing glint still
-   reads as ambient rather than mechanical. */
-@keyframes starfield-twinkle {
-  0%,
-  100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 0.85;
-  }
-}
-
 .motion-shimmer {
   background-image: linear-gradient(
     90deg,
@@ -1100,10 +1086,6 @@ button:focus-visible {
   animation: dash-march 4.5s linear infinite;
 }
 
-.motion-starfield-twinkle {
-  animation: starfield-twinkle 6s ease-in-out infinite;
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1113,8 +1095,7 @@ button:focus-visible {
     transition-duration: var(--dur-fast) !important;
   }
   .motion-dash-march,
-  .motion-sweep,
-  .motion-starfield-twinkle {
+  .motion-sweep {
     animation: none !important;
   }
 }

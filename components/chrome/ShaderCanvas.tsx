@@ -296,6 +296,19 @@ function runMeshDrift(
     updateClip();
     if (tabHidden || intersecting.size === 0) return;
 
+    // Re-bind every frame, not once at setup. Defensive: React Strict Mode's
+    // dev-only double-invoke of this effect (see the cleanup comment below)
+    // means a second mount's own `gl.useProgram()` call could in principle
+    // leave a DIFFERENT program bound than the one this closure's `program`
+    // variable points to, and re-binding here is a cheap (same-program is a
+    // fast no-op) way to close that off. Tried alongside a live black-canvas
+    // repro on real hardware (issue #TODO) and did NOT resolve it alone --
+    // a manually issued `gl.useProgram(program); gl.drawArrays(...)` from
+    // outside this loop always produced a correct frame, but this loop's own,
+    // otherwise-identical call kept drawing black. That gap is still
+    // unexplained; kept this because it is correct practice regardless, not
+    // because it is confirmed to fix anything on its own.
+    gl.useProgram(program);
     const elapsedSeconds = (now - startedAt) / 1000;
     gl.uniform1f(uniforms.time, elapsedSeconds * MESH_DRIFT_DEFAULTS.timeScale);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
