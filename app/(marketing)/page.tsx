@@ -82,7 +82,21 @@ function Section({
       // keeps the rhythm on any normal viewport while letting a short
       // section stop growing once it's clearly full height rather than
       // chasing an ever-taller floor at low zoom.
-      className={`relative flex min-h-[min(100dvh,56rem)] flex-col justify-center border-t border-border py-s-8 ${className ?? ""}`}
+      // bg-surface, not left transparent. This section shares a border with
+      // <Band>'s shared fixed-position canvas (see ShaderCanvas.tsx):
+      // updateClip() there recomputes the canvas's reveal rect once per
+      // rAF from getBoundingClientRect(), which on real (not synthetic)
+      // scrolling can land a frame behind the compositor's own scroll
+      // offset -- a transient few-px overshoot of the clip past a Band's
+      // edge. A transparent neighbour let that overshoot show raw shader
+      // colour right at the shared border, as a flicker that "goes back"
+      // once scrolling settles (issue seen at the Section directly above
+      // the closing CTA band). An opaque background here removes the
+      // dependency on clip-path timing being exact: paint order already
+      // guarantees an in-flow element's own background paints above the
+      // z-index:-1 canvas regardless of what the canvas is clipped to, so
+      // whatever the canvas briefly overshoots into is covered either way.
+      className={`relative flex min-h-[min(100dvh,56rem)] flex-col justify-center border-t border-border bg-surface py-s-8 ${className ?? ""}`}
     >
       <ReadingColumn wide>
         {kicker && <p className="kicker">{kicker}</p>}

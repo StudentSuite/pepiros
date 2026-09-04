@@ -18,7 +18,7 @@ const SOURCES = ["arXiv", "DOI / Crossref", "PubMed", "PDF upload"] as const;
 
 export function SourceStrip() {
   return (
-    <div className="border-t border-border py-s-6">
+    <div className="border-t border-border bg-surface py-s-6">
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-s-3 px-6 text-center">
         <p className="kicker">What it reads</p>
         <ul className="flex flex-wrap items-center justify-center gap-x-s-6 gap-y-s-2">
