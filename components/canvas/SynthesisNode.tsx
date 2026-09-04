@@ -35,8 +35,14 @@ export function SynthesisNode({ data }: NodeProps<PepirosNode>) {
       <Handle type="target" position={Position.Top} className="!bg-border-strong" />
       <div className="flex items-center justify-between">
         <div className="font-mono text-2xs uppercase tracking-widest text-ink-muted">Synthesis</div>
+        {/* Issue #387: was -space-x-1.5 (avatars overlapping by 6px), which
+            made adjacent before:-inset-2 hit zones overlap heavily -- a
+            click near the seam could resolve to the wrong paper, since
+            overlapping ::before pseudo-elements hit-test by DOM order, not
+            proximity. gap-3 (12px) replaces the overlap so two 12px insets
+            meet edge-to-edge with zero overlap: 12+12=24=gap. */}
         {spannedPapers && spannedPapers.length > 0 && (
-          <div className="flex -space-x-1.5">
+          <div className="flex gap-3">
             {spannedPapers.map((p) => (
               // A real jump to that paper's node, not just a decorative
               // avatar -- these used to render as inert <span>s that looked
@@ -49,7 +55,18 @@ export function SynthesisNode({ data }: NodeProps<PepirosNode>) {
                 // Issue #353: was text-2xs, below the readable floor. p.label
                 // is always a 2-char paper id ("P1", "P2", ...), so 10px still
                 // fits this h-5 w-5 (20px) circle comfortably.
-                className="nodrag nopan relative flex h-5 w-5 items-center justify-center rounded-full border border-surface-raised bg-surface-sunken font-mono text-2xs text-ink-muted transition-colors before:absolute before:-inset-2 before:content-[''] hover:bg-accent-wash hover:text-accent-text focus-visible:z-10 focus-visible:outline-none focus-visible:shadow-glow-accent"
+                //
+                // Issue #387: horizontal inset grown from -inset-2 to
+                // -inset-x-3, taking the 20px circle to a full 44px-wide hit
+                // area with zero overlap against the gap-3 above. Vertical
+                // stays at -inset-y-1.5 (not the same -3): this row sits only
+                // mt-1 (4px) above the node title text below, and a full
+                // 12px vertical extension would reach into it -- since the
+                // button's onClick stops propagation, a click meant for the
+                // title could silently open the wrong paper instead. 32px
+                // vertical is the honest ceiling this layout allows without
+                // that regression.
+                className="nodrag nopan relative flex h-5 w-5 items-center justify-center rounded-full border border-surface-raised bg-surface-sunken font-mono text-2xs text-ink-muted transition-colors before:absolute before:-inset-x-3 before:-inset-y-1.5 before:content-[''] hover:bg-accent-wash hover:text-accent-text focus-visible:z-10 focus-visible:outline-none focus-visible:shadow-glow-accent"
                 onClick={(event) => {
                   event.stopPropagation();
                   selectNode(p.id);

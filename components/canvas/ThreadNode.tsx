@@ -32,8 +32,13 @@ export function ThreadNode({ data }: NodeProps<PepirosNode>) {
       <Handle type="target" position={Position.Top} className="!bg-ink-faint" />
       <div className="flex items-center gap-1.5 font-mono text-2xs uppercase tracking-widest text-ink-faint">
         <span aria-hidden="true">↝</span> reading path
+        {/* Issue #387: gap-1 -> gap-4. The extra 12px is what makes the
+            before:-inset-x-3 hit zones below not overlap: two 12px insets
+            need 24px of real separation to meet edge-to-edge, and this
+            gap plus the dot glyph and its own gap-1 clears that with
+            margin. */}
         {spannedPapers && spannedPapers.length > 0 && (
-          <span className="ml-auto flex items-center gap-1 font-mono text-2xs normal-case tracking-normal text-ink-faint">
+          <span className="ml-auto flex items-center gap-4 font-mono text-2xs normal-case tracking-normal text-ink-faint">
             {spannedPapers.map((p, i) => (
               <span key={p.id} className="flex items-center gap-1">
                 {i > 0 && <span aria-hidden="true">·</span>}
@@ -41,7 +46,18 @@ export function ThreadNode({ data }: NodeProps<PepirosNode>) {
                     plain joined text, not interactive at all. */}
                 <button
                   type="button"
-                  className="nodrag nopan relative rounded transition-colors before:absolute before:-inset-2 before:content-[''] hover:text-ink focus-visible:z-10 focus-visible:outline-none focus-visible:shadow-glow-accent"
+                  // Issue #387: horizontal inset grown -2 -> -inset-x-3 (12px
+                  // each side), taking a ~14px text label to a ~38px-wide hit
+                  // area -- short of the 44px floor CanvasLegend.tsx hits,
+                  // but this header is a single line shared with the
+                  // "reading path" label to its left inside a w-64 card, and
+                  // there is no more real width to give multiple paper
+                  // references without wrapping the row or truncating the
+                  // list, neither of which this pass makes unilaterally.
+                  // Vertical stays modest (-inset-y-1, 4px) for the same
+                  // bleed-into-adjacent-content reason as SynthesisNode's
+                  // avatar buttons just above this file's sibling.
+                  className="nodrag nopan relative rounded transition-colors before:absolute before:-inset-x-3 before:-inset-y-1 before:content-[''] hover:text-ink focus-visible:z-10 focus-visible:outline-none focus-visible:shadow-glow-accent"
                   onClick={(event) => {
                     event.stopPropagation();
                     selectNode(p.id);
