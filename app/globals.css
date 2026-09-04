@@ -903,6 +903,34 @@ body {
  */
 html {
   background-color: var(--surface);
+  /* Themed scrollbar (Firefox). Default UA scrollbars are grey/white, which
+     reads as a foreign chrome edge against this warm paper surface. Thumb
+     uses --border-strong (visible at rest, not --accent, which would make
+     the scrollbar compete with actual accent-coloured UI) and track matches
+     the page surface so the gutter disappears into it. */
+  scrollbar-color: var(--border-strong) var(--surface);
+}
+
+/* WebKit/Blink has no shorthand equivalent to scrollbar-color, hence the
+   separate pseudo-elements. Kept in lockstep with the rule above by
+   referencing the same tokens rather than hardcoded hex. */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--border-strong);
+  border-radius: 8px;
+  border: 3px solid var(--surface);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--ink-faint);
 }
 
 body {

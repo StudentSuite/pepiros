@@ -204,7 +204,18 @@ function runMeshDrift(
         else intersecting.delete(entry.target);
       }
     },
-    { threshold: 0 },
+    // rootMargin pre-arms a band's entry BEFORE it visually enters the
+    // viewport. IntersectionObserver callbacks are async and get batched by
+    // the browser, so a zero-margin observer on a fast scroll only adds a
+    // band to `intersecting` a frame or two after it is already visible --
+    // during that gap updateClip() has not extended the canvas clip yet, so
+    // the band's now-transparent CSS background (data-shader-active is a
+    // single global flag, not per-band) shows raw canvas/body behind it
+    // instead of the shader: the "leak" as the hero scrolls. 100% viewport
+    // height of margin on top and bottom means a band is already flagged
+    // intersecting a full screen before it arrives, so the clip is always
+    // ahead of scroll rather than chasing it.
+    { threshold: 0, rootMargin: "100% 0px 100% 0px" },
   );
 
   function syncObservedBands() {

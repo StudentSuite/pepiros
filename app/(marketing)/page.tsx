@@ -257,7 +257,7 @@ export default function MarketingPage() {
         className="flex min-h-[min(55dvh,30rem)] flex-col items-center justify-center border-t border-border px-6 py-s-8 text-center"
       >
         <h2 className="font-sans text-[1.75rem] font-semibold leading-snug text-brand-ink-reversed sm:text-[2.4rem]">
-          Ready to check your sources?
+          No source, no claim.
         </h2>
         <div className="mt-s-6">
           <Link href="/discover" className={bandButtonClassName("primary")}>
