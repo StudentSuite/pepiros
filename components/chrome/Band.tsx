@@ -54,21 +54,7 @@ export function Band({
     <Component
       ref={bandRef}
       className={clsx(
-        // `paper-grain` HERE, on the band's own root, not on a separate
-        // absolutely-positioned child -- see this file's earlier bug. That
-        // class's own stylesheet rule sets `position: relative` on whatever
-        // it's applied to, and its grain texture is drawn by a `::before`
-        // pseudo-element the element implicitly becomes the containing
-        // block for. A prior version instead put `paper-grain` on a
-        // separate empty `absolute inset-0` div stacked inside this one --
-        // `.paper-grain`'s `position: relative` fought Tailwind's
-        // `.absolute` utility for the SAME property on the SAME element,
-        // `.paper-grain` won the specificity fight, and the div collapsed
-        // to a 0-height box with its grain overlay going nowhere.
-        // components/site/MechanismDemo.tsx's own `paper-grain` usage is
-        // the pattern this now matches: applied to the real container, not
-        // spun off into a dedicated overlay element.
-        "shader-band paper-grain relative isolate overflow-hidden",
+        "shader-band relative isolate overflow-hidden",
         variant === "dark" && "text-brand-ink-reversed",
         className,
       )}
@@ -78,8 +64,6 @@ export function Band({
         // MESH_DRIFT_GRADIENT_STOPS in mesh-drift.frag.ts for why the neon
         // ramp needs them and the old lavender one did not (issue #339).
         backgroundImage: `linear-gradient(160deg, ${MESH_DRIFT_GRADIENT_STOPS})`,
-        "--grain-blend": "overlay",
-        "--grain-opacity": "0.10",
       } as React.CSSProperties}
     >
 
