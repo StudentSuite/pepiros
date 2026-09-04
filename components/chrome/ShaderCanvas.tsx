@@ -38,12 +38,14 @@ import { getBands, subscribeBands } from "./useShaderBand";
  */
 export function ShaderCanvas() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const clipRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (shouldSkipShader()) return;
 
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const clipHost = clipRef.current;
+    if (!canvas || !clipHost) return;
 
     const glAttrs = { antialias: false, depth: false, alpha: false } as const;
     // Some hardening/privacy browser modes (Brave's Shields fingerprinting
@@ -70,16 +72,26 @@ export function ShaderCanvas() {
     const program = buildProgram(gl);
     if (!program) return;
 
-    const cleanup = runMeshDrift(gl, program, canvas);
+    const cleanup = runMeshDrift(gl, program, canvas, clipHost);
     return cleanup;
   }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
+    // Issue #402 (unconfirmed hypothesis, see runMeshDrift's updateClip):
+    // clip-path used to be set directly on the <canvas>. clip-path with a
+    // path() value isn't a primitive a compositor can apply on the GPU
+    // layer the same way a plain rect clip can, so on some backends it
+    // forces the element it's on off the accelerated presentation path.
+    // Putting it on this wrapping div instead means, if that demotion is
+    // real, it demotes an empty div rather than the live WebGL surface --
+    // the canvas itself never has clip-path applied to it directly.
+    <div
+      ref={clipRef}
       aria-hidden="true"
-      className="pointer-events-none fixed inset-0 z-[-1] h-full w-full"
-    />
+      className="pointer-events-none fixed inset-0 z-[-1]"
+    >
+      <canvas ref={canvasRef} className="block h-full w-full" />
+    </div>
   );
 }
 
@@ -135,6 +147,7 @@ function runMeshDrift(
   gl: WebGLRenderingContext,
   program: WebGLProgram,
   canvas: HTMLCanvasElement,
+  clipHost: HTMLDivElement,
 ): () => void {
   gl.useProgram(program);
 
@@ -261,14 +274,37 @@ function runMeshDrift(
    * bleed-through structurally impossible rather than something a future
    * unstyled section can reintroduce.
    *
-   * Viewport coordinates need no conversion: the canvas is `fixed inset-0`,
+   * Viewport coordinates need no conversion: clipHost is `fixed inset-0`,
    * so its own box already IS the viewport and getBoundingClientRect() is in
    * the same space. Rects are rounded outwards so a fractional layout never
    * leaves a hairline of surface along a band edge.
+   *
+   * WHY THIS WRITES clipHost.style, NOT canvas.style (issue #402, unconfirmed
+   * hypothesis). #402 reports the mesh-drift draw reading back solid black on
+   * real ANGLE/D3D11 hardware: GL state is clean (no errors, context not
+   * lost, uniforms correct on readback), a manually issued
+   * `gl.useProgram/gl.drawArrays` from outside this loop produces a correct
+   * frame every time, but this loop's own, structurally identical call keeps
+   * drawing black, and it does not self-correct once the clip stabilizes.
+   * That combination -- GL side provably fine, only the composited output
+   * wrong, and worse specifically inside the loop that also rewrites
+   * clip-path every frame -- points at compositing, not the shader.
+   * clip-path with a path() value is not a primitive a compositor can apply
+   * on an accelerated GPU layer the way a plain rectangular clip can; on some
+   * backends that forces the clipped element off the direct-present path
+   * onto a software-readback one, and a known class of ANGLE/D3D11 driver
+   * bug reads that backbuffer back before the just-issued draw has actually
+   * been presented, i.e. black. Moving clip-path onto this wrapping div means
+   * the live WebGL surface itself never has clip-path applied to it directly
+   * -- if that demotion is real, it now demotes an empty div, not the canvas.
+   * NOT CONFIRMED to fix #402: there is no ANGLE/D3D11 hardware available to
+   * reproduce it on here. Left in because it is a real, cheap, low-risk
+   * change either way (functionally identical clipping, one extra div), not
+   * because the bug is solved.
    */
   let lastClip = "";
   const CLIP_NOTHING = "inset(50%)";
-  canvas.style.clipPath = CLIP_NOTHING;
+  clipHost.style.clipPath = CLIP_NOTHING;
 
   function updateClip() {
     let d = "";
@@ -286,7 +322,7 @@ function runMeshDrift(
     }
     if (d === lastClip) return;
     lastClip = d;
-    canvas.style.clipPath = d ? `path("${d}")` : CLIP_NOTHING;
+    clipHost.style.clipPath = d ? `path("${d}")` : CLIP_NOTHING;
   }
 
   function frame(now: number) {
