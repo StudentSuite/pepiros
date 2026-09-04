@@ -18,7 +18,16 @@ export default async function MarketingLayout({
   return (
     <>
       <SiteHeader session={session} />
-      <main id="main-content" className="flex-1">{children}</main>
+      {/* bg-surface here, not left to each page. Every page in this group can
+          render a <Band> (hero/CTA on the homepage, PageHeaderBand on the 8
+          legal-frame pages), and Band reveals ShaderCanvas's shared fixed
+          canvas by going transparent -- if whatever sits next to a Band is
+          ALSO transparent, a scroll-timing overshoot in the canvas's
+          clip-path (see ShaderCanvas.tsx's updateClip) shows raw shader
+          colour through it. An opaque background at this single ancestor
+          covers every page in the group structurally, rather than requiring
+          each new page with a Band to remember its own bg-surface. */}
+      <main id="main-content" className="flex-1 bg-surface">{children}</main>
       <SiteFooter />
     </>
   );
