@@ -85,7 +85,7 @@
     "@tiptap/starter-kit": "^2.10.4",
     "@vercel/analytics": "^2.0.1",
     "@xyflow/react": "^12.3.6",
-    "ai": "^5.0.0",
+    "ai": "^7.0.93",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
