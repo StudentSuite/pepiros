@@ -3,19 +3,42 @@ import { seedCatalogStats } from "@/lib/data/seed";
 import { fetchWorkspace } from "@/lib/services/workspace";
 import { FeedClient, type FeedEntry, type FeedGrounding } from "@/components/discover/FeedClient";
 import { ReadingColumn } from "@/components/reading/Article";
+import type { Workspace } from "@/types/anchor";
 import type { EvidenceTier } from "@/types/anchor";
 
+// The feed surfaces live indexed-catalog and grounding state that a cron
+// writes at runtime, and the build sandbox cannot reach the database anyway
+// (issue #409's live deploys hit ENETUNREACH against a configured
+// DATABASE_URL over IPv6). Baking /discover at deploy time would either fail
+// the build or freeze the grounding badges -- so it renders on demand, where
+// the function runtime can actually reach Supabase.
+export const dynamic = "force-dynamic";
+
 /**
- * Real claim count and a dominant grounding tier for an indexed paper
- * (issue #299): the row used to show fabricated "readers"/comments seed
- * stats where the plan wants claim count and evidence tier -- real numbers,
- * not a restyle of fake ones. Only computed for a paper with a real
- * workspaceId; an unindexed paper gets an honest "not yet indexed" state
- * from FeedClient rather than a zero or an invented figure.
+ * A DB read for a grounding badge must never cost the whole discover page --
+ * the same contract lib/services/catalogWorkspaces.ts documents for the
+ * catalog lookup ("A missing workspace id costs a reader one link; a thrown
+ * error costs them the whole page"). Since issue #409, fetchWorkspace()
+ * throws instead of silently swapping in the fixture when the database is
+ * configured but broken -- the exact failure an unreachable build sandbox
+ * used to hit (and the page was being prerendered at deploy time, so it
+ * failed the build). Grounding being unavailable keeps the paper and drops
+ * the badge, which FeedClient already renders as the honest "not yet
+ * indexed" state -- never a zero, and never the sample graph.
  */
+async function tryFetchWorkspace(workspaceId: string): Promise<Workspace | null> {
+  try {
+    return await fetchWorkspace(workspaceId);
+  } catch (err) {
+    console.error(`[discover] fetchWorkspace(${workspaceId}) unavailable, grounding omitted:`, err);
+    return null;
+  }
+}
+
 async function realGrounding(workspaceId: string | undefined): Promise<FeedGrounding | null> {
   if (!workspaceId) return null;
-  const workspace = await fetchWorkspace(workspaceId);
+  const workspace = await tryFetchWorkspace(workspaceId);
+  if (!workspace) return null;
   const total = workspace.evidence.length;
   if (total === 0) return null;
 
