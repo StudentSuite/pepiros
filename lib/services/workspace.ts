@@ -26,7 +26,10 @@ import { getIngestedWorkspace } from "./ingestStore";
  * or added a paper to resolves to that workspace instead of the fixture --
  * still through this one seam, not a second data path. Every id that has
  * never been ingested into keeps today's behaviour exactly: the fixture,
- * regardless of the id passed in.
+ * regardless of the id passed in. That fixture fallback only applies while
+ * no database is configured at all (no DATABASE_URL); a read that fails
+ * against a configured database now throws instead of silently substituting
+ * the sample graph (issue #409) -- see getIngestedWorkspace()'s doc comment.
  */
 /**
  * Issue #180: the data read, with no layout pass -- for a caller that never

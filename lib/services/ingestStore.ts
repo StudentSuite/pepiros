@@ -10,6 +10,7 @@ import {
   type WorkspaceSummaryRow,
 } from "@/lib/db/queries";
 import { UserFacingError } from "@/lib/errors";
+import { isDatabaseConfigured } from "@/lib/db/client";
 
 /**
  * Holds workspaces that real ingest (lib/services/ingest.ts) has actually
@@ -26,24 +27,40 @@ import { UserFacingError } from "@/lib/errors";
 
 /**
  * Reads only (writes below still throw loudly -- silently pretending a save
- * succeeded would be real data loss) fall back to "nothing ingested" on any
- * DB error, not just "no row found": CLAUDE.md's own contract is "the app
- * runs fine on fixtures/workspace.json without it," and lib/services/
- * workspace.ts's fetchWorkspace() doc comment promises the same for any
- * never-ingested id. A missing DATABASE_URL, an unreachable host, or a
- * connection timeout used to just mean "the in-memory Map is empty" before
- * this was wired to real Postgres (issue #47) -- without this catch, the
- * same conditions instead 500 every route that reads a workspace (issue
- * #56, reproduced live: a 32s hang then a 500, on a read that's supposed to
- * degrade to the static fixture with no backend at all). Logged to stderr,
- * never stdout (mcp/stdio.ts's transport), so a real outage stays visible.
+ * succeeded would be real data loss) fall back to "nothing ingested" in
+ * exactly two cases: no workspace row exists under the id, or no DATABASE_URL
+ * is configured at all. Both keep CLAUDE.md's contract "the app runs fine on
+ * fixtures/workspace.json without [a DB]" and fetchWorkspace()'s promise in
+ * lib/services/workspace.ts to resolve any never-ingested id to the fixture.
+ *
+ * A query that fails against a *configured* database (bad creds, unreachable
+ * host, connection timeout) instead rethrows. Issue #56 was the original
+ * reason for any catch at all -- no DATABASE_URL used to mean a 32s hang then
+ * a 500 on every route, so that case must still degrade quietly to the
+ * fixture. Issue #409 is the opposite failure and this catch was swallowing
+ * it too: a workspace that failed to load because the DB is misconfigured or
+ * unreachable hit the exact same "nothing ingested" path as one that was
+ * never ingested into, quietly swapping someone's real audited graph for the
+ * sample file while still looking like it worked. For a tool whose whole
+ * purpose is catching a misconduct-risk citation error, that silent substitution
+ * is the worst failure mode it has. Logged to stderr, never stdout
+ * (mcp/stdio.ts's transport), so a real outage stays visible either way.
  */
 export async function getIngestedWorkspace(workspaceId: string): Promise<VersionedWorkspace | undefined> {
   try {
     return await getWorkspace(workspaceId);
   } catch (err) {
-    console.error(`[ingestStore] getWorkspace(${workspaceId}) unavailable, falling back to the fixture:`, err);
-    return undefined;
+    // No DATABASE_URL at all is the intentional local/no-backend mode -- keep
+    // the fixture fallback (issue #56).
+    if (!isDatabaseConfigured()) {
+      console.error(`[ingestStore] getWorkspace(${workspaceId}) unavailable, falling back to the fixture:`, err);
+      return undefined;
+    }
+    // DB is configured but the read genuinely failed -- rethrow so the caller
+    // (and the person relying on the audit) finds out instead of getting a
+    // fake "it worked" fixture (issue #409).
+    console.error(`[ingestStore] getWorkspace(${workspaceId}) failed against a configured DATABASE_URL:`, err);
+    throw err;
   }
 }
 

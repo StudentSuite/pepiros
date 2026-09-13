@@ -18,6 +18,19 @@ function getConnectionString() {
 }
 
 /**
+ * The one message-free signal separating "no DB configured" (the intentional
+ * local/no-backend mode where reads degrade to the static fixture, per
+ * CLAUDE.md) from "configured but broken" (DATABASE_URL present, but a
+ * query/connection actually fails). lib/services/ingestStore.ts's fallback
+ * logic must not catch-and-guess on driver error text -- this is the branch
+ * condition it instead uses, exactly duplicating the check getConnectionString()
+ * already makes (issue #409).
+ */
+export function isDatabaseConfigured(): boolean {
+  return Boolean(process.env.DATABASE_URL);
+}
+
+/**
  * Reused across hot-reloads in dev so we don't open a new connection pool
  * on every request. Server-only -- never import this from a client component.
  */
