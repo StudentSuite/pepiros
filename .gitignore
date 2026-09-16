@@ -12,6 +12,7 @@ out
 /evals/golden-papers/*.pdf
 /data/pdfs/
 /evals/results/
+/scripts/fixtures/paraphrase-pairs.json
 __pycache__
 *.pyc
 .venv

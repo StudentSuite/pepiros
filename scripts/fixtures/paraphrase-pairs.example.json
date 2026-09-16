@@ -1,0 +1,12 @@
+[
+  {
+    "id": "ee-01",
+    "sentence": "Replace this with a paraphrased, correctly-cited sentence from a real draft.",
+    "sourceText": "Replace this with the real source passage it's paraphrasing, copied verbatim from the paper."
+  },
+  {
+    "id": "ee-02",
+    "sentence": "A second example pair, so the shape of a multi-pair fixture is clear.",
+    "sourceText": "Its matching source passage, also copied verbatim."
+  }
+]
